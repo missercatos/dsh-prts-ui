@@ -13,6 +13,7 @@ import { pkgRoot } from '../src/root.js'
 const STYLE_DIR = join(pkgRoot, 'web', 'src', 'style')
 const CORE_DIR = join(pkgRoot, 'src', 'core')
 const GUI_DIR = join(pkgRoot, 'src', 'gui')
+const SRC_DIR = join(pkgRoot, 'src')
 const TEMPLATE = join(pkgRoot, 'web', 'src', 'template.html')
 const OUT = join(pkgRoot, 'web', 'index.html')
 
@@ -23,8 +24,11 @@ const css = readdirSync(STYLE_DIR)
   .join('\n')
 
 const js = [
-  'platform.js', 'i18n.js', 'io.js', 'store.js', 'api.js',
+  'platform.js', 'i18n.js', 'io.js', 'store.js',
 ].map((f) => readFileSync(join(CORE_DIR, f), 'utf8'))
+  .concat([
+    'dsh/client.js', 'dsh/state.js',
+  ].map((f) => readFileSync(join(SRC_DIR, f), 'utf8')))
   .concat([
     'particles.js', 'icons.js', 'plugins.js', 'asr.js', 'system.js', 'chat.js', 'app.js',
   ].map((f) => readFileSync(join(GUI_DIR, f), 'utf8')))

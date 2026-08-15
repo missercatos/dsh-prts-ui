@@ -1,8 +1,8 @@
 /**
- * GUI boot: locate (or download) the pinned Electron binary and launch the
- * PRTS window detached from the dsh process. The downloader covers all
- * release platforms (linux/darwin/win32 × x64/arm64). GitHub Releases is the
- * primary source, npmmirror is the fallback for slow/CN networks.
+ * PRTS GUI boot: starts the dsh web backend, waits for its local URL, then
+ * opens the PRTS Electron window pointed at that URL. PRTS is only the shell —
+ * the agent, sessions, tools, models and plugins all live in dsh, so PRTS
+ * keeps working across dsh upgrades as long as `dsh web` still prints its URL.
  */
 import { spawn } from 'node:child_process'
 import { createWriteStream, existsSync, mkdirSync, rmSync } from 'node:fs'
@@ -13,7 +13,37 @@ import { get as httpsGet } from 'node:https'
 import { pkgRoot, readPkg } from './root.js'
 
 const pkg = readPkg('package.json')
-const VERSION = pkg.devDependencies && pkg.devDependencies.electron || '43.4.0'
+const VERSION = (pkg.devDependencies && pkg.devDependencies.electron) || '43.4.0'
+
+/* ---------- dsh web backend ---------- */
+
+/** Start `dsh web` and resolve with its local URL once it is printed. */
+function bootDshWeb() {
+  return new Promise((resolve, reject) => {
+    let child
+    try {
+      child = spawn('dsh', ['web'], { stdio: ['ignore', 'pipe', 'pipe'], detached: false })
+    } catch (e) {
+      reject(new Error('dsh is not installed — run `npm i -g @deepseek-ai/dsh` first'))
+      return
+    }
+    let buf = ''
+    let settled = false
+    const timer = setTimeout(() => { if (!settled) { settled = true; reject(new Error('dsh web did not start in time')); try { child.kill(); } catch (e) {} } }, 60000)
+    const onData = (d) => {
+      if (settled) return
+      buf += d.toString()
+      const m = buf.match(/https?:\/\/127\.0\.0\.1:\d+/)
+      if (m) { settled = true; clearTimeout(timer); resolve({ url: m[0], child }) }
+    }
+    child.stdout.on('data', onData)
+    child.stderr.on('data', onData)
+    child.on('error', (e) => { if (!settled) { settled = true; clearTimeout(timer); reject(e) } })
+    child.on('exit', (code) => { if (!settled) { settled = true; clearTimeout(timer); reject(new Error('dsh web exited: ' + code)) } })
+  })
+}
+
+/* ---------- Electron ---------- */
 
 function releaseName() {
   const p = process.platform === 'win32' ? 'win32' : process.platform === 'darwin' ? 'darwin' : 'linux'
@@ -31,7 +61,6 @@ function electronCacheDir() {
   return join(process.env.PRTS_ELECTRON_CACHE || join(process.env.HOME || process.env.USERPROFILE || '.', '.cache', 'prts', 'electron'), 'v' + VERSION)
 }
 
-/** Absolute path of the electron binary if already present. */
 export function electronBinary() {
   const fromEnv = process.env.PRTS_ELECTRON
   if (fromEnv && existsSync(fromEnv)) return fromEnv
@@ -44,17 +73,18 @@ function download(url, dest) {
   return new Promise((resolve, reject) => {
     const mod = url.indexOf('https:') === 0 ? httpsGet : httpGet
     const req = mod(url, (res) => {
-      if (res.statusCode !== 200) {
+      if (res.statusCode === 301 || res.statusCode === 302) {
         res.resume()
-        return reject(new Error('HTTP ' + res.statusCode + ' for ' + url))
+        return reject(Object.assign(new Error('redirect ' + res.statusCode), { redirect: res.headers.location }))
       }
+      if (res.statusCode !== 200) { res.resume(); return reject(new Error('HTTP ' + res.statusCode + ' for ' + url)) }
       const out = createWriteStream(dest)
       res.pipe(out)
-      out.on('finish', () => { out.close(() => resolve()) })
+      out.on('finish', () => out.close(() => resolve()))
       out.on('error', reject)
     })
     req.on('error', reject)
-    req.setTimeout(180000, () => { req.destroy(new Error('download timeout')); })
+    req.setTimeout(180000, () => req.destroy(new Error('download timeout')))
   })
 }
 
@@ -69,7 +99,6 @@ function unzip(zipPath, dir) {
   })
 }
 
-/** Ensure the electron binary exists; returns its path or throws. */
 export async function ensureElectron() {
   const found = electronBinary()
   if (found) return found
@@ -91,23 +120,22 @@ export async function ensureElectron() {
       const bin = join(dir, binaryName(p))
       if (!existsSync(bin)) throw new Error('binary missing after unzip')
       return bin
-    } catch (e) {
-      lastErr = e
-    }
+    } catch (e) { lastErr = e }
   }
   throw new Error('failed to fetch electron ' + VERSION + ' (' + p + '/' + a + '): ' + (lastErr && lastErr.message))
 }
 
-/** Spawn the detached PRTS window. Resolves after the binary is ready. */
-export async function launchGui() {
+/** Boot dsh web and open the PRTS window over it. */
+export async function launchGui(opts) {
+  const { url } = await bootDshWeb()
   const bin = await ensureElectron()
   const main = join(pkgRoot, 'electron', 'main.cjs')
-  const child = spawn(bin, ['--no-sandbox', main], {
+  const child = spawn(bin, ['--no-sandbox', main, url], {
     detached: true,
     stdio: 'ignore',
-    env: Object.assign({}, process.env, { PRTS_GUI: '1' }),
+    env: Object.assign({}, process.env, { PRTS_GUI: '1', DSH_WEB_URL: url }),
   })
-  child.on('error', (e) => { throw new Error('electron spawn failed: ' + e.message) })
+  child.on('error', () => { /* window already detached */ })
   child.unref()
-  return { ok: true, pid: child.pid }
+  return { ok: true, url, pid: child.pid }
 }

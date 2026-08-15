@@ -1,6 +1,7 @@
 /**
  * PRTS command-line provider: parses the app flags and publishes the
- * `prtsStartup` service for the runner. Modeled on dsh-givemyflag/startup.
+ * `prtsStartup` service for the runner. PRTS is a GUI *for* dsh, so the only
+ * surfaces are the GUI window and the desktop-shortcut refresh.
  * @module dsh-prts-ui/startup
  */
 
@@ -17,25 +18,21 @@ export const inject = ['cmdlineArgs']
 export const PRTS_STARTUP_SERVICE = 'prtsStartup'
 
 /**
- * This app's command: surface choice, language override, project selection.
+ * This app's command: GUI window (default) or desktop-shortcut refresh.
  * @returns a fresh program, so one process can parse more than once.
  */
 function prtsCommand() {
   return new Command()
     .name('dsh --profile prts')
-    .description('PRTS — a monochrome DeepSeek chat client. Opens the GUI window by default; run in the terminal with --tui.')
+    .description('PRTS — the GUI shell for dsh. Opens the window by default.')
     .helpOption('-h, --help', 'show this help')
-    .option('--tui', 'run the terminal (ANSI) client instead of the GUI window')
     .option('--lang <locale>', 'ui language: zh or en (default: detect from the system)')
-    .option('--project <name>', 'open the named project (created on first use)')
     .option('--shortcut', 'create (or refresh) the desktop shortcut and exit')
     .addHelpText('after', `
 Examples:
-  dsh --profile prts                          open the PRTS GUI window
-  dsh --profile prts --tui                    run PRTS in the terminal
-  dsh --profile prts --tui --lang zh         Chinese terminal session
-  dsh --profile prts --project daily         open (or create) the "daily" project
-  dsh --profile prts --shortcut              refresh the desktop shortcut
+  dsh --profile prts              open the PRTS GUI window
+  dsh --profile prts --lang zh    Chinese GUI
+  dsh --profile prts --shortcut   refresh the desktop shortcut
 `)
 }
 
@@ -52,9 +49,8 @@ export function apply(ctx) {
   program.action((options) => {
     dbg('action fired')
     ctx.provide(PRTS_STARTUP_SERVICE, {
-      mode: options.shortcut ? 'shortcut' : options.tui ? 'tui' : 'gui',
+      mode: options.shortcut ? 'shortcut' : 'gui',
       locale: typeof options.lang === 'string' && options.lang.trim() !== '' ? options.lang.trim() : undefined,
-      project: typeof options.project === 'string' && options.project.trim() !== '' ? options.project.trim() : undefined,
     })
   })
   parseCmdline(ctx, program)

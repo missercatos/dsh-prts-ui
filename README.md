@@ -2,16 +2,17 @@
 
 > [中文](./README.zh.md)
 
-PRTS — a monochrome DeepSeek chat client that **runs on the dsh framework** as a profile bundle. `dsh` is the launching harness: it mounts the profile tree, parses the flags and hands the process lifetime to the app.
+PRTS is **a GUI shell for [dsh](https://www.npmjs.com/package/@deepseek-ai/dsh)** — it is not its own agent. It boots the dsh web backend, opens a window over it, and mirrors dsh's real state: workspaces, sessions, models, credentials, tools and plugins all come from dsh through its `/api` RPC + WebSocket protocol. What PRTS adds is the chrome: the monochrome Arknights-style UI, the particle intro, the system panel, and the voice input.
 
-- Black/white UI with a particle welcome intro (scatter → welcome → banner → mark).
-- Two surfaces from one command: a terminal client (`--tui`) and an Electron window (default).
-- Per-project message history, `zh`/`en` locale, deepseek-chat + deepseek-reasoner models, and thinking-strength presets.
-- Ships as a `.tgz` profile bundle: `dsh plugin`-installable, desktop-shortcut and postinstall glue included.
+Because PRTS only speaks dsh's stable `/api` contract, it keeps working across dsh upgrades.
+
+- GUI window over `dsh web` (no separate TUI).
+- dsh workspaces + sessions (create / switch / rename / archive), models from `llm.models`.
+- Particle welcome intro, system panel (hardware telemetry), voice input, community plugin buttons.
 
 ## Install
 
-**One-click installer** (recommended): run `install.sh` on Linux/macOS, or `install.bat` on Windows (`build-exe.bat` wraps it into `PRTS-Setup.exe` via Windows' built-in IExpress). It checks Node.js, installs the dsh harness if missing, builds the tarball, installs the plugin into the `prts` profile, creates the desktop + app-menu shortcuts, and puts a `prts` command on PATH.
+**One-click installer** (recommended): run `install.sh` on Linux/macOS, or `install.bat` on Windows (`build-exe.bat` wraps it into `PRTS-Setup.exe` via Windows' built-in IExpress). It checks Node.js, **installs dsh if missing (skips if present)**, builds the tarball, installs PRTS into the `prts` profile, and creates the desktop + app-menu shortcuts.
 
 ```sh
 # Linux / macOS — from the repo checkout:
@@ -28,65 +29,38 @@ Manual install:
 # one-off: build the tarball
 pnpm pack
 
-# profile side — this installs dsh-prts-ui into the `prts` profile
+# profile side — installs dsh-prts-ui into the `prts` profile
 dsh plugin --profile prts install ./dsh-prts-ui-0.1.0.tgz
 ```
 
-Then launch it (any of):
+Launch it:
 
 ```sh
-dsh --profile prts            # GUI window
-dsh --profile prts --tui      # terminal client
+dsh --profile prts            # opens the PRTS window (boots dsh web underneath)
+dsh --profile prts --shortcut # refresh the desktop launcher
 ```
 
-The profile (`~/.dsh/profiles/prts/`) uses a **minimal bundle** — only `dsh-prts-ui`, not `@deepseek-ai/dsh-base`:
-
-```json
-{
-  "dsh": { "profile": { "bundles": ["dsh-prts-ui"] } }
-}
-```
-
-PRTS is a self-contained leaf client (direct DeepSeek API via `fetch`, its own store and history) and does not need the agent shell, sandbox or host services that `dsh-base` mounts. Keeping the tree minimal also avoids the harness's full-tree boot cost — the app is ready as soon as the startup selection and launcher IO exist.
+The `prts` profile is minimal (`bundles: ["dsh-prts-ui"]`): the runner spawns `dsh web` as the backend and opens the PRTS window over it, so PRTS never depends on dsh's internals.
 
 ## Usage
 
 ```sh
 dsh --profile prts                 # GUI window (default)
-dsh --profile prts --tui           # terminal client
-dsh --profile prts --tui --lang en # English UI
-dsh --profile prts --tui --project ops
+dsh --profile prts --lang zh       # Chinese GUI
 dsh --profile prts --shortcut      # install a desktop launcher
 ```
 
-TUI keys: `Enter` send · `Shift+Enter` newline · `Tab` switch view · `Ctrl+L` language · `Ctrl+C` stop/exit · `/help` commands. Settings via `/key`, `/base <url>`, `/model [n|name]`, `/strength off|low|medium|high`, `/mode standard|ptc|minimal|creative`.
-
-### Chat modes & workspaces
-
-A **chat mode** (composer chip, or `/mode` in the TUI) is a dsh-web-style preset applied on top of your model/strength:
-
-| Mode | Effect |
-| --- | --- |
-| STANDARD | your model + strength, temperature 1.0 |
-| PTC | deepseek-chat, thinking off, temperature 0.6 |
-| MINIMAL | deepseek-chat, thinking off, temperature 0.2, capped at 400 tokens |
-| CREATIVE | deepseek-chat, thinking off, temperature 1.5 |
-
-A **workspace** is what PRTS calls a project: its own history and settings. The button under the PRTS logo shows the current workspace and opens the switcher, where **+ Add workspace** creates a new one (the sidebar "New project" does the same). The default workspace is `default`.
+Everything about the agent — sessions, models, credentials, tools, plugins, settings — is dsh's, managed in the dsh way. The PRTS window mirrors it: the sidebar lists dsh **workspaces** and **sessions**, the composer sends to the dsh agent, and the model chip shows dsh's model catalog. Sessions are archived (`workspace.archiveSession`) and workspaces deleted (`workspace.delete`) exactly as dsh does.
 
 ### Launching `prts` from the terminal
 
-After installing the plugin, add a one-line alias so typing `prts` opens the TUI (the bundled `prts` bin defaults to `--tui`):
+After installing the plugin, add a one-line alias so typing `prts` opens the GUI:
 
 ```sh
 # add to ~/.bashrc (or ~/.zshrc), then `source ~/.bashrc`
 alias prts='/home/a/.dsh/profiles/prts/node_modules/dsh-prts-ui/bin/dsh-prts-ui.js'
-# or the shorter form if dsh lives on PATH and you prefer a shell function:
-#   prts() { dsh --profile prts --tui "$@"; }
 
-prts                  # terminal client
-prts --lang zh        # Chinese TUI
-prts --gui            # GUI window
+prts                  # opens the PRTS window (boots dsh web underneath)
 prts --shortcut       # refresh the desktop shortcut
 ```
 
@@ -142,29 +116,18 @@ rm -rf ~/.config/prts ~/.dsh/profiles/prts
 # on macOS / Windows remove the matching PRTS.command / .lnk instead.
 ```
 
-### Where your data and API key live
+### Where data lives
 
-Everything is stored **locally** under the platform config dir:
+PRTS keeps **only its own window chrome** (theme, locale) under the platform config dir (`~/.config/prts`, `~/Library/Application Support/prts`, `%APPDATA%\prts`). Everything agent-related — workspaces, sessions, history, models, credentials, API keys, tools, plugins — lives in **dsh** (`~/.dsh/`), because PRTS is just a GUI over dsh. Deleting a workspace or archiving a session in PRTS does the corresponding dsh operation (`workspace.delete` / `workspace.archiveSession`).
 
-| Platform | Config dir |
-| --- | --- |
-| Linux | `~/.config/prts/` |
-| macOS | `~/Library/Application Support/prts/` |
-| Windows | `%APPDATA%\prts\` |
+### Settings → Providers & API keys
 
-- `config.json` — locale, UI theme, and the API settings (`baseUrl`, **`apiKey`**, `model`, `strength`).
-- `projects/<id>/meta.json` — per-project metadata.
-- `projects/<id>/history.jsonl` — per-project messages and session dividers.
-
-The API key is stored **in `config.json` only, never in a project** (projects hold messages/history only), and it is never sent anywhere except to the `baseUrl` you configure (default `https://api.deepseek.com`) as the `Authorization: Bearer` header. It is plaintext on disk in your own user directory — the same model as most local CLI tools (e.g. `gh`, `aws`). To harden it: keep the config dir permissions restrictive (it is under your home directory) and use an API key with limited quota. Projects and session history are deleted through the trash buttons in the sidebar and the header's clear-history button.
-
-Deleting: hover a project in the sidebar and use the trash button (or the Settings → project delete), and use the header clear-history button to wipe the current project's messages and sessions.
+The Settings panel lists dsh's providers (`llm.providers`) and, for each, a field to set its API key. Saving calls dsh's `credentials.set`, which writes the key into the dsh harness home (`~/.dsh/`) — the same store dsh reads at runtime, so the key works for every dsh surface, not just PRTS. It is never stored by this plugin. The model chip lists the full dsh model catalog (`llm.models`) and selects via `session.selectModel`, so different providers/models are all usable from the PRTS window.
 
 ### Environment variables
 
 | Variable | Meaning |
 | --- | --- |
-| `DSH_PRTS_READY_TIMEOUT` | ms to bound the loader-readiness wait (default `4000`; `0` = wait forever) |
 | `PRTS_ELECTRON` | path to a pre-installed Electron binary (skips download) |
 | `PRTS_ELECTRON_CACHE` | override the Electron cache dir (default `~/.cache/prts/electron`) |
 | `DSH_PRTS_DESKTOP` | desktop dir for `--shortcut` (tests) |
@@ -178,7 +141,7 @@ PRTS is written to behave identically on **Linux, macOS and Windows**: the same 
 
 ## GUI
 
-The GUI is a single-file web app (`web/index.html`, bundled by `scripts/bundle-gui.mjs`) loaded by `electron/main.cjs`. The renderer talks to the main process through `window.prts.bridge` (`prts:readFile`, `prts:writeFile`, `prts:http`, `prts:systemInfo`, …) so persistence, API calls and hardware telemetry avoid CORS.
+The GUI is a single-file web app (`web/index.html`, bundled by `scripts/bundle-gui.mjs`) loaded by `electron/main.cjs`. The renderer talks to the Electron main through `window.prts.bridge`: `prts:systemInfo` (hardware telemetry) and `prts.dsh` (the dsh RPC + mux relay) — the main process speaks dsh's `/api` over HTTP and its `/api/events.mux` WebSocket, so the renderer never hits CORS. The window loads PRTS's own chrome; the agent behind it is dsh.
 
 Electron is not packed into the plugin: the first GUI launch downloads the pinned release (GitHub Releases primary, npmmirror fallback) and caches it under `~/.cache/prts/electron/v43.4.0`. Set `PRTS_ELECTRON` to a system Electron to skip the download.
 
@@ -225,13 +188,7 @@ pnpm bundle        # rebuild web/index.html from src/gui + src/core + web/src
 pnpm pack:ui       # bundle + pack the profile tarball
 ```
 
-For local e2e against a mock DeepSeek endpoint:
-
-```sh
-node /tmp/opencode/mock-sse.mjs     # SSE chat server on 127.0.0.1:8127
-printf 'apiKey=sk-test-123\nbaseUrl=http://127.0.0.1:8127\n'   # via /key and /base in the TUI
-dsh --profile prts --tui
-```
+To exercise the GUI against a mock dsh backend without a live dsh (verifies the `/api` + mux protocol), run `node /tmp/opencode/mock-dsh.mjs` and point the Electron window at `http://127.0.0.1:3085`.
 
 ## Packaging
 

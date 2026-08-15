@@ -609,7 +609,7 @@ button:focus:not(:focus-visible) { outline: none; }
       <div class="newButtons">
         <button class="sbBtn" id="newProjectBtn" type="button">
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.2v10.6M1.2 6.5h10.6" stroke="currentColor" stroke-width="1.2"/></svg>
-          <span data-i18n="sidebar.newProject">New project</span>
+          <span data-i18n="sidebar.newWorkspace">New workspace</span>
         </button>
         <button class="sbBtn" id="newSessionBtn" type="button">
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.2v10.6M1.2 6.5h10.6" stroke="currentColor" stroke-width="1.2" transform="rotate(45 6.5 6.5)"/></svg>
@@ -618,7 +618,7 @@ button:focus:not(:focus-visible) { outline: none; }
       </div>
       <div class="sbSection">
         <div class="sbSectionHead">
-          <span class="eyebrow" data-i18n="sidebar.projects">Projects</span>
+          <span class="eyebrow" data-i18n="sidebar.workspaces">Workspaces</span>
           <span class="count" id="projectCount"></span>
         </div>
         <div class="sbList" id="projectList"></div>
@@ -648,7 +648,7 @@ button:focus:not(:focus-visible) { outline: none; }
       <header class="cvtHeader" id="header">
         <div class="titleRow">
           <div class="crumbs">
-            <button class="crumb" disabled id="crumbProject">PRTS</button>
+            <button class="crumb" disabled id="crumbProject">dsh</button>
             <span class="headerMode" data-i18n="header.mode">STANDARD</span>
           </div>
           <div class="headerUtils">
@@ -713,16 +713,7 @@ button:focus:not(:focus-visible) { outline: none; }
                 <span class="pluginBar" id="pluginComposer"></span>
                 <button class="chip" id="modelChip" type="button">
                   <span class="dot"></span>
-                  <span class="label" id="modelChipLabel">deepseek-chat</span>
-                  <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
-                </button>
-                <button class="chip" id="strengthChip" type="button">
-                  <span class="label" id="strengthChipLabel">STRENGTH: MEDIUM</span>
-                  <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
-                </button>
-                <button class="chip" id="modeChip" type="button">
-                  <span class="dot"></span>
-                  <span class="label" id="modeChipLabel">STANDARD</span>
+                  <span class="label" id="modelChipLabel">dsh</span>
                   <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
                 </button>
                 <button class="chip" id="commandsChip" type="button">
@@ -779,35 +770,6 @@ button:focus:not(:focus-visible) { outline: none; }
       </button>
     </div>
     <div class="sField">
-      <div class="label"><span data-i18n="settings.apiKey">API Key</span></div>
-      <div class="sRow">
-        <input class="sInput" id="cfgApiKey" type="password" autocomplete="off" spellcheck="false">
-        <button class="sBtn" id="cfgApiKeyToggle" type="button">SHOW</button>
-      </div>
-      <div class="hint" data-i18n="settings.apiKey.hint">Stored locally in your config directory.</div>
-    </div>
-    <div class="sField">
-      <div class="label"><span data-i18n="settings.baseUrl">Base URL</span></div>
-      <input class="sInput" id="cfgBaseUrl" type="text" spellcheck="false">
-    </div>
-    <div class="sField">
-      <div class="label"><span data-i18n="settings.model">Model</span></div>
-      <select class="sInput sSelect" id="cfgModel">
-        <option value="deepseek-chat">deepseek-chat</option>
-        <option value="deepseek-reasoner">deepseek-reasoner</option>
-      </select>
-    </div>
-    <div class="sField">
-      <div class="label"><span data-i18n="settings.strength">Thinking strength</span></div>
-      <select class="sInput sSelect" id="cfgStrength">
-        <option value="off">OFF</option>
-        <option value="low">LOW</option>
-        <option value="medium">MEDIUM</option>
-        <option value="high">HIGH</option>
-      </select>
-      <div class="hint" data-i18n="settings.strength.hint">Off: no extended thinking. High: up to 32K reasoning tokens.</div>
-    </div>
-    <div class="sField">
       <div class="label"><span data-i18n="settings.language">Language</span></div>
       <select class="sInput sSelect" id="cfgLocale">
         <option value="auto">AUTO</option>
@@ -816,11 +778,11 @@ button:focus:not(:focus-visible) { outline: none; }
       </select>
     </div>
     <div class="sField">
-      <div class="label"><span data-i18n="settings.project">Current project</span></div>
-      <div id="cfgProjects"></div>
+      <div class="label"><span data-i18n="settings.providers">Providers &amp; API keys</span></div>
+      <div class="hint" data-i18n="settings.providers.hint">API keys are written to the dsh harness home (~/.dsh), managed by dsh — never by this plugin.</div>
+      <div id="cfgProviders"></div>
     </div>
     <div class="sRow" style="margin-top: 18px;">
-      <button class="sBtn" id="cfgTest" type="button" data-i18n="settings.test">Test connection</button>
       <button class="sBtn primary" id="cfgSave" type="button" data-i18n="settings.done">Done</button>
       <span class="sStatus" id="cfgStatus"></span>
     </div>
@@ -962,9 +924,27 @@ button:focus:not(:focus-visible) { outline: none; }
       'headline.sub': 'TERMINAL CLIENT',
       'preview': 'PREVIEW',
       'hero.ready': 'System online. Awaiting instructions.',
-      'hero.online': 'SYSTEM ONLINE',
-      'hero.chooseProject': 'Choose project',
+      'hero.online': 'DSH SHELL ONLINE',
+      'hero.chooseProject': 'Choose workspace',
       'common.theme': 'Theme',
+
+      'sidebar.workspaces': 'WORKSPACES',
+      'sidebar.newWorkspace': 'New workspace',
+      'session.archive': 'Archive session',
+      'session.confirmArchive': 'Archive this session? It will be removed from the workspace.',
+      'session.selectFirst': 'Open or create a session first',
+      'workspace.add': '+ Add workspace',
+      'workspace.confirmDelete': 'Delete this workspace and its sessions?',
+      'workspace.pathPrompt': 'Workspace directory (an existing folder):',
+      'settings.viaDsh': 'Models, credentials and settings are managed by dsh.',
+      'settings.providers': 'Providers & API keys',
+      'settings.providers.hint': 'API keys are written to the dsh harness home (~/.dsh), managed by dsh — never by this plugin.',
+      'settings.providers.empty': 'No providers configured in dsh yet.',
+      'settings.provider.set': 'configured',
+      'settings.provider.unset': 'not set',
+      'settings.provider.save': 'Save key',
+      'settings.provider.saved': 'Saved {ref} to ~/.dsh',
+      'dsh.connectFail': 'Could not reach dsh: {msg}',
 
       'sidebar.projects': 'PROJECTS',
       'sidebar.sessions': 'SESSIONS',
@@ -1149,9 +1129,27 @@ button:focus:not(:focus-visible) { outline: none; }
       'headline.sub': '终端客户端',
       'preview': '预览版',
       'hero.ready': '系统在线，等待指令。',
-      'hero.online': '系统在线',
-      'hero.chooseProject': '选择项目',
+      'hero.online': 'DSH 外壳在线',
+      'hero.chooseProject': '选择工作区',
       'common.theme': '主题',
+
+      'sidebar.workspaces': '工作区',
+      'sidebar.newWorkspace': '新建工作区',
+      'session.archive': '归档会话',
+      'session.confirmArchive': '归档此会话？它将从工作区移除。',
+      'session.selectFirst': '请先打开或新建会话',
+      'workspace.add': '+ 添加工作区',
+      'workspace.confirmDelete': '删除此工作区及其会话？',
+      'workspace.pathPrompt': '工作区目录（一个已存在的文件夹）：',
+      'settings.viaDsh': '模型、凭证与设置均由 dsh 管理。',
+      'settings.providers': '提供商与 API Key',
+      'settings.providers.hint': 'API Key 会写入 dsh 主目录（~/.dsh），由 dsh 管理 —— 与本插件无关。',
+      'settings.providers.empty': 'dsh 中尚未配置任何提供商。',
+      'settings.provider.set': '已配置',
+      'settings.provider.unset': '未配置',
+      'settings.provider.save': '保存 Key',
+      'settings.provider.saved': '已保存 {ref} 至 ~/.dsh',
+      'dsh.connectFail': '无法连接 dsh：{msg}',
 
       'sidebar.projects': '项目',
       'sidebar.sessions': '会话',
@@ -1170,7 +1168,7 @@ button:focus:not(:focus-visible) { outline: none; }
       'header.mode': '标准模式',
       'header.clearHistory': '清空历史',
 
-      'composer.placeholder': '给PRTS发消息',
+      'composer.placeholder': '给 PRTS 发消息',
       'composer.send': '发送消息',
       'composer.stop': '停止生成',
       'composer.commands': '命令',
@@ -1506,197 +1504,31 @@ button:focus:not(:focus-visible) { outline: none; }
 
 
 /**
- * PRTS store: config, projects, and per-project message history.
- * All paths live under the platform config dir; reads/writes go through PRTS.io.
+ * PRTS UI preferences — only the window's own chrome (theme, locale). Agent
+ * state (sessions, history, models, credentials) belongs to dsh and is never
+ * stored here.
  */
 (function (G) {
   'use strict';
   const P = G.PRTS = G.PRTS || {};
 
-  const DEFAULTS = {
-    locale: 'auto',
-    mode: 'standard',
-    api: {
-      baseUrl: 'https://api.deepseek.com',
-      apiKey: '',
-      model: 'deepseek-chat',
-      strength: 'medium',
-    },
-    project: 'default',
-  };
+  const DEFAULTS = { locale: 'auto', ui: { theme: 'dark' } };
 
-  /** Thinking-budget presets (reasoning tokens). */
-  const STRENGTH_BUDGET = { off: 0, low: 1024, medium: 4096, high: 32768 };
-
-  let MODELS = ['deepseek-chat', 'deepseek-reasoner'];
-
-  /** Chat modes (dsh-web style): each is a preset over the base model/strength. */
-  const MODES = ['standard', 'ptc', 'minimal', 'creative'];
-
-  /** Per-mode presets (chat flavour only — never override the chosen model). */
-  const MODE_PRESETS = {
-    standard: { temperature: 1.0 },
-    ptc: { temperature: 0.6 },
-    minimal: { temperature: 0.2, maxTokens: 400 },
-    creative: { temperature: 1.5 },
-  };
-
-  /** Resolve the effective request settings for a mode + user config. */
-  function resolveMode(mode, api) {
-    const preset = MODE_PRESETS[mode] || MODE_PRESETS.standard;
-    return {
-      model: api.model || 'deepseek-chat',
-      strength: api.strength || 'medium',
-      temperature: preset.temperature,
-      maxTokens: preset.maxTokens || 0,
-    };
-  }
-
-  /** Read provider keys from the dsh harness env (e.g. ~/.dsh/.env). */
-  async function dshEnvKeys() {
-    try {
-      const envPath = P.platform.homedir() + '/.dsh/.env';
-      const raw = await P.io.readFile(envPath);
-      const keys = {};
-      for (const line of raw.split('\n')) {
-        const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
-        if (m) keys[m[1]] = m[2].trim();
-      }
-      return keys;
-    } catch (e) { return {}; }
-  }
-
-  /** Auto-detect the available models from the configured endpoint. */
-  async function refreshModels(cfg) {
-    try {
-      const list = await P.api.models(cfg && cfg.api ? cfg.api.baseUrl : undefined, cfg && cfg.api ? cfg.api.apiKey : undefined);
-      if (list && list.length) {
-        MODELS = list;
-        if (cfg && cfg.api && !list.includes(cfg.api.model)) cfg.api.model = list[0];
-      }
-    } catch (e) { /* keep defaults */ }
-    return MODELS.slice();
-  }
-
-  function dirs() {
-    return { base: P.platform.configDir(), projects: P.platform.configDir() + '/projects' };
-  }
-  function configPath() { return dirs().base + '/config.json'; }
-  function projDir(id) { return dirs().projects + '/' + id; }
-  function metaPath(id) { return projDir(id) + '/meta.json'; }
-  function historyPath(id) { return projDir(id) + '/history.jsonl'; }
-
-  function slugify(name) {
-    const s = String(name || '').trim().toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff_-]+/g, '-').replace(/^-+|-+$/g, '');
-    return s || 'project-' + Date.now().toString(36);
-  }
+  function configPath() { return P.platform.configDir() + '/config.json'; }
 
   const store = {
-    dirs, STRENGTH_BUDGET, MODELS, MODES, MODE_PRESETS, resolveMode, dshEnvKeys, refreshModels, slugify,
-
     async loadConfig() {
       let cfg = JSON.parse(JSON.stringify(DEFAULTS));
       try {
         const raw = await P.io.readFile(configPath());
         const parsed = JSON.parse(raw);
-        cfg = { ...cfg, ...parsed, api: { ...cfg.api, ...(parsed.api || {}) } };
+        cfg = { ...cfg, ...parsed, ui: { ...cfg.ui, ...(parsed.ui || {}) } };
       } catch (e) { /* first run */ }
-      // Sync the API key from the dsh harness if PRTS has none of its own.
-      if (!cfg.api.apiKey) {
-        try {
-          const env = await dshEnvKeys();
-          if (env.DEEPSEEK_API_KEY) cfg.api.apiKey = env.DEEPSEEK_API_KEY;
-        } catch (e) { /* ignore */ }
-      }
-      if (!cfg.project || !(await store.projectExists(cfg.project))) cfg.project = 'default';
-      await store.ensureProject(cfg.project);
       return cfg;
     },
-
     async saveConfig(cfg) {
-      await P.io.mkdir(dirs().base);
+      await P.io.mkdir(P.platform.configDir());
       await P.io.writeFile(configPath(), JSON.stringify(cfg, null, 2));
-    },
-
-    async listProjects() {
-      try {
-        const names = await P.io.listDir(dirs().projects);
-        const out = [];
-        for (const id of names) {
-          try {
-            const meta = JSON.parse(await P.io.readFile(metaPath(id)));
-            out.push(meta);
-          } catch (e) { /* stray dir */ }
-        }
-        out.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-        return out;
-      } catch (e) {
-        return [];
-      }
-    },
-
-    async projectExists(id) { return P.io.exists(metaPath(id)); },
-
-    async ensureProject(id) {
-      if (await store.projectExists(id)) return;
-      await P.io.mkdir(projDir(id));
-      await P.io.writeFile(metaPath(id), JSON.stringify({
-        id, name: id === 'default' ? 'Default' : id,
-        createdAt: Date.now(), updatedAt: Date.now(),
-      }, null, 2));
-    },
-
-    async createProject(name) {
-      const id = slugify(name);
-      await store.ensureProject(id);
-      return id;
-    },
-
-    async renameProject(id, name) {
-      const meta = JSON.parse(await P.io.readFile(metaPath(id)));
-      meta.name = String(name || id).trim() || id;
-      meta.updatedAt = Date.now();
-      await P.io.writeFile(metaPath(id), JSON.stringify(meta, null, 2));
-    },
-
-    async deleteProject(id) {
-      if (id === 'default') return;
-      await P.io.deleteFile(metaPath(id));
-      await P.io.deleteFile(historyPath(id));
-    },
-
-    async clearHistory(id) {
-      await P.io.writeFile(historyPath(id), '');
-      await store.touchProject(id);
-    },
-
-    async readHistory(id) {
-      try {
-        const raw = await P.io.readFile(historyPath(id));
-        return raw.split('\n').filter((l) => l.trim() !== '').map((l) => {
-          try { return JSON.parse(l); } catch (e) { return null; }
-        }).filter(Boolean);
-      } catch (e) { return []; }
-    },
-
-    async appendHistory(id, entry) {
-      await P.io.mkdir(projDir(id));
-      await P.io.appendFile(historyPath(id), JSON.stringify(entry) + '\n');
-    },
-
-    async touchProject(id) {
-      try {
-        const meta = JSON.parse(await P.io.readFile(metaPath(id)));
-        meta.updatedAt = Date.now();
-        await P.io.writeFile(metaPath(id), JSON.stringify(meta, null, 2));
-      } catch (e) { /* ignore */ }
-    },
-
-    async openProject(id) {
-      await store.ensureProject(id);
-      const cfg = await store.loadConfig();
-      cfg.project = id;
-      await store.saveConfig(cfg);
     },
   };
 
@@ -1705,183 +1537,312 @@ button:focus:not(:focus-visible) { outline: none; }
 
 
 /**
- * PRTS API client: DeepSeek chat completions with streaming (SSE).
- * `thinking.budget_tokens` drives the reasoning strength preset. Works in the
- * renderer (through the Electron bridge) and in Node (built-in fetch).
+ * dsh RPC client — the browser half of dsh's `/api` transport.
+ *
+ * PRTS is a GUI *for* dsh, so it never talks to the model directly and never
+ * stores its own sessions: every interaction goes through dsh's client-request /
+ * server-response RPC (HTTP POST `/api/<method>`) and the mux WebSocket
+ * (`/api/events.mux`) that carries server-request frames (session events,
+ * questions, approvals).
+ *
+ * Wire shapes (from @deepseek-ai/dsh-host-apiproxy):
+ *   client-request : { type: 'client-request', rpcId, method, payload }
+ *   server-response: { type: 'server-response', rpcId, result: {ok,value}|{ok:false,error} }
+ *   server-request : { type: 'server-request', rpcId, method, payload }  (push frames)
+ *   client-response: { type: 'client-response', rpcId, result }
+ *
+ * The connection is robust to dsh upgrades: it is only this wire contract, not
+ * dsh's UI code.
  */
 (function (G) {
   'use strict';
   const P = G.PRTS = G.PRTS || {};
+  const D = P.dsh = { baseUrl: 'http://127.0.0.1:3085', connected: false };
 
-  function endpoint(baseUrl, model, budget, extra) {
-    const base = String(baseUrl || 'https://api.deepseek.com').replace(/\/+$/, '');
-    const body = {
-      model,
-      messages: [],
-      stream: true,
-    };
-    if (model === 'deepseek-chat' && budget > 0) {
-      body.thinking = { budget_tokens: budget };
-    }
-    if (extra && extra.temperature !== undefined) body.temperature = extra.temperature;
-    if (extra && extra.maxTokens > 0) body.max_tokens = extra.maxTokens;
-    return { url: base + '/chat/completions', body };
+  let seq = 0;
+  const pending = new Map();     // rpcId -> { resolve, reject }
+  let ws = null;
+  const listeners = new Map();   // event type -> Set<fn>
+  const onceListeners = new Map();
+  let manualClose = false;
+
+  function rpcId() {
+    return 'prts-' + Date.now().toString(36) + '-' + (++seq).toString(36) + '-' + Math.random().toString(36).slice(2, 8);
   }
 
-  function sseSplit(buffer, onData) {
-    // buffer: accumulated partial text; returns the remainder.
-    let text = buffer;
-    for (;;) {
-      const nl = text.indexOf('\n');
-      if (nl < 0) break;
-      const line = text.slice(0, nl).replace(/\r$/, '');
-      text = text.slice(nl + 1);
-      if (line.indexOf('data:') !== 0) continue;
-      const payload = line.slice(5).trim();
-      if (payload === '[DONE]') { onData({ done: true }); continue; }
-      try {
-        onData({ json: JSON.parse(payload) });
-      } catch (e) { /* partial frame */ }
-    }
-    return text;
+  function apiUrl(method) {
+    return D.baseUrl.replace(/\/+$/, '') + '/api/' + method;
   }
 
-  function formatDuration(ms) {
-    if (ms < 1000) return ms + ' ms';
-    return (ms / 1000).toFixed(1) + ' s';
-  }
-
-  /** Fetch the model list from an OpenAI-compatible /models endpoint. */
-  async function models(baseUrl, apiKey) {
-    const base = String(baseUrl || 'https://api.deepseek.com').replace(/\/+$/, '');
-    let status = 0, body = '';
+  function dshBridge() {
     try {
-      await P.io.http({
-        method: 'GET',
-        url: base + '/models',
-        headers: { 'Authorization': 'Bearer ' + (apiKey || ''), 'Accept': 'application/json' },
-        onChunk(t) { body += t; },
-        onEnd(r) { status = r ? r.status : 0; },
-      });
-    } catch (e) { return null; }
-    if (status < 200 || status >= 300) return null;
-    try {
-      const j = JSON.parse(body);
-      if (Array.isArray(j.data)) return j.data.map((m) => m.id).sort();
-    } catch (e) { /* not json */ }
+      if (typeof window !== 'undefined' && window.prts && window.prts.bridge && window.prts.bridge.dsh) {
+        return window.prts.bridge.dsh;
+      }
+    } catch (e) { /* no bridge */ }
     return null;
   }
 
-  /**
-   * Stream one assistant turn.
-   * @param opts { config, messages, budget, onDelta(text), onReasoning(text), onMeta(meta), signal }
-   * @returns Promise<{ content, reasoning, usage, durationMs, status, ok, error }>
-   */
-  async function chat(opts) {
-    const cfg = opts.config;
-    const { url, body } = endpoint(cfg.api.baseUrl, cfg.api.model, opts.budget, { temperature: opts.temperature, maxTokens: opts.maxTokens });
-    body.messages = opts.messages;
-    const started = Date.now();
-    let content = '';
-    let reasoning = '';
-    let usage = null;
-    let status = 0;
-    let aborted = false;
-
-    try {
-      await P.io.http({
-        method: 'POST',
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + (cfg.api.apiKey || ''),
-          'Accept': 'text/event-stream',
-        },
-        body: JSON.stringify(body),
-        signal: opts.signal,
-        onChunk(chunk) {
-          let pending = chunk;
-          if (opts._pending) { pending = opts._pending + chunk; opts._pending = undefined; }
-          opts._pending = sseSplit(pending, (ev) => {
-            if (ev.done) return;
-            const delta = ev.json && ev.json.choices && ev.json.choices[0];
-            if (!delta) return;
-            if (delta.delta) {
-              if (delta.delta.reasoning_content) {
-                reasoning += delta.delta.reasoning_content;
-                opts.onReasoning && opts.onReasoning(delta.delta.reasoning_content);
-              }
-              if (delta.delta.content) {
-                content += delta.delta.content;
-                opts.onDelta && opts.onDelta(delta.delta.content);
-              }
-            }
-            if (ev.json.usage) usage = ev.json.usage;
-          });
-        },
-        onEnd(result) {
-          status = result ? result.status : 0;
-          if (result && result.aborted) aborted = true;
-        },
-      });
-    } catch (e) {
-      if (e && e.name === 'AbortError') {
-        return { ok: false, aborted: true, content, reasoning, usage, durationMs: Date.now() - started, status: 0 };
-      }
-      return { ok: false, error: e && e.message ? e.message : String(e), content, reasoning, usage, durationMs: Date.now() - started, status };
+  function parseResponse(id, body) {
+    if (body && body.type === 'server-response' && body.result) {
+      if (body.result.ok) return body.result.value;
+      const e = body.result.error || {};
+      const err = new Error(e.message || ('dsh: ' + id));
+      err.code = e.code;
+      err.details = e.details;
+      throw err;
     }
+    throw new Error('dsh: unexpected response');
+  }
 
-    const ok = status >= 200 && status < 300 && !aborted;
-    const meta = {
-      model: cfg.api.model,
-      strength: cfg.api.strength,
-      budget: opts.budget,
-      durationMs: Date.now() - started,
-      usage,
-      contentLength: content.length,
-      reasoningLength: reasoning.length,
+  /** Invoke an RPC method. Resolves with the business `value`, rejects on error. */
+  async function request(method, payload) {
+    const id = rpcId();
+    const env = { type: 'client-request', rpcId: id, method, payload: payload || {} };
+    const bridge = dshBridge();
+    if (bridge) {
+      const body = await bridge.request(method, payload || {});
+      return parseResponse(id, body);
+    }
+    const res = await fetch(apiUrl(method), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(env),
+    });
+    return parseResponse(id, await res.json());
+  }
+
+  /** Respond to a server-request frame (questions, approvals, steers). */
+  function respond(rpcIdValue, result) {
+    const msg = JSON.stringify({ type: 'client-response', rpcId: rpcIdValue, result });
+    const bridge = dshBridge();
+    if (bridge) { bridge.send(msg); return; }
+    if (ws && ws.readyState === 1) ws.send(msg);
+  }
+
+  function emit(type, frame) {
+    const set = listeners.get(type);
+    if (set) for (const fn of [...set]) { try { fn(frame); } catch (e) { /* listener errors must not kill the socket */ } }
+    const once = onceListeners.get(type);
+    if (once) { onceListeners.delete(type); for (const fn of [...once]) { try { fn(frame); } catch (e) { /* noop */ } } }
+  }
+
+  function onMessage(raw) {
+    let msg;
+    try { msg = JSON.parse(raw); } catch (e) { return; }
+    if (msg && msg.type === 'server-request') {
+      // A push frame from the host. `method` doubles as the event name
+      // (e.g. 'session/event', 'session/subscribed', 'question/requested').
+      emit(msg.method, msg);
+      return;
+    }
+    if (msg && msg.type === 'server-response' && pending.has(msg.rpcId)) {
+      const p = pending.get(msg.rpcId);
+      pending.delete(msg.rpcId);
+      if (msg.result && msg.result.ok) p.resolve(msg.result.value);
+      else p.reject((msg.result && msg.result.error) || new Error('dsh rpc error'));
+    }
+  }
+
+  /** Open the mux WebSocket and subscribe to session events. Non-blocking: it
+   *  keeps retrying in the background until dsh is reachable. When running in
+   *  Electron, the main process owns the socket and relays frames via IPC. */
+  function connect(url) {
+    if (url) D.baseUrl = url;
+    const bridge = dshBridge();
+    if (bridge) {
+      bridge.onFrame((data) => onMessage(data));
+      D.connected = true;
+      emit('connect', {});
+      return;
+    }
+    if (ws && (ws.readyState === 0 || ws.readyState === 1)) return;
+    manualClose = false;
+    const muxUrl = D.baseUrl.replace(/^http/, 'ws').replace(/\/+$/, '') + '/api/events.mux';
+    let sock;
+    try { sock = new WebSocket(muxUrl); } catch (e) { return; }
+    ws = sock;
+    sock.onopen = () => { D.connected = true; emit('connect', {}); };
+    sock.onmessage = (ev) => onMessage(typeof ev.data === 'string' ? ev.data : ev.data);
+    sock.onclose = () => {
+      D.connected = false;
+      for (const [, p] of pending) p.reject(new Error('dsh: connection closed'));
+      pending.clear();
+      emit('disconnect', {});
+      ws = null;
+      if (!manualClose) setTimeout(() => connect(), 1000);
     };
-    opts.onMeta && opts.onMeta(meta);
-    return { ok, status, content, reasoning, usage, durationMs: meta.durationMs, aborted, error: ok ? undefined : (aborted ? undefined : httpError(status, content)) };
+    sock.onerror = () => { /* onclose follows */ };
   }
 
-  function httpError(status, body) {
-    if (status === 401) return { code: 'auth' };
-    if (status === 429) return { code: 'rate' };
-    let msg = 'HTTP ' + status;
+  function close() { manualClose = true; if (ws) { try { ws.close(); } catch (e) { /* noop */ } } ws = null; D.connected = false; }
+
+  /** Subscribe to a push event (method name). Returns an unsubscribe fn. */
+  function on(type, fn) {
+    if (!listeners.has(type)) listeners.set(type, new Set());
+    listeners.get(type).add(fn);
+    return () => { const s = listeners.get(type); if (s) s.delete(fn); };
+  }
+  function once(type, fn) {
+    if (!onceListeners.has(type)) onceListeners.set(type, new Set());
+    onceListeners.get(type).add(fn);
+  }
+
+  D.request = request;
+  D.respond = respond;
+  D.connect = connect;
+  D.close = close;
+  D.on = on;
+  D.once = once;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/**
+ * dsh-backed application state — everything PRTS shows comes from dsh's /api.
+ * PRTS keeps no session/history/model state of its own; it mirrors dsh.
+ */
+(function (G) {
+  'use strict';
+  const P = G.PRTS = G.PRTS || {};
+  const S = P.dshState = {
+    ready: false,
+    url: 'http://127.0.0.1:3085',
+    workspaces: [],
+    sessions: [],
+    models: [],       // provider groups: { id, models: [{id,name,...}] }
+    providers: [],    // { provider, displayName, active, ... }
+    currentWorkspaceId: null,
+    currentSessionId: null,
+    events: [],       // raw session events of the current session
+  };
+
+  function dshUrl() {
     try {
-      const j = JSON.parse(body);
-      if (j.error && j.error.message) msg = j.error.message;
-    } catch (e) { /* body not json */ }
-    return { code: 'http', message: msg };
+      if (typeof window !== 'undefined' && window.prts && window.prts.env && window.prts.env.dshUrl) {
+        return window.prts.env.dshUrl;
+      }
+    } catch (e) { /* no preload */ }
+    return S.url;
   }
 
-  /** Non-streaming ping used by "Test connection". */
-  async function ping(cfg) {
-    const started = Date.now();
-    const { url, body } = endpoint(cfg.api.baseUrl, cfg.api.model, 0);
-    body.messages = [{ role: 'user', content: 'ping' }];
-    body.stream = false;
-    body.max_tokens = 1;
-    let status = 0;
-    let text = '';
+  async function connect() {
+    S.url = dshUrl();
+    P.dsh.connect(S.url);   // non-blocking; reconnects in the background
+    return S.url;
+  }
+
+  async function listWorkspaces() {
+    const r = await P.dsh.request('workspace.list', {});
+    S.workspaces = (r && r.items) || [];
+    return S.workspaces;
+  }
+
+  async function listSessions() {
+    const r = await P.dsh.request('session.list', {});
+    S.sessions = (r && r.sessions) || [];
+    return S.sessions;
+  }
+
+  async function listModels() {
+    const r = await P.dsh.request('llm.models', {});
+    S.models = (r && r.groups) || [];
+    return S.models;
+  }
+
+  async function listProviders() {
     try {
-      await P.io.http({
-        method: 'POST', url,
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (cfg.api.apiKey || '') },
-        body: JSON.stringify(body),
-        onChunk(c) { text += c; },
-        onEnd(r) { status = r ? r.status : 0; },
-      });
-    } catch (e) {
-      return { ok: false, ms: Date.now() - started, message: e && e.message ? e.message : String(e) };
-    }
-    if (status >= 200 && status < 300) return { ok: true, ms: Date.now() - started };
-    const err = httpError(status, text);
-    return { ok: false, ms: Date.now() - started, message: err.message || err.code };
+      const r = await P.dsh.request('llm.providers', {});
+      S.providers = (r && r.providers) || [];
+    } catch (e) { S.providers = []; }
+    return S.providers;
   }
 
-  P.api = { chat, ping, models, formatDuration };
+  async function refreshAll() {
+    await Promise.allSettled([listWorkspaces(), listSessions(), listModels(), listProviders()]);
+  }
+
+  async function createSession(workspaceId) {
+    const r = await P.dsh.request('session.create', workspaceId ? { workspaceId } : {});
+    return r && r.sessionId;
+  }
+
+  async function history(sessionId) {
+    const r = await P.dsh.request('session.history', { sessionId });
+    return (r && r.items) || [];
+  }
+
+  async function prompt(sessionId, text) {
+    return P.dsh.request('session.prompt', {
+      sessionId,
+      mode: 'queue',
+      content: [{ type: 'text', text }],
+    });
+  }
+
+  async function cancel(sessionId) {
+    try { await P.dsh.request('session.cancel', { sessionId }); } catch (e) { /* noop */ }
+  }
+
+  async function renameSession(sessionId, title) {
+    return P.dsh.request('session.rename', { sessionId, title });
+  }
+
+  async function archiveSession(sessionId) {
+    // dsh has no session.delete — sessions are archived from their workspace.
+    await P.dsh.request('workspace.archiveSession', { sessionId });
+  }
+
+  async function deleteWorkspace(workspaceId) {
+    await P.dsh.request('workspace.delete', { workspaceId });
+  }
+
+  async function createWorkspace(path) {
+    return P.dsh.request('workspace.create', { path });
+  }
+
+  async function selectModel(sessionId, provider, model) {
+    return P.dsh.request('session.selectModel', { sessionId, provider, model });
+  }
+
+  async function settingsGet(ns) {
+    const r = await P.dsh.request('settings.describe', { ns });
+    return r;
+  }
+  async function settingsUpdate(ns, patch) {
+    return P.dsh.request('settings.update', { ns, patch });
+  }
+
+  async function credentialsDescribe(refs) {
+    const r = await P.dsh.request('credentials.describe', { refs });
+    return (r && r.credentials) || {};
+  }
+  async function credentialsSet(ref, value) {
+    return P.dsh.request('credentials.set', { ref, value });
+  }
+  async function credentialsUnset(ref) {
+    return P.dsh.request('credentials.unset', { ref });
+  }
+
+  S.connect = connect;
+  S.listWorkspaces = listWorkspaces;
+  S.listSessions = listSessions;
+  S.listModels = listModels;
+  S.listProviders = listProviders;
+  S.refreshAll = refreshAll;
+  S.createSession = createSession;
+  S.history = history;
+  S.prompt = prompt;
+  S.cancel = cancel;
+  S.renameSession = renameSession;
+  S.archiveSession = archiveSession;
+  S.deleteWorkspace = deleteWorkspace;
+  S.createWorkspace = createWorkspace;
+  S.selectModel = selectModel;
+  S.settingsGet = settingsGet;
+  S.settingsUpdate = settingsUpdate;
+  S.credentialsDescribe = credentialsDescribe;
+  S.credentialsSet = credentialsSet;
+  S.credentialsUnset = credentialsUnset;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
 
@@ -2734,9 +2695,7 @@ button:focus:not(:focus-visible) { outline: none; }
     box.textContent = '';
     const add = (key, label, hasBar) => addRow(box, key, label, hasBar);
     add('model', t('sys.model'), false);
-    add('mode', t('sys.mode'), false);
-    add('tokUsed', t('sys.tokensUsed'), true);
-    add('tokLeft', t('sys.tokensLeft'), true);
+    add('tokUsed', t('sys.tokensUsed'), false);
     add('sessions', t('sys.sessions'), false);
     add('messages', t('sys.messages'), false);
     add('updated', t('sys.updated'), false);
@@ -2744,11 +2703,11 @@ button:focus:not(:focus-visible) { outline: none; }
 
   /* ---------- snapshot ---------- */
   function agentSnapshot() {
-    const cfg = (P.app && P.app.config) || {};
     const msgs = (P.chat && P.chat.messages) || [];
-    const bounds = (P.chat && P.chat.bounds) || [];
-    const model = (cfg.api && cfg.api.model) || 'deepseek-chat';
-    const strength = (cfg.api && cfg.api.strength) || 'medium';
+    const sessions = (P.dshState && P.dshState.sessions) || [];
+    const model = (P.dshState && P.dshState.models && P.dshState.models.length)
+      ? ((P.dshState.models[0].models && P.dshState.models[0].models[0]) ? P.dshState.models[0].models[0].id : t('sys.unknown'))
+      : t('sys.unknown');
     let usedIn = 0, usedOut = 0;
     for (const m of msgs) {
       if (m.usage) {
@@ -2756,12 +2715,10 @@ button:focus:not(:focus-visible) { outline: none; }
         usedOut += m.usage.completion_tokens || 0;
       }
     }
-    const budget = model === 'deepseek-reasoner' ? 65536 : 131072;
     const used = usedIn + usedOut;
     return {
-      model, strength, usedIn, usedOut, used, budget,
-      left: Math.max(0, budget - used),
-      sessions: Math.max(1, bounds.length), messages: msgs.length,
+      model, usedIn, usedOut, used,
+      sessions: Math.max(1, sessions.length), messages: msgs.length,
     };
   }
 
@@ -2794,12 +2751,11 @@ button:focus:not(:focus-visible) { outline: none; }
       cpuPower: info ? info.cpuPowerW : null,
       temps,
       model: agent.model,
-      mode: t('strength.' + agent.strength),
       tokUsed: agent.used,
       tokUsedIn: agent.usedIn,
       tokUsedOut: agent.usedOut,
-      tokLeft: agent.left,
-      tokBudget: agent.budget,
+      tokLeft: 0,
+      tokBudget: 0,
       sessions: String(agent.sessions),
       messages: String(agent.messages),
       now: new Date().toLocaleTimeString(),
@@ -2822,7 +2778,7 @@ button:focus:not(:focus-visible) { outline: none; }
 
   function seedDisplay() {
     const keys = ['memPct', 'memUsed', 'swapPct', 'swapUsed', 'diskPct', 'diskUsed',
-      'cpuLoad', 'cpuPower', 'gpuUsage', 'tokUsed', 'tokLeft', 'tokPct'];
+      'cpuLoad', 'cpuPower', 'gpuUsage', 'tokUsed'];
     disp = {};
     for (const k of keys) disp[k] = targets[k] === null || targets[k] === undefined ? 0 : targets[k];
     disp.temps = {};
@@ -2831,7 +2787,7 @@ button:focus:not(:focus-visible) { outline: none; }
 
   function easeDisplay() {
     const keys = ['memPct', 'memUsed', 'swapPct', 'swapUsed', 'diskPct', 'diskUsed',
-      'cpuLoad', 'cpuPower', 'gpuUsage', 'tokUsed', 'tokLeft', 'tokPct'];
+      'cpuLoad', 'cpuPower', 'gpuUsage', 'tokUsed'];
     for (const k of keys) {
       const tgt = targets[k];
       if (tgt === null || tgt === undefined) continue;
@@ -2845,7 +2801,7 @@ button:focus:not(:focus-visible) { outline: none; }
 
   function paintStatic() {
     const byKey = { os: targets.os, host: targets.host, cpu: targets.cpu, gpu: targets.gpu,
-      model: targets.model, mode: targets.mode, sessions: targets.sessions, messages: targets.messages };
+      model: targets.model, sessions: targets.sessions, messages: targets.messages };
     for (const k in byKey) {
       if (refs[k] && refs[k].val) refs[k].val.textContent = byKey[k];
     }
@@ -2865,8 +2821,7 @@ button:focus:not(:focus-visible) { outline: none; }
     if (targets.diskTotal) set('disk', fmtBytes(disp.diskUsed) + ' / ' + fmtBytes(targets.diskTotal), disp.diskPct);
     set('cpuLoad', fmt0(disp.cpuLoad) + '%', disp.cpuLoad);
     set('cpuPower', fmt1(disp.cpuPower) + ' W');
-    set('tokUsed', fmt0(disp.tokUsed) + ' · ' + targets.tokUsedIn + ' in / ' + targets.tokUsedOut + ' out', targets.tokBudget ? Math.min(100, (targets.tokUsed / targets.tokBudget) * 100) : 0);
-    set('tokLeft', fmt0(disp.tokLeft) + ' / ' + targets.tokBudget, disp.tokPct);
+    set('tokUsed', fmt0(disp.tokUsed) + ' · ' + targets.tokUsedIn + ' in / ' + targets.tokUsedOut + ' out', null);
 
     const tempNames = Object.keys(targets.temps);
     if (tempNames.length && R.temps && R.temps.val) {
@@ -2930,14 +2885,14 @@ button:focus:not(:focus-visible) { outline: none; }
 
 
 /**
- * PRTS chat surface: message store, rendering, streaming turns, message
- * actions, details panel, context meter. Pure DOM — works in the webview
- * (Electron bridge or dev browser) and is driven by the same core as the TUI.
+ * PRTS conversation surface — renders dsh session events (user/message,
+ * assistant/message, tool/result) streamed over the /api mux WebSocket.
+ * No local persistence: the source of truth is the dsh session.
  */
 (function (G) {
   'use strict';
   const P = G.PRTS = G.PRTS || {};
-  const C = P.chat = { messages: [], bounds: [], streaming: false };
+  const C = P.chat = { messages: [], streaming: false, sessionId: null };
 
   const $ = (id) => document.getElementById(id);
   function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
@@ -2951,34 +2906,6 @@ button:focus:not(:focus-visible) { outline: none; }
     return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
   }
 
-  /* ---------- persistence ---------- */
-  async function projectId() {
-    const cfg = await P.store.loadConfig();
-    return cfg.project;
-  }
-  async function loadHistory() {
-    const id = await projectId();
-    const entries = await P.store.readHistory(id);
-    C.messages = []; C.bounds = [];
-    for (const e of entries) {
-      if (e.k === 'b') C.bounds.push(e.ts);
-      else if (e.k === 'm') C.messages.push(e);
-    }
-  }
-  async function saveMsg(m) {
-    const id = await projectId();
-    await P.store.appendHistory(id, m);
-    await P.store.touchProject(id);
-  }
-  async function saveBound(ts) {
-    const id = await projectId();
-    await P.store.appendHistory(id, { k: 'b', ts });
-    C.bounds.push(ts);
-  }
-
-  /* ---------- rendering ---------- */
-  function icon(name, w, h) { return P.icons[name] ? P.icons[name] : ''; }
-
   function el(tag, cls, text) {
     const n = document.createElement(tag);
     if (cls) n.className = cls;
@@ -2986,68 +2913,70 @@ button:focus:not(:focus-visible) { outline: none; }
     return n;
   }
 
-  function metaRow(msg, user) {
-    const row = el('div', 'maRow' + (user ? ' timeStart' : ''));
-    const t = el('span', 'maTime', clock(msg.ts));
-    const actions = el('span', 'maActions');
-    if (user) {
-      actions.appendChild(actionBtn('copy', msg));
-    } else {
-      actions.appendChild(actionBtn('copy', msg));
-      actions.appendChild(actionBtn('like', msg));
-      actions.appendChild(actionBtn('dislike', msg));
-      actions.appendChild(actionBtn('branch', msg));
+  function blockText(block) {
+    if (!block) return '';
+    if (block.type === 'text') return block.text || '';
+    return '';
+  }
+  function blockReasoning(block) {
+    if (!block) return '';
+    if (block.type === 'thinking' || block.type === 'reasoning') return block.text || block.content || '';
+    return '';
+  }
+
+  function messageText(msg) {
+    const content = msg && msg.content;
+    if (Array.isArray(content)) return content.map(blockText).join('');
+    if (typeof content === 'string') return content;
+    return '';
+  }
+  function messageReasoning(msg) {
+    if (!msg) return '';
+    if (typeof msg.reasoning === 'string') return msg.reasoning;
+    if (Array.isArray(msg.content)) return msg.content.map(blockReasoning).filter(Boolean).join('\n');
+    return '';
+  }
+
+  /* ---------- event fold ---------- */
+  function foldEvent(ev) {
+    const type = ev && ev.type;
+    const data = (ev && ev.data) || {};
+    if (type === 'user/message') {
+      const msg = data.message || data;
+      C.messages.push({
+        id: msg.id || ('u' + ev.seq), _seq: ev.seq, role: 'user',
+        content: messageText(msg), ts: ev.time,
+      });
+    } else if (type === 'assistant/message') {
+      const msg = data.message || data;
+      const text = messageText(msg);
+      const reasoning = messageReasoning(msg) || messageReasoning(data);
+      const existing = C.messages.find((m) => m._seq === ev.seq || m.id === msg.id);
+      if (existing) {
+        existing.content = text;
+        if (reasoning) existing.reasoning = reasoning;
+        existing.usage = msg.usage || existing.usage;
+        existing.model = msg.model || existing.model;
+        existing.streaming = false;
+      } else {
+        C.messages.push({
+          id: msg.id || ('a' + ev.seq), _seq: ev.seq, role: 'assistant',
+          content: text, reasoning, ts: ev.time, usage: msg.usage, model: msg.model,
+        });
+      }
+    } else if (type === 'tool/result') {
+      const name = data.name || data.tool || 'tool';
+      C.messages.push({ id: 't' + ev.seq, _seq: ev.seq, role: 'tool', content: (data.text || data.output || ''), name, ts: ev.time });
     }
-    row.appendChild(t); row.appendChild(actions);
-    return row;
   }
 
-  function actionBtn(kind, msg) {
-    const b = el('button', 'maBtn');
-    b.type = 'button';
-    b.dataset.action = kind;
-    b.dataset.id = msg.id;
-    b.title = P.i18n.t('chat.' + kind, P.app.locale);
-    b.setAttribute('aria-label', b.title);
-    b.innerHTML = P.icons['ma.' + kind] || '';
-    if (kind === 'like') b.innerHTML = P.icons['ma.like'] || '';
-    if (kind === 'dislike') b.innerHTML = P.icons['ma.dislike'] || '';
-    return b;
-  }
-
-  function disclosureRow(title, bodyText, open) {
-    const d = el('div', 'disclosure' + (open ? ' open' : ''));
-    const row = el('button', 'dRow');
-    row.innerHTML = '<svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.2 2.7a.6.6 0 0 1 0 .9L6.7 6l-2.5 2.4a.6.6 0 1 0 .9.9l3-2.9a.6.6 0 0 0 0-.9l-3-2.9a.6.6 0 0 0-.9 0Z" fill="currentColor"/></svg>';
-    const t = el('span', 'dTitle', title);
-    row.appendChild(t);
-    const body = el('div', 'dBody');
-    body.appendChild(el('div', 'thinkBody', bodyText));
-    row.addEventListener('click', () => d.classList.toggle('open'));
-    d.appendChild(row); d.appendChild(body);
-    return d;
-  }
-
-  function statsLine(msg) {
-    const s = el('div', 'statsLine');
-    const parts = [];
-    if (msg.durationMs) parts.push('ELAPSED ' + P.api.formatDuration(msg.durationMs));
-    if (msg.durationMs) parts.push(P.i18n.t('chat.ranFor', P.app.locale, { d: P.api.formatDuration(msg.durationMs) }));
-    if (msg.usage && (msg.usage.prompt_tokens || msg.usage.completion_tokens)) {
-      parts.push(P.i18n.t('chat.tokens', P.app.locale, { in: msg.usage.prompt_tokens || 0, out: msg.usage.completion_tokens || 0 }));
-    }
-    if (msg.usage && msg.usage.completion_tokens_details && msg.usage.completion_tokens_details.reasoning_tokens) {
-      parts.push(P.i18n.t('chat.reasoningTokens', P.app.locale, { n: msg.usage.completion_tokens_details.reasoning_tokens }));
-    }
-    if (parts.length) s.textContent = '· ' + parts.join(' · ');
-    return s;
-  }
-
+  /* ---------- rendering ---------- */
   function renderUser(msg) {
     const wrap = el('div', 'userRow');
     const bubble = el('div', 'userBubble', msg.content);
     wrap.appendChild(bubble);
-    wrap.appendChild(metaRow(msg, true));
+    const t = el('span', 'maTime', clock(msg.ts));
+    wrap.appendChild(t);
     return wrap;
   }
 
@@ -3055,44 +2984,42 @@ button:focus:not(:focus-visible) { outline: none; }
     const item = el('div', 'assistantItem');
     item.dataset.msg = msg.id;
     if (msg.reasoning) {
-      item.appendChild(disclosureRow(P.i18n.t('chat.thinking', P.app.locale), msg.reasoning, false));
+      const d = el('div', 'disclosure');
+      const row = el('button', 'dRow');
+      row.innerHTML = '<svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.2 2.7a.6.6 0 0 1 0 .9L6.7 6l-2.5 2.4a.6.6 0 1 0 .9.9l3-2.9a.6.6 0 0 0 0-.9l-3-2.9a.6.6 0 0 0-.9 0Z" fill="currentColor"/></svg>';
+      row.appendChild(el('span', 'dTitle', P.i18n.t('chat.thinking', P.app.locale)));
+      const body = el('div', 'dBody');
+      body.appendChild(el('div', 'thinkBody', msg.reasoning));
+      row.addEventListener('click', () => d.classList.toggle('open'));
+      d.appendChild(row); d.appendChild(body);
+      item.appendChild(d);
     }
     const p = el('p', 'para', msg.content);
-    if (msg.streaming) {
-      const caret = el('span', 'caret');
-      p.appendChild(caret);
-    }
+    if (msg.streaming) p.appendChild(el('span', 'caret'));
     item.appendChild(p);
-    if (!msg.streaming) {
-      item.appendChild(metaRow(msg, false));
-      if (msg.durationMs || (msg.usage && msg.usage.completion_tokens)) item.appendChild(statsLine(msg));
-    }
-    if (msg.error) {
-      const e = el('div', 'errorRow');
-      e.textContent = msg.error;
-      item.appendChild(e);
+    if (msg.usage && (msg.usage.prompt_tokens || msg.usage.completion_tokens)) {
+      item.appendChild(el('div', 'statsLine', '· ' + P.i18n.t('chat.tokens', P.app.locale, { in: msg.usage.prompt_tokens || 0, out: msg.usage.completion_tokens || 0 })));
     }
     return item;
   }
 
-  function renderDivider(ts) {
-    const d = el('div', 'sessionDivider');
-    d.appendChild(el('span', 'dt', fmtDate(ts)));
-    return d;
+  function renderTool(msg) {
+    const item = el('div', 'assistantItem');
+    const p = el('p', 'para', '⟳ ' + msg.name);
+    item.appendChild(p);
+    if (msg.content) item.appendChild(el('div', 'thinkBody', msg.content));
+    return item;
   }
 
   function renderFlow() {
     const flow = $('flow');
     flow.textContent = '';
-    let bi = 0;
-    const nextBound = () => (bi < C.bounds.length ? C.bounds[bi] : Infinity);
     for (const m of C.messages) {
-      while (nextBound() < m.ts) { flow.appendChild(renderDivider(C.bounds[bi])); bi++; }
       if (m.role === 'user') flow.appendChild(renderUser(m));
-      else flow.appendChild(renderAssistant(m));
+      else if (m.role === 'assistant') flow.appendChild(renderAssistant(m));
+      else if (m.role === 'tool') flow.appendChild(renderTool(m));
     }
-    while (bi < C.bounds.length) { flow.appendChild(renderDivider(C.bounds[bi])); bi++; }
-    if (!C.messages.length && !P.app.heroVisible) {
+    if (!C.messages.length) {
       flow.appendChild(el('div', 'emptyChat', P.i18n.t('chat.empty', P.app.locale)));
     }
     scrollBottom();
@@ -3102,95 +3029,36 @@ button:focus:not(:focus-visible) { outline: none; }
     requestAnimationFrame(() => { const s = $('chatScroll'); s.scrollTop = s.scrollHeight; });
   }
 
-  /* ---------- streaming ---------- */
-  let abortCtrl = null;
-  let dirty = false;
-
-  async function send() {
-    if (C.streaming) return;
-    const input = $('composerInput');
-    const text = input.value.trim();
-    if (!text) return;
-    input.value = '';
-    scrollInputBottom();
-    updateSend();
-
-    const cfg = await P.store.loadConfig();
-    if (!cfg.api.apiKey) {
-      P.app.toast(P.i18n.t('chat.error.noKey', P.app.locale));
-      P.app.openSettings();
-      return;
+  /* ---------- actions ---------- */
+  async function loadHistory(sessionId) {
+    C.sessionId = sessionId;
+    C.messages = [];
+    const items = await P.dshState.history(sessionId);
+    for (const it of items) {
+      if (it && it.event) foldEvent(it.event);
+      else if (it && it.type) foldEvent(it);
     }
-    P.app.enterChat();
-
-    const userMsg = { id: 'u' + Date.now(), k: 'm', role: 'user', content: text, ts: Date.now() };
-    C.messages.push(userMsg);
-    await saveMsg(userMsg);
-
-    const asstMsg = { id: 'a' + Date.now(), k: 'm', role: 'assistant', content: '', reasoning: '', ts: Date.now(), streaming: true, model: cfg.api.model, strength: cfg.api.strength };
-    C.messages.push(asstMsg);
     renderFlow();
-    startTurn(asstMsg, cfg);
   }
 
-  function startTurn(asstMsg, cfg) {
+  async function send(text) {
+    if (C.streaming || !C.sessionId) return;
+    const input = $('composerInput');
+    input.value = '';
     C.streaming = true;
-    abortCtrl = new AbortController();
-    $('statusRow').hidden = false;
     swapSendStop(true);
-    // Mode presets (standard / ptc / minimal / creative) may override model,
-    // thinking strength, temperature and a token cap.
-    const eff = P.store.resolveMode(cfg.mode, cfg.api);
-    const budget = P.store.STRENGTH_BUDGET[eff.strength] || 0;
-    asstMsg.model = eff.model;
-    asstMsg.strength = eff.strength;
-    const history = C.messages
-      .filter((m) => m !== asstMsg && !m.streaming && (m.role === 'user' || m.role === 'assistant'))
-      .map((m) => ({ role: m.role, content: m.content }));
-    const flush = () => { if (dirty) { dirty = false; renderFlow(); } };
-
-    const run = (b) => P.api.chat({
-      config: cfg,
-      messages: history,
-      budget: b,
-      temperature: eff.temperature,
-      maxTokens: eff.maxTokens,
-      signal: abortCtrl.signal,
-      onDelta(t) { asstMsg.content += t; dirty = true; requestAnimationFrame(flush); },
-      onReasoning(t) { asstMsg.reasoning += t; dirty = true; requestAnimationFrame(flush); },
-    });
-
-    run(budget).then(async (res) => {
-      // Some endpoints reject the thinking budget; retry plainly once.
-      if (!res.ok && !res.aborted && res.error && res.error.message && /thinking/i.test(res.error.message) && budget > 0) {
-        res = await run(0);
-      }
-      asstMsg.content = res.content;
-      asstMsg.reasoning = res.reasoning;
-      asstMsg.streaming = false;
-      if (res.aborted) {
-        asstMsg.content = asstMsg.content || '(interrupted)';
-      } else if (!res.ok) {
-        asstMsg.error = P.i18n.t('chat.error.' + (res.error && res.error.code || 'http'), P.app.locale, { msg: res.error && res.error.message || '' });
-      }
-      if (res.usage) asstMsg.usage = res.usage;
-      asstMsg.durationMs = res.durationMs;
-      flush();
-      await saveMsg(asstMsg);
-      finishTurn();
-    });
-  }
-
-  function finishTurn() {
-    C.streaming = false;
-    abortCtrl = null;
-    $('statusRow').hidden = true;
-    swapSendStop(false);
-    P.app.updateSidebar();
+    // Optimistic user bubble; the real event will reconcile on the mux.
+    try {
+      await P.dshState.prompt(C.sessionId, text);
+    } catch (e) {
+      C.streaming = false;
+      swapSendStop(false);
+      P.app.toast(P.i18n.t('chat.error.http', P.app.locale, { msg: e.message }));
+    }
   }
 
   function stop() {
-    if (abortCtrl) abortCtrl.abort();
+    if (C.sessionId) P.dshState.cancel(C.sessionId);
   }
 
   function swapSendStop(streaming) {
@@ -3204,89 +3072,19 @@ button:focus:not(:focus-visible) { outline: none; }
       delete send.dataset.state;
       send.innerHTML = P.icons['send'] || '';
       send.title = P.i18n.t('composer.send', P.app.locale);
-      updateSend();
     }
   }
 
-  /* ---------- message actions ---------- */
-  function copyText(text) {
-    const done = () => P.app.toast(P.i18n.t('chat.copied', P.app.locale));
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text) && done());
-    } else { fallbackCopy(text); done(); }
-  }
-  function fallbackCopy(text) {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    const ok = document.execCommand('copy');
-    ta.remove();
-    return ok;
-  }
-
-  async function branch() {
-    await saveBound(Date.now());
-    renderFlow();
-    P.app.updateSidebar();
-  }
-
-  async function clearHistory() {
-    const id = await projectId();
-    await P.store.clearHistory(id);
-    C.messages = [];
-    C.bounds = [];
-    renderFlow();
-    P.app.updateSidebar();
-    P.app.toast(P.i18n.t('chat.cleared', P.app.locale));
-  }
-
-  async function handleFlowClick(e) {
-    const btn = e.target.closest('.maBtn');
-    if (btn) {
-      const msg = C.messages.find((m) => m.id === btn.dataset.id);
-      if (!msg) return;
-      const kind = btn.dataset.action;
-      if (kind === 'copy') { copyText(msg.content || ''); return; }
-      if (kind === 'like') { btn.classList.toggle('on'); return; }
-      if (kind === 'dislike') { btn.classList.toggle('on'); return; }
-      if (kind === 'branch') { await branch(); return; }
-    }
-    const item = e.target.closest('.assistantItem') || e.target.closest('.userBubble');
-    if (item) {
-      const id = item.closest('.assistantItem') ? item.closest('.assistantItem').dataset.msg : null;
-      const msg = id ? C.messages.find((m) => m.id === id) : C.messages.filter((m) => m.role === 'user').pop();
-      if (msg) P.app.showDetails(msg);
-    }
-  }
-
-  /* ---------- context meter ---------- */
-  function updateMeter() {
-    const cfg = P.app.config || {};
-    const budget = cfg.api && cfg.api.model === 'deepseek-reasoner' ? 65536 : 131072;
-    const chars = C.messages.reduce((n, m) => n + (m.content || '').length + (m.reasoning || '').length, 0);
-    const pct = Math.min(100, Math.round(chars / 4 / budget * 100));
-    const ring = $('meterRing');
-    ring.style.strokeDashoffset = String(34.56 * (1 - pct / 100));
-    $('meterLabel').textContent = pct + '%';
-  }
-
-  /* ---------- composer ---------- */
   function updateSend() {
     const input = $('composerInput');
     const send = $('sendBtn');
     if (send.dataset.state === 'stop') return;
     send.disabled = !input.value.trim() || C.streaming;
   }
-
-  // Keep the current line pinned to the bottom of the fixed-height input so
-  // overflow scrolls above it.
   function scrollInputBottom() {
     const input = $('composerInput');
     if (input) input.scrollTop = input.scrollHeight;
   }
-
   function toggleExpand() {
     const area = $('composerArea');
     const btn = $('composerExpand');
@@ -3296,64 +3094,64 @@ button:focus:not(:focus-visible) { outline: none; }
     scrollInputBottom();
   }
 
-  /* ---------- init ---------- */
+  /* ---------- mux subscription ---------- */
+  function bindEvents() {
+    P.dsh.on('session/event', (frame) => {
+      const ev = frame.payload && frame.payload.event ? frame.payload.event : frame.payload;
+      if (!ev || ev.sessionId !== C.sessionId) {
+        // sessionId on the frame itself
+        if (frame.sessionId !== undefined && frame.sessionId !== C.sessionId) return;
+        if (frame.payload && frame.payload.sessionId && frame.payload.sessionId !== C.sessionId) return;
+      }
+      foldEvent(ev);
+      // Detect turn completion: an assistant/message that is not streaming.
+      if (ev && ev.type === 'assistant/message' && C.streaming) {
+        C.streaming = false;
+        swapSendStop(false);
+      }
+      renderFlow();
+    });
+    P.dsh.on('session/subscribed', () => {});
+    P.dsh.on('disconnect', () => { C.streaming = false; swapSendStop(false); });
+  }
+
   function init() {
     $('composerInput').addEventListener('input', () => { updateSend(); scrollInputBottom(); });
     $('composerInput').addEventListener('keydown', (e) => {
-      // Enter sends; Shift+Enter inserts a newline.
       if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
         e.preventDefault();
-        send();
+        const v = $('composerInput').value.trim();
+        if (v) send(v);
       }
     });
     $('composerExpand').addEventListener('click', toggleExpand);
     $('sendBtn').addEventListener('click', () => {
       if ($('sendBtn').dataset.state === 'stop') stop();
-      else send();
+      else { const v = $('composerInput').value.trim(); if (v) send(v); }
     });
-    $('flow').addEventListener('click', handleFlowClick);
-    $('newSessionBtn').addEventListener('click', async () => {
-      if (C.streaming) stop();
-      await saveBound(Date.now());
-      C.bounds.push(C.bounds.pop());
-      renderFlow();
-      P.app.updateSidebar();
-    });
-    $('logBtn').addEventListener('click', async () => {
-      const id = await projectId();
-      const raw = await P.store.readHistory(id);
-      const blob = new Blob([raw.map((e) => JSON.stringify(e)).join('\n') + '\n'], { type: 'application/jsonl' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'prts-' + id + '-' + Date.now() + '.jsonl';
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    });
+    bindEvents();
   }
 
   C.send = send;
   C.stop = stop;
   C.renderFlow = renderFlow;
   C.loadHistory = loadHistory;
-  C.updateMeter = updateMeter;
   C.updateSend = updateSend;
   C.scrollInputBottom = scrollInputBottom;
   C.toggleExpand = toggleExpand;
-  C.clearHistory = clearHistory;
   C.init = init;
   C.fmtDate = fmtDate;
   C.clock = clock;
   C.esc = esc;
   C.el = el;
-  C.renderDivider = renderDivider;
-  C.disclosureRow = disclosureRow;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
 
 /**
- * PRTS GUI bootstrap and shell: i18n, theme, sidebar, settings overlay,
- * details panel, drag handles, particle intro sequence, hero ambience,
- * popovers, tabs, toast. Initialized last (after core + chat).
+ * PRTS GUI shell — the window over dsh. It boots the dsh connection, lists
+ * dsh workspaces + sessions, renders the conversation (session events), and
+ * keeps the PRTS chrome: particle intro, theme, system panel, plugin buttons,
+ * voice input.
  */
 (function (G) {
   'use strict';
@@ -3396,110 +3194,227 @@ button:focus:not(:focus-visible) { outline: none; }
     await P.store.saveConfig(A.config);
   };
 
-  /* ---------- sidebar ---------- */
-  function renderProjects() {
+  /* ---------- sidebar: workspaces + sessions (dsh) ---------- */
+  function renderWorkspaces() {
     const list = $('projectList');
     list.textContent = '';
-    for (const p of A.projects) {
+    const ws = P.dshState.workspaces;
+    for (const w of ws) {
       const row = document.createElement('div');
-      row.className = 'sbItem' + (p.id === A.config.project ? ' active' : '');
-      row.dataset.project = p.id;
+      row.className = 'sbItem' + (w.workspaceId === P.dshState.currentWorkspaceId ? ' active' : '');
+      row.dataset.workspace = w.workspaceId;
       row.setAttribute('role', 'button');
       row.tabIndex = 0;
       const name = document.createElement('span');
       name.className = 'name';
-      name.textContent = p.name;
+      name.textContent = w.title || w.workspaceId;
       row.appendChild(name);
       const meta = document.createElement('span');
       meta.className = 'meta';
-      meta.textContent = new Date(p.updatedAt || 0).toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' });
+      meta.textContent = String(w.sessionIds ? w.sessionIds.length : 0);
       row.appendChild(meta);
       const del = document.createElement('button');
       del.type = 'button';
       del.className = 'rowBtn';
       del.title = A.t('common.delete');
-      del.setAttribute('aria-label', A.t('common.delete'));
       del.innerHTML = P.icons['ma.trash'] || '';
-      del.addEventListener('click', (e) => { e.stopPropagation(); deleteProjectRow(p.id); });
+      del.addEventListener('click', (e) => { e.stopPropagation(); deleteWorkspace(w.workspaceId); });
       row.appendChild(del);
-      row.addEventListener('click', () => switchProject(p.id));
-      row.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchProject(p.id); }
-      });
+      row.addEventListener('click', () => selectWorkspace(w.workspaceId));
+      row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectWorkspace(w.workspaceId); } });
       list.appendChild(row);
     }
-    $('projectCount').textContent = String(A.projects.length);
-  }
-
-  async function deleteProjectRow(id) {
-    const proj = A.projects.find((p) => p.id === id);
-    if (!confirm(A.t('project.confirmDelete', { name: (proj && proj.name) || id }))) return;
-    await P.store.deleteProject(id);
-    if (A.config.project === id) await switchProject('default');
-    A.projects = await P.store.listProjects();
-    renderProjects();
-  }
-
-  async function clearCurrentHistory() {
-    if (!confirm(A.t('project.confirmClear'))) return;
-    await P.chat.clearHistory();
-  }
-
-  async function switchProject(id) {
-    if (A.chatLoading) return;
-    await P.store.openProject(id);
-    const cfg = await P.store.loadConfig();
-    A.config = cfg;
-    await P.chat.loadHistory();
-    P.chat.renderFlow();
-    P.chat.updateMeter();
-    updateCrumb();
-    renderProjects();
-    A.updateSidebar();
-    refreshWsPop();
-  }
-
-  function refreshWsPop() {
-    const pop = $('wsPop');
-    if (!pop) return;
-    pop.innerHTML = '<div class="popItem" data-value="__add"><span class="label">' + A.t('workspace.add') + '</span></div>' +
-      '<div class="popMeta">' + A.t('workspace.hint') + '</div>' +
-      A.projects.map((p) => '<div class="popItem' + (p.id === A.config.project ? ' selected' : '') + '" data-value="' + p.id + '"><span class="label">' + p.name + '</span><span class="tick">&#10003;</span></div>').join('');
+    $('projectCount').textContent = String(ws.length);
   }
 
   function renderSessions() {
     const list = $('sessionList');
     list.textContent = '';
-    const bounds = [Date.now() - 86400000 * 365].concat(P.chat.bounds);
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const groups = {};
-    for (const b of bounds) {
-      const key = b >= today.getTime() ? 'today' : new Date(b).toLocaleDateString();
-      groups[key] = (groups[key] || 0) + 1;
-    }
-    for (const key of Object.keys(groups)) {
+    const ss = P.dshState.sessions;
+    for (const s of ss) {
       const row = document.createElement('div');
-      row.className = 'sbItem';
-      row.style.cursor = 'default';
+      row.className = 'sbItem' + (s.sessionId === P.dshState.currentSessionId ? ' active' : '');
+      row.dataset.session = s.sessionId;
+      row.setAttribute('role', 'button');
+      row.tabIndex = 0;
       const name = document.createElement('span');
       name.className = 'name';
-      name.textContent = key;
+      name.textContent = s.title || s.sessionId.slice(0, 8);
+      if (s.running) name.textContent += ' …';
       row.appendChild(name);
-      const meta = document.createElement('span');
-      meta.className = 'meta';
-      meta.textContent = String(groups[key]);
-      row.appendChild(meta);
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'rowBtn';
+      del.title = A.t('session.archive');
+      del.innerHTML = P.icons['ma.trash'] || '';
+      del.addEventListener('click', (e) => { e.stopPropagation(); archiveSession(s.sessionId); });
+      row.appendChild(del);
+      row.addEventListener('click', () => selectSession(s.sessionId));
+      row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectSession(s.sessionId); } });
       list.appendChild(row);
     }
-    $('sessionCount').textContent = String(Math.max(1, Object.keys(groups).length));
+    $('sessionCount').textContent = String(ss.length);
   }
 
-  A.updateSidebar = function () {
-    renderSessions();
-    P.chat.updateMeter();
-  };
+  async function selectWorkspace(id) {
+    P.dshState.currentWorkspaceId = id;
+    await refreshSessions();
+    renderWorkspaces();
+    updateCrumb();
+  }
 
-  /* ---------- phase switch: hero → chat ---------- */
+  async function refreshSessions() {
+    await P.dshState.listSessions();
+    renderSessions();
+  }
+
+  async function selectSession(id) {
+    P.dshState.currentSessionId = id;
+    A.enterChat();
+    await P.chat.loadHistory(id);
+    renderSessions();
+    updateCrumb();
+  }
+
+  async function newSession() {
+    const wsId = P.dshState.currentWorkspaceId;
+    const id = await P.dshState.createSession(wsId);
+    if (id) await selectSession(id);
+  }
+
+  async function archiveSession(id) {
+    if (!confirm(A.t('session.confirmArchive'))) return;
+    await P.dshState.archiveSession(id);
+    await refreshSessions();
+    if (P.dshState.currentSessionId === id) {
+      P.dshState.currentSessionId = null;
+      P.chat.messages = [];
+      P.chat.renderFlow();
+    }
+  }
+
+  async function deleteWorkspace(id) {
+    if (!confirm(A.t('workspace.confirmDelete'))) return;
+    await P.dshState.deleteWorkspace(id);
+    await refreshAll();
+  }
+
+  async function newWorkspace() {
+    const path = prompt(A.t('workspace.pathPrompt'));
+    if (!path || !path.trim()) return;
+    try {
+      await P.dshState.createWorkspace(path.trim());
+      await refreshAll();
+    } catch (e) {
+      A.toast(e.message);
+    }
+  }
+
+  async function refreshAll() {
+    await P.dshState.refreshAll();
+    if (!P.dshState.currentWorkspaceId && P.dshState.workspaces.length) {
+      P.dshState.currentWorkspaceId = P.dshState.workspaces[0].workspaceId;
+    }
+    renderWorkspaces();
+    renderSessions();
+    updateModelChip();
+    updateCrumb();
+  }
+
+  /* ---------- model chip (dsh model selection) ---------- */
+  function currentModel() {
+    const g = P.dshState.models;
+    if (!g || !g.length) return null;
+    const grp = g[0];
+    return (grp.models && grp.models[0]) ? { group: grp, model: grp.models[0] } : null;
+  }
+
+  function updateModelChip() {
+    const m = currentModel();
+    const label = $('modelChipLabel');
+    if (label) label.textContent = m ? m.model.id : '—';
+  }
+
+  function buildModelPop() {
+    const items = [];
+    for (const grp of P.dshState.models) {
+      for (const m of (grp.models || [])) {
+        items.push('<div class="popItem" data-provider="' + grp.id + '" data-model="' + m.id + '"><span class="label">' + m.id + '</span><span class="tick">&#10003;</span></div>');
+      }
+    }
+    return items.join('') || '<div class="popMeta">' + A.t('model.refreshFail') + '</div>';
+  }
+
+  function openSettings() {
+    $('cfgLocale').value = A.config.locale || 'auto';
+    $('settingsOverlay').classList.add('open');
+    renderProviders();
+  }
+  function closeSettings() { $('settingsOverlay').classList.remove('open'); }
+
+  /** Provider -> credential ref, by the dsh convention (e.g. deepseek -> DEEPSEEK_API_KEY). */
+  function providerRef(provider) {
+    const base = String(provider || '').replace(/^llm-/, '').toUpperCase().replace(/-/g, '_');
+    return base + '_API_KEY';
+  }
+
+  async function renderProviders() {
+    const box = $('cfgProviders');
+    box.textContent = '';
+    await P.dshState.listProviders();
+    const providers = P.dshState.providers;
+    if (!providers || !providers.length) {
+      box.appendChild(Object.assign(document.createElement('div'), { className: 'hint', textContent: A.t('settings.providers.empty') }));
+      return;
+    }
+    const refs = providers.map((p) => providerRef(p.provider));
+    let creds = {};
+    try { creds = await P.dshState.credentialsDescribe(refs); } catch (e) { /* ignore */ }
+    for (const p of providers) {
+      const ref = providerRef(p.provider);
+      const row = document.createElement('div');
+      row.className = 'projectRow';
+      const name = document.createElement('span');
+      name.className = 'pname';
+      name.textContent = p.displayName || p.provider;
+      const state = document.createElement('span');
+      state.className = 'pmeta';
+      const c = creds[ref];
+      state.textContent = c && c.configured ? A.t('settings.provider.set') : A.t('settings.provider.unset');
+      const input = document.createElement('input');
+      input.type = 'password';
+      input.className = 'sInput';
+      input.placeholder = ref;
+      input.style.width = '180px';
+      input.style.height = '26px';
+      input.autocomplete = 'off';
+      const save = document.createElement('button');
+      save.className = 'sBtn';
+      save.textContent = A.t('settings.provider.save');
+      save.style.height = '26px';
+      save.addEventListener('click', async () => {
+        const value = input.value.trim();
+        if (!value) return;
+        try {
+          await P.dshState.credentialsSet(ref, value);
+          state.textContent = A.t('settings.provider.set');
+          input.value = '';
+          A.toast(A.t('settings.provider.saved', { ref }));
+        } catch (e) { A.toast(e.message); }
+      });
+      row.appendChild(name); row.appendChild(state); row.appendChild(input); row.appendChild(save);
+      box.appendChild(row);
+    }
+  }
+
+  /* ---------- header / crumbs ---------- */
+  function updateCrumb() {
+    const ws = P.dshState.workspaces.find((w) => w.workspaceId === P.dshState.currentWorkspaceId);
+    $('crumbProject').textContent = ws ? (ws.title || ws.workspaceId) : 'dsh';
+    $('workspaceLabel').textContent = ws ? (ws.title || ws.workspaceId) : 'dsh';
+  }
+
+  /* ---------- phase switch ---------- */
   A.enterChat = function () {
     A.heroVisible = false;
     const cvt = $('cvt');
@@ -3508,17 +3423,7 @@ button:focus:not(:focus-visible) { outline: none; }
     $('heroView').hidden = true;
     $('chatScroll').hidden = false;
     if (A.heroEngine) A.heroEngine.stop();
-    P.chat.updateMeter();
   };
-
-  /* ---------- header / crumbs ---------- */
-  function updateCrumb() {
-    const id = A.config.project;
-    const proj = A.projects.find((p) => p.id === id);
-    $('crumbProject').textContent = (proj && proj.name) || id;
-    $('workspaceLabel').textContent = (proj && proj.name) || id;
-    $('workspaceBtn').title = id;
-  }
 
   /* ---------- details panel ---------- */
   A.showDetails = function (msg) {
@@ -3527,14 +3432,10 @@ button:focus:not(:focus-visible) { outline: none; }
     body.textContent = '';
     const fields = [
       ['role', msg.role],
-      ['model', msg.model || (A.config.api && A.config.api.model) || '-'],
-      ['strength', msg.strength || (A.config.api && A.config.api.strength) || '-'],
+      ['model', msg.model || '—'],
       ['created', P.chat.fmtDate(msg.ts)],
     ];
-    if (msg.durationMs) fields.push(['duration', P.api.formatDuration(msg.durationMs)]);
-    if (msg.usage) {
-      fields.push(['tokens', 'in ' + (msg.usage.prompt_tokens || 0) + ' · out ' + (msg.usage.completion_tokens || 0)]);
-    }
+    if (msg.usage) fields.push(['tokens', 'in ' + (msg.usage.prompt_tokens || 0) + ' · out ' + (msg.usage.completion_tokens || 0)]);
     for (const [k, v] of fields) {
       const f = document.createElement('div');
       f.className = 'dtField';
@@ -3569,19 +3470,14 @@ button:focus:not(:focus-visible) { outline: none; }
     $('handleDetails').style.left = (r.width - A_.dtWidth - 4) + 'px';
     $('handleDetails').style.display = appEl().hasAttribute('data-details-collapsed') ? 'none' : '';
   }
-  function attachDrag(handle, onDrag, onEnd) {
+  function attachDrag(handle, onDrag) {
     handle.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       handle.setPointerCapture(e.pointerId);
-      appEl().dataset.dragging = 'true';
-      handle.dataset.dragging = 'true';
       const move = (ev) => { const x = ev.clientX - appEl().getBoundingClientRect().left; onDrag(x); };
       const up = () => {
         handle.removeEventListener('pointermove', move);
         handle.removeEventListener('pointerup', up);
-        delete appEl().dataset.dragging;
-        delete handle.dataset.dragging;
-        onEnd && onEnd();
       };
       handle.addEventListener('pointermove', move);
       handle.addEventListener('pointerup', up);
@@ -3592,54 +3488,13 @@ button:focus:not(:focus-visible) { outline: none; }
       A_.sbWidth = Math.min(420, Math.max(240, x));
       appEl().style.setProperty('--dsh-sb', A_.sbWidth + 'px');
       $('handleSidebar').style.left = (A_.sbWidth - 4) + 'px';
-    }, placeHandles);
+    });
     attachDrag($('handleDetails'), (x) => {
       const r = appEl().getBoundingClientRect();
       A_.dtWidth = Math.min(560, Math.max(320, r.width - x));
       appEl().style.setProperty('--dsh-dt', A_.dtWidth + 'px');
       $('handleDetails').style.left = (r.width - A_.dtWidth - 4) + 'px';
-    }, placeHandles);
-  }
-
-  /* ---------- tabs ---------- */
-  function bindTabs() {
-    $('tabs').addEventListener('click', (e) => {
-      const tab = e.target.closest('.tab');
-      if (!tab) return;
-      $('tabs').querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t === tab));
-      const view = tab.dataset.view;
-      $('heroView').hidden = view !== 'chat' ? true : false;
-      $('chatScroll').hidden = view !== 'chat';
-      $('composerArea').hidden = view !== 'chat';
-      $('trajView').hidden = view !== 'trajectory';
-      if (view === 'trajectory') renderTrajectory();
     });
-  }
-  function renderTrajectory() {
-    const tv = $('trajView');
-    tv.textContent = '';
-    const rows = [];
-    let i = 0;
-    for (const m of P.chat.messages) {
-      if (m.role === 'assistant' && m.reasoning) {
-        rows.push({ i: ++i, text: m.reasoning });
-      }
-    }
-    if (!rows.length) {
-      tv.appendChild(P.chat.el('div', 'trajEmpty', A.t('details.empty')));
-      return;
-    }
-    for (const r of rows) {
-      const item = document.createElement('div');
-      item.className = 'trajItem';
-      const idx = document.createElement('span');
-      idx.className = 'idx';
-      idx.textContent = String(r.i).padStart(2, '0');
-      const text = document.createElement('div');
-      text.textContent = r.text;
-      item.appendChild(idx); item.appendChild(text);
-      tv.appendChild(item);
-    }
   }
 
   /* ---------- popovers ---------- */
@@ -3654,7 +3509,7 @@ button:focus:not(:focus-visible) { outline: none; }
     trigger.appendChild(pop);
     pop.addEventListener('click', (e) => {
       const item = e.target.closest('.popItem');
-      if (item && onPick) onPick(item.dataset.value, item);
+      if (item && onPick) onPick(item);
     });
     trigger.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -3666,301 +3521,25 @@ button:focus:not(:focus-visible) { outline: none; }
     return pop;
   }
 
-  async function refreshModels() {
-    const before = (P.store.MODELS || []).length;
-    await P.store.refreshModels(A.config);
-    if (A.refreshModelPop) A.refreshModelPop();
-    updateChips();
-    if (P.store.MODELS.length > before) A.toast(A.t('model.refreshed'));
-    else A.toast(A.t('model.refreshFail'));
-  }
-
-  function modelPopItems() {
-    const items = P.store.MODELS.map((m) => '<div class="popItem' + (A.config.api.model === m ? ' selected' : '') + '" data-value="' + m + '"><span class="label">' + m + '</span><span class="tick">&#10003;</span></div>').join('');
-    return '<div class="popItem" data-value="__refresh"><span class="label">' + A.t('model.refresh') + '</span></div>' +
-      '<div class="popMeta">' + A.t('model.hint') + '</div>' + items;
-  }
-
   function bindPopovers() {
-    // Model
-    const modelPop = attachPop($('modelChip'),
-      modelPopItems(),
-      async (value) => {
-        if (value === '__refresh') { await refreshModels(); return; }
-        A.config.api.model = value;
-        await P.store.saveConfig(A.config);
-        updateChips();
-      });
+    const modelPop = attachPop($('modelChip'), buildModelPop(), async (item) => {
+      if (!P.dshState.currentSessionId) { A.toast(A.t('session.selectFirst')); return; }
+      const provider = item.dataset.provider, model = item.dataset.model;
+      try {
+        await P.dshState.selectModel(P.dshState.currentSessionId, provider, model);
+        updateModelChip();
+      } catch (e) { A.toast(e.message); }
+    });
     A.modelPop = modelPop;
-    A.refreshModelPop = () => { modelPop.innerHTML = modelPopItems(); };
-    // Strength
-    attachPop($('strengthChip'),
-      ['off', 'low', 'medium', 'high'].map((s) => '<div class="popItem' + (A.config.api.strength === s ? ' selected' : '') + '" data-value="' + s + '"><span class="label">' + A.t('strength.' + s) + '</span><span class="tick">&#10003;</span></div>').join('') +
-      '<div class="popMeta">Thinking-budget preset: ' + [0, 1024, 4096, 32768].join(' / ') + ' reasoning tokens.</div>',
-      async (value) => {
-        A.config.api.strength = value;
-        await P.store.saveConfig(A.config);
-        updateChips();
-      });
-    // Mode (standard / ptc / minimal / creative)
-    attachPop($('modeChip'),
-      P.store.MODES.map((m) => '<div class="popItem' + ((A.config.mode || 'standard') === m ? ' selected' : '') + '" data-value="' + m + '"><span class="label">' + A.t('mode.' + m) + '</span><span class="tick">&#10003;</span></div>').join('') +
-      '<div class="popMeta">' + A.t('mode.hint') + '</div>',
-      async (value) => {
-        A.config.mode = value;
-        await P.store.saveConfig(A.config);
-        updateChips();
-      });
-    // Commands
-    attachPop($('commandsChip'),
-      '<div class="popItem" data-value="new"><span class="label">' + A.t('sidebar.newSession') + '</span></div>' +
-      '<div class="popItem" data-value="settings"><span class="label">' + A.t('sidebar.settings') + '</span></div>' +
-      '<div class="popItem" data-value="theme"><span class="label">' + A.t('common.theme') + '</span></div>',
-      async (value) => {
-        if (value === 'new') { await P.chat.branch(); }
-        else if (value === 'settings') A.openSettings();
-        else if (value === 'theme') A.toggleTheme();
-      });
-    // Meter
-    attachPop($('meterBtn'),
-      '<div class="popMeta" id="meterPopDetail" style="border:none;margin:0;">—</div>',
-      null, true);
-    // Workspace (project switch) — with "Add workspace" at the top.
+    A.refreshModelPop = () => { modelPop.innerHTML = buildModelPop(); };
+
     attachPop($('workspaceBtn'),
       '<div class="popItem" data-value="__add"><span class="label">' + A.t('workspace.add') + '</span></div>' +
-      '<div class="popMeta">' + A.t('workspace.hint') + '</div>' +
-      A.projects.map((p) => '<div class="popItem' + (p.id === A.config.project ? ' selected' : '') + '" data-value="' + p.id + '"><span class="label">' + p.name + '</span><span class="tick">&#10003;</span></div>').join(''),
-      async (value) => {
-        if (value === '__add') { await addWorkspace(); return; }
-        await switchProject(value);
+      P.dshState.workspaces.map((w) => '<div class="popItem" data-value="' + w.workspaceId + '"><span class="label">' + (w.title || w.workspaceId) + '</span><span class="tick">&#10003;</span></div>').join(''),
+      async (item) => {
+        if (item.dataset.value === '__add') { await newWorkspace(); return; }
+        await selectWorkspace(item.dataset.value);
       });
-  }
-
-  async function addWorkspace() {
-    const name = prompt(A.t('project.name'));
-    if (!name || !name.trim()) return;
-    const id = P.store.slugify(name.trim());
-    await P.store.ensureProject(id);
-    await P.store.renameProject(id, name.trim());
-    await switchProject(id);
-    A.projects = await P.store.listProjects();
-    renderProjects();
-    refreshWsPop();
-  }
-
-  function updateChips() {
-    $('modelChipLabel').textContent = A.config.api.model;
-    $('strengthChipLabel').textContent = 'STRENGTH: ' + A.t('strength.' + A.config.api.strength);
-    $('strengthChip').classList.toggle('on', A.config.api.strength !== 'off');
-    const mode = A.config.mode || 'standard';
-    $('modeChipLabel').textContent = A.t('mode.' + mode);
-    $('modeChip').classList.toggle('on', mode !== 'standard');
-    const hm = $('headerMode');
-    if (hm) hm.textContent = A.t('mode.' + mode);
-    updateMeterPop();
-    P.chat.updateMeter();
-  }
-  function updateMeterPop() {
-    const detail = $('meterPopDetail');
-    if (!detail) return;
-    const budget = A.config.api.model === 'deepseek-reasoner' ? 65536 : 131072;
-    const chars = P.chat.messages.reduce((n, m) => n + (m.content || '').length + (m.reasoning || '').length, 0);
-    const pct = Math.min(100, Math.round(chars / 4 / budget * 100));
-    detail.textContent = '≈ ' + chars + ' chars · ' + budget + ' tok window · ' + pct + '% used';
-  }
-
-  /* ---------- voice input ---------- */
-  A.voiceOn = false;
-  function drawBrandFx(frame) {
-    const cv = $('brandFx');
-    if (!cv) return;
-    const ctx = cv.getContext('2d');
-    ctx.clearRect(0, 0, cv.width, cv.height);
-    const on = A.voiceOn;
-    cv.classList.toggle('on', on);
-    cv.classList.toggle('listening', on && frame.listening && !frame.speaking);
-    cv.classList.toggle('speaking', on && frame.speaking);
-    if (!on) return;
-    const ink = getComputedStyle(document.documentElement).getPropertyValue('--prts-ink').trim() || '#FAFAFA';
-    const bars = (frame.bars && frame.bars.length) ? frame.bars : new Array(14).fill(0);
-    const n = 14, w = cv.width, h = cv.height;
-    const bw = w / n;
-    const amp = frame.speaking ? 1 : 0.34;
-    ctx.fillStyle = ink;
-    for (let i = 0; i < n; i++) {
-      const v = Math.max(0.03, bars[i] * amp);
-      const bh = Math.max(1, v * (h - 3));
-      ctx.globalAlpha = frame.speaking ? 0.45 + 0.55 * bars[i] : 0.4;
-      ctx.fillRect(i * bw + bw * 0.22, (h - bh) / 2, bw * 0.55, bh);
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  function bindVoice() {
-    const btn = $('voiceBtn');
-    btn.addEventListener('click', async () => {
-      if (A.voiceOn) {
-        P.asr.stop();
-        A.voiceOn = false;
-        btn.classList.remove('on', 'recognizing');
-        btn.title = A.t('voice.off');
-        return;
-      }
-      const ok = await P.asr.start();
-      if (ok !== 'ok') {
-        // A specific toast is emitted through P.asr.onError for the failure mode.
-        if (ok === 'unsupported') A.toast(A.t('voice.unsupported'));
-        else if (ok === 'not-allowed') A.toast(A.t('voice.noMic'));
-        return;
-      }
-      A.voiceOn = true;
-      btn.classList.add('on');
-      btn.title = A.t('voice.on');
-    });
-    P.asr.onFrame((frame) => {
-      const recognizing = frame.state === 'recognizing';
-      btn.classList.toggle('recognizing', A.voiceOn && recognizing);
-      drawBrandFx(frame);
-    });
-    P.asr.onResult((text) => {
-      const input = $('composerInput');
-      if (!input) return;
-      if (input.value) input.value += ' ';
-      input.value += text;
-      if (P.chat.updateSend) P.chat.updateSend();
-      if (P.chat.scrollInputBottom) P.chat.scrollInputBottom();
-      input.focus();
-    });
-    P.asr.onError((code) => {
-      if (code === 'not-allowed') A.toast(A.t('voice.noMic'));
-      else if (code === 'unsupported') A.toast(A.t('voice.unsupported'));
-      else if (code && code !== 'no-speech' && code !== 'aborted') A.toast(A.t('voice.error', { msg: String(code) }));
-    });
-  }
-
-  /* ---------- community plugin buttons ---------- */
-  function renderPlugins() {
-    for (const area of ['composer', 'header']) {
-      const host = area === 'composer' ? $('pluginComposer') : $('pluginHeader');
-      host.textContent = '';
-      const items = P.plugins.list(area);
-      for (const pl of items) {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'pluginBtn';
-        btn.title = pl.label || pl.id;
-        btn.setAttribute('aria-label', btn.title);
-        if (pl.icon) btn.innerHTML = pl.icon;
-        else btn.textContent = String(pl.label || pl.id).slice(0, 1).toUpperCase();
-        if (pl.badge) {
-          const dot = document.createElement('span');
-          dot.className = 'pluginBadge';
-          btn.appendChild(dot);
-        }
-        btn.addEventListener('click', (e) => {
-          try {
-            if (pl.onClick) pl.onClick({ app: P.app, config: A.config, store: P.store, chat: P.chat, event: e });
-          } catch (err) {
-            A.toast(String(err && err.message || err));
-          }
-        });
-        host.appendChild(btn);
-      }
-    }
-  }
-
-  /* ---------- settings ---------- */
-  A.openSettings = function () {
-    fillSettings();
-    $('settingsOverlay').classList.add('open');
-  };
-  function closeSettings() { $('settingsOverlay').classList.remove('open'); }
-  function fillSettings() {
-    $('cfgApiKey').value = A.config.api.apiKey || '';
-    $('cfgBaseUrl').value = A.config.api.baseUrl || '';
-    const sel = $('cfgModel');
-    sel.textContent = '';
-    for (const m of P.store.MODELS) {
-      const o = document.createElement('option');
-      o.value = m; o.textContent = m;
-      sel.appendChild(o);
-    }
-    sel.value = A.config.api.model || 'deepseek-chat';
-    $('cfgStrength').value = A.config.api.strength || 'medium';
-    $('cfgLocale').value = A.config.locale || 'auto';
-    renderCfgProjects();
-    $('cfgStatus').textContent = '';
-  }
-  function renderCfgProjects() {
-    const box = $('cfgProjects');
-    box.textContent = '';
-    for (const p of A.projects) {
-      const row = document.createElement('div');
-      row.className = 'projectRow';
-      const name = document.createElement('span');
-      name.className = 'pname';
-      name.textContent = p.name + (p.id === A.config.project ? ' ◂' : '');
-      const meta = document.createElement('span');
-      meta.className = 'pmeta';
-      meta.textContent = p.id;
-      const use = document.createElement('button');
-      use.className = 'sBtn';
-      use.textContent = A.t('project.switch') === 'Switch project' ? 'USE' : '使用';
-      use.style.height = '26px';
-      use.addEventListener('click', () => switchProject(p.id));
-      const del = document.createElement('button');
-      del.className = 'sBtn';
-      del.textContent = A.t('common.delete');
-      del.style.height = '26px';
-      del.style.marginLeft = '4px';
-      del.disabled = p.id === 'default';
-      del.addEventListener('click', async () => {
-        if (!confirm(A.t('project.confirmDelete', { name: p.name }))) return;
-        await P.store.deleteProject(p.id);
-        if (A.config.project === p.id) await switchProject('default');
-        A.projects = await P.store.listProjects();
-        renderProjects();
-        renderCfgProjects();
-      });
-      row.appendChild(name); row.appendChild(use); row.appendChild(del);
-      box.appendChild(row);
-    }
-    const form = document.createElement('div');
-    form.className = 'inlineForm';
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.placeholder = A.t('project.name');
-    input.maxLength = 40;
-    const create = document.createElement('button');
-    create.className = 'sBtn primary';
-    create.textContent = A.t('project.create');
-    create.addEventListener('click', async () => {
-      const name = input.value.trim();
-      if (!name) return;
-      const id = P.store.slugify(name);
-      await P.store.ensureProject(id);
-      await P.store.renameProject(id, name);
-      await switchProject(id);
-      A.projects = await P.store.listProjects();
-      renderProjects();
-      fillSettings();
-    });
-    form.appendChild(input); form.appendChild(create);
-    box.appendChild(form);
-  }
-  async function saveSettings() {
-    A.config.api.apiKey = $('cfgApiKey').value.trim();
-    A.config.api.baseUrl = $('cfgBaseUrl').value.trim() || 'https://api.deepseek.com';
-    A.config.api.model = $('cfgModel').value;
-    A.config.api.strength = $('cfgStrength').value;
-    A.config.locale = $('cfgLocale').value;
-    await P.store.saveConfig(A.config);
-    const prev = A.locale;
-    A.locale = A.config.locale === 'auto' ? P.platform.detectLocale() : A.config.locale;
-    applyI18n();
-    updateChips();
-    A.toast(A.t('settings.saved'));
-    if (prev !== A.locale) P.chat.renderFlow();
   }
 
   /* ---------- particles: intro + hero ---------- */
@@ -3979,8 +3558,6 @@ button:focus:not(:focus-visible) { outline: none; }
     const skip = () => { if (done) return; done = true; finish(); };
     window.addEventListener('pointerdown', skip, { once: true });
     window.addEventListener('keydown', skip, { once: true });
-    // Same particles reorganize throughout — no scatter, no fade-out, no new
-    // particles: field -> "welcome to / PRTS" -> PRTS·DEEPSEEK banner -> mark.
     setTimeout(() => { A.introEngine.showIntro(9000); tag.classList.add('show'); }, 700);
     setTimeout(() => { A.introEngine.showPp(10000); tag.classList.remove('show'); }, 4400);
     setTimeout(() => { A.introEngine.showMark(1.05, 9000); }, 8000);
@@ -3999,124 +3576,157 @@ button:focus:not(:focus-visible) { outline: none; }
     cv.addEventListener('pointerleave', () => A.heroEngine.clearMouse());
   }
 
-  /* ---------- new project inline (sidebar) ---------- */
-  function bindNewProject() {
-    $('newProjectBtn').addEventListener('click', () => {
-      const list = $('projectList');
-      const form = document.createElement('div');
-      form.className = 'inlineForm';
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.placeholder = A.t('project.name');
-      input.maxLength = 40;
-      const go = async () => {
-        const name = input.value.trim();
-        if (!name) return;
-        await P.store.ensureProject(P.store.slugify(name));
-        await P.store.renameProject(P.store.slugify(name), name);
-        await switchProject(P.store.slugify(name));
-        A.projects = await P.store.listProjects();
-        renderProjects();
-      };
-      const ok = document.createElement('button');
-      ok.className = 'sBtn';
-      ok.textContent = 'OK';
-      ok.style.height = '26px';
-      ok.addEventListener('click', go);
-      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); if (e.key === 'Escape') form.remove(); });
-      form.appendChild(input); form.appendChild(ok);
-      list.prepend(form);
-      input.focus();
+  /* ---------- voice input ---------- */
+  A.voiceOn = false;
+  function drawBrandFx(frame) {
+    const cv = $('brandFx');
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    const on = A.voiceOn;
+    cv.classList.toggle('on', on);
+    cv.classList.toggle('speaking', on && frame.speaking);
+    if (!on) return;
+    const ink = getComputedStyle(document.documentElement).getPropertyValue('--prts-ink').trim() || '#FAFAFA';
+    const bars = (frame.bars && frame.bars.length) ? frame.bars : new Array(14).fill(0);
+    const n = 14, w = cv.width, h = cv.height, bw = w / n;
+    ctx.fillStyle = ink;
+    for (let i = 0; i < n; i++) {
+      const v = Math.max(0.03, bars[i] * (frame.speaking ? 1 : 0.34));
+      const bh = Math.max(1, v * (h - 3));
+      ctx.globalAlpha = frame.speaking ? 0.45 + 0.55 * bars[i] : 0.4;
+      ctx.fillRect(i * bw + bw * 0.22, (h - bh) / 2, bw * 0.55, bh);
+    }
+    ctx.globalAlpha = 1;
+  }
+  function bindVoice() {
+    const btn = $('voiceBtn');
+    btn.addEventListener('click', async () => {
+      if (A.voiceOn) {
+        P.asr.stop();
+        A.voiceOn = false;
+        btn.classList.remove('on', 'recognizing');
+        return;
+      }
+      const ok = await P.asr.start();
+      if (ok !== 'ok') { A.toast(A.t('voice.unsupported')); return; }
+      A.voiceOn = true;
+      btn.classList.add('on');
     });
+    P.asr.onFrame((frame) => {
+      btn.classList.toggle('recognizing', A.voiceOn && frame.state === 'recognizing');
+      drawBrandFx(frame);
+    });
+    P.asr.onResult((text) => {
+      const input = $('composerInput');
+      if (!input) return;
+      if (input.value) input.value += ' ';
+      input.value += text;
+      P.chat.updateSend();
+      P.chat.scrollInputBottom();
+    });
+  }
+
+  /* ---------- community plugins ---------- */
+  function renderPlugins() {
+    for (const area of ['composer', 'header']) {
+      const host = area === 'composer' ? $('pluginComposer') : $('pluginHeader');
+      host.textContent = '';
+      const items = P.plugins.list(area);
+      for (const pl of items) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'pluginBtn';
+        btn.title = pl.label || pl.id;
+        if (pl.icon) btn.innerHTML = pl.icon;
+        else btn.textContent = String(pl.label || pl.id).slice(0, 1).toUpperCase();
+        btn.addEventListener('click', () => {
+          try { pl.onClick && pl.onClick({ app: P.app, config: A.config, store: P.store, chat: P.chat }); }
+          catch (err) { A.toast(String(err && err.message || err)); }
+        });
+        host.appendChild(btn);
+      }
+    }
   }
 
   /* ---------- boot ---------- */
   async function boot() {
     A.config = await P.store.loadConfig();
-    // Best-effort model detection from the configured endpoint.
-    P.store.refreshModels(A.config).then(() => {
-      if (A.refreshModelPop) A.refreshModelPop();
-      updateChips();
-    }).catch(() => { /* keep defaults */ });
     A.locale = A.config.locale === 'auto' ? P.platform.detectLocale() : A.config.locale;
     applyTheme(A.config.ui && A.config.ui.theme === 'light' ? 'light' : 'dark');
     applyI18n();
-    A.projects = await P.store.listProjects();
     A.heroVisible = true;
-    await P.chat.loadHistory();
 
-    bindTabs();
     bindDrag();
-    bindNewProject();
     bindPopovers();
     bindVoice();
-
-    if (P.plugins) {
-      P.plugins.onChange(renderPlugins);
-      P.plugins.adoptSeeded();
-      renderPlugins();
-    }
+    if (P.plugins) { P.plugins.onChange(renderPlugins); P.plugins.adoptSeeded(); renderPlugins(); }
     if (P.system && P.system.bind) P.system.bind();
 
     $('themeBtn').addEventListener('click', A.toggleTheme);
-    $('clearHistoryBtn').addEventListener('click', clearCurrentHistory);
-    $('settingsBtn').addEventListener('click', () => A.openSettings());
-    $('settingsClose').addEventListener('click', closeSettings);
-    $('cfgSave').addEventListener('click', saveSettings);
-    $('cfgApiKeyToggle').addEventListener('click', () => {
-      const input = $('cfgApiKey');
-      const show = input.type === 'password';
-      input.type = show ? 'text' : 'password';
-      $('cfgApiKeyToggle').textContent = show ? 'HIDE' : 'SHOW';
+    $('clearHistoryBtn').addEventListener('click', async () => {
+      if (!confirm(A.t('session.confirmArchive'))) return;
+      if (P.dshState.currentSessionId) await P.dshState.archiveSession(P.dshState.currentSessionId);
+      await newSession();
     });
-    $('cfgTest').addEventListener('click', async () => {
-      const status = $('cfgStatus');
-      status.textContent = A.t('settings.testing');
-      const testCfg = {
-        api: {
-          baseUrl: $('cfgBaseUrl').value.trim() || 'https://api.deepseek.com',
-          apiKey: $('cfgApiKey').value.trim(),
-          model: $('cfgModel').value,
-        },
-      };
-      const res = await P.api.ping(testCfg);
-      status.textContent = res.ok ? A.t('settings.test.ok', { ms: res.ms }) : A.t('settings.test.fail', { msg: res.message });
-    });
+    $('newProjectBtn').addEventListener('click', newWorkspace);
+    $('newSessionBtn').addEventListener('click', newSession);
     $('detailsBtn').addEventListener('click', () => {
       if (appEl().hasAttribute('data-details-collapsed')) openDetails();
       else closeDetails();
     });
     $('dtClose').addEventListener('click', closeDetails);
+    $('settingsBtn').addEventListener('click', openSettings);
+    $('settingsClose').addEventListener('click', closeSettings);
+    $('cfgSave').addEventListener('click', async () => {
+      A.config.locale = $('cfgLocale').value;
+      await P.store.saveConfig(A.config);
+      A.locale = A.config.locale === 'auto' ? P.platform.detectLocale() : A.config.locale;
+      applyI18n();
+      closeSettings();
+      A.toast(A.t('settings.saved'));
+    });
+    $('flow').addEventListener('click', (e) => {
+      const item = e.target.closest('.assistantItem') || e.target.closest('.userBubble');
+      if (item) {
+        const id = item.closest('.assistantItem') ? item.closest('.assistantItem').dataset.msg : null;
+        const msg = id ? P.chat.messages.find((m) => m.id === id) : P.chat.messages.filter((m) => m.role === 'user').pop();
+        if (msg) A.showDetails(msg);
+      }
+    });
 
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.chip') && !e.target.closest('.meterBtn') && !e.target.closest('.workspaceBtn')) closePops();
       if (e.target === $('settingsOverlay')) closeSettings();
-      if (P.system && e.target === $('sysOverlay')) P.system.close();
     });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') { closePops(); closeSettings(); if (P.system && P.system.open) P.system.close(); }
     });
     window.addEventListener('resize', () => {
       placeHandles();
-      // Fullscreen must extend the canvas view, not zoom the effect: refresh
-      // the backing store so the particle layers stay crisp.
       if (A.introEngine) A.introEngine.resize();
       if (A.heroEngine) A.heroEngine.resize();
     });
 
     P.chat.init();
+
+    // Connect to dsh and mirror its state (re-populate whenever it comes up).
+    P.dsh.on('connect', () => { refreshAll().catch(() => { /* dsh may still be warming up */ }); });
+    try {
+      await P.dshState.connect();
+      await refreshAll();
+    } catch (e) {
+      A.toast(A.t('dsh.connectFail', { msg: e.message }));
+    }
+
     updateCrumb();
-    renderProjects();
-    renderSessions();
-    updateChips();
-    P.chat.renderFlow();
     placeHandles();
     runIntro();
   }
 
   A.updateCrumb = updateCrumb;
-  A.renderProjects = renderProjects;
-  A.closeSettings = closeSettings;
+  A.renderWorkspaces = renderWorkspaces;
+  A.renderSessions = renderSessions;
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();

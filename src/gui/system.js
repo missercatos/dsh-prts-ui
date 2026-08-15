@@ -153,9 +153,7 @@
     box.textContent = '';
     const add = (key, label, hasBar) => addRow(box, key, label, hasBar);
     add('model', t('sys.model'), false);
-    add('mode', t('sys.mode'), false);
-    add('tokUsed', t('sys.tokensUsed'), true);
-    add('tokLeft', t('sys.tokensLeft'), true);
+    add('tokUsed', t('sys.tokensUsed'), false);
     add('sessions', t('sys.sessions'), false);
     add('messages', t('sys.messages'), false);
     add('updated', t('sys.updated'), false);
@@ -163,11 +161,11 @@
 
   /* ---------- snapshot ---------- */
   function agentSnapshot() {
-    const cfg = (P.app && P.app.config) || {};
     const msgs = (P.chat && P.chat.messages) || [];
-    const bounds = (P.chat && P.chat.bounds) || [];
-    const model = (cfg.api && cfg.api.model) || 'deepseek-chat';
-    const strength = (cfg.api && cfg.api.strength) || 'medium';
+    const sessions = (P.dshState && P.dshState.sessions) || [];
+    const model = (P.dshState && P.dshState.models && P.dshState.models.length)
+      ? ((P.dshState.models[0].models && P.dshState.models[0].models[0]) ? P.dshState.models[0].models[0].id : t('sys.unknown'))
+      : t('sys.unknown');
     let usedIn = 0, usedOut = 0;
     for (const m of msgs) {
       if (m.usage) {
@@ -175,12 +173,10 @@
         usedOut += m.usage.completion_tokens || 0;
       }
     }
-    const budget = model === 'deepseek-reasoner' ? 65536 : 131072;
     const used = usedIn + usedOut;
     return {
-      model, strength, usedIn, usedOut, used, budget,
-      left: Math.max(0, budget - used),
-      sessions: Math.max(1, bounds.length), messages: msgs.length,
+      model, usedIn, usedOut, used,
+      sessions: Math.max(1, sessions.length), messages: msgs.length,
     };
   }
 
@@ -213,12 +209,11 @@
       cpuPower: info ? info.cpuPowerW : null,
       temps,
       model: agent.model,
-      mode: t('strength.' + agent.strength),
       tokUsed: agent.used,
       tokUsedIn: agent.usedIn,
       tokUsedOut: agent.usedOut,
-      tokLeft: agent.left,
-      tokBudget: agent.budget,
+      tokLeft: 0,
+      tokBudget: 0,
       sessions: String(agent.sessions),
       messages: String(agent.messages),
       now: new Date().toLocaleTimeString(),
@@ -241,7 +236,7 @@
 
   function seedDisplay() {
     const keys = ['memPct', 'memUsed', 'swapPct', 'swapUsed', 'diskPct', 'diskUsed',
-      'cpuLoad', 'cpuPower', 'gpuUsage', 'tokUsed', 'tokLeft', 'tokPct'];
+      'cpuLoad', 'cpuPower', 'gpuUsage', 'tokUsed'];
     disp = {};
     for (const k of keys) disp[k] = targets[k] === null || targets[k] === undefined ? 0 : targets[k];
     disp.temps = {};
@@ -250,7 +245,7 @@
 
   function easeDisplay() {
     const keys = ['memPct', 'memUsed', 'swapPct', 'swapUsed', 'diskPct', 'diskUsed',
-      'cpuLoad', 'cpuPower', 'gpuUsage', 'tokUsed', 'tokLeft', 'tokPct'];
+      'cpuLoad', 'cpuPower', 'gpuUsage', 'tokUsed'];
     for (const k of keys) {
       const tgt = targets[k];
       if (tgt === null || tgt === undefined) continue;
@@ -264,7 +259,7 @@
 
   function paintStatic() {
     const byKey = { os: targets.os, host: targets.host, cpu: targets.cpu, gpu: targets.gpu,
-      model: targets.model, mode: targets.mode, sessions: targets.sessions, messages: targets.messages };
+      model: targets.model, sessions: targets.sessions, messages: targets.messages };
     for (const k in byKey) {
       if (refs[k] && refs[k].val) refs[k].val.textContent = byKey[k];
     }
@@ -284,8 +279,7 @@
     if (targets.diskTotal) set('disk', fmtBytes(disp.diskUsed) + ' / ' + fmtBytes(targets.diskTotal), disp.diskPct);
     set('cpuLoad', fmt0(disp.cpuLoad) + '%', disp.cpuLoad);
     set('cpuPower', fmt1(disp.cpuPower) + ' W');
-    set('tokUsed', fmt0(disp.tokUsed) + ' · ' + targets.tokUsedIn + ' in / ' + targets.tokUsedOut + ' out', targets.tokBudget ? Math.min(100, (targets.tokUsed / targets.tokBudget) * 100) : 0);
-    set('tokLeft', fmt0(disp.tokLeft) + ' / ' + targets.tokBudget, disp.tokPct);
+    set('tokUsed', fmt0(disp.tokUsed) + ' · ' + targets.tokUsedIn + ' in / ' + targets.tokUsedOut + ' out', null);
 
     const tempNames = Object.keys(targets.temps);
     if (tempNames.length && R.temps && R.temps.val) {

@@ -48,15 +48,21 @@ fi
 PROFILE_DIR="${DSH_HOME:-$HOME/.dsh}/profiles/prts"
 mkdir -p "$PROFILE_DIR"
 say "Approving build scripts in the profile (pnpm 11)…"
-cat > "$PROFILE_DIR/pnpm-workspace.yaml" <<'YAML'
-allowBuilds:
-  '@deepseek-ai/dsh-subprocess-local': true
-  '@google/genai': true
-  dsh-prts-ui: true
-  koffi: true
-  node-pty: true
-  protobufjs: true
-YAML
+node - "$PROFILE_DIR" "$TGZ" <<'NODE'
+const fs = require('fs')
+const path = require('path')
+const [profileDir, tgz] = process.argv.slice(2)
+const rel = path.relative(profileDir, tgz).split('\\').join('/')
+const y =
+  'allowBuilds:\n' +
+  '  dsh-prts-ui@file:' + rel + ': true\n' +
+  '  node-pty: true\n' +
+  '  koffi: true\n' +
+  '  protobufjs: true\n' +
+  "  '@google/genai': true\n" +
+  "  '@deepseek-ai/dsh-subprocess-local': true\n"
+fs.writeFileSync(path.join(profileDir, 'pnpm-workspace.yaml'), y)
+NODE
 say "Installing plugin into profile 'prts'…"
 if [ -f "$PROFILE_DIR/node_modules/dsh-prts-ui/package.json" ]; then
   V="$(node -e "console.log(require('$PROFILE_DIR/node_modules/dsh-prts-ui/package.json').version)" 2>/dev/null || echo '?')"

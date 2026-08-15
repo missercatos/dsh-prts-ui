@@ -30,7 +30,7 @@
       <div class="newButtons">
         <button class="sbBtn" id="newProjectBtn" type="button">
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.2v10.6M1.2 6.5h10.6" stroke="currentColor" stroke-width="1.2"/></svg>
-          <span data-i18n="sidebar.newProject">New project</span>
+          <span data-i18n="sidebar.newWorkspace">New workspace</span>
         </button>
         <button class="sbBtn" id="newSessionBtn" type="button">
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.2v10.6M1.2 6.5h10.6" stroke="currentColor" stroke-width="1.2" transform="rotate(45 6.5 6.5)"/></svg>
@@ -39,7 +39,7 @@
       </div>
       <div class="sbSection">
         <div class="sbSectionHead">
-          <span class="eyebrow" data-i18n="sidebar.projects">Projects</span>
+          <span class="eyebrow" data-i18n="sidebar.workspaces">Workspaces</span>
           <span class="count" id="projectCount"></span>
         </div>
         <div class="sbList" id="projectList"></div>
@@ -69,7 +69,7 @@
       <header class="cvtHeader" id="header">
         <div class="titleRow">
           <div class="crumbs">
-            <button class="crumb" disabled id="crumbProject">PRTS</button>
+            <button class="crumb" disabled id="crumbProject">dsh</button>
             <span class="headerMode" data-i18n="header.mode">STANDARD</span>
           </div>
           <div class="headerUtils">
@@ -134,16 +134,7 @@
                 <span class="pluginBar" id="pluginComposer"></span>
                 <button class="chip" id="modelChip" type="button">
                   <span class="dot"></span>
-                  <span class="label" id="modelChipLabel">deepseek-chat</span>
-                  <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
-                </button>
-                <button class="chip" id="strengthChip" type="button">
-                  <span class="label" id="strengthChipLabel">STRENGTH: MEDIUM</span>
-                  <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
-                </button>
-                <button class="chip" id="modeChip" type="button">
-                  <span class="dot"></span>
-                  <span class="label" id="modeChipLabel">STANDARD</span>
+                  <span class="label" id="modelChipLabel">dsh</span>
                   <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
                 </button>
                 <button class="chip" id="commandsChip" type="button">
@@ -200,35 +191,6 @@
       </button>
     </div>
     <div class="sField">
-      <div class="label"><span data-i18n="settings.apiKey">API Key</span></div>
-      <div class="sRow">
-        <input class="sInput" id="cfgApiKey" type="password" autocomplete="off" spellcheck="false">
-        <button class="sBtn" id="cfgApiKeyToggle" type="button">SHOW</button>
-      </div>
-      <div class="hint" data-i18n="settings.apiKey.hint">Stored locally in your config directory.</div>
-    </div>
-    <div class="sField">
-      <div class="label"><span data-i18n="settings.baseUrl">Base URL</span></div>
-      <input class="sInput" id="cfgBaseUrl" type="text" spellcheck="false">
-    </div>
-    <div class="sField">
-      <div class="label"><span data-i18n="settings.model">Model</span></div>
-      <select class="sInput sSelect" id="cfgModel">
-        <option value="deepseek-chat">deepseek-chat</option>
-        <option value="deepseek-reasoner">deepseek-reasoner</option>
-      </select>
-    </div>
-    <div class="sField">
-      <div class="label"><span data-i18n="settings.strength">Thinking strength</span></div>
-      <select class="sInput sSelect" id="cfgStrength">
-        <option value="off">OFF</option>
-        <option value="low">LOW</option>
-        <option value="medium">MEDIUM</option>
-        <option value="high">HIGH</option>
-      </select>
-      <div class="hint" data-i18n="settings.strength.hint">Off: no extended thinking. High: up to 32K reasoning tokens.</div>
-    </div>
-    <div class="sField">
       <div class="label"><span data-i18n="settings.language">Language</span></div>
       <select class="sInput sSelect" id="cfgLocale">
         <option value="auto">AUTO</option>
@@ -237,11 +199,11 @@
       </select>
     </div>
     <div class="sField">
-      <div class="label"><span data-i18n="settings.project">Current project</span></div>
-      <div id="cfgProjects"></div>
+      <div class="label"><span data-i18n="settings.providers">Providers &amp; API keys</span></div>
+      <div class="hint" data-i18n="settings.providers.hint">API keys are written to the dsh harness home (~/.dsh), managed by dsh — never by this plugin.</div>
+      <div id="cfgProviders"></div>
     </div>
     <div class="sRow" style="margin-top: 18px;">
-      <button class="sBtn" id="cfgTest" type="button" data-i18n="settings.test">Test connection</button>
       <button class="sBtn primary" id="cfgSave" type="button" data-i18n="settings.done">Done</button>
       <span class="sStatus" id="cfgStatus"></span>
     </div>

@@ -13,6 +13,9 @@ const { execFile } = require('node:child_process')
 let win = null
 const controllers = new Map()
 
+// The dsh web URL is passed as the first argv (launcher) or via DSH_WEB_URL.
+const DSH_WEB_URL = process.argv.find((a) => /^https?:\/\//.test(a)) || process.env.DSH_WEB_URL || 'http://127.0.0.1:3085'
+
 function createWindow() {
   win = new BrowserWindow({
     width: 1320,
@@ -28,6 +31,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      additionalArguments: ['--dsh-url=' + DSH_WEB_URL],
     },
   })
   win.once('ready-to-show', () => win.show())
@@ -85,6 +89,29 @@ ipcMain.handle('prts:http', async (e, req) => {
 ipcMain.handle('prts:abort', (_e, token) => {
   const c = controllers.get(token)
   if (c) c.abort()
+})
+
+/* ---------- dsh bridge: RPC + mux WebSocket relay (no CORS in Node) ---------- */
+let dshWs = null
+function dshWsConnect() {
+  const mux = DSH_WEB_URL.replace(/^http/, 'ws').replace(/\/+$/, '') + '/api/events.mux'
+  try {
+    dshWs = new WebSocket(mux)
+    dshWs.onmessage = (ev) => { if (win && !win.isDestroyed()) win.webContents.send('prts:dshFrame', ev.data) }
+    dshWs.onclose = () => { dshWs = null; setTimeout(dshWsConnect, 1000) }
+    dshWs.onerror = () => {}
+  } catch (e) { setTimeout(dshWsConnect, 1000) }
+}
+ipcMain.handle('prts:dshRequest', async (_e, method, payload) => {
+  const res = await fetch(DSH_WEB_URL.replace(/\/+$/, '') + '/api/' + method, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'client-request', rpcId: 'prts-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), method, payload: payload || {} }),
+  })
+  return res.json()
+})
+ipcMain.handle('prts:dshSend', (_e, msg) => {
+  if (dshWs && dshWs.readyState === 1) dshWs.send(msg)
 })
 
 /* ---------- system info (hardware + agent-side stats are computed in the renderer) ---------- */
@@ -194,6 +221,7 @@ app.whenReady().then(() => {
   })
   session.defaultSession.setPermissionCheckHandler((_wc, permission) => permission === 'media')
   createWindow()
+  dshWsConnect()
 })
 app.on('window-all-closed', () => app.quit())
 app.on('activate', () => {

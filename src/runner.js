@@ -1,6 +1,8 @@
 /**
- * PRTS runner: dispatches the booted selection to the GUI window (default),
- * the ANSI terminal client (--tui), or the desktop-shortcut refresh (--shortcut).
+ * PRTS runner: dispatches the booted selection to the GUI window (the only
+ * interactive surface) or the desktop-shortcut refresh. The GUI boots the dsh
+ * web backend and opens the PRTS window over it — PRTS is a shell, dsh is the
+ * agent.
  * @module dsh-prts-ui/runner
  */
 
@@ -16,24 +18,6 @@ export const inject = ['prtsStartup']
 export async function apply(ctx) {
   const dbg = (msg) => { if (process.env.DSH_PRTS_DEBUG) console.error('[prts-runner]', msg) }
   dbg('apply start')
-  const loader = ctx.get('loader')
-  dbg('loader = ' + (loader ? 'yes' : 'none'))
-  if (loader) {
-    // Loader siblings mount concurrently. Bound the readiness wait so the app
-    // still starts in constrained environments where the full tree never
-    // settles; the startup selection and launcher IO are ready regardless.
-    const READY_TIMEOUT_MS = Number(process.env.DSH_PRTS_READY_TIMEOUT ?? 4000)
-    if (READY_TIMEOUT_MS > 0) {
-      await Promise.race([
-        loader.await(),
-        new Promise((resolve) => setTimeout(resolve, READY_TIMEOUT_MS)),
-      ])
-    } else {
-      await loader.await()
-    }
-    dbg('loader await settled or timed out')
-  }
-  dbg('loader awaited')
   const startup = ctx.get('prtsStartup')
   dbg('startup = ' + (startup ? JSON.stringify(startup) : 'null'))
   if (!startup) return
@@ -56,22 +40,14 @@ export async function apply(ctx) {
       io.exit(0)
       return
     }
-    if (startup.mode === 'gui') {
-      const { launchGui } = await import('./gui-boot.js')
-      const launched = await launchGui({ locale: startup.locale, project: startup.project })
-      if (!launched) {
-        io.err('PRTS: could not start the GUI (see above). Try `dsh --profile prts --tui`.\n')
-        io.exit(1)
-        return
-      }
-      io.exit(0)
+    // GUI (default): boot the dsh web backend and open the window over it.
+    const { launchGui } = await import('./gui-boot.js')
+    const launched = await launchGui({ locale: startup.locale })
+    if (!launched) {
+      io.err('PRTS: could not start the GUI (see above).\n')
+      io.exit(1)
       return
     }
-    // tui
-    const { runTui } = await import('./tui/main.mjs')
-    dbg('runTui module loaded')
-    await runTui({ locale: startup.locale, project: startup.project })
-    dbg('runTui settled')
     io.exit(0)
   } catch (error) {
     dbg('error: ' + (error instanceof Error ? error.stack : String(error)))

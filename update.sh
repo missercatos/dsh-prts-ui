@@ -27,7 +27,25 @@ fi
 [ -n "$TGZ" ] && [ -f "$TGZ" ] || die "tarball not found: $TGZ"
 
 say "Updating the plugin in profile 'prts'…"
-dsh plugin --profile prts install "$TGZ" || warn "pnpm reported a warning; continuing."
+# Approve the build scripts first so pnpm exits cleanly (pnpm 11 uses the full
+# file: specifier as the allowBuilds key for file: dependencies).
+PROFILE_DIR="${DSH_HOME:-$HOME/.dsh}/profiles/prts"
+node - "$PROFILE_DIR" "$TGZ" <<'NODE'
+const fs = require('fs')
+const path = require('path')
+const [profileDir, tgz] = process.argv.slice(2)
+const rel = path.relative(profileDir, tgz).split('\\').join('/')
+const y =
+  'allowBuilds:\n' +
+  '  dsh-prts-ui@file:' + rel + ': true\n' +
+  '  node-pty: true\n' +
+  '  koffi: true\n' +
+  '  protobufjs: true\n' +
+  "  '@google/genai': true\n" +
+  "  '@deepseek-ai/dsh-subprocess-local': true\n"
+fs.writeFileSync(path.join(profileDir, 'pnpm-workspace.yaml'), y)
+NODE
+dsh plugin --profile prts install "$TGZ"
 [ -f "${DSH_HOME:-$HOME/.dsh}/profiles/prts/node_modules/dsh-prts-ui/package.json" ] || die "plugin not present after update."
 
 say "Refreshing desktop + app-menu shortcuts…"
