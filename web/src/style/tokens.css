@@ -1,0 +1,40 @@
+/* PRTS design tokens — pure black/white. Dark is the default surface; light
+   inverts the pair. Every component derives from these tokens only. */
+:root {
+  --prts-bg: #0A0A0B;
+  --prts-surface: #111112;
+  --prts-surface-2: #161618;
+  --prts-ink: #FAFAFA;
+  --prts-ink-dim: #9C9CA1;
+  --prts-ink-faint: #626266;
+  --prts-hairline: rgba(250, 250, 250, 0.14);
+  --prts-hairline-strong: rgba(250, 250, 250, 0.3);
+  --prts-panel: #0D0D0E;
+  --prts-invert-bg: #FAFAFA;
+  --prts-invert-ink: #0A0A0B;
+  --prts-scrim: rgba(0, 0, 0, 0.6);
+  --prts-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(250, 250, 250, 0.04);
+  --prts-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --prts-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --prts-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --prts-mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas, Menlo,
+    'Liberation Mono', 'PingFang SC', 'Microsoft YaHei', monospace;
+  color-scheme: dark;
+}
+[data-theme='light'] {
+  --prts-bg: #FAFAFA;
+  --prts-surface: #F3F3F3;
+  --prts-surface-2: #EBEBEB;
+  --prts-ink: #0A0A0B;
+  --prts-ink-dim: #5C5C60;
+  --prts-ink-faint: #A6A6AA;
+  --prts-hairline: rgba(10, 10, 11, 0.14);
+  --prts-hairline-strong: rgba(10, 10, 11, 0.3);
+  --prts-panel: #FFFFFF;
+  --prts-invert-bg: #0A0A0B;
+  --prts-invert-ink: #FAFAFA;
+  --prts-scrim: rgba(250, 250, 250, 0.6);
+  --prts-shadow: 0 12px 32px rgba(10, 10, 11, 0.12), 0 0 0 1px rgba(10, 10, 11, 0.04);
+  color-scheme: light;
+}

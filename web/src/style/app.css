@@ -1,0 +1,47 @@
+/* ===== PRTS logo marks ===== */
+.rhombus, .rhombus-lg {
+  display: inline-block; position: relative; flex: none;
+  transform: rotate(45deg); background: transparent;
+  border: 1.5px solid var(--prts-ink);
+}
+.rhombus { width: 14px; height: 14px; }
+.rhombus-lg { width: 22px; height: 22px; }
+.rhombus::after, .rhombus-lg::after {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotate(45deg); background: var(--prts-ink);
+}
+.rhombus::after { width: 5px; height: 5px; }
+.rhombus-lg::after { width: 8px; height: 8px; }
+
+/* ===== Particle intro overlay ===== */
+.intro {
+  position: fixed; inset: 0; z-index: 150; background: var(--prts-bg);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 1; pointer-events: all;
+  transition: opacity 0.7s var(--prts-ease-out);
+}
+.intro.done { opacity: 0; pointer-events: none; }
+#introCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.introTag {
+  position: absolute; left: 50%; bottom: 13vh; transform: translateX(-50%);
+  font-size: 11px; letter-spacing: 0.5em; text-indent: 0.5em;
+  color: var(--prts-ink-faint); white-space: nowrap; pointer-events: none;
+  opacity: 0; transition: opacity 0.6s var(--prts-ease);
+}
+.introTag.show { opacity: 1; }
+
+/* ===== Trajectory view ===== */
+.trajView { flex: 1; overflow-y: auto; padding: 24px; }
+.trajItem {
+  display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--prts-hairline);
+  font-size: 13px; line-height: 22px; color: var(--prts-ink-dim);
+}
+.trajItem .idx { flex: none; font-family: var(--prts-mono); font-size: 11px; color: var(--prts-ink-faint); padding-top: 3px; }
+.trajEmpty { padding: 60px 0; text-align: center; color: var(--prts-ink-faint); font-size: 13px; letter-spacing: 0.08em; }
+
+/* ===== New project inline form ===== */
+.inlineForm { display: flex; gap: 6px; padding: 2px; }
+.inlineForm input {
+  flex: 1; min-width: 0; height: 30px; padding: 0 10px; border: 1px solid var(--prts-hairline-strong);
+  border-radius: 4px; background: var(--prts-surface); color: var(--prts-ink); font-size: 13px; outline: none;
+}

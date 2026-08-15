@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="5"/>
+      <feOffset dx="0" dy="7" result="off"/>
+      <feFlood flood-color="#000000" flood-opacity="0.55"/>
+      <feComposite in2="off" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- PRTS mark: white diamond outline, italic P/R/T/S corner letters, and a
+       small italic PRTS wordmark with an accent rule across the centre. -->
+  <g filter="url(#shadow)" fill="#FFFFFF">
+    <path d="M256 30 L482 256 L256 482 L30 256 Z" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linejoin="round"/>
+    <text x="150" y="204" font-family="'Liberation Sans','DejaVu Sans',sans-serif" font-size="124" font-style="italic" font-weight="700" text-anchor="middle">P</text>
+    <text x="362" y="204" font-family="'Liberation Sans','DejaVu Sans',sans-serif" font-size="124" font-style="italic" font-weight="700" text-anchor="middle">R</text>
+    <text x="150" y="384" font-family="'Liberation Sans','DejaVu Sans',sans-serif" font-size="112" font-style="italic" font-weight="700" text-anchor="middle">T</text>
+    <text x="362" y="384" font-family="'Liberation Sans','DejaVu Sans',sans-serif" font-size="112" font-style="italic" font-weight="700" text-anchor="middle">S</text>
+    <text x="256" y="262" font-family="'Liberation Sans','DejaVu Sans',sans-serif" font-size="38" font-style="italic" font-weight="700" text-anchor="middle">PRTS</text>
+    <path d="M164 274 H348" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+  </g>
+</svg>

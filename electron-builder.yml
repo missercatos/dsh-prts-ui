@@ -1,0 +1,29 @@
+appId: ai.deepseek.prts
+productName: PRTS
+asar: true
+files:
+  - electron/**
+  - src/**
+  - web/index.html
+  - assets/prts.png
+  - package.json
+directories:
+  output: dist
+linux:
+  icon: assets/prts.png
+  target:
+    - AppImage
+    - deb
+  category: Utility
+  maintainer: PRTS contributors
+  synopsis: Monochrome DeepSeek chat client
+mac:
+  target:
+    - dmg
+  category: public.app-category.productivity
+win:
+  target:
+    - nsis
+npmRebuild: false
+electronDownload:
+  cache: ~/.cache/prts/electron

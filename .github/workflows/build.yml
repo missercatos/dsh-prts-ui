@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  bundle-and-pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Rebuild GUI bundle
+        run: pnpm bundle
+
+      - name: Verify bundle is committed
+        run: git diff --exit-code web/index.html || (echo "web/index.html is out of date — run pnpm bundle" && exit 1)
+
+      - name: Pack profile tarball
+        run: pnpm pack --out dsh-prts-ui.tgz
+
+      - name: Upload tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsh-prts-ui.tgz
+          path: dsh-prts-ui.tgz

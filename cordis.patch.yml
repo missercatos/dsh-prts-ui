@@ -1,0 +1,16 @@
+# dsh-prts-ui bundle patch: PRTS, a monochrome DeepSeek chat client.
+# It mounts no agent shell, no Host and no HTTP server: the startup provider
+# parses the app flags (`dsh --profile prts [--tui] [--lang zh] [--project x]`),
+# and the runner opens the GUI window (default), runs the ANSI terminal client
+# (--tui), or refreshes the desktop shortcut (--shortcut).
+
+- id: hmr
+  disabled: true
+
+- insert:
+  - id: prts-startup
+    name: 'dsh-prts-ui/startup'
+
+  - id: prts-runner
+    name: 'dsh-prts-ui/runner'
+    inject: [prtsStartup]

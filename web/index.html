@@ -1,0 +1,3871 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PRTS</title>
+<style>
+/* ===== PRTS logo marks ===== */
+.rhombus, .rhombus-lg {
+  display: inline-block; position: relative; flex: none;
+  transform: rotate(45deg); background: transparent;
+  border: 1.5px solid var(--prts-ink);
+}
+.rhombus { width: 14px; height: 14px; }
+.rhombus-lg { width: 22px; height: 22px; }
+.rhombus::after, .rhombus-lg::after {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotate(45deg); background: var(--prts-ink);
+}
+.rhombus::after { width: 5px; height: 5px; }
+.rhombus-lg::after { width: 8px; height: 8px; }
+
+/* ===== Particle intro overlay ===== */
+.intro {
+  position: fixed; inset: 0; z-index: 150; background: var(--prts-bg);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 1; pointer-events: all;
+  transition: opacity 0.7s var(--prts-ease-out);
+}
+.intro.done { opacity: 0; pointer-events: none; }
+#introCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.introTag {
+  position: absolute; left: 50%; bottom: 13vh; transform: translateX(-50%);
+  font-size: 11px; letter-spacing: 0.5em; text-indent: 0.5em;
+  color: var(--prts-ink-faint); white-space: nowrap; pointer-events: none;
+  opacity: 0; transition: opacity 0.6s var(--prts-ease);
+}
+.introTag.show { opacity: 1; }
+
+/* ===== Trajectory view ===== */
+.trajView { flex: 1; overflow-y: auto; padding: 24px; }
+.trajItem {
+  display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--prts-hairline);
+  font-size: 13px; line-height: 22px; color: var(--prts-ink-dim);
+}
+.trajItem .idx { flex: none; font-family: var(--prts-mono); font-size: 11px; color: var(--prts-ink-faint); padding-top: 3px; }
+.trajEmpty { padding: 60px 0; text-align: center; color: var(--prts-ink-faint); font-size: 13px; letter-spacing: 0.08em; }
+
+/* ===== New project inline form ===== */
+.inlineForm { display: flex; gap: 6px; padding: 2px; }
+.inlineForm input {
+  flex: 1; min-width: 0; height: 30px; padding: 0 10px; border: 1px solid var(--prts-hairline-strong);
+  border-radius: 4px; background: var(--prts-surface); color: var(--prts-ink); font-size: 13px; outline: none;
+}
+
+/* ===== Chat flow ===== */
+.flowItem { min-width: 0; }
+.flowItem:empty { display: none; }
+.sessionDivider { display: flex; align-items: center; gap: 12px; padding: 14px 0 2px; color: var(--prts-ink-faint); }
+.sessionDivider::before, .sessionDivider::after { content: ''; flex: 1; height: 1px; background: var(--prts-hairline); }
+.sessionDivider .dt { font-size: 11px; letter-spacing: 0.24em; }
+
+.userRow { display: flex; justify-content: flex-end; }
+.userBubble {
+  max-width: min(525px, 82%); padding: 10px 16px; border-radius: 12px;
+  background: var(--prts-surface); border: 1px solid var(--prts-hairline);
+  color: var(--prts-ink); font-size: 14px; line-height: 24px; white-space: pre-wrap; word-break: break-word;
+}
+.assistantItem { min-width: 0; }
+.para { margin: 0; font-size: 14px; line-height: 24px; color: var(--prts-ink); white-space: pre-wrap; word-break: break-word; }
+.para .caret { display: inline-block; width: 7px; height: 15px; margin-left: 2px; vertical-align: -2px; background: var(--prts-ink); animation: prts-blink 1s steps(2) infinite; }
+@keyframes prts-blink { 50% { opacity: 0; } }
+
+.disclosure { min-width: 0; }
+.dRow {
+  display: flex; align-items: center; gap: 8px; height: 24px; padding: 0 4px; border: none;
+  background: transparent; cursor: pointer; color: var(--prts-ink-dim); text-align: left; width: 100%;
+}
+.dRow:hover { color: var(--prts-ink); }
+.dRow .chev { transition: transform 0.2s var(--prts-ease); color: var(--prts-ink-faint); }
+.disclosure.open .dRow .chev { transform: rotate(90deg); }
+.dTitle { font-size: 13px; line-height: 22px; letter-spacing: 0.02em; }
+.dBody { display: none; padding: 2px 0 6px 28px; }
+.disclosure.open .dBody { display: block; }
+.thinkBody { font-size: 13px; line-height: 22px; color: var(--prts-ink-dim); white-space: pre-wrap; word-break: break-word; max-height: 240px; overflow-y: auto; }
+
+.maRow { display: flex; align-items: center; gap: 8px; height: 26px; padding: 0 2px; }
+.maRow.timeStart { flex-direction: row-reverse; }
+.maTime { font-size: 11px; color: var(--prts-ink-faint); font-family: var(--prts-mono); padding: 0 6px; }
+.maActions { display: flex; align-items: center; gap: 2px; opacity: 0; transition: opacity 0.15s var(--prts-ease); }
+@media (hover: hover) { .userRow:hover .maActions, .assistantItem:hover .maActions, .maActions:focus-within { opacity: 1; } }
+.maBtn {
+  display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px;
+  border: none; border-radius: 4px; background: transparent; color: var(--prts-ink-faint); cursor: pointer;
+}
+.maBtn:hover { background: var(--prts-surface-2); color: var(--prts-ink); }
+.maBtn.on { color: var(--prts-ink); }
+
+.statsLine { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0 12px; padding: 6px 24px 0; font-size: 11px; line-height: 20px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+.dockStats { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 6px 18px; padding: 12px 24px; border-top: 1px solid var(--prts-hairline); font-size: 12px; line-height: 20px; color: var(--prts-ink-dim); font-family: var(--prts-mono); }
+.dockStats b { font-weight: 600; color: var(--prts-ink); }
+
+.errorRow {
+  display: flex; align-items: flex-start; gap: 8px; padding: 10px 14px; border: 1px solid var(--prts-hairline-strong);
+  border-radius: 8px; color: var(--prts-ink-dim); font-size: 13px; line-height: 20px;
+}
+.emptyChat { padding: 60px 0; text-align: center; color: var(--prts-ink-faint); font-size: 13px; letter-spacing: 0.06em; }
+
+/* ===== Details panel ===== */
+.dtPanel { display: flex; flex-direction: column; height: 100%; }
+.dtHeader { display: flex; align-items: center; justify-content: space-between; padding: 12px 10px 10px 14px; border-bottom: 1px solid var(--prts-hairline); }
+.dtTitle { font-size: 13px; letter-spacing: 0.2em; color: var(--prts-ink); font-weight: 500; }
+.dtBody { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px; }
+.dtEmpty { font-size: 12px; line-height: 20px; color: var(--prts-ink-faint); }
+.dtField { margin-bottom: 14px; }
+.dtField .k { font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--prts-ink-faint); margin-bottom: 4px; }
+.dtField .v { font-size: 13px; line-height: 20px; color: var(--prts-ink); word-break: break-word; font-family: var(--prts-mono); }
+
+/* ===== Settings overlay ===== */
+.overlay {
+  position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+  background: var(--prts-scrim); backdrop-filter: blur(3px);
+  opacity: 0; pointer-events: none; transition: opacity 0.2s var(--prts-ease);
+}
+.overlay.open { opacity: 1; pointer-events: auto; }
+.settingsCard {
+  width: min(460px, calc(100vw - 48px)); max-height: calc(100vh - 80px); overflow-y: auto;
+  background: var(--prts-panel); border: 1px solid var(--prts-hairline); border-radius: 12px;
+  box-shadow: var(--prts-shadow); padding: 20px 22px;
+  transform: translateY(10px); transition: transform 0.2s var(--prts-ease-out);
+}
+.overlay.open .settingsCard { transform: translateY(0); }
+.settingsHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.settingsHead .title { font-size: 14px; letter-spacing: 0.24em; color: var(--prts-ink); }
+.sField { margin-bottom: 16px; }
+.sField .label { display: flex; align-items: center; justify-content: space-between; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--prts-ink-faint); margin-bottom: 6px; }
+.sField .hint { font-size: 11px; line-height: 18px; color: var(--prts-ink-faint); margin-top: 4px; }
+.sInput {
+  width: 100%; height: 34px; padding: 0 10px; border: 1px solid var(--prts-hairline); border-radius: 6px;
+  background: var(--prts-surface); color: var(--prts-ink); font-size: 13px; outline: none;
+  transition: border-color 0.15s var(--prts-ease);
+}
+.sInput:focus { border-color: var(--prts-hairline-strong); }
+.sSelect { appearance: none; padding-right: 28px; background-image: linear-gradient(45deg, transparent 50%, var(--prts-ink-faint) 50%), linear-gradient(135deg, var(--prts-ink-faint) 50%, transparent 50%); background-position: calc(100% - 14px) 50%, calc(100% - 9px) 50%; background-size: 5px 5px; background-repeat: no-repeat; cursor: pointer; }
+.sRow { display: flex; gap: 8px; align-items: center; }
+.sBtn {
+  display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 14px;
+  border: 1px solid var(--prts-hairline); border-radius: 6px; background: transparent;
+  color: var(--prts-ink-dim); font-size: 13px; line-height: 20px; cursor: pointer;
+  transition: border-color 0.15s var(--prts-ease), color 0.15s var(--prts-ease);
+}
+.sBtn:hover { border-color: var(--prts-hairline-strong); color: var(--prts-ink); }
+.sBtn.primary { background: var(--prts-ink); color: var(--prts-bg); border-color: var(--prts-ink); }
+.sBtn.primary:hover { opacity: 0.85; }
+.sBtn:disabled { opacity: 0.4; cursor: default; }
+.sStatus { font-size: 12px; line-height: 20px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+.projectRow { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.projectRow .pname { flex: 1; font-size: 13px; color: var(--prts-ink); }
+.projectRow .pmeta { font-size: 11px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+
+/* ===== Sidebar ===== */
+.sb { display: flex; flex-direction: column; height: 100%; padding: 6px 10px; }
+.logoRow { display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 8px 4px 8px 10px; }
+.brand { display: inline-flex; align-items: center; gap: 8px; padding: 0; border: none; background: transparent; cursor: pointer; color: var(--prts-ink); }
+.brand .word {
+  font-size: 15px; font-weight: 600; letter-spacing: 0.22em; font-style: italic;
+}
+.sbActions { display: flex; align-items: center; gap: 2px; }
+.newButtons { display: flex; gap: 6px; padding: 2px 2px 10px; }
+.sbBtn {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 34px; border: 1px solid var(--prts-hairline); border-radius: 6px;
+  background: transparent; color: var(--prts-ink-dim); font-size: 13px; line-height: 20px;
+  cursor: pointer; transition: border-color 0.15s var(--prts-ease), color 0.15s var(--prts-ease);
+}
+.sbBtn:hover { border-color: var(--prts-hairline-strong); color: var(--prts-ink); }
+.sbSection { margin: 2px 0 4px; }
+.sbSectionHead { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 6px; }
+.sbSectionHead .eyebrow { flex: 1; }
+.sbSectionHead .count { font-size: 11px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+.sbList { display: flex; flex-direction: column; gap: 2px; max-height: 40%; overflow-y: auto; }
+.sbItem {
+  display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px;
+  border: none; border-radius: 6px; background: transparent; cursor: pointer;
+  color: var(--prts-ink-dim); font-size: 13px; line-height: 20px; text-align: left;
+}
+.sbItem:hover { background: var(--prts-surface-2); color: var(--prts-ink); }
+.sbItem.active { background: var(--prts-surface-2); color: var(--prts-ink); box-shadow: inset 2px 0 0 var(--prts-ink); }
+.sbItem .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sbItem .meta { font-size: 11px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+.sbItem .rowBtn { display: none; width: 22px; height: 22px; }
+.sbItem:hover .rowBtn { display: inline-flex; }
+.sbEmpty { padding: 8px 10px; font-size: 12px; line-height: 18px; color: var(--prts-ink-faint); }
+.sbFoot { margin-top: auto; display: flex; flex-direction: column; gap: 2px; padding-top: 8px; border-top: 1px solid var(--prts-hairline); }
+.sbFootItem { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border: none; border-radius: 6px; background: transparent; cursor: pointer; color: var(--prts-ink-dim); font-size: 13px; line-height: 20px; }
+.sbFootItem:hover { background: var(--prts-surface-2); color: var(--prts-ink); }
+
+/* ===== Conversation column ===== */
+.cvt { display: flex; flex-direction: column; height: 100%; min-width: 0; }
+.cvtHeader { flex: none; padding: 10px 20px 0 16px; border-bottom: 1px solid var(--prts-hairline); }
+.cvt[data-phase='hero'] .cvtHeader { display: none; }
+.titleRow { display: flex; align-items: center; min-height: 34px; }
+.crumbs { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; white-space: nowrap; }
+.crumb { max-width: 240px; overflow: hidden; padding: 3px 8px; border: none; border-radius: 4px; background: transparent; font-size: 13px; line-height: 20px; color: var(--prts-ink-faint); text-overflow: ellipsis; white-space: nowrap; }
+.crumb[disabled] { font-weight: 500; color: var(--prts-ink); cursor: default; }
+.headerMode { padding: 3px 8px; font-size: 10px; letter-spacing: 0.3em; color: var(--prts-ink-faint); border: 1px solid var(--prts-hairline); border-radius: 4px; white-space: nowrap; }
+.headerUtils { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.logBtn {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px;
+  border: 1px solid var(--prts-hairline); border-radius: 15px; background: transparent;
+  color: var(--prts-ink-dim); font-size: 12px; line-height: 20px; cursor: pointer;
+}
+.logBtn:hover { border-color: var(--prts-hairline-strong); color: var(--prts-ink); }
+.tabs { display: flex; gap: 28px; padding-left: 6px; }
+.tab { position: relative; padding: 8px 0 10px; border: none; background: transparent; font-size: 13px; line-height: 16px; color: var(--prts-ink-faint); cursor: pointer; }
+.tab::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: transparent; }
+.tab.active { color: var(--prts-ink); }
+.tab.active::after { background: var(--prts-ink); }
+
+.scrollBody { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+.chatScroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 18px 24px 8px; }
+.cvt[data-phase='active'] .heroView { display: none; }
+.chatColumn { max-width: 760px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+
+/* ===== Hero ===== */
+.heroView { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.heroCanvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.heroStack { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 1; }
+.heroLogo { display: flex; align-items: center; gap: 14px; }
+.heroWord {
+  font-size: 34px; line-height: 40px; font-weight: 600; font-style: italic;
+  letter-spacing: 0.3em; color: var(--prts-ink); text-indent: 0.3em;
+}
+.heroSub { display: flex; align-items: center; gap: 10px; }
+.heroSub .rule { width: 44px; height: 1px; background: var(--prts-hairline-strong); }
+.heroReady { font-size: 12px; letter-spacing: 0.26em; color: var(--prts-ink-faint); }
+.heroProjectRow { margin-top: 8px; }
+.workspaceBtn {
+  display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px;
+  border: 1px solid var(--prts-hairline); border-radius: 15px; background: transparent;
+  color: var(--prts-ink-dim); font-size: 12px; line-height: 20px; letter-spacing: 0.08em; cursor: pointer;
+}
+.workspaceBtn:hover { border-color: var(--prts-hairline-strong); color: var(--prts-ink); }
+
+/* ===== Composer ===== */
+.composerArea { flex: none; width: 100%; max-width: 792px; margin: 0 auto; padding: 8px 24px 18px; }
+.statusRow { display: flex; align-items: center; gap: 8px; height: 22px; padding: 0 4px 4px; color: var(--prts-ink-faint); font-size: 12px; letter-spacing: 0.06em; }
+.shimmer { animation: prts-shimmer 1.6s linear infinite; }
+@keyframes prts-shimmer { 0% { opacity: 0.35; } 50% { opacity: 1; } 100% { opacity: 0.35; } }
+
+/* Expand toggle — an up-triangle with a notch and flowing dots (Arknights). */
+.composerExpandRow { display: flex; align-items: center; justify-content: center; height: 22px; }
+.expandBtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 22px; padding: 0; border: none; background: transparent;
+  color: var(--prts-ink-faint); cursor: pointer; opacity: 0.55;
+  transition: opacity 0.2s var(--prts-ease), color 0.2s var(--prts-ease);
+}
+.expandBtn:hover { opacity: 1; color: var(--prts-ink-dim); }
+.expandBtn .expandIcon { transition: transform 0.3s var(--prts-ease-out); }
+.composerArea.expanded .expandBtn .expandIcon { transform: rotate(180deg); }
+.expandBtn .edot { animation: prts-dotflow 2.4s ease-in-out infinite; }
+.expandBtn .edot:nth-of-type(2) { animation-delay: 0.3s; }
+.expandBtn .edot:nth-of-type(3) { animation-delay: 0.6s; }
+@keyframes prts-dotflow { 0%, 100% { opacity: 0.12; } 45% { opacity: 1; } }
+
+/* Borderless composer — no white box, only the caret. */
+.composerCard { display: flex; flex-direction: column; }
+.composerInput {
+  width: 100%; height: 52px; padding: 6px 14px 2px 16px;
+  border: none; outline: none; background: transparent; resize: none; overflow-y: auto;
+  font-size: 15px; line-height: 24px; color: var(--prts-ink);
+  caret-color: var(--prts-ink);
+}
+.composerInput:focus, .composerInput:focus-visible { outline: none; }
+.composerArea.expanded .composerInput { height: min(38vh, 320px); }
+.composerInput::placeholder { color: var(--prts-ink-faint); }
+.composerToolbar { display: flex; align-items: center; gap: 8px; padding: 2px 8px 8px; }
+.toolGroup { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.spacer { flex: 1; }
+.chip {
+  position: relative; display: inline-flex; align-items: center; gap: 6px; height: 30px;
+  padding: 0 10px; border: 1px solid transparent; border-radius: 15px; background: transparent;
+  color: var(--prts-ink-dim); font-size: 12px; line-height: 20px; cursor: pointer; white-space: nowrap;
+}
+.chip:hover { background: var(--prts-surface-2); color: var(--prts-ink); }
+.chip .chev { color: var(--prts-ink-faint); }
+.chip .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--prts-ink-faint); }
+.chip.on .dot { background: var(--prts-ink); }
+.meterBtn { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px; border: none; border-radius: 15px; background: transparent; color: var(--prts-ink-faint); font-size: 12px; line-height: 20px; cursor: pointer; }
+.meterBtn:hover { background: var(--prts-surface-2); color: var(--prts-ink-dim); }
+.sendBtn {
+  display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px;
+  border: none; border-radius: 17px; padding: 0; background: var(--prts-ink); color: var(--prts-bg);
+  cursor: pointer; transition: opacity 0.15s var(--prts-ease), transform 0.15s var(--prts-ease);
+}
+.sendBtn:hover { opacity: 0.85; }
+.sendBtn:disabled { opacity: 0.25; cursor: default; }
+.stopBtn {
+  display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px;
+  border: 1px solid var(--prts-hairline-strong); border-radius: 17px; padding: 0;
+  background: transparent; color: var(--prts-ink); cursor: pointer;
+}
+.stopBtn:hover { background: var(--prts-surface-2); }
+
+/* Popovers (model / strength / commands / meter / projects). Triggers sit at
+   the bottom of the frame, so popovers open upward and scroll when long. */
+.pop {
+  position: absolute; bottom: calc(100% + 6px); left: 0; z-index: 60; display: none;
+  min-width: 200px; max-width: 280px; max-height: min(46vh, 360px);
+  padding: 6px; overflow-y: auto; overscroll-behavior: contain;
+  border-radius: 8px;
+  background: var(--prts-surface-2); border: 1px solid var(--prts-hairline);
+  box-shadow: var(--prts-shadow); color: var(--prts-ink);
+}
+.pop.open { display: block; }
+.pop::-webkit-scrollbar { width: 6px; }
+.popItem { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px; border-radius: 4px; font-size: 13px; line-height: 20px; cursor: pointer; }
+.popItem:hover { background: var(--prts-surface); }
+.popItem.selected .label { color: var(--prts-ink); font-weight: 500; }
+.popItem .label { color: var(--prts-ink-dim); }
+.popItem .tick { margin-left: auto; color: var(--prts-ink); display: none; }
+.popItem.selected .tick { display: block; }
+.popItem .desc { font-size: 11px; color: var(--prts-ink-faint); }
+.popMeta { padding: 8px 10px; font-size: 11px; line-height: 18px; color: var(--prts-ink-faint); border-top: 1px solid var(--prts-hairline); margin-top: 4px; }
+
+/* ===== Brand waveform (voice input line effect on the PRTS mark) ===== */
+.brandFx { width: 48px; height: 16px; opacity: 0; transition: opacity 0.2s var(--prts-ease); pointer-events: none; }
+.brandFx.on { opacity: 1; }
+.brandFx.listening { opacity: 0.45; }
+.brandFx.speaking { opacity: 1; }
+
+/* ===== Voice input button ===== */
+.voiceBtn { gap: 4px; }
+.voiceBtn .micIcon { color: var(--prts-ink-faint); }
+.voiceBtn:hover .micIcon { color: var(--prts-ink-dim); }
+.voiceBtn.on .micIcon { color: var(--prts-ink); }
+.voiceBtn.recognizing .micIcon { color: var(--prts-ink); animation: prts-shimmer 1.2s linear infinite; }
+
+/* ===== Plugin bar (community dsh plugin buttons) ===== */
+.pluginBar { display: inline-flex; align-items: center; gap: 4px; }
+.pluginBar:empty { display: none; }
+.pluginBtn {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; padding: 0; border: 1px solid var(--prts-hairline);
+  border-radius: 15px; background: transparent; color: var(--prts-ink-dim);
+  cursor: pointer; transition: border-color 0.15s var(--prts-ease), color 0.15s var(--prts-ease);
+}
+.pluginBtn:hover { border-color: var(--prts-hairline-strong); color: var(--prts-ink); }
+.pluginBtn svg { width: 14px; height: 14px; }
+.pluginBtn .pluginBadge {
+  position: absolute; top: -2px; right: -2px; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--prts-ink); opacity: 0.85;
+}
+
+/* ===== System panel ===== */
+.sysOverlay { z-index: 120; }
+.sysCard {
+  width: min(920px, calc(100vw - 64px)); max-height: calc(100vh - 64px); overflow: hidden;
+  background: var(--prts-panel); border: 1px solid var(--prts-hairline); border-radius: 12px;
+  box-shadow: var(--prts-shadow); display: flex; flex-direction: column;
+  transform: translateY(10px) scale(0.99); transition: transform 0.24s var(--prts-ease-out);
+}
+.overlay.open .sysCard { transform: translateY(0) scale(1); }
+.sysHead {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px 12px 18px; border-bottom: 1px solid var(--prts-hairline);
+}
+.sysTitle {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: 13px; letter-spacing: 0.28em; font-weight: 500; color: var(--prts-ink);
+}
+.rhombus-s {
+  display: inline-block; width: 9px; height: 9px; transform: rotate(45deg);
+  border: 1.2px solid var(--prts-ink); flex: none;
+}
+.sysSlash { color: var(--prts-ink-faint); letter-spacing: 0; }
+.sysBody {
+  display: grid; grid-template-columns: minmax(240px, 38%) 1fr; gap: 0; min-height: 0; overflow: hidden;
+}
+.sysVisual {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  border-right: 1px solid var(--prts-hairline); min-height: 300px; padding: 24px;
+  overflow: hidden;
+}
+#sysRing { width: 100%; max-width: 300px; aspect-ratio: 1; display: block; }
+.sysVisualTag {
+  position: absolute; display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none;
+}
+.sysVisualWord {
+  font-size: 20px; font-weight: 600; font-style: italic; letter-spacing: 0.3em;
+  color: var(--prts-ink); text-indent: 0.3em;
+}
+
+/* fastfetch / btop-style telemetry: one space, line-divided blocks. */
+.sysStats {
+  display: grid; grid-template-columns: 1fr 1px 1fr; gap: 0; min-width: 0;
+  overflow-y: auto; padding: 16px 18px 18px;
+}
+.sysBlock { min-width: 0; padding: 0 14px; }
+.sysBlock:first-child { padding-left: 0; }
+.sysBlock:last-child { padding-right: 0; }
+.sysDivider { background: var(--prts-hairline); margin: 2px 0; }
+.sysBlockTitle {
+  padding-bottom: 8px; margin-bottom: 4px;
+  border-bottom: 1px solid var(--prts-hairline);
+  letter-spacing: 0.34em;
+}
+.sysRows { display: flex; flex-direction: column; }
+.sysRow {
+  display: grid; grid-template-columns: 86px 1fr; column-gap: 10px; align-items: center;
+  min-height: 28px; padding: 5px 0;
+  border-bottom: 1px solid var(--prts-hairline);
+}
+.sysRow:last-child { border-bottom: none; }
+.sysK {
+  font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--prts-ink-faint);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sysV { text-align: right; min-width: 0; }
+.sysVal {
+  font-family: var(--prts-mono); font-size: 13px; line-height: 20px; color: var(--prts-ink);
+  font-variant-numeric: tabular-nums; word-break: break-word;
+}
+.sysBar {
+  grid-column: 1 / -1; height: 2px; margin-top: -2px;
+  border-radius: 1px; background: var(--prts-hairline); overflow: hidden;
+}
+.sysBarFill {
+  height: 100%; border-radius: 1px; background: var(--prts-ink);
+  transition: none;
+}
+
+/* ===== Small screens: stack the system panel ===== */
+@media (max-width: 760px) {
+  .sysBody { grid-template-columns: 1fr; }
+  .sysVisual { border-right: none; border-bottom: 1px solid var(--prts-hairline); min-height: 220px; }
+  .sysStats { grid-template-columns: 1fr; }
+  .sysDivider { display: none; }
+  .sysBlock { padding: 0; }
+  .sysBlock:last-child { border-top: 1px solid var(--prts-hairline); margin-top: 12px; padding-top: 10px; }
+}
+
+/* PRTS frame layout: sidebar / main / details, all hairline-divided. */
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--prts-font);
+  font-size: 14px;
+  line-height: 24px;
+  color: var(--prts-ink);
+  background: var(--prts-bg);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+* { box-sizing: border-box; }
+button { font-family: inherit; color: inherit; }
+input, textarea, select { font-family: inherit; }
+svg { display: block; flex: none; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 1px solid var(--prts-ink);
+  outline-offset: 2px;
+}
+button:focus:not(:focus-visible) { outline: none; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--prts-hairline-strong); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--prts-ink-faint); }
+::-webkit-scrollbar-track { background: transparent; }
+
+.frame {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--dsh-sb, 272px) minmax(0, 1fr) var(--dsh-dt, 0px);
+  height: 100%;
+  overflow: hidden;
+  background: var(--prts-bg);
+  transition: grid-template-columns 0.3s var(--prts-ease);
+}
+.frame[data-dragging] { transition: none; }
+
+.sbCol { min-width: 0; overflow: hidden; background: var(--prts-panel); border-right: 1px solid var(--prts-hairline); }
+.ctCol { min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+.dtCol { min-width: 0; overflow: hidden; border-left: 1px solid var(--prts-hairline); background: var(--prts-panel); }
+.frame[data-details-collapsed] .dtCol { border-left: none; }
+.handle {
+  position: absolute; top: 0; bottom: 0; width: 8px; margin-left: -4px;
+  cursor: col-resize; z-index: 3; touch-action: none;
+  transition: left 0.3s var(--prts-ease);
+}
+.frame[data-dragging] .handle { transition: none; }
+.handle::after {
+  content: '';
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 3px; height: 40px; border-radius: 2px;
+  background: var(--prts-ink-faint);
+  opacity: 0;
+  transition: opacity 0.2s var(--prts-ease);
+}
+.handle:hover::after, .handle[data-dragging='true']::after { opacity: 0.6; }
+
+/* Hairline corner brackets — the PRTS signature frame detail. */
+.bracket { position: relative; }
+.bracket::before, .bracket::after {
+  content: '';
+  position: absolute; width: 12px; height: 12px; pointer-events: none;
+}
+.bracket::before {
+  top: -1px; left: -1px;
+  border-top: 1px solid var(--prts-hairline-strong);
+  border-left: 1px solid var(--prts-hairline-strong);
+}
+.bracket::after {
+  bottom: -1px; right: -1px;
+  border-bottom: 1px solid var(--prts-hairline-strong);
+  border-right: 1px solid var(--prts-hairline-strong);
+}
+
+/* Wide-tracked micro labels (Arknights-style eyebrows). */
+.eyebrow {
+  font-size: 10px; line-height: 16px; letter-spacing: 0.32em;
+  text-transform: uppercase; color: var(--prts-ink-faint);
+  font-weight: 500; white-space: nowrap;
+}
+.mono { font-family: var(--prts-mono); font-variant-numeric: tabular-nums; }
+
+/* Icon button. */
+.iconBtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; padding: 0; border: none; border-radius: 8px;
+  background: transparent; color: var(--prts-ink-dim); cursor: pointer;
+}
+.iconBtn:hover { background: var(--prts-surface-2); color: var(--prts-ink); }
+
+/* Toast. */
+.toast {
+  position: fixed; left: 50%; bottom: 28px; z-index: 200;
+  transform: translateX(-50%) translateY(8px);
+  padding: 8px 18px; border-radius: 4px;
+  background: var(--prts-invert-bg); color: var(--prts-invert-ink);
+  font-size: 13px; line-height: 20px; letter-spacing: 0.04em;
+  opacity: 0; pointer-events: none;
+  box-shadow: var(--prts-shadow);
+  transition: opacity 0.2s var(--prts-ease), transform 0.2s var(--prts-ease);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* PRTS design tokens — pure black/white. Dark is the default surface; light
+   inverts the pair. Every component derives from these tokens only. */
+:root {
+  --prts-bg: #0A0A0B;
+  --prts-surface: #111112;
+  --prts-surface-2: #161618;
+  --prts-ink: #FAFAFA;
+  --prts-ink-dim: #9C9CA1;
+  --prts-ink-faint: #626266;
+  --prts-hairline: rgba(250, 250, 250, 0.14);
+  --prts-hairline-strong: rgba(250, 250, 250, 0.3);
+  --prts-panel: #0D0D0E;
+  --prts-invert-bg: #FAFAFA;
+  --prts-invert-ink: #0A0A0B;
+  --prts-scrim: rgba(0, 0, 0, 0.6);
+  --prts-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(250, 250, 250, 0.04);
+  --prts-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --prts-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --prts-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --prts-mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas, Menlo,
+    'Liberation Mono', 'PingFang SC', 'Microsoft YaHei', monospace;
+  color-scheme: dark;
+}
+[data-theme='light'] {
+  --prts-bg: #FAFAFA;
+  --prts-surface: #F3F3F3;
+  --prts-surface-2: #EBEBEB;
+  --prts-ink: #0A0A0B;
+  --prts-ink-dim: #5C5C60;
+  --prts-ink-faint: #A6A6AA;
+  --prts-hairline: rgba(10, 10, 11, 0.14);
+  --prts-hairline-strong: rgba(10, 10, 11, 0.3);
+  --prts-panel: #FFFFFF;
+  --prts-invert-bg: #0A0A0B;
+  --prts-invert-ink: #FAFAFA;
+  --prts-scrim: rgba(250, 250, 250, 0.6);
+  --prts-shadow: 0 12px 32px rgba(10, 10, 11, 0.12), 0 0 0 1px rgba(10, 10, 11, 0.04);
+  color-scheme: light;
+}
+
+</style>
+</head>
+<body>
+<div id="app" class="frame" data-details-collapsed>
+  <aside class="sbCol" id="sbCol">
+    <div class="sb bracket">
+      <div class="logoRow">
+        <button class="brand" id="brandBtn" type="button" title="PRTS">
+          <span class="rhombus"></span>
+          <span class="word">PRTS</span>
+          <canvas class="brandFx" id="brandFx" width="48" height="16"></canvas>
+        </button>
+        <div class="sbActions">
+          <button class="iconBtn" id="themeBtn" type="button" title="Toggle theme">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1a6.5 6.5 0 1 0 0 13c.4 0 .7-.4.6-.8a2 2 0 0 1 1.6-2.4c3.2-.4 4.9-2.6 4.9-5.3a6.3 6.3 0 0 0-5-4.3A1 1 0 0 1 7.5 1Z" fill="currentColor"/></svg>
+          </button>
+          <button class="iconBtn" id="sbCollapseBtn" type="button" title="Collapse sidebar">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M8.5 1.5a1 1 0 0 1 .996 1.093l-.009.09L8.83 7.5l.657 4.817a1 1 0 0 1-1.99.246l-.01-.09-.713-5.225a1.5 1.5 0 0 1 0-.496l.713-5.225A1 1 0 0 1 8.5 1.5Z" fill="currentColor"/><path d="M4 3.5a1 1 0 0 1 .993.883L5 4.5v6a1 1 0 0 1-1.993.117L3 10.5v-6a1 1 0 0 1 1-1Z" fill="currentColor"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="newButtons">
+        <button class="sbBtn" id="newProjectBtn" type="button">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.2v10.6M1.2 6.5h10.6" stroke="currentColor" stroke-width="1.2"/></svg>
+          <span data-i18n="sidebar.newProject">New project</span>
+        </button>
+        <button class="sbBtn" id="newSessionBtn" type="button">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.2v10.6M1.2 6.5h10.6" stroke="currentColor" stroke-width="1.2" transform="rotate(45 6.5 6.5)"/></svg>
+          <span data-i18n="sidebar.newSession">New session</span>
+        </button>
+      </div>
+      <div class="sbSection">
+        <div class="sbSectionHead">
+          <span class="eyebrow" data-i18n="sidebar.projects">Projects</span>
+          <span class="count" id="projectCount"></span>
+        </div>
+        <div class="sbList" id="projectList"></div>
+      </div>
+      <div class="sbSection" style="flex:1;min-height:0;display:flex;flex-direction:column;">
+        <div class="sbSectionHead">
+          <span class="eyebrow" data-i18n="sidebar.sessions">Sessions</span>
+          <span class="count" id="sessionCount"></span>
+        </div>
+        <div class="sbList" id="sessionList" style="overflow-y:auto;"></div>
+      </div>
+      <div class="sbFoot">
+        <button class="sbFootItem" id="detailsBtn" type="button">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="1.5" width="12" height="12" stroke="currentColor" stroke-width="1.1"/><path d="M5 1.5v12M7.5 1.5v12" stroke="currentColor" stroke-width="1.1"/></svg>
+          <span data-i18n="sidebar.details">Details</span>
+        </button>
+        <button class="sbFootItem" id="settingsBtn" type="button">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 9.4a1.9 1.9 0 1 0 0-3.8 1.9 1.9 0 0 0 0 3.8Z" stroke="currentColor" stroke-width="1.1"/><path d="M12.8 8.2c.1-.4.1-.7 0-1l1.2-1a.3.3 0 0 0 0-.4l-1.2-2a.3.3 0 0 0-.4-.2l-1.4.6a4.8 4.8 0 0 0-1.8-1L9 1.5a.3.3 0 0 0-.3-.3h-2.4a.3.3 0 0 0-.3.3l-.2 1.7a4.8 4.8 0 0 0-1.8 1l-1.4-.6a.3.3 0 0 0-.4.2l-1.2 2a.3.3 0 0 0 0 .4l1.2 1a3 3 0 0 0 0 1l-1.2 1a.3.3 0 0 0 0 .4l1.2 2a.3.3 0 0 0 .4.2l1.4-.6a4.8 4.8 0 0 0 1.8 1l.2 1.7c0 .2.1.3.3.3h2.4c.2 0 .3-.1.3-.3l.2-1.7a4.8 4.8 0 0 0 1.8-1l1.4.6c.2 0 .4 0 .4-.2l1.2-2a.3.3 0 0 0 0-.4l-1.2-1Z" stroke="currentColor" stroke-width="1.1"/></svg>
+          <span data-i18n="sidebar.settings">Settings</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="ctCol">
+    <div class="cvt" id="cvt" data-phase="hero">
+      <header class="cvtHeader" id="header">
+        <div class="titleRow">
+          <div class="crumbs">
+            <button class="crumb" disabled id="crumbProject">PRTS</button>
+            <span class="headerMode" data-i18n="header.mode">STANDARD</span>
+          </div>
+          <div class="headerUtils">
+            <span class="pluginBar" id="pluginHeader"></span>
+            <button class="logBtn" id="logBtn" type="button">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1.2a.8.8 0 0 1 .8.8v3.2h2.4a.8.8 0 0 1 .5 1.4l-3.4 3.4a.8.8 0 0 1-1.1 0L1.8 6.6a.8.8 0 0 1 .5-1.4h2.9V2a.8.8 0 0 1 .8-.8Z" fill="currentColor"/></svg>
+              <span data-i18n="header.log">Session log</span>
+            </button>
+          </div>
+        </div>
+        <div class="tabs" id="tabs">
+          <button class="tab active" type="button" data-view="chat" data-i18n="header.chat">Chat</button>
+          <button class="tab" type="button" data-view="trajectory" data-i18n="header.trajectory">Trajectory</button>
+        </div>
+      </header>
+      <div class="scrollBody">
+        <div class="heroView" id="heroView">
+          <canvas class="heroCanvas" id="heroCanvas"></canvas>
+          <div class="heroStack">
+            <div class="heroLogo">
+              <span class="rhombus-lg"></span>
+              <span class="heroWord">PRTS</span>
+            </div>
+            <div class="heroSub">
+              <span class="rule"></span>
+              <span class="heroReady" id="heroReady" data-i18n="hero.online">SYSTEM ONLINE</span>
+              <span class="rule"></span>
+            </div>
+            <div class="heroProjectRow">
+              <button class="workspaceBtn" id="workspaceBtn" type="button">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M5.3 2H2.2a.9.9 0 0 0-.9.9v6.2a.9.9 0 0 0 .9.9h7.6a.9.9 0 0 0 .9-.9V4.4a.9.9 0 0 0-.9-.9H6L5.3 2Z" fill="currentColor"/></svg>
+                <span id="workspaceLabel">default</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="chatScroll" id="chatScroll" hidden>
+          <div class="chatColumn" id="flow"></div>
+        </div>
+        <div class="trajView" id="trajView" hidden></div>
+        <div class="composerArea" id="composerArea">
+          <div class="statusRow" id="statusRow" hidden>
+            <span class="shimmer" id="statusText">DEEP DIVING</span>
+          </div>
+          <div class="composerExpandRow">
+            <button class="expandBtn" id="composerExpand" type="button" data-i18n-title="composer.expand" aria-expanded="false">
+              <svg class="expandIcon" width="16" height="22" viewBox="0 0 16 22" fill="none">
+                <path d="M8 1 L15 13 L10.6 13 M8 1 L1 13 L5.4 13" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+                <circle class="edot" cx="8" cy="16" r="1.15" fill="currentColor"/>
+                <circle class="edot" cx="8" cy="19" r="1.15" fill="currentColor"/>
+                <circle class="edot" cx="8" cy="22" r="1.15" fill="currentColor"/>
+              </svg>
+            </button>
+          </div>
+          <div class="composerCard">
+            <textarea class="composerInput" id="composerInput" rows="1" spellcheck="false" data-i18n-placeholder="composer.placeholder"></textarea>
+            <div class="composerToolbar">
+              <div class="toolGroup">
+                <span class="pluginBar" id="pluginComposer"></span>
+                <button class="chip" id="modelChip" type="button">
+                  <span class="dot"></span>
+                  <span class="label" id="modelChipLabel">deepseek-chat</span>
+                  <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
+                </button>
+                <button class="chip" id="strengthChip" type="button">
+                  <span class="label" id="strengthChipLabel">STRENGTH: MEDIUM</span>
+                  <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
+                </button>
+                <button class="chip" id="commandsChip" type="button">
+                  <span data-i18n="composer.commands">Commands</span>
+                  <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
+                </button>
+              </div>
+              <div class="spacer"></div>
+              <div class="toolGroup">
+                <button class="meterBtn voiceBtn" id="voiceBtn" type="button" title="Voice input" data-i18n-title="voice.off">
+                  <svg class="micIcon" width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.2a2 2 0 0 0-2 2v3.1a2 2 0 0 0 4 0V3.2a2 2 0 0 0-2-2Z" stroke="currentColor" stroke-width="1.1"/><path d="M2.6 6a3.9 3.9 0 0 0 7.8 0M6.5 9.9v1.9M4.6 11.8h3.8" stroke="currentColor" stroke-width="1.1"/></svg>
+                </button>
+                <button class="meterBtn" id="meterBtn" type="button">
+                  <svg class="ring" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="7" cy="7" r="5.5" stroke="var(--prts-hairline-strong)" stroke-width="1.5" fill="none"/>
+                    <circle id="meterRing" cx="7" cy="7" r="5.5" stroke="var(--prts-ink)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-dasharray="34.56" stroke-dashoffset="34.56" transform="rotate(-90 7 7)"/>
+                  </svg>
+                  <span id="meterLabel">0%</span>
+                </button>
+                <button class="sendBtn" id="sendBtn" type="button" title="Send" disabled>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h11.2l-3.6-3.6a.8.8 0 1 1 1.1-1.1l4.8 4.8a.8.8 0 0 1 0 1.1l-4.8 4.8a.8.8 0 1 1-1.1-1.1l3.6-3.6H2a.8.8 0 0 1 0-1.5Z" fill="currentColor"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <section class="dtCol" id="dtCol">
+    <div class="dtPanel">
+      <div class="dtHeader">
+        <span class="dtTitle" data-i18n="details.title">Details</span>
+        <button class="iconBtn" id="dtClose" type="button" title="Close">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="dtBody" id="dtBody">
+        <div class="dtEmpty" data-i18n="details.empty">Click a message to view its metadata.</div>
+      </div>
+    </div>
+  </section>
+  <div class="handle" data-side="details" id="handleDetails"></div>
+  <div class="handle" data-side="sidebar" id="handleSidebar"></div>
+</div>
+
+<div class="overlay" id="settingsOverlay">
+  <div class="settingsCard">
+    <div class="settingsHead">
+      <span class="title" data-i18n="settings.title">Settings</span>
+      <button class="iconBtn" id="settingsClose" type="button" title="Close">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="sField">
+      <div class="label"><span data-i18n="settings.apiKey">API Key</span></div>
+      <div class="sRow">
+        <input class="sInput" id="cfgApiKey" type="password" autocomplete="off" spellcheck="false">
+        <button class="sBtn" id="cfgApiKeyToggle" type="button">SHOW</button>
+      </div>
+      <div class="hint" data-i18n="settings.apiKey.hint">Stored locally in your config directory.</div>
+    </div>
+    <div class="sField">
+      <div class="label"><span data-i18n="settings.baseUrl">Base URL</span></div>
+      <input class="sInput" id="cfgBaseUrl" type="text" spellcheck="false">
+    </div>
+    <div class="sField">
+      <div class="label"><span data-i18n="settings.model">Model</span></div>
+      <select class="sInput sSelect" id="cfgModel">
+        <option value="deepseek-chat">deepseek-chat</option>
+        <option value="deepseek-reasoner">deepseek-reasoner</option>
+      </select>
+    </div>
+    <div class="sField">
+      <div class="label"><span data-i18n="settings.strength">Thinking strength</span></div>
+      <select class="sInput sSelect" id="cfgStrength">
+        <option value="off">OFF</option>
+        <option value="low">LOW</option>
+        <option value="medium">MEDIUM</option>
+        <option value="high">HIGH</option>
+      </select>
+      <div class="hint" data-i18n="settings.strength.hint">Off: no extended thinking. High: up to 32K reasoning tokens.</div>
+    </div>
+    <div class="sField">
+      <div class="label"><span data-i18n="settings.language">Language</span></div>
+      <select class="sInput sSelect" id="cfgLocale">
+        <option value="auto">AUTO</option>
+        <option value="zh">中文</option>
+        <option value="en">ENGLISH</option>
+      </select>
+    </div>
+    <div class="sField">
+      <div class="label"><span data-i18n="settings.project">Current project</span></div>
+      <div id="cfgProjects"></div>
+    </div>
+    <div class="sRow" style="margin-top: 18px;">
+      <button class="sBtn" id="cfgTest" type="button" data-i18n="settings.test">Test connection</button>
+      <button class="sBtn primary" id="cfgSave" type="button" data-i18n="settings.done">Done</button>
+      <span class="sStatus" id="cfgStatus"></span>
+    </div>
+  </div>
+</div>
+
+<div class="overlay sysOverlay" id="sysOverlay">
+  <div class="sysCard">
+    <div class="sysHead">
+      <span class="sysTitle"><span class="rhombus-s"></span><span data-i18n="sys.title">SYSTEM</span><span class="sysSlash">//</span>PRTS</span>
+      <button class="iconBtn" id="sysClose" type="button" data-i18n-title="sys.close">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="sysBody">
+      <div class="sysVisual">
+        <canvas id="sysRing" width="0" height="0"></canvas>
+        <div class="sysVisualTag">
+          <span class="rhombus-lg"></span>
+          <span class="sysVisualWord">PRTS</span>
+        </div>
+      </div>
+      <div class="sysStats">
+        <div class="sysBlock">
+          <div class="sysBlockTitle eyebrow" data-i18n="sys.hardware">HARDWARE</div>
+          <div class="sysRows" id="sysHardware"></div>
+        </div>
+        <div class="sysDivider"></div>
+        <div class="sysBlock">
+          <div class="sysBlockTitle eyebrow" data-i18n="sys.agent">AGENT</div>
+          <div class="sysRows" id="sysAgent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="intro" id="intro">
+  <canvas id="introCanvas"></canvas>
+  <div class="introTag" id="introTag"></div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/**
+ * PRTS platform adapter: OS, home/config directories, locale detection.
+ * Runs in Node (TUI / Electron main) and in the web renderer.
+ */
+(function (G) {
+  'use strict';
+  const P = G.PRTS = G.PRTS || {};
+
+  function env() {
+    if (typeof process !== 'undefined') return process.env;
+    try {
+      if (typeof window !== 'undefined' && window.prts && window.prts.env) return window.prts.env;
+    } catch (e) { /* no preload */ }
+    return {};
+  }
+
+  function os() {
+    if (typeof process !== 'undefined' && process.platform) {
+      const p = process.platform;
+      if (p === 'linux' || p === 'darwin' || p === 'win32') return p === 'darwin' ? 'macos' : p === 'win32' ? 'windows' : 'linux';
+      return 'other';
+    }
+    const e = env();
+    if (e.platform) return e.platform === 'darwin' ? 'macos' : e.platform === 'win32' ? 'windows' : 'linux';
+    const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+    if (/Windows/i.test(ua)) return 'windows';
+    if (/Mac/i.test(ua)) return 'macos';
+    if (/Linux/i.test(ua)) return 'linux';
+    return 'other';
+  }
+
+  function homedir() {
+    const e = env();
+    if (e.HOME || e.home) return e.HOME || e.home;
+    if (e.USERPROFILE) return e.USERPROFILE;
+    return '.';
+  }
+
+  function configDir() {
+    const o = os();
+    const home = homedir();
+    const e = env();
+    if (o === 'linux') return (e.XDG_CONFIG_HOME ? e.XDG_CONFIG_HOME : home + '/.config') + '/prts';
+    if (o === 'macos') return home + '/Library/Application Support/prts';
+    if (o === 'windows') return (e.APPDATA ? e.APPDATA : home + '/AppData/Roaming') + '/prts';
+    return home + '/.prts';
+  }
+
+  function desktopDir() {
+    const o = os();
+    const home = homedir();
+    const e = env();
+    if (e.DSH_PRTS_DESKTOP) return e.DSH_PRTS_DESKTOP;
+    if (o === 'linux') {
+      if (e.XDG_DESKTOP_DIR) return e.XDG_DESKTOP_DIR;
+      const dirs = [home + '/Desktop', home + '/桌面'];
+      return dirs[0];
+    }
+    if (o === 'macos') return home + '/Desktop';
+    if (o === 'windows') return home + '/Desktop';
+    return null;
+  }
+
+  function detectLocale() {
+    if (typeof navigator !== 'undefined' && navigator.language) {
+      return /^zh/i.test(navigator.language) ? 'zh' : 'en';
+    }
+    const lang = typeof process !== 'undefined' && process.env.LANG ? process.env.LANG : '';
+    return /^zh/i.test(lang) ? 'zh' : 'en';
+  }
+
+  P.platform = {
+    os: os,
+    homedir: homedir,
+    configDir: configDir,
+    desktopDir: desktopDir,
+    detectLocale: detectLocale,
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/**
+ * PRTS i18n: zh/en dictionaries and a tiny `t(key, locale, params)` helper.
+ * Flat dot-keys; `{name}` placeholders. Locale is 'zh' | 'en' | 'auto'.
+ */
+(function (G) {
+  'use strict';
+  const P = G.PRTS = G.PRTS || {};
+
+  const DICT = {
+    en: {
+      'welcome': 'Welcome to PRTS',
+      'intro.welcome': 'Welcome to PRTS',
+      'brand': 'PRTS',
+      'headline.sub': 'TERMINAL CLIENT',
+      'preview': 'PREVIEW',
+      'hero.ready': 'System online. Awaiting instructions.',
+      'hero.online': 'SYSTEM ONLINE',
+      'hero.chooseProject': 'Choose project',
+      'common.theme': 'Theme',
+
+      'sidebar.projects': 'PROJECTS',
+      'sidebar.sessions': 'SESSIONS',
+      'sidebar.newProject': 'New project',
+      'sidebar.newSession': 'New session',
+      'sidebar.settings': 'Settings',
+      'sidebar.details': 'Details',
+      'sidebar.search': 'Search projects',
+      'sidebar.empty': 'No projects yet',
+      'sidebar.sessionsEmpty': 'No sessions yet',
+      'sidebar.collapse': 'Collapse sidebar',
+
+      'header.chat': 'Chat',
+      'header.trajectory': 'Trajectory',
+      'header.log': 'Session log',
+      'header.mode': 'STANDARD',
+
+      'composer.placeholder': 'Message PRTS',
+      'composer.send': 'Send message',
+      'composer.stop': 'Stop generating',
+      'composer.commands': 'Commands',
+      'composer.attach': 'Attach files',
+      'composer.expand': 'Expand input',
+      'composer.collapse': 'Collapse input',
+
+      'chips.model': 'Model: {model}',
+      'chips.strength': 'Strength: {level}',
+      'strength.off': 'OFF',
+      'strength.low': 'LOW',
+      'strength.medium': 'MEDIUM',
+      'strength.high': 'HIGH',
+      'chips.context': '{pct}% of context used',
+
+      'chat.thinking': 'Thinking',
+      'chat.copy': 'Copy',
+      'chat.copied': 'Copied',
+      'chat.like': 'Good response',
+      'chat.dislike': 'Bad response',
+      'chat.branch': 'Branch into a new conversation',
+      'chat.ranFor': 'Ran for {d}',
+      'chat.tokens': '{in} in · {out} out',
+      'chat.reasoningTokens': '{n} reasoning tokens',
+      'chat.empty': 'No messages yet. Ask the agent something.',
+      'chat.error.noKey': 'No API key configured. Open Settings and add one.',
+      'chat.error.http': 'Request failed: {msg}',
+      'chat.error.auth': 'API key rejected (401). Check Settings.',
+      'chat.error.rate': 'Rate limited (429). Wait a moment and retry.',
+
+      'stats.messages': '{n} messages',
+      'stats.sessions': '{n} sessions',
+      'stats.totalTokens': '{n} tokens',
+
+      'settings.title': 'Settings',
+      'settings.apiKey': 'API Key',
+      'settings.apiKey.hint': 'Stored locally in your config directory.',
+      'settings.baseUrl': 'Base URL',
+      'settings.model': 'Model',
+      'settings.strength': 'Thinking strength',
+      'settings.strength.hint': 'Off: no extended thinking. High: up to 32K reasoning tokens.',
+      'settings.language': 'Language',
+      'settings.project': 'Current project',
+      'settings.test': 'Test connection',
+      'settings.testing': 'Testing\u2026',
+      'settings.test.ok': 'Connected ({ms} ms)',
+      'settings.test.fail': 'Failed: {msg}',
+      'settings.saved': 'Saved',
+      'settings.done': 'Done',
+
+      'project.title': 'Projects',
+      'project.name': 'Project name',
+      'project.create': 'Create',
+      'project.delete': 'Delete',
+      'project.confirmDelete': 'Delete project "{name}"? Its history will be removed.',
+      'project.rename': 'Rename',
+
+      'common.cancel': 'Cancel',
+      'common.confirm': 'Confirm',
+      'common.close': 'Close',
+      'common.save': 'Save',
+      'common.ok': 'OK',
+      'common.delete': 'Delete',
+
+      'shortcut.created': 'Desktop shortcut created',
+      'shortcut.skipped': 'Desktop shortcut skipped (no Desktop directory found)',
+      'shortcut.failed': 'Desktop shortcut failed: {msg}',
+
+      'details.title': 'Details',
+      'details.empty': 'Click a message to view its metadata.',
+      'details.model': 'Model',
+      'details.strength': 'Strength',
+      'details.duration': 'Duration',
+      'details.tokens': 'Tokens',
+      'details.created': 'Created',
+      'details.role': 'Role',
+
+      'tui.help': [
+        'PRTS terminal client',
+        '',
+        'Enter          send message',
+        'Tab            toggle view (chat / settings / projects)',
+        'Ctrl+L         switch language (zh/en)',
+        'Ctrl+N         new session',
+        'Ctrl+C         quit',
+      ].join('\n'),
+      'tui.prompt': '> ',
+      'tui.quit': 'bye',
+      'tui.you': 'You',
+      'tui.standard': 'STANDARD',
+      'tui.lang': 'lang',
+      'tui.stop': 'stop',
+      'tui.hint': 'Ctrl+L lang · Ctrl+C stop/quit',
+      'tui.commands': 'Commands',
+      'tui.helpModel': 'Model',
+      'tui.helpStrength': 'Thinking strength',
+      'tui.helpLang': 'Language',
+      'tui.enterKey': 'Enter API Key',
+      'tui.projects': 'Projects',
+      'tui.project': 'Project',
+      'tui.badModel': 'unknown model',
+      'tui.badStrength': 'unknown strength',
+      'tui.exported': 'Exported to',
+      'tui.unknown': 'unknown command',
+
+      'voice.title': 'Voice',
+      'voice.idle': 'Voice input off',
+      'voice.listening': 'Listening\u2026',
+      'voice.speaking': 'Speaking\u2026',
+      'voice.recognizing': 'Recognizing\u2026',
+      'voice.on': 'Voice input on \u2014 speak to dictate',
+      'voice.off': 'Voice input off',
+      'voice.unsupported': 'Speech recognition is not available on this device',
+      'voice.noMic': 'No microphone found or permission denied',
+      'voice.error': 'Voice recognition error: {msg}',
+      'voice.auto': 'AUTO',
+
+      'sys.title': 'SYSTEM',
+      'sys.close': 'Close',
+      'sys.hardware': 'HARDWARE',
+      'sys.agent': 'AGENT',
+      'sys.os': 'OS',
+      'sys.host': 'HOST',
+      'sys.cpu': 'CPU',
+      'sys.load': 'LOAD',
+      'sys.gpu': 'GPU',
+      'sys.memory': 'MEMORY',
+      'sys.swap': 'SWAP',
+      'sys.disk': 'DISK',
+      'sys.cpuPower': 'CPU POWER',
+      'sys.temps': 'TEMP',
+      'sys.model': 'MODEL',
+      'sys.mode': 'MODE',
+      'sys.tokensUsed': 'TOKENS USED',
+      'sys.tokensLeft': 'TOKENS LEFT',
+      'sys.sessions': 'SESSIONS',
+      'sys.messages': 'MESSAGES',
+      'sys.unknown': '\u2014',
+      'sys.none': 'none',
+      'sys.busy': 'gathering\u2026',
+      'sys.updated': 'updated {t}',
+    },
+
+    zh: {
+      'welcome': '欢迎使用PRTS',
+      'intro.welcome': 'Welcome to PRTS',
+      'brand': 'PRTS',
+      'headline.sub': '终端客户端',
+      'preview': '预览版',
+      'hero.ready': '系统在线，等待指令。',
+      'hero.online': '系统在线',
+      'hero.chooseProject': '选择项目',
+      'common.theme': '主题',
+
+      'sidebar.projects': '项目',
+      'sidebar.sessions': '会话',
+      'sidebar.newProject': '新建项目',
+      'sidebar.newSession': '新建会话',
+      'sidebar.settings': '设置',
+      'sidebar.details': '详情',
+      'sidebar.search': '搜索项目',
+      'sidebar.empty': '暂无项目',
+      'sidebar.sessionsEmpty': '暂无会话',
+      'sidebar.collapse': '收起侧栏',
+
+      'header.chat': '对话',
+      'header.trajectory': '轨迹',
+      'header.log': '会话日志',
+      'header.mode': '标准模式',
+
+      'composer.placeholder': '给PRTS发消息',
+      'composer.send': '发送消息',
+      'composer.stop': '停止生成',
+      'composer.commands': '命令',
+      'composer.attach': '上传附件',
+      'composer.expand': '展开输入框',
+      'composer.collapse': '收起输入框',
+
+      'chips.model': '模型：{model}',
+      'chips.strength': '强度：{level}',
+      'strength.off': '关闭',
+      'strength.low': '低',
+      'strength.medium': '中',
+      'strength.high': '高',
+      'chips.context': '上下文已用 {pct}%',
+
+      'chat.thinking': '思考',
+      'chat.copy': '复制',
+      'chat.copied': '已复制',
+      'chat.like': '好回答',
+      'chat.dislike': '坏回答',
+      'chat.branch': '开启新的对话分支',
+      'chat.ranFor': '用时 {d}',
+      'chat.tokens': '输入 {in} · 输出 {out}',
+      'chat.reasoningTokens': '思考 {n} 字',
+      'chat.empty': '暂无消息，向智能体提问吧。',
+      'chat.error.noKey': '未配置 API Key，请在设置中添加。',
+      'chat.error.http': '请求失败：{msg}',
+      'chat.error.auth': 'API Key 无效（401），请检查设置。',
+      'chat.error.rate': '请求过于频繁（429），请稍后再试。',
+
+      'stats.messages': '{n} 条消息',
+      'stats.sessions': '{n} 个会话',
+      'stats.totalTokens': '累计 {n} tokens',
+
+      'settings.title': '设置',
+      'settings.apiKey': 'API Key',
+      'settings.apiKey.hint': '仅保存在本地配置目录。',
+      'settings.baseUrl': '接口地址',
+      'settings.model': '模型',
+      'settings.strength': '思考强度',
+      'settings.strength.hint': '关闭：不启用深度思考。高：最多 32K 思考 token。',
+      'settings.language': '语言',
+      'settings.project': '当前项目',
+      'settings.test': '测试连接',
+      'settings.testing': '测试中…',
+      'settings.test.ok': '连接成功（{ms} ms）',
+      'settings.test.fail': '连接失败：{msg}',
+      'settings.saved': '已保存',
+      'settings.done': '完成',
+
+      'project.title': '项目',
+      'project.name': '项目名称',
+      'project.create': '创建',
+      'project.delete': '删除',
+      'project.confirmDelete': '删除项目「{name}」？其历史记录将被清除。',
+      'project.rename': '重命名',
+
+      'common.cancel': '取消',
+      'common.confirm': '确认',
+      'common.close': '关闭',
+      'common.save': '保存',
+      'common.ok': '确定',
+      'common.delete': '删除',
+
+      'shortcut.created': '已创建桌面快捷方式',
+      'shortcut.skipped': '未找到桌面目录，跳过快捷方式',
+      'shortcut.failed': '创建桌面快捷方式失败：{msg}',
+
+      'details.title': '详情',
+      'details.empty': '点击消息查看元数据。',
+      'details.model': '模型',
+      'details.strength': '强度',
+      'details.duration': '时长',
+      'details.tokens': '消耗',
+      'details.created': '时间',
+      'details.role': '角色',
+
+      'tui.help': [
+        'PRTS 终端客户端',
+        '',
+        'Enter        发送消息',
+        'Tab          切换视图（对话 / 设置 / 项目）',
+        'Ctrl+L       切换语言（中文/英文）',
+        'Ctrl+N       新建会话',
+        'Ctrl+C       退出',
+      ].join('\n'),
+      'tui.prompt': '> ',
+      'tui.quit': '再见',
+      'tui.you': '我',
+      'tui.standard': '标准模式',
+      'tui.lang': '语言',
+      'tui.stop': '停止',
+      'tui.hint': 'Ctrl+L 语言 · Ctrl+C 停止/退出',
+      'tui.commands': '命令',
+      'tui.helpModel': '模型',
+      'tui.helpStrength': '思考强度',
+      'tui.helpLang': '语言',
+      'tui.enterKey': '输入 API Key',
+      'tui.projects': '项目',
+      'tui.project': '当前项目',
+      'tui.badModel': '无效模型',
+      'tui.badStrength': '无效强度',
+      'tui.exported': '已导出至',
+      'tui.unknown': '未知命令',
+
+      'voice.title': '语音',
+      'voice.idle': '语音输入已关闭',
+      'voice.listening': '聆听中…',
+      'voice.speaking': '说话中…',
+      'voice.recognizing': '识别中…',
+      'voice.on': '语音输入已开启 — 说话即可输入',
+      'voice.off': '语音输入已关闭',
+      'voice.unsupported': '当前设备不支持语音识别',
+      'voice.noMic': '未找到麦克风或权限被拒绝',
+      'voice.error': '语音识别错误：{msg}',
+      'voice.auto': '自动',
+
+      'sys.title': '系统',
+      'sys.close': '关闭',
+      'sys.hardware': '硬件',
+      'sys.agent': '智能体',
+      'sys.os': '系统',
+      'sys.host': '主机',
+      'sys.cpu': 'CPU',
+      'sys.load': '负载',
+      'sys.gpu': 'GPU',
+      'sys.memory': '内存',
+      'sys.swap': '交换分区',
+      'sys.disk': '存储',
+      'sys.cpuPower': 'CPU 功耗',
+      'sys.temps': '温度',
+      'sys.model': '模型',
+      'sys.mode': '模式',
+      'sys.tokensUsed': '已用 Token',
+      'sys.tokensLeft': '剩余 Token',
+      'sys.sessions': '会话',
+      'sys.messages': '消息',
+      'sys.unknown': '—',
+      'sys.none': '无',
+      'sys.busy': '读取中…',
+      'sys.updated': '更新于 {t}',
+    },
+  };
+
+  P.i18n = {
+    dict: DICT,
+    resolve(locale) {
+      if (locale === 'zh' || locale === 'en') return locale;
+      return P.platform.detectLocale();
+    },
+    t(key, locale, params) {
+      const loc = P.i18n.resolve(locale);
+      let s = DICT[loc][key];
+      if (s === undefined) s = DICT.en[key];
+      if (s === undefined) s = key;
+      if (params) {
+        s = String(s).replace(/\{(\w+)\}/g, (m, k) => (params[k] !== undefined ? String(params[k]) : m));
+      }
+      return s;
+    },
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/**
+ * PRTS io adapter: filesystem + http. In Node (TUI, Electron main tests) it
+ * uses node:fs and the built-in fetch. In the web renderer it proxies through
+ * `window.prts.bridge` (Electron preload) so persistence and API calls avoid
+ * CORS. A plain browser (no bridge) gets read-only in-memory fallbacks plus
+ * direct fetch for http, which is only used for local development/testing.
+ */
+(function (G) {
+  'use strict';
+  const P = G.PRTS = G.PRTS || {};
+
+  function isNode() {
+    return typeof process !== 'undefined' && typeof process.versions !== 'undefined' && !!process.versions.node;
+  }
+
+  let bridge = null;
+  try {
+    if (!isNode() && typeof window !== 'undefined' && window.prts && window.prts.bridge) bridge = window.prts.bridge;
+  } catch (e) { bridge = null; }
+
+  const memory = {};
+  let bridgeSeq = 0;
+
+  const io = {
+    hasBridge: !!bridge,
+    readFile(path) {
+      if (bridge) return bridge.readFile(path);
+      if (isNode()) {
+        try { return Promise.resolve(requireFs().readFileSync(path, 'utf8')); } catch (e) { return Promise.reject(e); }
+      }
+      if (path in memory) return Promise.resolve(memory[path]);
+      return Promise.reject(new Error('ENOENT'));
+    },
+    writeFile(path, data) {
+      if (bridge) return bridge.writeFile(path, data);
+      if (isNode()) {
+        try { requireFs().writeFileSync(path, data, 'utf8'); return Promise.resolve(); } catch (e) { return Promise.reject(e); }
+      }
+      memory[path] = String(data);
+      return Promise.resolve();
+    },
+    appendFile(path, data) {
+      if (bridge) return bridge.appendFile(path, data);
+      if (isNode()) {
+        try { requireFs().appendFileSync(path, data, 'utf8'); return Promise.resolve(); } catch (e) { return Promise.reject(e); }
+      }
+      memory[path] = (memory[path] || '') + String(data);
+      return Promise.resolve();
+    },
+    deleteFile(path) {
+      if (bridge) return bridge.deleteFile(path);
+      if (isNode()) {
+        try { requireFs().rmSync(path, { force: true }); return Promise.resolve(); } catch (e) { return Promise.reject(e); }
+      }
+      delete memory[path];
+      return Promise.resolve();
+    },
+    exists(path) {
+      if (bridge) return bridge.exists(path);
+      if (isNode()) {
+        try { return Promise.resolve(requireFs().existsSync(path)); } catch (e) { return Promise.resolve(false); }
+      }
+      return Promise.resolve(path in memory);
+    },
+    mkdir(path) {
+      if (bridge) return bridge.mkdir(path);
+      if (isNode()) {
+        try { requireFs().mkdirSync(path, { recursive: true }); return Promise.resolve(); } catch (e) { return Promise.reject(e); }
+      }
+      return Promise.resolve();
+    },
+    listDir(path) {
+      if (bridge) return bridge.listDir(path);
+      if (isNode()) {
+        try { return Promise.resolve(requireFs().readdirSync(path)); } catch (e) { return Promise.reject(e); }
+      }
+      return Promise.resolve(Object.keys(memory).filter((k) => k.indexOf(path) === 0));
+    },
+    systemInfo() {
+      if (bridge && bridge.systemInfo) return bridge.systemInfo();
+      return Promise.resolve(null);
+    },
+    http(request) {
+      // request: { method, url, headers, body, onChunk(data), signal }
+      if (bridge) {
+        return new Promise((resolve) => {
+          const token = 'h' + (++bridgeSeq);
+          if (request.signal) {
+            request.signal.addEventListener('abort', () => {
+              try { bridge.abort(token); } catch (e) { /* preload gone */ }
+            }, { once: true });
+          }
+          bridge.http({
+            method: request.method,
+            url: request.url,
+            headers: request.headers,
+            body: request.body,
+            token,
+            onChunk: request.onChunk,
+            onEnd: (result) => {
+              if (request.onEnd) request.onEnd(result);
+              resolve({ status: result ? result.status : 0 });
+            },
+          });
+        });
+      }
+      if (isNode()) return nodeFetch(request);
+      return browserFetch(request);
+    },
+  };
+
+  function requireFs() {
+    return G.__PRTS_FS__ || (G.__PRTS_FS__ = G._prtsRequire ? G._prtsRequire('node:fs') : null);
+  }
+
+  async function nodeFetch(request) {
+    const res = await fetch(request.url, {
+      method: request.method || 'GET',
+      headers: request.headers || {},
+      body: request.body,
+      signal: request.signal,
+    });
+    if (request.onChunk) {
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        request.onChunk(dec.decode(value, { stream: true }));
+      }
+    } else {
+      const text = await res.text();
+      request.onChunk && request.onChunk(text);
+    }
+    request.onEnd && request.onEnd({ status: res.status });
+    return { status: res.status, headers: {}, body: '' };
+  }
+
+  async function browserFetch(request) {
+    const res = await fetch(request.url, {
+      method: request.method || 'GET',
+      headers: request.headers || {},
+      body: request.body,
+      signal: request.signal,
+    });
+    const text = await res.text();
+    if (request.onChunk) request.onChunk(text);
+    request.onEnd && request.onEnd({ status: res.status });
+    return { status: res.status, headers: {}, body: text };
+  }
+
+  P.io = io;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/**
+ * PRTS store: config, projects, and per-project message history.
+ * All paths live under the platform config dir; reads/writes go through PRTS.io.
+ */
+(function (G) {
+  'use strict';
+  const P = G.PRTS = G.PRTS || {};
+
+  const DEFAULTS = {
+    locale: 'auto',
+    api: {
+      baseUrl: 'https://api.deepseek.com',
+      apiKey: '',
+      model: 'deepseek-chat',
+      strength: 'medium',
+    },
+    project: 'default',
+  };
+
+  /** Thinking-budget presets (reasoning tokens). */
+  const STRENGTH_BUDGET = { off: 0, low: 1024, medium: 4096, high: 32768 };
+
+  const MODELS = ['deepseek-chat', 'deepseek-reasoner'];
+
+  function dirs() {
+    return { base: P.platform.configDir(), projects: P.platform.configDir() + '/projects' };
+  }
+  function configPath() { return dirs().base + '/config.json'; }
+  function projDir(id) { return dirs().projects + '/' + id; }
+  function metaPath(id) { return projDir(id) + '/meta.json'; }
+  function historyPath(id) { return projDir(id) + '/history.jsonl'; }
+
+  function slugify(name) {
+    const s = String(name || '').trim().toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff_-]+/g, '-').replace(/^-+|-+$/g, '');
+    return s || 'project-' + Date.now().toString(36);
+  }
+
+  const store = {
+    dirs, STRENGTH_BUDGET, MODELS, slugify,
+
+    async loadConfig() {
+      let cfg = JSON.parse(JSON.stringify(DEFAULTS));
+      try {
+        const raw = await P.io.readFile(configPath());
+        const parsed = JSON.parse(raw);
+        cfg = { ...cfg, ...parsed, api: { ...cfg.api, ...(parsed.api || {}) } };
+      } catch (e) { /* first run */ }
+      if (!cfg.project || !(await store.projectExists(cfg.project))) cfg.project = 'default';
+      return cfg;
+    },
+
+    async saveConfig(cfg) {
+      await P.io.mkdir(dirs().base);
+      await P.io.writeFile(configPath(), JSON.stringify(cfg, null, 2));
+    },
+
+    async listProjects() {
+      try {
+        const names = await P.io.listDir(dirs().projects);
+        const out = [];
+        for (const id of names) {
+          try {
+            const meta = JSON.parse(await P.io.readFile(metaPath(id)));
+            out.push(meta);
+          } catch (e) { /* stray dir */ }
+        }
+        out.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+        return out;
+      } catch (e) {
+        return [];
+      }
+    },
+
+    async projectExists(id) { return P.io.exists(metaPath(id)); },
+
+    async ensureProject(id) {
+      if (await store.projectExists(id)) return;
+      await P.io.mkdir(projDir(id));
+      await P.io.writeFile(metaPath(id), JSON.stringify({
+        id, name: id === 'default' ? 'Default' : id,
+        createdAt: Date.now(), updatedAt: Date.now(),
+      }, null, 2));
+    },
+
+    async createProject(name) {
+      const id = slugify(name);
+      await store.ensureProject(id);
+      return id;
+    },
+
+    async renameProject(id, name) {
+      const meta = JSON.parse(await P.io.readFile(metaPath(id)));
+      meta.name = String(name || id).trim() || id;
+      meta.updatedAt = Date.now();
+      await P.io.writeFile(metaPath(id), JSON.stringify(meta, null, 2));
+    },
+
+    async deleteProject(id) {
+      if (id === 'default') return;
+      await P.io.deleteFile(metaPath(id));
+      await P.io.deleteFile(historyPath(id));
+    },
+
+    async readHistory(id) {
+      try {
+        const raw = await P.io.readFile(historyPath(id));
+        return raw.split('\n').filter((l) => l.trim() !== '').map((l) => {
+          try { return JSON.parse(l); } catch (e) { return null; }
+        }).filter(Boolean);
+      } catch (e) { return []; }
+    },
+
+    async appendHistory(id, entry) {
+      await P.io.mkdir(projDir(id));
+      await P.io.appendFile(historyPath(id), JSON.stringify(entry) + '\n');
+    },
+
+    async touchProject(id) {
+      try {
+        const meta = JSON.parse(await P.io.readFile(metaPath(id)));
+        meta.updatedAt = Date.now();
+        await P.io.writeFile(metaPath(id), JSON.stringify(meta, null, 2));
+      } catch (e) { /* ignore */ }
+    },
+
+    async openProject(id) {
+      await store.ensureProject(id);
+      const cfg = await store.loadConfig();
+      cfg.project = id;
+      await store.saveConfig(cfg);
+    },
+  };
+
+  P.store = store;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/**
+ * PRTS API client: DeepSeek chat completions with streaming (SSE).
+ * `thinking.budget_tokens` drives the reasoning strength preset. Works in the
+ * renderer (through the Electron bridge) and in Node (built-in fetch).
+ */
+(function (G) {
+  'use strict';
+  const P = G.PRTS = G.PRTS || {};
+
+  function endpoint(baseUrl, model, budget) {
+    const base = String(baseUrl || 'https://api.deepseek.com').replace(/\/+$/, '');
+    const body = {
+      model,
+      messages: [],
+      stream: true,
+    };
+    if (model === 'deepseek-chat' && budget > 0) {
+      body.thinking = { budget_tokens: budget };
+    }
+    return { url: base + '/chat/completions', body };
+  }
+
+  function sseSplit(buffer, onData) {
+    // buffer: accumulated partial text; returns the remainder.
+    let text = buffer;
+    for (;;) {
+      const nl = text.indexOf('\n');
+      if (nl < 0) break;
+      const line = text.slice(0, nl).replace(/\r$/, '');
+      text = text.slice(nl + 1);
+      if (line.indexOf('data:') !== 0) continue;
+      const payload = line.slice(5).trim();
+      if (payload === '[DONE]') { onData({ done: true }); continue; }
+      try {
+        onData({ json: JSON.parse(payload) });
+      } catch (e) { /* partial frame */ }
+    }
+    return text;
+  }
+
+  function formatDuration(ms) {
+    if (ms < 1000) return ms + ' ms';
+    return (ms / 1000).toFixed(1) + ' s';
+  }
+
+  /**
+   * Stream one assistant turn.
+   * @param opts { config, messages, budget, onDelta(text), onReasoning(text), onMeta(meta), signal }
+   * @returns Promise<{ content, reasoning, usage, durationMs, status, ok, error }>
+   */
+  async function chat(opts) {
+    const cfg = opts.config;
+    const { url, body } = endpoint(cfg.api.baseUrl, cfg.api.model, opts.budget);
+    body.messages = opts.messages;
+    const started = Date.now();
+    let content = '';
+    let reasoning = '';
+    let usage = null;
+    let status = 0;
+    let aborted = false;
+
+    try {
+      await P.io.http({
+        method: 'POST',
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + (cfg.api.apiKey || ''),
+          'Accept': 'text/event-stream',
+        },
+        body: JSON.stringify(body),
+        signal: opts.signal,
+        onChunk(chunk) {
+          let pending = chunk;
+          if (opts._pending) { pending = opts._pending + chunk; opts._pending = undefined; }
+          opts._pending = sseSplit(pending, (ev) => {
+            if (ev.done) return;
+            const delta = ev.json && ev.json.choices && ev.json.choices[0];
+            if (!delta) return;
+            if (delta.delta) {
+              if (delta.delta.reasoning_content) {
+                reasoning += delta.delta.reasoning_content;
+                opts.onReasoning && opts.onReasoning(delta.delta.reasoning_content);
+              }
+              if (delta.delta.content) {
+                content += delta.delta.content;
+                opts.onDelta && opts.onDelta(delta.delta.content);
+              }
+            }
+            if (ev.json.usage) usage = ev.json.usage;
+          });
+        },
+        onEnd(result) {
+          status = result ? result.status : 0;
+          if (result && result.aborted) aborted = true;
+        },
+      });
+    } catch (e) {
+      if (e && e.name === 'AbortError') {
+        return { ok: false, aborted: true, content, reasoning, usage, durationMs: Date.now() - started, status: 0 };
+      }
+      return { ok: false, error: e && e.message ? e.message : String(e), content, reasoning, usage, durationMs: Date.now() - started, status };
+    }
+
+    const ok = status >= 200 && status < 300 && !aborted;
+    const meta = {
+      model: cfg.api.model,
+      strength: cfg.api.strength,
+      budget: opts.budget,
+      durationMs: Date.now() - started,
+      usage,
+      contentLength: content.length,
+      reasoningLength: reasoning.length,
+    };
+    opts.onMeta && opts.onMeta(meta);
+    return { ok, status, content, reasoning, usage, durationMs: meta.durationMs, aborted, error: ok ? undefined : (aborted ? undefined : httpError(status, content)) };
+  }
+
+  function httpError(status, body) {
+    if (status === 401) return { code: 'auth' };
+    if (status === 429) return { code: 'rate' };
+    let msg = 'HTTP ' + status;
+    try {
+      const j = JSON.parse(body);
+      if (j.error && j.error.message) msg = j.error.message;
+    } catch (e) { /* body not json */ }
+    return { code: 'http', message: msg };
+  }
+
+  /** Non-streaming ping used by "Test connection". */
+  async function ping(cfg) {
+    const started = Date.now();
+    const { url, body } = endpoint(cfg.api.baseUrl, cfg.api.model, 0);
+    body.messages = [{ role: 'user', content: 'ping' }];
+    body.stream = false;
+    body.max_tokens = 1;
+    let status = 0;
+    let text = '';
+    try {
+      await P.io.http({
+        method: 'POST', url,
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (cfg.api.apiKey || '') },
+        body: JSON.stringify(body),
+        onChunk(c) { text += c; },
+        onEnd(r) { status = r ? r.status : 0; },
+      });
+    } catch (e) {
+      return { ok: false, ms: Date.now() - started, message: e && e.message ? e.message : String(e) };
+    }
+    if (status >= 200 && status < 300) return { ok: true, ms: Date.now() - started };
+    const err = httpError(status, text);
+    return { ok: false, ms: Date.now() - started, message: err.message || err.code };
+  }
+
+  P.api = { chat, ping, formatDuration };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/**
+ * PRTS particle engine — a dependency-free Canvas-2D port of the Arknights
+ * official-site point-cloud system (10k particles, SPREAD mode, mouse
+ * parallax). Models are sampled from offscreen text/logo renders. Monochrome
+ * only: particles take the current theme ink color.
+ */
+(function (G) {
+  'use strict';
+  const P = G.PRTS = G.PRTS || {};
+
+  function sampleFromCanvas(scratch, ctx, cw, ch, maxPoints, step) {
+    ctx.drawImage(scratch, 0, 0);
+    const data = ctx.getImageData(0, 0, cw, ch).data;
+    const pts = [];
+    for (let y = 0; y < ch; y += step) {
+      for (let x = 0; x < cw; x += step) {
+        const a = data[(y * cw + x) * 4 + 3];
+        if (a > 128) {
+          pts.push({
+            x: (x / cw) * 2 - 1,
+            y: -((y / ch) * 2 - 1),
+            a: 0.35 + 0.65 * Math.random(),
+          });
+          if (pts.length >= maxPoints) return pts;
+        }
+      }
+    }
+    return pts;
+  }
+
+  function create(canvas, opts) {
+    opts = opts || {};
+    const N = opts.count || 3200;
+    const speedRange = opts.speedRange || [0.018, 0.05];
+    const ctx = canvas.getContext('2d');
+    const scratch = document.createElement('canvas');
+    const sctx = scratch.getContext('2d');
+    const mouse = { x: 0, y: 0, active: false };
+    const state = {
+      running: false,
+      ink: getInk(),
+      scale: 1,
+      drift: opts.drift !== false,
+    };
+
+    let W = 0, H = 0, CX = 0, CY = 0;
+    let model = null;      // [{x,y,a}]
+    let modelCenter = { x: 0, y: 0 };
+    let pxMap = null;      // {cw,ch,cx0,cy0,scale} source->screen mapping
+    let particles = [];
+    let raf = 0;
+    let t0 = 0;
+    const t = () => (performance.now() - t0) / 1000;
+
+    function getInk() {
+      const s = getComputedStyle(document.documentElement);
+      return s.getPropertyValue('--prts-ink').trim() || '#FAFAFA';
+    }
+
+    function resize() {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      W = canvas.clientWidth; H = canvas.clientHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      CX = W / 2; CY = H / 2;
+    }
+
+    function spawn() {
+      const P0 = Math.max(N, 600);
+      particles = new Array(P0).fill(0).map(() => ({
+        x: (Math.random() - 0.5) * W * 1.4,
+        y: (Math.random() - 0.5) * H * 1.4,
+        z: 0.4 + 0.6 * Math.random(),
+        a: 0,
+        speed: speedRange[0] + Math.random() * (speedRange[1] - speedRange[0]),
+        target: -1,
+        tx: 0, ty: 0, ta: 0,
+        drift: { x: (Math.random() - 0.5) * 0.6, y: (Math.random() - 0.5) * 0.6 },
+      }));
+    }
+
+    function assignTargets(m, target) {
+      model = m || null;
+      // Map the sampled content (source pixels) into the requested screen box,
+      // preserving aspect and centring it — decoupled from the scratch canvas
+      // dimensions so a wide model renders wide, a square model renders square.
+      pxMap = null;
+      if (model) {
+        let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+        for (const pt of model) {
+          if (pt.x < minX) minX = pt.x;
+          if (pt.x > maxX) maxX = pt.x;
+          if (pt.y < minY) minY = pt.y;
+          if (pt.y > maxY) maxY = pt.y;
+        }
+        modelCenter = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+        const cw = scratch.width || 1, ch = scratch.height || 1;
+        // Source-pixel content box (model y points up; source y grows down).
+        const wPx = ((maxX - minX) / 2) * cw;
+        const hPx = ((maxY - minY) / 2) * ch;
+        const cx0 = ((minX + maxX + 2) / 4) * cw;
+        const cy0 = ((2 - minY - maxY) / 4) * ch;
+        const tw = target ? target.w : Math.min(CX, CY) * 1.4;
+        const th = target ? target.h : Math.min(CX, CY) * 1.4;
+        pxMap = {
+          cw, ch, cx0, cy0,
+          scale: Math.min(wPx > 0 ? tw / wPx : 1, hPx > 0 ? th / hPx : 1),
+        };
+      }
+      // Re-target: each particle picks a random model point (or goes free).
+      for (const p of particles) {
+        if (model) {
+          p.target = Math.floor(Math.random() * model.length);
+          p.speed = speedRange[0] + Math.random() * (speedRange[1] - speedRange[0]);
+        } else {
+          p.target = -1;
+          p.ta = 0.06;
+        }
+      }
+    }
+
+    function drawModelText(text, fontPx, maxPoints) {
+      const pad = 40;
+      const maxW = Math.max(64, Math.floor(W - pad * 2));
+      scratch.width = maxW;
+      scratch.height = Math.max(48, Math.floor(fontPx * 1.6));
+      sctx.clearRect(0, 0, scratch.width, scratch.height);
+      sctx.fillStyle = '#fff';
+      sctx.textAlign = 'center';
+      sctx.textBaseline = 'middle';
+      // Shrink the font until the whole phrase fits (avoids clipping).
+      let size = fontPx;
+      while (size > 16) {
+        sctx.font = '600 ' + size + 'px ' + getFontStack();
+        if (sctx.measureText(text).width <= maxW) break;
+        size -= 4;
+      }
+      scratch.height = Math.max(48, Math.floor(size * 1.6));
+      sctx.font = '600 ' + size + 'px ' + getFontStack();
+      sctx.fillText(text, scratch.width / 2, scratch.height / 2);
+      return sampleFromCanvas(scratch, sctx, scratch.width, scratch.height, maxPoints, Math.max(2, Math.round(size / 44)));
+    }
+
+    function drawModelIntro(maxPoints) {
+      // Two-line intro wordmark: tracked-out "welcome to" above an italic PRTS.
+      // Wide and short so the phrase reads clearly at a glance.
+      const cw = 760, ch = 300;
+      scratch.width = cw; scratch.height = ch;
+      sctx.clearRect(0, 0, cw, ch);
+      sctx.fillStyle = '#fff';
+      sctx.textAlign = 'center';
+      sctx.textBaseline = 'middle';
+      sctx.font = '600 44px ' + getFontStack();
+      if ('letterSpacing' in sctx) sctx.letterSpacing = '8px';
+      sctx.fillText('welcome to', cw / 2, 92);
+      if ('letterSpacing' in sctx) sctx.letterSpacing = '0px';
+      sctx.font = 'italic 700 148px ' + getFontStack();
+      sctx.fillText('PRTS', cw / 2, 208);
+      return sampleFromCanvas(scratch, sctx, cw, ch, maxPoints, 4);
+    }
+
+    function drawModelPp(maxPoints) {
+      // PRTS / DeepSeek banner (matches pp.png): a thin top rule, a large
+      // upright PRTS wordmark, a small italic DEEPSEEK caption, a horizontal
+      // bar, and a second small italic line.
+      const cw = 700, ch = 400;
+      scratch.width = cw; scratch.height = ch;
+      sctx.clearRect(0, 0, cw, ch);
+      sctx.fillStyle = '#fff'; sctx.strokeStyle = '#fff';
+      sctx.textAlign = 'center';
+      sctx.textBaseline = 'alphabetic';
+      sctx.fillRect(132, 24, 436, 6);            // top rule
+      sctx.font = '700 ' + Math.floor(176) + 'px ' + getFontStack();
+      sctx.fillText('PRTS', cw / 2, 196);         // large PRTS
+      sctx.font = 'italic 700 ' + Math.floor(58) + 'px ' + getFontStack();
+      sctx.fillText('DEEPSEEK', cw / 2, 262);     // caption
+      sctx.fillRect(132, 284, 436, 7);            // bar
+      sctx.fillText('DEEPSEEK', cw / 2, 344);     // second line
+      return sampleFromCanvas(scratch, sctx, cw, ch, maxPoints, 4);
+    }
+
+    function drawModelMark(scale, maxPoints) {
+      // Square diamond mark (the packaged icon): white rhombus outline, italic
+      // P/R/T/S in the four corners, and a small italic PRTS wordmark with an
+      // accent rule raised above the centre.
+      const s = scale || 1;
+      const cw = Math.floor(480 * s);
+      const ch = cw;
+      scratch.width = cw; scratch.height = ch;
+      sctx.clearRect(0, 0, cw, ch);
+      sctx.strokeStyle = '#fff'; sctx.fillStyle = '#fff';
+      sctx.lineWidth = Math.max(2, 10 * s);
+      sctx.lineJoin = 'round';
+      const cx = cw / 2, cy = ch / 2;
+      const half = Math.floor(222 * s);
+      sctx.beginPath();
+      sctx.moveTo(cx, cy - half);
+      sctx.lineTo(cx + half, cy);
+      sctx.lineTo(cx, cy + half);
+      sctx.lineTo(cx - half, cy);
+      sctx.closePath();
+      sctx.stroke();
+      const q = Math.floor(half * 0.44);
+      sctx.font = 'italic 700 ' + Math.floor(104 * s) + 'px ' + getFontStack();
+      sctx.textAlign = 'center';
+      sctx.textBaseline = 'middle';
+      sctx.fillText('P', cx - q, cy - q);
+      sctx.fillText('R', cx + q, cy - q);
+      sctx.fillText('T', cx - q, cy + q);
+      sctx.fillText('S', cx + q, cy + q);
+      // Centre wordmark sits where the original icon had it (slightly below
+      // the middle), with its accent rule beneath.
+      sctx.font = 'italic 700 ' + Math.floor(34 * s) + 'px ' + getFontStack();
+      sctx.textBaseline = 'alphabetic';
+      const wy = cy + Math.floor(30 * s);
+      sctx.fillText('PRTS', cx, wy);
+      sctx.lineWidth = Math.max(2, 3 * s);
+      sctx.beginPath();
+      sctx.moveTo(cx - Math.floor(56 * s), wy + Math.floor(11 * s));
+      sctx.lineTo(cx + Math.floor(56 * s), wy + Math.floor(11 * s));
+      sctx.stroke();
+      return sampleFromCanvas(scratch, sctx, cw, ch, maxPoints, Math.max(2, Math.round(2.6 * s)));
+    }
+
+    function getFontStack() {
+      const s = getComputedStyle(document.documentElement);
+      return s.getPropertyValue('--prts-font').trim() || 'sans-serif';
+    }
+
+    function step() {
+      const dt = t();
+      const par = mouse.active ? 0.035 : 0.012;
+      const mx = (mouse.x - CX) * par;
+      const my = (mouse.y - CY) * par;
+      for (const p of particles) {
+        let tx, ty, ta;
+        if (model && p.target >= 0) {
+          const pt = model[p.target];
+          // Source pixel -> screen, unflipped, scaled to the target box.
+          if (pxMap) {
+            const sx = ((pt.x + 1) / 2) * pxMap.cw;
+            const sy = ((1 - pt.y) / 2) * pxMap.ch;
+            tx = CX + (sx - pxMap.cx0) * pxMap.scale + mx;
+            ty = CY + (sy - pxMap.cy0) * pxMap.scale + my;
+          } else {
+            tx = CX + (pt.x - modelCenter.x) * CX * 0.7 + mx;
+            ty = CY - (pt.y - modelCenter.y) * CY * 0.7 + my;
+          }
+          ta = pt.a;
+        } else {
+          tx = p.x + p.drift.x * 24 * dt * (state.drift ? 1 : 0) + mx * 0.6;
+          ty = p.y + p.drift.y * 24 * dt * (state.drift ? 1 : 0) + my * 0.6;
+          ta = 0.05;
+        }
+        const s = p.speed;
+        p.x += (tx - p.x) * s;
+        p.y += (ty - p.y) * s;
+        p.a += (ta - p.a) * Math.min(1, s * 2.2);
+      }
+    }
+
+    function frame() {
+      if (!state.running) return;
+      t0 = performance.now();
+      ctx.clearRect(0, 0, W, H);
+      step();
+      ctx.fillStyle = state.ink;
+      for (const p of particles) {
+        if (p.a <= 0.008) continue;
+        ctx.globalAlpha = p.a;
+        const size = p.z * 1.6;
+        ctx.fillRect(p.x, p.y, Math.max(1, size), Math.max(1, size));
+      }
+      ctx.globalAlpha = 1;
+      raf = requestAnimationFrame(frame);
+    }
+
+    const api = {
+      get model() { return model; },
+      scatter() { assignTargets(null); return api; },
+      showText(text, fontPx, maxPoints) {
+        assignTargets(drawModelText(text, fontPx, maxPoints || 8000), { w: CX * 1.4, h: CY * 0.6 });
+        return api;
+      },
+      showIntro(maxPoints) {
+        // Wide and short wordmark: ~75% of width, ~32% of height.
+        assignTargets(drawModelIntro(maxPoints || 9000), { w: CX * 1.5, h: CY * 0.32 });
+        return api;
+      },
+      showPp(maxPoints) {
+        // PRTS / DEEPSEEK banner, ~82% width, ~52% height.
+        assignTargets(drawModelPp(maxPoints || 11000), { w: CX * 1.64, h: CY * 0.52 });
+        return api;
+      },
+      showMark(scale, maxPoints) {
+        // Square diamond mark, ~60% of the smaller screen dimension, centred.
+        const side = 0.6 * Math.min(CX, CY);
+        assignTargets(drawModelMark(scale || 1, maxPoints || 9000), { w: side * 2, h: side * 2 });
+        return api;
+      },
+      onMouse(x, y) {
+        mouse.x = x; mouse.y = y; mouse.active = true;
+      },
+      clearMouse() { mouse.active = false; },
+      refreshInk() { state.ink = getInk(); return api; },
+      start() {
+        if (state.running) return api;
+        state.running = true;
+        t0 = performance.now();
+        resize();
+        if (!particles.length) spawn();
+        raf = requestAnimationFrame(frame);
+        return api;
+      },
+      stop() {
+        state.running = false;
+        cancelAnimationFrame(raf);
+        ctx.clearRect(0, 0, W, H);
+        return api;
+      },
+      resize,
+    };
+
+    resize();
+    spawn();
+    return api;
+  }
+
+  P.particles = { create };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/**
+ * PRTS inline icons (B/W, stroke-only, 1.2-1.4px hairlines).
+ */
+(function (G) {
+  'use strict';
+  const P = G.PRTS = G.PRTS || {};
+  const S = (d) => '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">' + d + '</svg>';
+  P.icons = {
+    'send': '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h11.2l-3.6-3.6a.8.8 0 1 1 1.1-1.1l4.8 4.8a.8.8 0 0 1 0 1.1l-4.8 4.8a.8.8 0 1 1-1.1-1.1l3.6-3.6H2a.8.8 0 0 1 0-1.5Z" fill="currentColor"/></svg>',
+    'ma.copy': S('<rect x="4.2" y="4.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.2"/><path d="M4.4 2.8h6.4v6.4" stroke="currentColor" stroke-width="1.2"/>'),
+    'ma.like': S('<path d="M7 12.2s-4.8-2.9-4.8-6.1A2.6 2.6 0 0 1 7 4.4a2.6 2.6 0 0 1 4.8 1.7c0 3.2-4.8 6.1-4.8 6.1Z" stroke="currentColor" stroke-width="1.2"/>'),
+    'ma.dislike': S('<path d="M7 1.8s4.8 2.9 4.8 6.1a2.6 2.6 0 0 1-4.8 1.7 2.6 2.6 0 0 1-4.8-1.7c0-3.2 4.8-6.1 4.8-6.1Z" stroke="currentColor" stroke-width="1.2"/>'),
+    'ma.branch': S('<path d="M4 2v7a2 2 0 0 0 2 2h4" stroke="currentColor" stroke-width="1.2"/><path d="M5.2 1.2 7 3 5.2 4.8M8.8 9.2 10 11l-1.2 1.8" stroke="currentColor" stroke-width="1.2" fill="none"/>'),
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/**
+ * PRTS plugin registry — the extension seam for community dsh plugins.
+ *
+ * PRTS is the UI shell of the dsh harness, so the webui keeps the same
+ * extensibility: community plugins can register toolbar buttons / menu items
+ * into the PRTS frame. Nothing is rendered unless a plugin registers, so a
+ * stock install shows no extra buttons.
+ *
+ * A plugin registers through the shared namespace, e.g.:
+ *
+ *   PRTS.plugins.register({
+ *     id: 'my-community-plugin',
+ *     area: 'composer',           // 'composer' | 'header'
+ *     order: 20,                  // sort key (default 100)
+ *     icon: '<svg ...>',          // inline svg, uses currentColor
+ *     label: 'Vision',            // tooltip / aria label
+ *     enabled: true,
+ *     onClick(ctx) { ... },       // ctx = { app, config, store, chat }
+ *   })
+ *
+ * Hosts may also pre-seed plugins by setting `window.PRTS_PLUGINS` to an array
+ * of plugin descriptors before the app boots; each entry is registered on boot.
+ */
+(function (G) {
+  'use strict';
+  const P = G.PRTS = G.PRTS || {};
+
+  const plugins = new Map();
+  const listeners = new Set();
+
+  function notify() {
+    for (const fn of listeners) {
+      try { fn(); } catch (e) { /* listener errors must not break the shell */ }
+    }
+  }
+
+  P.plugins = {
+    register(plugin) {
+      if (!plugin || !plugin.id) return null;
+      const prev = plugins.get(plugin.id) || {};
+      plugins.set(plugin.id, Object.assign({}, prev, plugin));
+      notify();
+      return plugin.id;
+    },
+    unregister(id) {
+      if (plugins.delete(id)) notify();
+    },
+    /** List plugins, optionally filtered by render area. */
+    list(area) {
+      return [...plugins.values()]
+        .filter((p) => p.enabled !== false && (!area || p.area === area))
+        .sort((a, b) => (a.order === undefined ? 100 : a.order) - (b.order === undefined ? 100 : b.order));
+    },
+    onChange(fn) {
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    },
+    /** Adopt descriptors the host pre-seeded on window.PRTS_PLUGINS. */
+    adoptSeeded() {
+      const seeded = G.PRTS_PLUGINS;
+      if (Array.isArray(seeded)) {
+        for (const p of seeded) P.plugins.register(p);
+      }
+    },
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/**
+ * PRTS voice input — mic capture, voice-activity detection and speech
+ * recognition. The analyser drives the PRTS-icon line-wave effect from the
+ * microphone's real-time level and spectrum. When enabled, recognition
+ * auto-starts on sustained human voice and finalizes on silence.
+ *
+ * Backend: the standard web SpeechRecognition API when present. A community
+ * plugin may override it by registering `area: 'asr'` with an `engine`
+ * exposing `{ start(), stop(), setLang(lang) }` and `onresult`/`onend`
+ * callbacks, mirroring the native object. Without a backend, VAD + the
+ * waveform still work; recognition just reports unsupported.
+ */
+(function (G) {
+  'use strict';
+  const P = G.PRTS = G.PRTS || {};
+  const A = P.asr = {
+    state: 'idle',            // idle | listening | speaking | recognizing
+    listening: false,
+    speaking: false,
+    supported: false,
+  };
+
+  let audioCtx = null;
+  let analyser = null;
+  let micStream = null;
+  let micSource = null;
+  let freqData = null;
+  let timeData = null;
+  let raf = 0;
+  let rec = null;
+  let recActive = false;
+  let pluginEngine = null;
+
+  let onFrame = null;
+  let onResult = null;
+  let locale = 'en';
+
+  const VAD = {
+    speakThreshold: 0.018,   // linear RMS ≈ -35 dBFS
+    speakHoldMs: 140,        // sustained speech before 'speaking'
+    silenceMs: 750,          // silence before finalizing
+    speechBandRatio: 0.22,   // mid-band energy fraction for "voice-like"
+    speakSince: 0,
+    silenceSince: 0,
+    frames: 0,
+  };
+
+  function engine() {
+    if (pluginEngine) return pluginEngine;
+    return (typeof G.SpeechRecognition !== 'undefined' && G.SpeechRecognition) ||
+      (typeof G.webkitSpeechRecognition !== 'undefined' && G.webkitSpeechRecognition) || null;
+  }
+
+  function adoptPluginEngine() {
+    const list = P.plugins ? P.plugins.list('asr') : [];
+    const p = list.find((x) => x.engine);
+    pluginEngine = p ? p.engine : null;
+  }
+
+  /** dB of the current input (≈ -90 … 0). */
+  function levelDb() {
+    if (!analyser || !timeData) return -90;
+    analyser.getByteTimeDomainData(timeData);
+    let sum = 0;
+    for (let i = 0; i < timeData.length; i++) {
+      const v = (timeData[i] - 128) / 128;
+      sum += v * v;
+    }
+    const rms = Math.sqrt(sum / timeData.length);
+    return 20 * Math.log10(rms + 1e-9);
+  }
+
+  /** Spectral stats: dominant frequency and voice-band energy ratio. */
+  function spectrum() {
+    if (!analyser || !freqData) return { dominant: 0, voiceRatio: 0 };
+    analyser.getByteFrequencyData(freqData);
+    const n = freqData.length;
+    const binHz = (analyser.context.sampleRate || 48000) / 2 / n;
+    let dominant = 0, domAmp = 0;
+    let mid = 0, total = 0;
+    for (let i = 0; i < n; i++) {
+      const f = i * binHz;
+      const a = freqData[i] / 255;
+      total += a;
+      if (f >= 120 && f <= 4000) mid += a;
+      if (a > domAmp) { domAmp = a; dominant = f; }
+    }
+    return { dominant, voiceRatio: total > 0 ? mid / total : 0 };
+  }
+
+  /** Logarithmically-spaced bar heights (0…1) for the waveform effect. */
+  function bars(count) {
+    count = count || 14;
+    if (!analyser || !freqData) return new Array(count).fill(0);
+    analyser.getByteFrequencyData(freqData);
+    const n = freqData.length;
+    const out = [];
+    for (let b = 0; b < count; b++) {
+      const lo = Math.floor(Math.pow(b / count, 1.6) * n);
+      const hi = Math.max(lo + 1, Math.floor(Math.pow((b + 1) / count, 1.6) * n));
+      let m = 0;
+      for (let i = lo; i < hi && i < n; i++) m = Math.max(m, freqData[i] / 255);
+      out.push(m);
+    }
+    return out;
+  }
+
+  function tick() {
+    if (!A.listening) return;
+    const db = levelDb();
+    const sp = spectrum();
+    const rms = Math.pow(10, db / 20);
+    const now = performance.now();
+
+    const voice = rms > VAD.speakThreshold && sp.voiceRatio > VAD.speechBandRatio;
+    if (voice) {
+      if (!VAD.speakSince) VAD.speakSince = now;
+      VAD.silenceSince = 0;
+      if (now - VAD.speakSince >= VAD.speakHoldMs) {
+        A.speaking = true;
+        if (A.state !== 'recognizing') A.state = 'speaking';
+      }
+    } else {
+      VAD.speakSince = 0;
+      if (A.speaking) {
+        if (!VAD.silenceSince) VAD.silenceSince = now;
+        if (now - VAD.silenceSince >= VAD.silenceMs) {
+          A.speaking = false;
+          if (A.state !== 'recognizing') A.state = 'listening';
+        }
+      }
+    }
+    VAD.frames++;
+
+    // Auto-start recognition on sustained voice.
+    if (A.speaking && A.state === 'speaking' && !recActive && rec) {
+      startRecognition();
+    }
+    // Auto-finalize after silence while recognizing.
+    if (recActive && A.state === 'recognizing' && !A.speaking && VAD.silenceSince && now - VAD.silenceSince >= VAD.silenceMs) {
+      finalizeRecognition();
+    }
+
+    if (onFrame) {
+      onFrame({ db, dominant: sp.dominant, voiceRatio: sp.voiceRatio, bars: bars(), speaking: A.speaking, listening: A.listening, state: A.state });
+    }
+    raf = requestAnimationFrame(tick);
+  }
+
+  /* ---------- recognition ---------- */
+  function startRecognition() {
+    if (recActive) return;
+    try {
+      recActive = true;
+      A.state = 'recognizing';
+      rec.lang = locale === 'zh' ? 'zh-CN' : 'en-US';
+      if (rec.onresult !== undefined) rec.onresult = handleResult;
+      if (rec.onend !== undefined) rec.onend = handleEnd;
+      if (rec.onerror !== undefined) rec.onerror = handleError;
+      rec.start();
+    } catch (e) {
+      recActive = false;
+      A.state = A.speaking ? 'speaking' : 'listening';
+    }
+  }
+  function handleResult(ev) {
+    let text = '';
+    for (let i = 0; i < ev.results.length; i++) {
+      const r = ev.results[i];
+      if (r.isFinal) text += r[0].transcript;
+    }
+    if (text && onResult) onResult(text.trim());
+  }
+  function handleEnd() {
+    recActive = false;
+    if (A.listening) A.state = A.speaking ? 'speaking' : 'listening';
+  }
+  function handleError(ev) {
+    recActive = false;
+    A.state = A.speaking ? 'speaking' : 'listening';
+    if (onErrorCb) onErrorCb(ev && ev.error);
+  }
+  let onErrorCb = null;
+  function finalizeRecognition() {
+    if (!recActive) return;
+    try { rec.stop(); } catch (e) { /* already stopped */ }
+    handleEnd();
+  }
+
+  /* ---------- lifecycle ---------- */
+  function buildGraph() {
+    audioCtx = new (G.AudioContext || G.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.8;
+    freqData = new Uint8Array(analyser.frequencyBinCount);
+    timeData = new Uint8Array(analyser.fftSize);
+    micSource = audioCtx.createMediaStreamSource(micStream);
+    micSource.connect(analyser);
+  }
+
+  A.setLocale = function (l) { locale = l === 'zh' ? 'zh' : 'en'; };
+
+  A.onFrame = function (fn) { onFrame = fn; };
+  A.onResult = function (fn) { onResult = fn; };
+  A.onError = function (fn) { onErrorCb = fn; };
+
+  A.start = async function () {
+    if (A.listening) return 'ok';
+    adoptPluginEngine();
+    A.supported = !!engine();
+    if (!G.navigator || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      if (onErrorCb) onErrorCb('unsupported');
+      return 'unsupported';
+    }
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+    } catch (e) {
+      if (onErrorCb) onErrorCb('not-allowed');
+      return 'not-allowed';
+    }
+    try {
+      buildGraph();
+    } catch (e) {
+      stop();
+      if (onErrorCb) onErrorCb('unsupported');
+      return 'unsupported';
+    }
+    A.listening = true;
+    A.state = 'listening';
+    VAD.speakSince = 0; VAD.silenceSince = 0; A.speaking = false;
+    if (engine()) {
+      const Ctor = engine();
+      try { rec = new Ctor(); } catch (e) { rec = null; }
+    }
+    raf = requestAnimationFrame(tick);
+    return 'ok';
+  };
+
+  A.stop = function () {
+    if (!A.listening) return;
+    if (recActive) { try { rec.stop(); } catch (e) { /* noop */ } }
+    recActive = false;
+    rec = null;
+    A.listening = false;
+    A.speaking = false;
+    A.state = 'idle';
+    cancelAnimationFrame(raf);
+    try { if (micSource) micSource.disconnect(); } catch (e) { /* noop */ }
+    try { if (micStream) micStream.getTracks().forEach((t) => t.stop()); } catch (e) { /* noop */ }
+    try { if (audioCtx && audioCtx.state !== 'closed') audioCtx.close(); } catch (e) { /* noop */ }
+    micSource = null; micStream = null; audioCtx = null; analyser = null;
+    if (onFrame) onFrame({ db: -90, dominant: 0, voiceRatio: 0, bars: [], speaking: false, listening: false, state: 'idle' });
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/**
+ * PRTS system panel — hardware + agent telemetry overlay opened from the
+ * brand mark. Left: a slow-rotating, flat composed-circle (few, long, rounded
+ * arc segments — Arknights-style). Right: centered stat cards for hardware
+ * (OS/CPU/GPU/RAM/swap/disk/power/temps) and the agent (model, mode, token
+ * usage). Live metrics ease toward their targets at 30fps so the numbers and
+ * bars flow like water instead of jumping.
+ */
+(function (G) {
+  'use strict';
+  const P = G.PRTS = G.PRTS || {};
+  const S = P.system = { open: false };
+
+  const TICK_MS = 1000 / 30;     // 30 fps
+  const SNAPSHOT_MS = 1500;       // hardware/agent snapshot cadence
+  const SMOOTH = 0.12;            // per-tick easing toward target
+  const reducedMotion = typeof window !== 'undefined' && window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  let raf = 0;
+  let lastTick = 0;
+  let snapshotTimer = null;
+  let ringCanvas = null;
+  let ringCtx = null;
+
+  // Latest raw snapshot and the eased display copy; `refs` holds live DOM
+  // value spans + bar fills.
+  let targets = {};
+  let disp = {};
+  let refs = {};
+  let built = false;
+
+  const $ = (id) => document.getElementById(id);
+  const t = (key, params) => (P.app && P.app.t ? P.app.t(key, params) : key);
+
+  /* ---------- formatting ---------- */
+  function fmtBytes(n) {
+    if (n === null || n === undefined || isNaN(n)) return t('sys.unknown');
+    const u = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let i = 0, v = n;
+    while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+    return (i === 0 ? Math.round(v) : v.toFixed(1)) + ' ' + u[i];
+  }
+  function fmt1(n) {
+    return n === null || n === undefined || isNaN(n) ? t('sys.unknown') : n.toFixed(1);
+  }
+  function fmt0(n) {
+    return n === null || n === undefined || isNaN(n) ? t('sys.unknown') : String(Math.round(n));
+  }
+  function shortCpu(model) {
+    if (!model) return t('sys.unknown');
+    const s = String(model).replace(/\(R\)|\(TM\)|CPU|Processor/g, ' ').replace(/\s+/g, ' ').trim();
+    return s.length > 30 ? s.slice(0, 29) + '…' : s;
+  }
+
+  /* ---------- composed-circle renderer ---------- */
+  function drawRing() {
+    if (!ringCtx || !ringCanvas) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const size = ringCanvas.clientWidth;
+    if (size <= 0) return;
+    if (ringCanvas.width !== size * dpr) {
+      ringCanvas.width = size * dpr;
+      ringCanvas.height = size * dpr;
+    }
+    const ctx = ringCtx;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, size, size);
+    const cx = size / 2, cy = size / 2;
+    const ink = getComputedStyle(document.documentElement).getPropertyValue('--prts-ink').trim() || '#FAFAFA';
+    // ~3°/s — slow, deliberate.
+    const rot = performance.now() / 1000 * (Math.PI / 60);
+
+    function segments(radius, count, span, width, opacity, offset) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(rot + offset);
+      ctx.strokeStyle = ink;
+      ctx.globalAlpha = opacity;
+      ctx.lineWidth = width;
+      ctx.lineCap = 'round';
+      const gap = (Math.PI * 2 - span * count) / count;
+      for (let i = 0; i < count; i++) {
+        const a0 = i * (span + gap) + gap / 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, a0, a0 + span);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // Few, long, well-spaced arcs with staggered phases — rounder, calmer,
+    // interleaved so no ring's gap lines up with another's.
+    segments(size * 0.44, 6, 0.72, Math.max(2, size * 0.016), 0.72, 0);
+    segments(size * 0.35, 4, 0.9, Math.max(1.6, size * 0.012), 0.5, 0.62);
+    segments(size * 0.27, 3, 1.1, Math.max(1.4, size * 0.010), 0.34, 1.25);
+    segments(size * 0.20, 2, 1.4, Math.max(1.6, size * 0.012), 0.55, 2.0);
+  }
+
+  /* ---------- stat rows (fastfetch/btop style) ---------- */
+  function barEl() {
+    const wrap = document.createElement('div');
+    wrap.className = 'sysBar';
+    const fill = document.createElement('div');
+    fill.className = 'sysBarFill';
+    wrap.appendChild(fill);
+    return { wrap, fill };
+  }
+
+  function valueSpan(text) {
+    const s = document.createElement('span');
+    s.className = 'sysVal';
+    s.textContent = text;
+    return s;
+  }
+
+  function addRow(box, key, label, hasBar) {
+    const row = document.createElement('div');
+    row.className = 'sysRow';
+    const k = document.createElement('div');
+    k.className = 'sysK';
+    k.textContent = label;
+    const v = document.createElement('div');
+    v.className = 'sysV';
+    const val = valueSpan(t('sys.unknown'));
+    v.appendChild(val);
+    row.appendChild(k); row.appendChild(v);
+    let b = null;
+    if (hasBar) { b = barEl(); row.appendChild(b.wrap); }
+    box.appendChild(row);
+    refs[key] = { val, bar: b };
+  }
+
+  function buildHardware() {
+    const box = $('sysHardware');
+    box.textContent = '';
+    refs = {};
+    const add = (key, label, hasBar) => addRow(box, key, label, hasBar);
+    add('os', t('sys.os'), false);
+    add('host', t('sys.host'), false);
+    add('cpu', t('sys.cpu'), false);
+    add('cpuLoad', t('sys.load'), true);
+    add('cpuPower', t('sys.cpuPower'), false);
+    add('gpu', t('sys.gpu'), false);
+    add('mem', t('sys.memory'), true);
+    add('swap', t('sys.swap'), true);
+    add('disk', t('sys.disk'), true);
+    add('temps', t('sys.temps'), false);
+  }
+
+  function buildAgent() {
+    const box = $('sysAgent');
+    box.textContent = '';
+    const add = (key, label, hasBar) => addRow(box, key, label, hasBar);
+    add('model', t('sys.model'), false);
+    add('mode', t('sys.mode'), false);
+    add('tokUsed', t('sys.tokensUsed'), true);
+    add('tokLeft', t('sys.tokensLeft'), true);
+    add('sessions', t('sys.sessions'), false);
+    add('messages', t('sys.messages'), false);
+    add('updated', t('sys.updated'), false);
+  }
+
+  /* ---------- snapshot ---------- */
+  function agentSnapshot() {
+    const cfg = (P.app && P.app.config) || {};
+    const msgs = (P.chat && P.chat.messages) || [];
+    const bounds = (P.chat && P.chat.bounds) || [];
+    const model = (cfg.api && cfg.api.model) || 'deepseek-chat';
+    const strength = (cfg.api && cfg.api.strength) || 'medium';
+    let usedIn = 0, usedOut = 0;
+    for (const m of msgs) {
+      if (m.usage) {
+        usedIn += m.usage.prompt_tokens || 0;
+        usedOut += m.usage.completion_tokens || 0;
+      }
+    }
+    const budget = model === 'deepseek-reasoner' ? 65536 : 131072;
+    const used = usedIn + usedOut;
+    return {
+      model, strength, usedIn, usedOut, used, budget,
+      left: Math.max(0, budget - used),
+      sessions: Math.max(1, bounds.length), messages: msgs.length,
+    };
+  }
+
+  function buildTargets(info, agent) {
+    const mem = (info && info.memory) || null;
+    const swap = (info && info.swap) || null;
+    const disk = (info && info.disk) || null;
+    const cpu = (info && info.cpu) || null;
+    const gpu = (info && info.gpu) || null;
+    const loadPct = cpu && cpu.cores && cpu.load ? Math.min(100, (cpu.load[0] / cpu.cores) * 100) : null;
+    const temps = {};
+    if (info && info.temps) {
+      for (const z of info.temps) temps[z.type] = z.temp;
+    }
+    return {
+      os: info && info.os ? (info.os.type + ' ' + (info.os.release || '')) : t('sys.unknown'),
+      host: (info && info.host) || t('sys.unknown'),
+      cpu: cpu ? (shortCpu(cpu.model) + ' · ' + cpu.cores + 'C') : t('sys.unknown'),
+      gpu: gpu && gpu.name ? gpu.name + (gpu.tempC ? ' · ' + fmt0(gpu.tempC) + '°C' : '') : t('sys.none'),
+      memPct: mem ? mem.pct : null,
+      memUsed: mem ? mem.used : null,
+      memTotal: mem ? mem.total : null,
+      swapPct: swap && swap.total ? Math.round(((swap.total - swap.free) / swap.total) * 100) : null,
+      swapUsed: swap && swap.total ? swap.total - swap.free : null,
+      swapTotal: swap ? swap.total : null,
+      diskPct: disk ? disk.pct : null,
+      diskUsed: disk ? disk.used : null,
+      diskTotal: disk ? disk.total : null,
+      cpuLoad: loadPct,
+      cpuPower: info ? info.cpuPowerW : null,
+      temps,
+      model: agent.model,
+      mode: t('strength.' + agent.strength),
+      tokUsed: agent.used,
+      tokUsedIn: agent.usedIn,
+      tokUsedOut: agent.usedOut,
+      tokLeft: agent.left,
+      tokBudget: agent.budget,
+      sessions: String(agent.sessions),
+      messages: String(agent.messages),
+      now: new Date().toLocaleTimeString(),
+    };
+  }
+
+  async function refreshSnapshot() {
+    let info = null;
+    try { info = await P.io.systemInfo(); } catch (e) { info = null; }
+    const agent = agentSnapshot();
+    targets = buildTargets(info, agent);
+    if (!built) {
+      buildHardware();
+      buildAgent();
+      built = true;
+      seedDisplay();
+    }
+    paintStatic();
+  }
+
+  function seedDisplay() {
+    const keys = ['memPct', 'memUsed', 'swapPct', 'swapUsed', 'diskPct', 'diskUsed',
+      'cpuLoad', 'cpuPower', 'gpuUsage', 'tokUsed', 'tokLeft', 'tokPct'];
+    disp = {};
+    for (const k of keys) disp[k] = targets[k] === null || targets[k] === undefined ? 0 : targets[k];
+    disp.temps = {};
+    for (const key in targets.temps) disp.temps[key] = targets.temps[key];
+  }
+
+  function easeDisplay() {
+    const keys = ['memPct', 'memUsed', 'swapPct', 'swapUsed', 'diskPct', 'diskUsed',
+      'cpuLoad', 'cpuPower', 'gpuUsage', 'tokUsed', 'tokLeft', 'tokPct'];
+    for (const k of keys) {
+      const tgt = targets[k];
+      if (tgt === null || tgt === undefined) continue;
+      disp[k] += (tgt - disp[k]) * (reducedMotion ? 1 : SMOOTH);
+    }
+    for (const key in targets.temps) {
+      if (disp.temps[key] === undefined) disp.temps[key] = targets.temps[key];
+      else disp.temps[key] += (targets.temps[key] - disp.temps[key]) * (reducedMotion ? 1 : SMOOTH);
+    }
+  }
+
+  function paintStatic() {
+    const byKey = { os: targets.os, host: targets.host, cpu: targets.cpu, gpu: targets.gpu,
+      model: targets.model, mode: targets.mode, sessions: targets.sessions, messages: targets.messages };
+    for (const k in byKey) {
+      if (refs[k] && refs[k].val) refs[k].val.textContent = byKey[k];
+    }
+  }
+
+  function paintDynamic() {
+    const R = refs;
+    const set = (key, text, pct) => {
+      const r = R[key];
+      if (!r) return;
+      if (r.val) r.val.textContent = text;
+      if (r.bar && pct !== null && pct !== undefined) r.bar.fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+    };
+
+    if (targets.memTotal) set('mem', fmtBytes(disp.memUsed) + ' / ' + fmtBytes(targets.memTotal), disp.memPct);
+    if (targets.swapTotal) set('swap', fmtBytes(disp.swapUsed) + ' / ' + fmtBytes(targets.swapTotal), disp.swapPct);
+    if (targets.diskTotal) set('disk', fmtBytes(disp.diskUsed) + ' / ' + fmtBytes(targets.diskTotal), disp.diskPct);
+    set('cpuLoad', fmt0(disp.cpuLoad) + '%', disp.cpuLoad);
+    set('cpuPower', fmt1(disp.cpuPower) + ' W');
+    set('tokUsed', fmt0(disp.tokUsed) + ' · ' + targets.tokUsedIn + ' in / ' + targets.tokUsedOut + ' out', targets.tokBudget ? Math.min(100, (targets.tokUsed / targets.tokBudget) * 100) : 0);
+    set('tokLeft', fmt0(disp.tokLeft) + ' / ' + targets.tokBudget, disp.tokPct);
+
+    const tempNames = Object.keys(targets.temps);
+    if (tempNames.length && R.temps && R.temps.val) {
+      R.temps.val.textContent = tempNames.map((name) => name + ' ' + fmt1(disp.temps[name]) + '°C').join('  ');
+    }
+    if (R.updated && R.updated.val) R.updated.val.textContent = t('sys.updated', { t: targets.now });
+  }
+
+  /* ---------- 30fps loop ---------- */
+  function loop(ts) {
+    raf = requestAnimationFrame(loop);
+    if (ts - lastTick < TICK_MS) return;
+    lastTick = ts;
+    if (built) {
+      easeDisplay();
+      paintDynamic();
+    }
+    drawRing();
+  }
+
+  function startPanel() {
+    ringCanvas = $('sysRing');
+    if (ringCanvas) ringCtx = ringCanvas.getContext('2d');
+    if (reducedMotion) drawRing();
+    lastTick = 0;
+    raf = requestAnimationFrame(loop);
+    refreshSnapshot();
+    snapshotTimer = setInterval(refreshSnapshot, SNAPSHOT_MS);
+  }
+  function stopPanel() {
+    cancelAnimationFrame(raf);
+    if (snapshotTimer) { clearInterval(snapshotTimer); snapshotTimer = null; }
+  }
+
+  /* ---------- open / close ---------- */
+  function open() {
+    S.open = true;
+    $('sysOverlay').classList.add('open');
+    built = false;
+    targets = {}; disp = {};
+    startPanel();
+  }
+  function close() {
+    S.open = false;
+    $('sysOverlay').classList.remove('open');
+    stopPanel();
+  }
+
+  function bind() {
+    $('brandBtn').addEventListener('click', () => open());
+    $('sysClose').addEventListener('click', close);
+    $('sysOverlay').addEventListener('click', (e) => { if (e.target === $('sysOverlay')) close(); });
+  }
+
+  S.open = open;
+  S.close = close;
+  S.toggle = function () { (S.open ? close() : open()); };
+  S.bind = bind;
+  S.refresh = refreshSnapshot;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/**
+ * PRTS chat surface: message store, rendering, streaming turns, message
+ * actions, details panel, context meter. Pure DOM — works in the webview
+ * (Electron bridge or dev browser) and is driven by the same core as the TUI.
+ */
+(function (G) {
+  'use strict';
+  const P = G.PRTS = G.PRTS || {};
+  const C = P.chat = { messages: [], bounds: [], streaming: false };
+
+  const $ = (id) => document.getElementById(id);
+  function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+  function fmtDate(ts) {
+    const d = new Date(ts);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' +
+      String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  }
+  function clock(ts) {
+    const d = new Date(ts);
+    return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  }
+
+  /* ---------- persistence ---------- */
+  async function projectId() {
+    const cfg = await P.store.loadConfig();
+    return cfg.project;
+  }
+  async function loadHistory() {
+    const id = await projectId();
+    const entries = await P.store.readHistory(id);
+    C.messages = []; C.bounds = [];
+    for (const e of entries) {
+      if (e.k === 'b') C.bounds.push(e.ts);
+      else if (e.k === 'm') C.messages.push(e);
+    }
+  }
+  async function saveMsg(m) {
+    const id = await projectId();
+    await P.store.appendHistory(id, m);
+    await P.store.touchProject(id);
+  }
+  async function saveBound(ts) {
+    const id = await projectId();
+    await P.store.appendHistory(id, { k: 'b', ts });
+    C.bounds.push(ts);
+  }
+
+  /* ---------- rendering ---------- */
+  function icon(name, w, h) { return P.icons[name] ? P.icons[name] : ''; }
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+
+  function metaRow(msg, user) {
+    const row = el('div', 'maRow' + (user ? ' timeStart' : ''));
+    const t = el('span', 'maTime', clock(msg.ts));
+    const actions = el('span', 'maActions');
+    if (user) {
+      actions.appendChild(actionBtn('copy', msg));
+    } else {
+      actions.appendChild(actionBtn('copy', msg));
+      actions.appendChild(actionBtn('like', msg));
+      actions.appendChild(actionBtn('dislike', msg));
+      actions.appendChild(actionBtn('branch', msg));
+    }
+    row.appendChild(t); row.appendChild(actions);
+    return row;
+  }
+
+  function actionBtn(kind, msg) {
+    const b = el('button', 'maBtn');
+    b.type = 'button';
+    b.dataset.action = kind;
+    b.dataset.id = msg.id;
+    b.title = P.i18n.t('chat.' + kind, P.app.locale);
+    b.setAttribute('aria-label', b.title);
+    b.innerHTML = P.icons['ma.' + kind] || '';
+    if (kind === 'like') b.innerHTML = P.icons['ma.like'] || '';
+    if (kind === 'dislike') b.innerHTML = P.icons['ma.dislike'] || '';
+    return b;
+  }
+
+  function disclosureRow(title, bodyText, open) {
+    const d = el('div', 'disclosure' + (open ? ' open' : ''));
+    const row = el('button', 'dRow');
+    row.innerHTML = '<svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.2 2.7a.6.6 0 0 1 0 .9L6.7 6l-2.5 2.4a.6.6 0 1 0 .9.9l3-2.9a.6.6 0 0 0 0-.9l-3-2.9a.6.6 0 0 0-.9 0Z" fill="currentColor"/></svg>';
+    const t = el('span', 'dTitle', title);
+    row.appendChild(t);
+    const body = el('div', 'dBody');
+    body.appendChild(el('div', 'thinkBody', bodyText));
+    row.addEventListener('click', () => d.classList.toggle('open'));
+    d.appendChild(row); d.appendChild(body);
+    return d;
+  }
+
+  function statsLine(msg) {
+    const s = el('div', 'statsLine');
+    const parts = [];
+    if (msg.durationMs) parts.push('ELAPSED ' + P.api.formatDuration(msg.durationMs));
+    if (msg.durationMs) parts.push(P.i18n.t('chat.ranFor', P.app.locale, { d: P.api.formatDuration(msg.durationMs) }));
+    if (msg.usage && (msg.usage.prompt_tokens || msg.usage.completion_tokens)) {
+      parts.push(P.i18n.t('chat.tokens', P.app.locale, { in: msg.usage.prompt_tokens || 0, out: msg.usage.completion_tokens || 0 }));
+    }
+    if (msg.usage && msg.usage.completion_tokens_details && msg.usage.completion_tokens_details.reasoning_tokens) {
+      parts.push(P.i18n.t('chat.reasoningTokens', P.app.locale, { n: msg.usage.completion_tokens_details.reasoning_tokens }));
+    }
+    if (parts.length) s.textContent = '· ' + parts.join(' · ');
+    return s;
+  }
+
+  function renderUser(msg) {
+    const wrap = el('div', 'userRow');
+    const bubble = el('div', 'userBubble', msg.content);
+    wrap.appendChild(bubble);
+    wrap.appendChild(metaRow(msg, true));
+    return wrap;
+  }
+
+  function renderAssistant(msg) {
+    const item = el('div', 'assistantItem');
+    item.dataset.msg = msg.id;
+    if (msg.reasoning) {
+      item.appendChild(disclosureRow(P.i18n.t('chat.thinking', P.app.locale), msg.reasoning, false));
+    }
+    const p = el('p', 'para', msg.content);
+    if (msg.streaming) {
+      const caret = el('span', 'caret');
+      p.appendChild(caret);
+    }
+    item.appendChild(p);
+    if (!msg.streaming) {
+      item.appendChild(metaRow(msg, false));
+      if (msg.durationMs || (msg.usage && msg.usage.completion_tokens)) item.appendChild(statsLine(msg));
+    }
+    if (msg.error) {
+      const e = el('div', 'errorRow');
+      e.textContent = msg.error;
+      item.appendChild(e);
+    }
+    return item;
+  }
+
+  function renderDivider(ts) {
+    const d = el('div', 'sessionDivider');
+    d.appendChild(el('span', 'dt', fmtDate(ts)));
+    return d;
+  }
+
+  function renderFlow() {
+    const flow = $('flow');
+    flow.textContent = '';
+    let bi = 0;
+    const nextBound = () => (bi < C.bounds.length ? C.bounds[bi] : Infinity);
+    for (const m of C.messages) {
+      while (nextBound() < m.ts) { flow.appendChild(renderDivider(C.bounds[bi])); bi++; }
+      if (m.role === 'user') flow.appendChild(renderUser(m));
+      else flow.appendChild(renderAssistant(m));
+    }
+    while (bi < C.bounds.length) { flow.appendChild(renderDivider(C.bounds[bi])); bi++; }
+    if (!C.messages.length && !P.app.heroVisible) {
+      flow.appendChild(el('div', 'emptyChat', P.i18n.t('chat.empty', P.app.locale)));
+    }
+    scrollBottom();
+  }
+
+  function scrollBottom() {
+    requestAnimationFrame(() => { const s = $('chatScroll'); s.scrollTop = s.scrollHeight; });
+  }
+
+  /* ---------- streaming ---------- */
+  let abortCtrl = null;
+  let dirty = false;
+
+  async function send() {
+    if (C.streaming) return;
+    const input = $('composerInput');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    scrollInputBottom();
+    updateSend();
+
+    const cfg = await P.store.loadConfig();
+    if (!cfg.api.apiKey) {
+      P.app.toast(P.i18n.t('chat.error.noKey', P.app.locale));
+      P.app.openSettings();
+      return;
+    }
+    P.app.enterChat();
+
+    const userMsg = { id: 'u' + Date.now(), k: 'm', role: 'user', content: text, ts: Date.now() };
+    C.messages.push(userMsg);
+    await saveMsg(userMsg);
+
+    const asstMsg = { id: 'a' + Date.now(), k: 'm', role: 'assistant', content: '', reasoning: '', ts: Date.now(), streaming: true, model: cfg.api.model, strength: cfg.api.strength };
+    C.messages.push(asstMsg);
+    renderFlow();
+    startTurn(asstMsg, cfg);
+  }
+
+  function startTurn(asstMsg, cfg) {
+    C.streaming = true;
+    abortCtrl = new AbortController();
+    $('statusRow').hidden = false;
+    swapSendStop(true);
+    const budget = P.store.STRENGTH_BUDGET[cfg.api.strength] || 0;
+    const history = C.messages
+      .filter((m) => m !== asstMsg && !m.streaming && (m.role === 'user' || m.role === 'assistant'))
+      .map((m) => ({ role: m.role, content: m.content }));
+    const flush = () => { if (dirty) { dirty = false; renderFlow(); } };
+
+    const run = (b) => P.api.chat({
+      config: cfg,
+      messages: history,
+      budget: b,
+      signal: abortCtrl.signal,
+      onDelta(t) { asstMsg.content += t; dirty = true; requestAnimationFrame(flush); },
+      onReasoning(t) { asstMsg.reasoning += t; dirty = true; requestAnimationFrame(flush); },
+    });
+
+    run(budget).then(async (res) => {
+      // Some endpoints reject the thinking budget; retry plainly once.
+      if (!res.ok && !res.aborted && res.error && res.error.message && /thinking/i.test(res.error.message) && budget > 0) {
+        res = await run(0);
+      }
+      asstMsg.content = res.content;
+      asstMsg.reasoning = res.reasoning;
+      asstMsg.streaming = false;
+      if (res.aborted) {
+        asstMsg.content = asstMsg.content || '(interrupted)';
+      } else if (!res.ok) {
+        asstMsg.error = P.i18n.t('chat.error.' + (res.error && res.error.code || 'http'), P.app.locale, { msg: res.error && res.error.message || '' });
+      }
+      if (res.usage) asstMsg.usage = res.usage;
+      asstMsg.durationMs = res.durationMs;
+      flush();
+      await saveMsg(asstMsg);
+      finishTurn();
+    });
+  }
+
+  function finishTurn() {
+    C.streaming = false;
+    abortCtrl = null;
+    $('statusRow').hidden = true;
+    swapSendStop(false);
+    P.app.updateSidebar();
+  }
+
+  function stop() {
+    if (abortCtrl) abortCtrl.abort();
+  }
+
+  function swapSendStop(streaming) {
+    const send = $('sendBtn');
+    if (streaming && send.dataset.state !== 'stop') {
+      send.dataset.state = 'stop';
+      send.disabled = false;
+      send.innerHTML = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="1" y="1" width="9" height="9" rx="1.5" fill="currentColor"/></svg>';
+      send.title = P.i18n.t('composer.stop', P.app.locale);
+    } else if (!streaming && send.dataset.state === 'stop') {
+      delete send.dataset.state;
+      send.innerHTML = P.icons['send'] || '';
+      send.title = P.i18n.t('composer.send', P.app.locale);
+      updateSend();
+    }
+  }
+
+  /* ---------- message actions ---------- */
+  function copyText(text) {
+    const done = () => P.app.toast(P.i18n.t('chat.copied', P.app.locale));
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text) && done());
+    } else { fallbackCopy(text); done(); }
+  }
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  }
+
+  async function branch() {
+    await saveBound(Date.now());
+    renderFlow();
+    P.app.updateSidebar();
+  }
+
+  async function handleFlowClick(e) {
+    const btn = e.target.closest('.maBtn');
+    if (btn) {
+      const msg = C.messages.find((m) => m.id === btn.dataset.id);
+      if (!msg) return;
+      const kind = btn.dataset.action;
+      if (kind === 'copy') { copyText(msg.content || ''); return; }
+      if (kind === 'like') { btn.classList.toggle('on'); return; }
+      if (kind === 'dislike') { btn.classList.toggle('on'); return; }
+      if (kind === 'branch') { await branch(); return; }
+    }
+    const item = e.target.closest('.assistantItem') || e.target.closest('.userBubble');
+    if (item) {
+      const id = item.closest('.assistantItem') ? item.closest('.assistantItem').dataset.msg : null;
+      const msg = id ? C.messages.find((m) => m.id === id) : C.messages.filter((m) => m.role === 'user').pop();
+      if (msg) P.app.showDetails(msg);
+    }
+  }
+
+  /* ---------- context meter ---------- */
+  function updateMeter() {
+    const cfg = P.app.config || {};
+    const budget = cfg.api && cfg.api.model === 'deepseek-reasoner' ? 65536 : 131072;
+    const chars = C.messages.reduce((n, m) => n + (m.content || '').length + (m.reasoning || '').length, 0);
+    const pct = Math.min(100, Math.round(chars / 4 / budget * 100));
+    const ring = $('meterRing');
+    ring.style.strokeDashoffset = String(34.56 * (1 - pct / 100));
+    $('meterLabel').textContent = pct + '%';
+  }
+
+  /* ---------- composer ---------- */
+  function updateSend() {
+    const input = $('composerInput');
+    const send = $('sendBtn');
+    if (send.dataset.state === 'stop') return;
+    send.disabled = !input.value.trim() || C.streaming;
+  }
+
+  // Keep the current line pinned to the bottom of the fixed-height input so
+  // overflow scrolls above it.
+  function scrollInputBottom() {
+    const input = $('composerInput');
+    if (input) input.scrollTop = input.scrollHeight;
+  }
+
+  function toggleExpand() {
+    const area = $('composerArea');
+    const btn = $('composerExpand');
+    const expanded = area.classList.toggle('expanded');
+    btn.setAttribute('aria-expanded', String(expanded));
+    btn.title = P.i18n.t(expanded ? 'composer.collapse' : 'composer.expand', P.app.locale);
+    scrollInputBottom();
+  }
+
+  /* ---------- init ---------- */
+  function init() {
+    $('composerInput').addEventListener('input', () => { updateSend(); scrollInputBottom(); });
+    $('composerInput').addEventListener('keydown', (e) => {
+      // Enter sends; Shift+Enter inserts a newline.
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        send();
+      }
+    });
+    $('composerExpand').addEventListener('click', toggleExpand);
+    $('sendBtn').addEventListener('click', () => {
+      if ($('sendBtn').dataset.state === 'stop') stop();
+      else send();
+    });
+    $('flow').addEventListener('click', handleFlowClick);
+    $('newSessionBtn').addEventListener('click', async () => {
+      if (C.streaming) stop();
+      await saveBound(Date.now());
+      C.bounds.push(C.bounds.pop());
+      renderFlow();
+      P.app.updateSidebar();
+    });
+    $('logBtn').addEventListener('click', async () => {
+      const id = await projectId();
+      const raw = await P.store.readHistory(id);
+      const blob = new Blob([raw.map((e) => JSON.stringify(e)).join('\n') + '\n'], { type: 'application/jsonl' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'prts-' + id + '-' + Date.now() + '.jsonl';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    });
+  }
+
+  C.send = send;
+  C.stop = stop;
+  C.renderFlow = renderFlow;
+  C.loadHistory = loadHistory;
+  C.updateMeter = updateMeter;
+  C.updateSend = updateSend;
+  C.scrollInputBottom = scrollInputBottom;
+  C.toggleExpand = toggleExpand;
+  C.init = init;
+  C.fmtDate = fmtDate;
+  C.clock = clock;
+  C.esc = esc;
+  C.el = el;
+  C.renderDivider = renderDivider;
+  C.disclosureRow = disclosureRow;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/**
+ * PRTS GUI bootstrap and shell: i18n, theme, sidebar, settings overlay,
+ * details panel, drag handles, particle intro sequence, hero ambience,
+ * popovers, tabs, toast. Initialized last (after core + chat).
+ */
+(function (G) {
+  'use strict';
+  const P = G.PRTS = G.PRTS || {};
+  const A = P.app = {};
+
+  const $ = (id) => document.getElementById(id);
+  const appEl = () => $('app');
+
+  /* ---------- toast ---------- */
+  let toastTimer;
+  A.toast = function (msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+  };
+
+  /* ---------- i18n ---------- */
+  A.t = function (key, params) { return P.i18n.t(key, A.locale, params); };
+  function applyI18n() {
+    document.querySelectorAll('[data-i18n]').forEach((n) => { n.textContent = A.t(n.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach((n) => { n.placeholder = A.t(n.dataset.i18nPlaceholder); });
+    document.querySelectorAll('[data-i18n-title]').forEach((n) => { n.title = A.t(n.dataset.i18nTitle); });
+    document.documentElement.lang = A.locale === 'zh' ? 'zh-CN' : 'en';
+  }
+
+  /* ---------- theme ---------- */
+  function applyTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    if (A.heroEngine) A.heroEngine.refreshInk();
+    if (A.introEngine) A.introEngine.refreshInk();
+  }
+  A.toggleTheme = async function () {
+    const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    applyTheme(theme);
+    A.config.ui = A.config.ui || {};
+    A.config.ui.theme = theme;
+    await P.store.saveConfig(A.config);
+  };
+
+  /* ---------- sidebar ---------- */
+  function renderProjects() {
+    const list = $('projectList');
+    list.textContent = '';
+    for (const p of A.projects) {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'sbItem' + (p.id === A.config.project ? ' active' : '');
+      row.dataset.project = p.id;
+      const name = document.createElement('span');
+      name.className = 'name';
+      name.textContent = p.name;
+      row.appendChild(name);
+      const meta = document.createElement('span');
+      meta.className = 'meta';
+      meta.textContent = new Date(p.updatedAt || 0).toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' });
+      row.appendChild(meta);
+      row.addEventListener('click', () => switchProject(p.id));
+      list.appendChild(row);
+    }
+    $('projectCount').textContent = String(A.projects.length);
+  }
+
+  async function switchProject(id) {
+    if (A.chatLoading) return;
+    await P.store.openProject(id);
+    const cfg = await P.store.loadConfig();
+    A.config = cfg;
+    await P.chat.loadHistory();
+    P.chat.renderFlow();
+    P.chat.updateMeter();
+    updateCrumb();
+    renderProjects();
+    A.updateSidebar();
+    refreshWsPop();
+  }
+
+  function refreshWsPop() {
+    const pop = $('wsPop');
+    if (!pop) return;
+    pop.innerHTML = A.projects.map((p) => '<div class="popItem' + (p.id === A.config.project ? ' selected' : '') + '" data-value="' + p.id + '"><span class="label">' + p.name + '</span><span class="tick">&#10003;</span></div>').join('');
+  }
+
+  function renderSessions() {
+    const list = $('sessionList');
+    list.textContent = '';
+    const bounds = [Date.now() - 86400000 * 365].concat(P.chat.bounds);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const groups = {};
+    for (const b of bounds) {
+      const key = b >= today.getTime() ? 'today' : new Date(b).toLocaleDateString();
+      groups[key] = (groups[key] || 0) + 1;
+    }
+    for (const key of Object.keys(groups)) {
+      const row = document.createElement('div');
+      row.className = 'sbItem';
+      row.style.cursor = 'default';
+      const name = document.createElement('span');
+      name.className = 'name';
+      name.textContent = key;
+      row.appendChild(name);
+      const meta = document.createElement('span');
+      meta.className = 'meta';
+      meta.textContent = String(groups[key]);
+      row.appendChild(meta);
+      list.appendChild(row);
+    }
+    $('sessionCount').textContent = String(Math.max(1, Object.keys(groups).length));
+  }
+
+  A.updateSidebar = function () {
+    renderSessions();
+    P.chat.updateMeter();
+  };
+
+  /* ---------- phase switch: hero → chat ---------- */
+  A.enterChat = function () {
+    A.heroVisible = false;
+    const cvt = $('cvt');
+    cvt.dataset.phase = 'active';
+    $('header').hidden = false;
+    $('heroView').hidden = true;
+    $('chatScroll').hidden = false;
+    if (A.heroEngine) A.heroEngine.stop();
+    P.chat.updateMeter();
+  };
+
+  /* ---------- header / crumbs ---------- */
+  function updateCrumb() {
+    const id = A.config.project;
+    const proj = A.projects.find((p) => p.id === id);
+    $('crumbProject').textContent = (proj && proj.name) || id;
+    $('workspaceLabel').textContent = (proj && proj.name) || id;
+    $('workspaceBtn').title = id;
+  }
+
+  /* ---------- details panel ---------- */
+  A.showDetails = function (msg) {
+    openDetails();
+    const body = $('dtBody');
+    body.textContent = '';
+    const fields = [
+      ['role', msg.role],
+      ['model', msg.model || (A.config.api && A.config.api.model) || '-'],
+      ['strength', msg.strength || (A.config.api && A.config.api.strength) || '-'],
+      ['created', P.chat.fmtDate(msg.ts)],
+    ];
+    if (msg.durationMs) fields.push(['duration', P.api.formatDuration(msg.durationMs)]);
+    if (msg.usage) {
+      fields.push(['tokens', 'in ' + (msg.usage.prompt_tokens || 0) + ' · out ' + (msg.usage.completion_tokens || 0)]);
+    }
+    for (const [k, v] of fields) {
+      const f = document.createElement('div');
+      f.className = 'dtField';
+      const kk = document.createElement('div');
+      kk.className = 'k';
+      kk.textContent = A.t('details.' + k);
+      const vv = document.createElement('div');
+      vv.className = 'v';
+      vv.textContent = String(v);
+      f.appendChild(kk); f.appendChild(vv);
+      body.appendChild(f);
+    }
+  };
+
+  function openDetails() {
+    appEl().removeAttribute('data-details-collapsed');
+    appEl().style.setProperty('--dsh-dt', A.dtWidth + 'px');
+    placeHandles();
+  }
+  function closeDetails() {
+    appEl().setAttribute('data-details-collapsed', '');
+    appEl().style.setProperty('--dsh-dt', '0px');
+    placeHandles();
+  }
+
+  /* ---------- drag handles ---------- */
+  const A_ = { sbWidth: 272, dtWidth: 360 };
+  A.dtWidth = A_.dtWidth;
+  function placeHandles() {
+    const r = appEl().getBoundingClientRect();
+    $('handleSidebar').style.left = (A_.sbWidth - 4) + 'px';
+    $('handleDetails').style.left = (r.width - A_.dtWidth - 4) + 'px';
+    $('handleDetails').style.display = appEl().hasAttribute('data-details-collapsed') ? 'none' : '';
+  }
+  function attachDrag(handle, onDrag, onEnd) {
+    handle.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      handle.setPointerCapture(e.pointerId);
+      appEl().dataset.dragging = 'true';
+      handle.dataset.dragging = 'true';
+      const move = (ev) => { const x = ev.clientX - appEl().getBoundingClientRect().left; onDrag(x); };
+      const up = () => {
+        handle.removeEventListener('pointermove', move);
+        handle.removeEventListener('pointerup', up);
+        delete appEl().dataset.dragging;
+        delete handle.dataset.dragging;
+        onEnd && onEnd();
+      };
+      handle.addEventListener('pointermove', move);
+      handle.addEventListener('pointerup', up);
+    });
+  }
+  function bindDrag() {
+    attachDrag($('handleSidebar'), (x) => {
+      A_.sbWidth = Math.min(420, Math.max(240, x));
+      appEl().style.setProperty('--dsh-sb', A_.sbWidth + 'px');
+      $('handleSidebar').style.left = (A_.sbWidth - 4) + 'px';
+    }, placeHandles);
+    attachDrag($('handleDetails'), (x) => {
+      const r = appEl().getBoundingClientRect();
+      A_.dtWidth = Math.min(560, Math.max(320, r.width - x));
+      appEl().style.setProperty('--dsh-dt', A_.dtWidth + 'px');
+      $('handleDetails').style.left = (r.width - A_.dtWidth - 4) + 'px';
+    }, placeHandles);
+  }
+
+  /* ---------- tabs ---------- */
+  function bindTabs() {
+    $('tabs').addEventListener('click', (e) => {
+      const tab = e.target.closest('.tab');
+      if (!tab) return;
+      $('tabs').querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t === tab));
+      const view = tab.dataset.view;
+      $('heroView').hidden = view !== 'chat' ? true : false;
+      $('chatScroll').hidden = view !== 'chat';
+      $('composerArea').hidden = view !== 'chat';
+      $('trajView').hidden = view !== 'trajectory';
+      if (view === 'trajectory') renderTrajectory();
+    });
+  }
+  function renderTrajectory() {
+    const tv = $('trajView');
+    tv.textContent = '';
+    const rows = [];
+    let i = 0;
+    for (const m of P.chat.messages) {
+      if (m.role === 'assistant' && m.reasoning) {
+        rows.push({ i: ++i, text: m.reasoning });
+      }
+    }
+    if (!rows.length) {
+      tv.appendChild(P.chat.el('div', 'trajEmpty', A.t('details.empty')));
+      return;
+    }
+    for (const r of rows) {
+      const item = document.createElement('div');
+      item.className = 'trajItem';
+      const idx = document.createElement('span');
+      idx.className = 'idx';
+      idx.textContent = String(r.i).padStart(2, '0');
+      const text = document.createElement('div');
+      text.textContent = r.text;
+      item.appendChild(idx); item.appendChild(text);
+      tv.appendChild(item);
+    }
+  }
+
+  /* ---------- popovers ---------- */
+  let openPop = null;
+  function closePops() { if (openPop) { openPop.classList.remove('open'); openPop = null; } }
+  function attachPop(trigger, itemsHtml, onPick, alignRight) {
+    const pop = document.createElement('div');
+    pop.className = 'pop';
+    if (trigger.id === 'workspaceBtn') pop.id = 'wsPop';
+    if (alignRight) { pop.style.left = 'auto'; pop.style.right = '0'; }
+    pop.innerHTML = itemsHtml;
+    trigger.appendChild(pop);
+    pop.addEventListener('click', (e) => {
+      const item = e.target.closest('.popItem');
+      if (item && onPick) onPick(item.dataset.value, item);
+    });
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (openPop === pop) { closePops(); return; }
+      closePops();
+      pop.classList.add('open');
+      openPop = pop;
+    });
+    return pop;
+  }
+
+  function bindPopovers() {
+    // Model
+    attachPop($('modelChip'),
+      P.store.MODELS.map((m) => '<div class="popItem' + (A.config.api.model === m ? ' selected' : '') + '" data-value="' + m + '"><span class="label">' + m + '</span><span class="tick">&#10003;</span></div>').join('') +
+      '<div class="popMeta">DeepSeek API models. deepseek-reasoner ignores strength.</div>',
+      async (value) => {
+        A.config.api.model = value;
+        await P.store.saveConfig(A.config);
+        updateChips();
+      });
+    // Strength
+    attachPop($('strengthChip'),
+      ['off', 'low', 'medium', 'high'].map((s) => '<div class="popItem' + (A.config.api.strength === s ? ' selected' : '') + '" data-value="' + s + '"><span class="label">' + A.t('strength.' + s) + '</span><span class="tick">&#10003;</span></div>').join('') +
+      '<div class="popMeta">Thinking-budget preset: ' + [0, 1024, 4096, 32768].join(' / ') + ' reasoning tokens.</div>',
+      async (value) => {
+        A.config.api.strength = value;
+        await P.store.saveConfig(A.config);
+        updateChips();
+      });
+    // Commands
+    attachPop($('commandsChip'),
+      '<div class="popItem" data-value="new"><span class="label">' + A.t('sidebar.newSession') + '</span></div>' +
+      '<div class="popItem" data-value="settings"><span class="label">' + A.t('sidebar.settings') + '</span></div>' +
+      '<div class="popItem" data-value="theme"><span class="label">Theme</span></div>',
+      async (value) => {
+        if (value === 'new') { await P.chat.branch(); }
+        else if (value === 'settings') A.openSettings();
+        else if (value === 'theme') A.toggleTheme();
+      });
+    // Meter
+    attachPop($('meterBtn'),
+      '<div class="popMeta" id="meterPopDetail" style="border:none;margin:0;">—</div>',
+      null, true);
+    // Workspace (project switch)
+    attachPop($('workspaceBtn'),
+      A.projects.map((p) => '<div class="popItem' + (p.id === A.config.project ? ' selected' : '') + '" data-value="' + p.id + '"><span class="label">' + p.name + '</span><span class="tick">&#10003;</span></div>').join(''),
+      (value) => switchProject(value));
+  }
+
+  function updateChips() {
+    $('modelChipLabel').textContent = A.config.api.model;
+    $('strengthChipLabel').textContent = 'STRENGTH: ' + A.t('strength.' + A.config.api.strength);
+    $('strengthChip').classList.toggle('on', A.config.api.strength !== 'off');
+    updateMeterPop();
+    P.chat.updateMeter();
+  }
+  function updateMeterPop() {
+    const detail = $('meterPopDetail');
+    if (!detail) return;
+    const budget = A.config.api.model === 'deepseek-reasoner' ? 65536 : 131072;
+    const chars = P.chat.messages.reduce((n, m) => n + (m.content || '').length + (m.reasoning || '').length, 0);
+    const pct = Math.min(100, Math.round(chars / 4 / budget * 100));
+    detail.textContent = '≈ ' + chars + ' chars · ' + budget + ' tok window · ' + pct + '% used';
+  }
+
+  /* ---------- voice input ---------- */
+  A.voiceOn = false;
+  function drawBrandFx(frame) {
+    const cv = $('brandFx');
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    const on = A.voiceOn;
+    cv.classList.toggle('on', on);
+    cv.classList.toggle('listening', on && frame.listening && !frame.speaking);
+    cv.classList.toggle('speaking', on && frame.speaking);
+    if (!on) return;
+    const ink = getComputedStyle(document.documentElement).getPropertyValue('--prts-ink').trim() || '#FAFAFA';
+    const bars = (frame.bars && frame.bars.length) ? frame.bars : new Array(14).fill(0);
+    const n = 14, w = cv.width, h = cv.height;
+    const bw = w / n;
+    const amp = frame.speaking ? 1 : 0.34;
+    ctx.fillStyle = ink;
+    for (let i = 0; i < n; i++) {
+      const v = Math.max(0.03, bars[i] * amp);
+      const bh = Math.max(1, v * (h - 3));
+      ctx.globalAlpha = frame.speaking ? 0.45 + 0.55 * bars[i] : 0.4;
+      ctx.fillRect(i * bw + bw * 0.22, (h - bh) / 2, bw * 0.55, bh);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function bindVoice() {
+    const btn = $('voiceBtn');
+    btn.addEventListener('click', async () => {
+      if (A.voiceOn) {
+        P.asr.stop();
+        A.voiceOn = false;
+        btn.classList.remove('on', 'recognizing');
+        btn.title = A.t('voice.off');
+        return;
+      }
+      const ok = await P.asr.start();
+      if (ok !== 'ok') {
+        // A specific toast is emitted through P.asr.onError for the failure mode.
+        if (ok === 'unsupported') A.toast(A.t('voice.unsupported'));
+        else if (ok === 'not-allowed') A.toast(A.t('voice.noMic'));
+        return;
+      }
+      A.voiceOn = true;
+      btn.classList.add('on');
+      btn.title = A.t('voice.on');
+    });
+    P.asr.onFrame((frame) => {
+      const recognizing = frame.state === 'recognizing';
+      btn.classList.toggle('recognizing', A.voiceOn && recognizing);
+      drawBrandFx(frame);
+    });
+    P.asr.onResult((text) => {
+      const input = $('composerInput');
+      if (!input) return;
+      if (input.value) input.value += ' ';
+      input.value += text;
+      if (P.chat.updateSend) P.chat.updateSend();
+      if (P.chat.scrollInputBottom) P.chat.scrollInputBottom();
+      input.focus();
+    });
+    P.asr.onError((code) => {
+      if (code === 'not-allowed') A.toast(A.t('voice.noMic'));
+      else if (code === 'unsupported') A.toast(A.t('voice.unsupported'));
+      else if (code && code !== 'no-speech' && code !== 'aborted') A.toast(A.t('voice.error', { msg: String(code) }));
+    });
+  }
+
+  /* ---------- community plugin buttons ---------- */
+  function renderPlugins() {
+    for (const area of ['composer', 'header']) {
+      const host = area === 'composer' ? $('pluginComposer') : $('pluginHeader');
+      host.textContent = '';
+      const items = P.plugins.list(area);
+      for (const pl of items) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'pluginBtn';
+        btn.title = pl.label || pl.id;
+        btn.setAttribute('aria-label', btn.title);
+        if (pl.icon) btn.innerHTML = pl.icon;
+        else btn.textContent = String(pl.label || pl.id).slice(0, 1).toUpperCase();
+        if (pl.badge) {
+          const dot = document.createElement('span');
+          dot.className = 'pluginBadge';
+          btn.appendChild(dot);
+        }
+        btn.addEventListener('click', (e) => {
+          try {
+            if (pl.onClick) pl.onClick({ app: P.app, config: A.config, store: P.store, chat: P.chat, event: e });
+          } catch (err) {
+            A.toast(String(err && err.message || err));
+          }
+        });
+        host.appendChild(btn);
+      }
+    }
+  }
+
+  /* ---------- settings ---------- */
+  A.openSettings = function () {
+    fillSettings();
+    $('settingsOverlay').classList.add('open');
+  };
+  function closeSettings() { $('settingsOverlay').classList.remove('open'); }
+  function fillSettings() {
+    $('cfgApiKey').value = A.config.api.apiKey || '';
+    $('cfgBaseUrl').value = A.config.api.baseUrl || '';
+    $('cfgModel').value = A.config.api.model || 'deepseek-chat';
+    $('cfgStrength').value = A.config.api.strength || 'medium';
+    $('cfgLocale').value = A.config.locale || 'auto';
+    renderCfgProjects();
+    $('cfgStatus').textContent = '';
+  }
+  function renderCfgProjects() {
+    const box = $('cfgProjects');
+    box.textContent = '';
+    for (const p of A.projects) {
+      const row = document.createElement('div');
+      row.className = 'projectRow';
+      const name = document.createElement('span');
+      name.className = 'pname';
+      name.textContent = p.name + (p.id === A.config.project ? ' ◂' : '');
+      const meta = document.createElement('span');
+      meta.className = 'pmeta';
+      meta.textContent = p.id;
+      const use = document.createElement('button');
+      use.className = 'sBtn';
+      use.textContent = A.t('project.switch') === 'Switch project' ? 'USE' : '使用';
+      use.style.height = '26px';
+      use.addEventListener('click', () => switchProject(p.id));
+      const del = document.createElement('button');
+      del.className = 'sBtn';
+      del.textContent = A.t('common.delete');
+      del.style.height = '26px';
+      del.style.marginLeft = '4px';
+      del.disabled = p.id === 'default';
+      del.addEventListener('click', async () => {
+        if (!confirm(A.t('project.confirmDelete', { name: p.name }))) return;
+        await P.store.deleteProject(p.id);
+        if (A.config.project === p.id) await switchProject('default');
+        A.projects = await P.store.listProjects();
+        renderProjects();
+        renderCfgProjects();
+      });
+      row.appendChild(name); row.appendChild(use); row.appendChild(del);
+      box.appendChild(row);
+    }
+    const form = document.createElement('div');
+    form.className = 'inlineForm';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = A.t('project.name');
+    input.maxLength = 40;
+    const create = document.createElement('button');
+    create.className = 'sBtn primary';
+    create.textContent = A.t('project.create');
+    create.addEventListener('click', async () => {
+      const name = input.value.trim();
+      if (!name) return;
+      const id = P.store.slugify(name);
+      await P.store.ensureProject(id);
+      await P.store.renameProject(id, name);
+      await switchProject(id);
+      A.projects = await P.store.listProjects();
+      renderProjects();
+      fillSettings();
+    });
+    form.appendChild(input); form.appendChild(create);
+    box.appendChild(form);
+  }
+  async function saveSettings() {
+    A.config.api.apiKey = $('cfgApiKey').value.trim();
+    A.config.api.baseUrl = $('cfgBaseUrl').value.trim() || 'https://api.deepseek.com';
+    A.config.api.model = $('cfgModel').value;
+    A.config.api.strength = $('cfgStrength').value;
+    A.config.locale = $('cfgLocale').value;
+    await P.store.saveConfig(A.config);
+    const prev = A.locale;
+    A.locale = A.config.locale === 'auto' ? P.platform.detectLocale() : A.config.locale;
+    applyI18n();
+    updateChips();
+    A.toast(A.t('settings.saved'));
+    if (prev !== A.locale) P.chat.renderFlow();
+  }
+
+  /* ---------- particles: intro + hero ---------- */
+  function runIntro() {
+    const cv = $('introCanvas');
+    A.introEngine = P.particles.create(cv, { count: 10000, speedRange: [0.02, 0.05] });
+    A.introEngine.start();
+    const tag = $('introTag');
+    tag.textContent = A.t('intro.welcome');
+    const finish = () => {
+      $('intro').classList.add('done');
+      setTimeout(() => { $('intro').style.display = 'none'; A.introEngine.stop(); }, 800);
+      startHeroAmbient();
+    };
+    let done = false;
+    const skip = () => { if (done) return; done = true; finish(); };
+    window.addEventListener('pointerdown', skip, { once: true });
+    window.addEventListener('keydown', skip, { once: true });
+    // Same particles reorganize throughout — no scatter, no fade-out, no new
+    // particles: field -> "welcome to / PRTS" -> PRTS·DEEPSEEK banner -> mark.
+    setTimeout(() => { A.introEngine.showIntro(9000); tag.classList.add('show'); }, 700);
+    setTimeout(() => { A.introEngine.showPp(10000); tag.classList.remove('show'); }, 4400);
+    setTimeout(() => { A.introEngine.showMark(1.05, 9000); }, 8000);
+    setTimeout(skip, 12200);
+  }
+
+  function startHeroAmbient() {
+    const cv = $('heroCanvas');
+    A.heroEngine = P.particles.create(cv, { count: 1600, speedRange: [0.006, 0.02] });
+    A.heroEngine.start();
+    A.heroEngine.scatter();
+    cv.addEventListener('pointermove', (e) => {
+      const r = cv.getBoundingClientRect();
+      A.heroEngine.onMouse(e.clientX - r.left, e.clientY - r.top);
+    });
+    cv.addEventListener('pointerleave', () => A.heroEngine.clearMouse());
+  }
+
+  /* ---------- new project inline (sidebar) ---------- */
+  function bindNewProject() {
+    $('newProjectBtn').addEventListener('click', () => {
+      const list = $('projectList');
+      const form = document.createElement('div');
+      form.className = 'inlineForm';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = A.t('project.name');
+      input.maxLength = 40;
+      const go = async () => {
+        const name = input.value.trim();
+        if (!name) return;
+        await P.store.ensureProject(P.store.slugify(name));
+        await P.store.renameProject(P.store.slugify(name), name);
+        await switchProject(P.store.slugify(name));
+        A.projects = await P.store.listProjects();
+        renderProjects();
+      };
+      const ok = document.createElement('button');
+      ok.className = 'sBtn';
+      ok.textContent = 'OK';
+      ok.style.height = '26px';
+      ok.addEventListener('click', go);
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); if (e.key === 'Escape') form.remove(); });
+      form.appendChild(input); form.appendChild(ok);
+      list.prepend(form);
+      input.focus();
+    });
+  }
+
+  /* ---------- boot ---------- */
+  async function boot() {
+    A.config = await P.store.loadConfig();
+    A.locale = A.config.locale === 'auto' ? P.platform.detectLocale() : A.config.locale;
+    applyTheme(A.config.ui && A.config.ui.theme === 'light' ? 'light' : 'dark');
+    applyI18n();
+    A.projects = await P.store.listProjects();
+    A.heroVisible = true;
+    await P.chat.loadHistory();
+
+    bindTabs();
+    bindDrag();
+    bindNewProject();
+    bindPopovers();
+    bindVoice();
+
+    if (P.plugins) {
+      P.plugins.onChange(renderPlugins);
+      P.plugins.adoptSeeded();
+      renderPlugins();
+    }
+    if (P.system && P.system.bind) P.system.bind();
+
+    $('themeBtn').addEventListener('click', A.toggleTheme);
+    $('settingsBtn').addEventListener('click', () => A.openSettings());
+    $('settingsClose').addEventListener('click', closeSettings);
+    $('cfgSave').addEventListener('click', saveSettings);
+    $('cfgApiKeyToggle').addEventListener('click', () => {
+      const input = $('cfgApiKey');
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      $('cfgApiKeyToggle').textContent = show ? 'HIDE' : 'SHOW';
+    });
+    $('cfgTest').addEventListener('click', async () => {
+      const status = $('cfgStatus');
+      status.textContent = A.t('settings.testing');
+      const testCfg = {
+        api: {
+          baseUrl: $('cfgBaseUrl').value.trim() || 'https://api.deepseek.com',
+          apiKey: $('cfgApiKey').value.trim(),
+          model: $('cfgModel').value,
+        },
+      };
+      const res = await P.api.ping(testCfg);
+      status.textContent = res.ok ? A.t('settings.test.ok', { ms: res.ms }) : A.t('settings.test.fail', { msg: res.message });
+    });
+    $('detailsBtn').addEventListener('click', () => {
+      if (appEl().hasAttribute('data-details-collapsed')) openDetails();
+      else closeDetails();
+    });
+    $('dtClose').addEventListener('click', closeDetails);
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.chip') && !e.target.closest('.meterBtn') && !e.target.closest('.workspaceBtn')) closePops();
+      if (e.target === $('settingsOverlay')) closeSettings();
+      if (P.system && e.target === $('sysOverlay')) P.system.close();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { closePops(); closeSettings(); if (P.system && P.system.open) P.system.close(); }
+    });
+    window.addEventListener('resize', placeHandles);
+
+    P.chat.init();
+    updateCrumb();
+    renderProjects();
+    renderSessions();
+    updateChips();
+    P.chat.renderFlow();
+    placeHandles();
+    runIntro();
+  }
+
+  A.updateCrumb = updateCrumb;
+  A.renderProjects = renderProjects;
+  A.closeSettings = closeSettings;
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+</body>
+</html>
