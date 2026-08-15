@@ -45,6 +45,27 @@
     return (ms / 1000).toFixed(1) + ' s';
   }
 
+  /** Fetch the model list from an OpenAI-compatible /models endpoint. */
+  async function models(baseUrl, apiKey) {
+    const base = String(baseUrl || 'https://api.deepseek.com').replace(/\/+$/, '');
+    let status = 0, body = '';
+    try {
+      await P.io.http({
+        method: 'GET',
+        url: base + '/models',
+        headers: { 'Authorization': 'Bearer ' + (apiKey || ''), 'Accept': 'application/json' },
+        onChunk(t) { body += t; },
+        onEnd(r) { status = r ? r.status : 0; },
+      });
+    } catch (e) { return null; }
+    if (status < 200 || status >= 300) return null;
+    try {
+      const j = JSON.parse(body);
+      if (Array.isArray(j.data)) return j.data.map((m) => m.id).sort();
+    } catch (e) { /* not json */ }
+    return null;
+  }
+
   /**
    * Stream one assistant turn.
    * @param opts { config, messages, budget, onDelta(text), onReasoning(text), onMeta(meta), signal }
@@ -154,5 +175,5 @@
     return { ok: false, ms: Date.now() - started, message: err.message || err.code };
   }
 
-  P.api = { chat, ping, formatDuration };
+  P.api = { chat, ping, models, formatDuration };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

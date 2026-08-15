@@ -21,28 +21,54 @@
   /** Thinking-budget presets (reasoning tokens). */
   const STRENGTH_BUDGET = { off: 0, low: 1024, medium: 4096, high: 32768 };
 
-  const MODELS = ['deepseek-chat', 'deepseek-reasoner'];
+  let MODELS = ['deepseek-chat', 'deepseek-reasoner'];
 
   /** Chat modes (dsh-web style): each is a preset over the base model/strength. */
   const MODES = ['standard', 'ptc', 'minimal', 'creative'];
 
-  /** Per-mode overrides applied on top of the user's model/strength settings. */
+  /** Per-mode presets (chat flavour only — never override the chosen model). */
   const MODE_PRESETS = {
     standard: { temperature: 1.0 },
-    ptc: { model: 'deepseek-chat', strength: 'off', temperature: 0.6 },
-    minimal: { model: 'deepseek-chat', strength: 'off', temperature: 0.2, maxTokens: 400 },
-    creative: { model: 'deepseek-chat', strength: 'off', temperature: 1.5 },
+    ptc: { temperature: 0.6 },
+    minimal: { temperature: 0.2, maxTokens: 400 },
+    creative: { temperature: 1.5 },
   };
 
   /** Resolve the effective request settings for a mode + user config. */
   function resolveMode(mode, api) {
     const preset = MODE_PRESETS[mode] || MODE_PRESETS.standard;
     return {
-      model: preset.model || api.model || 'deepseek-chat',
-      strength: preset.strength || api.strength || 'medium',
+      model: api.model || 'deepseek-chat',
+      strength: api.strength || 'medium',
       temperature: preset.temperature,
       maxTokens: preset.maxTokens || 0,
     };
+  }
+
+  /** Read provider keys from the dsh harness env (e.g. ~/.dsh/.env). */
+  async function dshEnvKeys() {
+    try {
+      const envPath = P.platform.homedir() + '/.dsh/.env';
+      const raw = await P.io.readFile(envPath);
+      const keys = {};
+      for (const line of raw.split('\n')) {
+        const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
+        if (m) keys[m[1]] = m[2].trim();
+      }
+      return keys;
+    } catch (e) { return {}; }
+  }
+
+  /** Auto-detect the available models from the configured endpoint. */
+  async function refreshModels(cfg) {
+    try {
+      const list = await P.api.models(cfg && cfg.api ? cfg.api.baseUrl : undefined, cfg && cfg.api ? cfg.api.apiKey : undefined);
+      if (list && list.length) {
+        MODELS = list;
+        if (cfg && cfg.api && !list.includes(cfg.api.model)) cfg.api.model = list[0];
+      }
+    } catch (e) { /* keep defaults */ }
+    return MODELS.slice();
   }
 
   function dirs() {
@@ -59,7 +85,7 @@
   }
 
   const store = {
-    dirs, STRENGTH_BUDGET, MODELS, MODES, MODE_PRESETS, resolveMode, slugify,
+    dirs, STRENGTH_BUDGET, MODELS, MODES, MODE_PRESETS, resolveMode, dshEnvKeys, refreshModels, slugify,
 
     async loadConfig() {
       let cfg = JSON.parse(JSON.stringify(DEFAULTS));
@@ -68,6 +94,13 @@
         const parsed = JSON.parse(raw);
         cfg = { ...cfg, ...parsed, api: { ...cfg.api, ...(parsed.api || {}) } };
       } catch (e) { /* first run */ }
+      // Sync the API key from the dsh harness if PRTS has none of its own.
+      if (!cfg.api.apiKey) {
+        try {
+          const env = await dshEnvKeys();
+          if (env.DEEPSEEK_API_KEY) cfg.api.apiKey = env.DEEPSEEK_API_KEY;
+        } catch (e) { /* ignore */ }
+      }
       if (!cfg.project || !(await store.projectExists(cfg.project))) cfg.project = 'default';
       await store.ensureProject(cfg.project);
       return cfg;

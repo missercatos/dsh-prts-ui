@@ -25,8 +25,10 @@ command -v node >/dev/null 2>&1 || die "Node.js is required (https://nodejs.org)
 command -v npm  >/dev/null 2>&1 || die "npm is required (ships with Node.js)."
 command -v pnpm >/dev/null 2>&1 || npm i -g pnpm >/dev/null 2>&1 || true
 
-# ---------- 2. dsh harness ----------
-if ! command -v dsh >/dev/null 2>&1; then
+# ---------- 2. dsh harness (idempotent) ----------
+if command -v dsh >/dev/null 2>&1; then
+  say "dsh is already installed: $(dsh --version 2>/dev/null | head -1)"
+else
   say "Installing the dsh harness (@deepseek-ai/dsh)…"
   npm i -g @deepseek-ai/dsh
 fi
@@ -56,7 +58,12 @@ allowBuilds:
   protobufjs: true
 YAML
 say "Installing plugin into profile 'prts'…"
-dsh plugin --profile prts install "$TGZ" || warn "pnpm reported a warning; continuing if the package landed."
+if [ -f "$PROFILE_DIR/node_modules/dsh-prts-ui/package.json" ]; then
+  V="$(node -e "console.log(require('$PROFILE_DIR/node_modules/dsh-prts-ui/package.json').version)" 2>/dev/null || echo '?')"
+  say "PRTS is already installed (v$V) — skipping re-install. Use \`bash update.sh\` to upgrade."
+else
+  dsh plugin --profile prts install "$TGZ" || warn "pnpm reported a warning; continuing if the package landed."
+fi
 if [ ! -f "$PROFILE_DIR/node_modules/dsh-prts-ui/package.json" ]; then
   die "plugin did not install into $PROFILE_DIR"
 fi

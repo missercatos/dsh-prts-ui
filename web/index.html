@@ -1002,6 +1002,10 @@ button:focus:not(:focus-visible) { outline: none; }
       'mode.minimal': 'MINIMAL',
       'mode.creative': 'CREATIVE',
       'mode.hint': 'Presets over model, thinking and temperature. PTC / MINIMAL use deepseek-chat; MINIMAL caps at 400 tokens; CREATIVE raises temperature.',
+      'model.refresh': '⟳ Refresh models',
+      'model.hint': 'Detected from the configured endpoint (/models).',
+      'model.refreshed': 'Models refreshed',
+      'model.refreshFail': 'Could not list models from this endpoint',
       'workspace.add': '+ Add workspace',
       'workspace.hint': 'A workspace is a project: its own history and settings.',
       'chips.context': '{pct}% of context used',
@@ -1185,6 +1189,10 @@ button:focus:not(:focus-visible) { outline: none; }
       'mode.minimal': '极简模式',
       'mode.creative': '创造模式',
       'mode.hint': '预设会覆盖模型、思考与温度。PTC/极简使用 deepseek-chat；极简上限 400 token；创造模式提高温度。',
+      'model.refresh': '⟳ 刷新模型',
+      'model.hint': '从配置的接口(/models)自动探测。',
+      'model.refreshed': '模型已刷新',
+      'model.refreshFail': '无法从此接口获取模型列表',
       'workspace.add': '+ 添加工作区',
       'workspace.hint': '工作区即项目：拥有独立的历史记录与设置。',
       'chips.context': '上下文已用 {pct}%',
@@ -1520,28 +1528,54 @@ button:focus:not(:focus-visible) { outline: none; }
   /** Thinking-budget presets (reasoning tokens). */
   const STRENGTH_BUDGET = { off: 0, low: 1024, medium: 4096, high: 32768 };
 
-  const MODELS = ['deepseek-chat', 'deepseek-reasoner'];
+  let MODELS = ['deepseek-chat', 'deepseek-reasoner'];
 
   /** Chat modes (dsh-web style): each is a preset over the base model/strength. */
   const MODES = ['standard', 'ptc', 'minimal', 'creative'];
 
-  /** Per-mode overrides applied on top of the user's model/strength settings. */
+  /** Per-mode presets (chat flavour only — never override the chosen model). */
   const MODE_PRESETS = {
     standard: { temperature: 1.0 },
-    ptc: { model: 'deepseek-chat', strength: 'off', temperature: 0.6 },
-    minimal: { model: 'deepseek-chat', strength: 'off', temperature: 0.2, maxTokens: 400 },
-    creative: { model: 'deepseek-chat', strength: 'off', temperature: 1.5 },
+    ptc: { temperature: 0.6 },
+    minimal: { temperature: 0.2, maxTokens: 400 },
+    creative: { temperature: 1.5 },
   };
 
   /** Resolve the effective request settings for a mode + user config. */
   function resolveMode(mode, api) {
     const preset = MODE_PRESETS[mode] || MODE_PRESETS.standard;
     return {
-      model: preset.model || api.model || 'deepseek-chat',
-      strength: preset.strength || api.strength || 'medium',
+      model: api.model || 'deepseek-chat',
+      strength: api.strength || 'medium',
       temperature: preset.temperature,
       maxTokens: preset.maxTokens || 0,
     };
+  }
+
+  /** Read provider keys from the dsh harness env (e.g. ~/.dsh/.env). */
+  async function dshEnvKeys() {
+    try {
+      const envPath = P.platform.homedir() + '/.dsh/.env';
+      const raw = await P.io.readFile(envPath);
+      const keys = {};
+      for (const line of raw.split('\n')) {
+        const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
+        if (m) keys[m[1]] = m[2].trim();
+      }
+      return keys;
+    } catch (e) { return {}; }
+  }
+
+  /** Auto-detect the available models from the configured endpoint. */
+  async function refreshModels(cfg) {
+    try {
+      const list = await P.api.models(cfg && cfg.api ? cfg.api.baseUrl : undefined, cfg && cfg.api ? cfg.api.apiKey : undefined);
+      if (list && list.length) {
+        MODELS = list;
+        if (cfg && cfg.api && !list.includes(cfg.api.model)) cfg.api.model = list[0];
+      }
+    } catch (e) { /* keep defaults */ }
+    return MODELS.slice();
   }
 
   function dirs() {
@@ -1558,7 +1592,7 @@ button:focus:not(:focus-visible) { outline: none; }
   }
 
   const store = {
-    dirs, STRENGTH_BUDGET, MODELS, MODES, MODE_PRESETS, resolveMode, slugify,
+    dirs, STRENGTH_BUDGET, MODELS, MODES, MODE_PRESETS, resolveMode, dshEnvKeys, refreshModels, slugify,
 
     async loadConfig() {
       let cfg = JSON.parse(JSON.stringify(DEFAULTS));
@@ -1567,6 +1601,13 @@ button:focus:not(:focus-visible) { outline: none; }
         const parsed = JSON.parse(raw);
         cfg = { ...cfg, ...parsed, api: { ...cfg.api, ...(parsed.api || {}) } };
       } catch (e) { /* first run */ }
+      // Sync the API key from the dsh harness if PRTS has none of its own.
+      if (!cfg.api.apiKey) {
+        try {
+          const env = await dshEnvKeys();
+          if (env.DEEPSEEK_API_KEY) cfg.api.apiKey = env.DEEPSEEK_API_KEY;
+        } catch (e) { /* ignore */ }
+      }
       if (!cfg.project || !(await store.projectExists(cfg.project))) cfg.project = 'default';
       await store.ensureProject(cfg.project);
       return cfg;
@@ -1710,6 +1751,27 @@ button:focus:not(:focus-visible) { outline: none; }
     return (ms / 1000).toFixed(1) + ' s';
   }
 
+  /** Fetch the model list from an OpenAI-compatible /models endpoint. */
+  async function models(baseUrl, apiKey) {
+    const base = String(baseUrl || 'https://api.deepseek.com').replace(/\/+$/, '');
+    let status = 0, body = '';
+    try {
+      await P.io.http({
+        method: 'GET',
+        url: base + '/models',
+        headers: { 'Authorization': 'Bearer ' + (apiKey || ''), 'Accept': 'application/json' },
+        onChunk(t) { body += t; },
+        onEnd(r) { status = r ? r.status : 0; },
+      });
+    } catch (e) { return null; }
+    if (status < 200 || status >= 300) return null;
+    try {
+      const j = JSON.parse(body);
+      if (Array.isArray(j.data)) return j.data.map((m) => m.id).sort();
+    } catch (e) { /* not json */ }
+    return null;
+  }
+
   /**
    * Stream one assistant turn.
    * @param opts { config, messages, budget, onDelta(text), onReasoning(text), onMeta(meta), signal }
@@ -1819,7 +1881,7 @@ button:focus:not(:focus-visible) { outline: none; }
     return { ok: false, ms: Date.now() - started, message: err.message || err.code };
   }
 
-  P.api = { chat, ping, formatDuration };
+  P.api = { chat, ping, models, formatDuration };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
 
@@ -3604,16 +3666,33 @@ button:focus:not(:focus-visible) { outline: none; }
     return pop;
   }
 
+  async function refreshModels() {
+    const before = (P.store.MODELS || []).length;
+    await P.store.refreshModels(A.config);
+    if (A.refreshModelPop) A.refreshModelPop();
+    updateChips();
+    if (P.store.MODELS.length > before) A.toast(A.t('model.refreshed'));
+    else A.toast(A.t('model.refreshFail'));
+  }
+
+  function modelPopItems() {
+    const items = P.store.MODELS.map((m) => '<div class="popItem' + (A.config.api.model === m ? ' selected' : '') + '" data-value="' + m + '"><span class="label">' + m + '</span><span class="tick">&#10003;</span></div>').join('');
+    return '<div class="popItem" data-value="__refresh"><span class="label">' + A.t('model.refresh') + '</span></div>' +
+      '<div class="popMeta">' + A.t('model.hint') + '</div>' + items;
+  }
+
   function bindPopovers() {
     // Model
-    attachPop($('modelChip'),
-      P.store.MODELS.map((m) => '<div class="popItem' + (A.config.api.model === m ? ' selected' : '') + '" data-value="' + m + '"><span class="label">' + m + '</span><span class="tick">&#10003;</span></div>').join('') +
-      '<div class="popMeta">DeepSeek API models. deepseek-reasoner ignores strength.</div>',
+    const modelPop = attachPop($('modelChip'),
+      modelPopItems(),
       async (value) => {
+        if (value === '__refresh') { await refreshModels(); return; }
         A.config.api.model = value;
         await P.store.saveConfig(A.config);
         updateChips();
       });
+    A.modelPop = modelPop;
+    A.refreshModelPop = () => { modelPop.innerHTML = modelPopItems(); };
     // Strength
     attachPop($('strengthChip'),
       ['off', 'low', 'medium', 'high'].map((s) => '<div class="popItem' + (A.config.api.strength === s ? ' selected' : '') + '" data-value="' + s + '"><span class="label">' + A.t('strength.' + s) + '</span><span class="tick">&#10003;</span></div>').join('') +
@@ -3799,7 +3878,14 @@ button:focus:not(:focus-visible) { outline: none; }
   function fillSettings() {
     $('cfgApiKey').value = A.config.api.apiKey || '';
     $('cfgBaseUrl').value = A.config.api.baseUrl || '';
-    $('cfgModel').value = A.config.api.model || 'deepseek-chat';
+    const sel = $('cfgModel');
+    sel.textContent = '';
+    for (const m of P.store.MODELS) {
+      const o = document.createElement('option');
+      o.value = m; o.textContent = m;
+      sel.appendChild(o);
+    }
+    sel.value = A.config.api.model || 'deepseek-chat';
     $('cfgStrength').value = A.config.api.strength || 'medium';
     $('cfgLocale').value = A.config.locale || 'auto';
     renderCfgProjects();
@@ -3947,6 +4033,11 @@ button:focus:not(:focus-visible) { outline: none; }
   /* ---------- boot ---------- */
   async function boot() {
     A.config = await P.store.loadConfig();
+    // Best-effort model detection from the configured endpoint.
+    P.store.refreshModels(A.config).then(() => {
+      if (A.refreshModelPop) A.refreshModelPop();
+      updateChips();
+    }).catch(() => { /* keep defaults */ });
     A.locale = A.config.locale === 'auto' ? P.platform.detectLocale() : A.config.locale;
     applyTheme(A.config.ui && A.config.ui.theme === 'light' ? 'light' : 'dark');
     applyI18n();

@@ -314,16 +314,33 @@
     return pop;
   }
 
+  async function refreshModels() {
+    const before = (P.store.MODELS || []).length;
+    await P.store.refreshModels(A.config);
+    if (A.refreshModelPop) A.refreshModelPop();
+    updateChips();
+    if (P.store.MODELS.length > before) A.toast(A.t('model.refreshed'));
+    else A.toast(A.t('model.refreshFail'));
+  }
+
+  function modelPopItems() {
+    const items = P.store.MODELS.map((m) => '<div class="popItem' + (A.config.api.model === m ? ' selected' : '') + '" data-value="' + m + '"><span class="label">' + m + '</span><span class="tick">&#10003;</span></div>').join('');
+    return '<div class="popItem" data-value="__refresh"><span class="label">' + A.t('model.refresh') + '</span></div>' +
+      '<div class="popMeta">' + A.t('model.hint') + '</div>' + items;
+  }
+
   function bindPopovers() {
     // Model
-    attachPop($('modelChip'),
-      P.store.MODELS.map((m) => '<div class="popItem' + (A.config.api.model === m ? ' selected' : '') + '" data-value="' + m + '"><span class="label">' + m + '</span><span class="tick">&#10003;</span></div>').join('') +
-      '<div class="popMeta">DeepSeek API models. deepseek-reasoner ignores strength.</div>',
+    const modelPop = attachPop($('modelChip'),
+      modelPopItems(),
       async (value) => {
+        if (value === '__refresh') { await refreshModels(); return; }
         A.config.api.model = value;
         await P.store.saveConfig(A.config);
         updateChips();
       });
+    A.modelPop = modelPop;
+    A.refreshModelPop = () => { modelPop.innerHTML = modelPopItems(); };
     // Strength
     attachPop($('strengthChip'),
       ['off', 'low', 'medium', 'high'].map((s) => '<div class="popItem' + (A.config.api.strength === s ? ' selected' : '') + '" data-value="' + s + '"><span class="label">' + A.t('strength.' + s) + '</span><span class="tick">&#10003;</span></div>').join('') +
@@ -509,7 +526,14 @@
   function fillSettings() {
     $('cfgApiKey').value = A.config.api.apiKey || '';
     $('cfgBaseUrl').value = A.config.api.baseUrl || '';
-    $('cfgModel').value = A.config.api.model || 'deepseek-chat';
+    const sel = $('cfgModel');
+    sel.textContent = '';
+    for (const m of P.store.MODELS) {
+      const o = document.createElement('option');
+      o.value = m; o.textContent = m;
+      sel.appendChild(o);
+    }
+    sel.value = A.config.api.model || 'deepseek-chat';
     $('cfgStrength').value = A.config.api.strength || 'medium';
     $('cfgLocale').value = A.config.locale || 'auto';
     renderCfgProjects();
@@ -657,6 +681,11 @@
   /* ---------- boot ---------- */
   async function boot() {
     A.config = await P.store.loadConfig();
+    // Best-effort model detection from the configured endpoint.
+    P.store.refreshModels(A.config).then(() => {
+      if (A.refreshModelPop) A.refreshModelPop();
+      updateChips();
+    }).catch(() => { /* keep defaults */ });
     A.locale = A.config.locale === 'auto' ? P.platform.detectLocale() : A.config.locale;
     applyTheme(A.config.ui && A.config.ui.theme === 'light' ? 'light' : 'dark');
     applyI18n();
