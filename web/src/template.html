@@ -74,6 +74,9 @@
           </div>
           <div class="headerUtils">
             <span class="pluginBar" id="pluginHeader"></span>
+            <button class="iconBtn" id="clearHistoryBtn" type="button" data-i18n-title="header.clearHistory">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 4h9M5.5 4V2.8h3V4" stroke="currentColor" stroke-width="1.2"/><path d="M4 4l.6 7.2h4.8L10 4" stroke="currentColor" stroke-width="1.2"/></svg>
+            </button>
             <button class="logBtn" id="logBtn" type="button">
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1.2a.8.8 0 0 1 .8.8v3.2h2.4a.8.8 0 0 1 .5 1.4l-3.4 3.4a.8.8 0 0 1-1.1 0L1.8 6.6a.8.8 0 0 1 .5-1.4h2.9V2a.8.8 0 0 1 .8-.8Z" fill="currentColor"/></svg>
               <span data-i18n="header.log">Session log</span>
@@ -136,6 +139,11 @@
                 </button>
                 <button class="chip" id="strengthChip" type="button">
                   <span class="label" id="strengthChipLabel">STRENGTH: MEDIUM</span>
+                  <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
+                </button>
+                <button class="chip" id="modeChip" type="button">
+                  <span class="dot"></span>
+                  <span class="label" id="modeChipLabel">STANDARD</span>
                   <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
                 </button>
                 <button class="chip" id="commandsChip" type="button">

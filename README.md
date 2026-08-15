@@ -2,22 +2,41 @@
 
 > [中文](./README.zh.md)
 
-PRTS — a monochrome DeepSeek chat client that lives inside the [dsh](https://www.npmjs.com/package/@deepseek-ai/dsh) harness as a profile bundle.
+PRTS — a monochrome DeepSeek chat client that **runs on the dsh framework** as a profile bundle. `dsh` is the launching harness: it mounts the profile tree, parses the flags and hands the process lifetime to the app.
 
-- Black/white UI with a particle welcome intro (scatter → welcome → logo → hero).
+- Black/white UI with a particle welcome intro (scatter → welcome → banner → mark).
 - Two surfaces from one command: a terminal client (`--tui`) and an Electron window (default).
 - Per-project message history, `zh`/`en` locale, deepseek-chat + deepseek-reasoner models, and thinking-strength presets.
 - Ships as a `.tgz` profile bundle: `dsh plugin`-installable, desktop-shortcut and postinstall glue included.
 
 ## Install
 
+**One-click installer** (recommended): run `install.sh` on Linux/macOS, or `install.bat` on Windows (`build-exe.bat` wraps it into `PRTS-Setup.exe` via Windows' built-in IExpress). It checks Node.js, installs the dsh harness if missing, builds the tarball, installs the plugin into the `prts` profile, creates the desktop + app-menu shortcuts, and puts a `prts` command on PATH.
+
+```sh
+# Linux / macOS — from the repo checkout:
+bash install.sh
+# or with a prebuilt tarball:
+bash install.sh ./dsh-prts-ui-0.1.0.tgz
+
+# Windows — double-click install.bat (or PRTS-Setup.exe)
+```
+
+Manual install:
+
 ```sh
 # one-off: build the tarball
 pnpm pack
 
-# profile side
+# profile side — this installs dsh-prts-ui into the `prts` profile
 dsh plugin --profile prts install ./dsh-prts-ui-0.1.0.tgz
-dsh --profile prts --tui
+```
+
+Then launch it (any of):
+
+```sh
+dsh --profile prts            # GUI window
+dsh --profile prts --tui      # terminal client
 ```
 
 The profile (`~/.dsh/profiles/prts/`) uses a **minimal bundle** — only `dsh-prts-ui`, not `@deepseek-ai/dsh-base`:
@@ -40,9 +59,106 @@ dsh --profile prts --tui --project ops
 dsh --profile prts --shortcut      # install a desktop launcher
 ```
 
-TUI keys: `Enter` send · `Tab` switch view · `Ctrl+L` language · `Ctrl+C` stop/exit · `/help` commands. Settings via `/key`, `/base <url>`, `/model [n|name]`, `/strength off|low|medium|high`.
+TUI keys: `Enter` send · `Shift+Enter` newline · `Tab` switch view · `Ctrl+L` language · `Ctrl+C` stop/exit · `/help` commands. Settings via `/key`, `/base <url>`, `/model [n|name]`, `/strength off|low|medium|high`, `/mode standard|ptc|minimal|creative`.
 
-Configuration and history live in the platform config dir (`~/.config/prts` on Linux, `~/Library/Application Support/prts` on macOS, `%APPDATA%\prts` on Windows): `config.json`, `projects/<id>/meta.json`, `projects/<id>/history.jsonl`.
+### Chat modes & workspaces
+
+A **chat mode** (composer chip, or `/mode` in the TUI) is a dsh-web-style preset applied on top of your model/strength:
+
+| Mode | Effect |
+| --- | --- |
+| STANDARD | your model + strength, temperature 1.0 |
+| PTC | deepseek-chat, thinking off, temperature 0.6 |
+| MINIMAL | deepseek-chat, thinking off, temperature 0.2, capped at 400 tokens |
+| CREATIVE | deepseek-chat, thinking off, temperature 1.5 |
+
+A **workspace** is what PRTS calls a project: its own history and settings. The button under the PRTS logo shows the current workspace and opens the switcher, where **+ Add workspace** creates a new one (the sidebar "New project" does the same). The default workspace is `default`.
+
+### Launching `prts` from the terminal
+
+After installing the plugin, add a one-line alias so typing `prts` opens the TUI (the bundled `prts` bin defaults to `--tui`):
+
+```sh
+# add to ~/.bashrc (or ~/.zshrc), then `source ~/.bashrc`
+alias prts='/home/a/.dsh/profiles/prts/node_modules/dsh-prts-ui/bin/dsh-prts-ui.js'
+# or the shorter form if dsh lives on PATH and you prefer a shell function:
+#   prts() { dsh --profile prts --tui "$@"; }
+
+prts                  # terminal client
+prts --lang zh        # Chinese TUI
+prts --gui            # GUI window
+prts --shortcut       # refresh the desktop shortcut
+```
+
+If the package is installed globally (`npm i -g dsh-prts-ui`), the `prts` command is already on PATH and works the same way.
+
+### Desktop shortcut
+
+The desktop launcher is created on demand (and by `postinstall`, best-effort):
+
+```sh
+dsh --profile prts --shortcut
+```
+
+On Linux this writes **two** entries: `~/Desktop/dsh-prts.desktop` (desktop icon) and `~/.local/share/applications/dsh-prts.desktop` (app menu), both pointed at `dsh --profile prts` with `Icon=` set to the packaged `assets/prts.png`. macOS gets `~/Desktop/PRTS.command`. On **Windows** it writes a `PRTS.lnk` (with the PRTS `.ico` icon) to the Desktop **and** to the Start Menu (`%APPDATA%\Microsoft\Windows\Start Menu\Programs\PRTS.lnk`), launched windowless via `wscript`.
+
+**About the Windows taskbar ("dock"):** Windows deliberately does not let applications pin themselves to the taskbar — that is always a user action. So PRTS won't auto-appear there. The Start-menu entry is what you pin from: Start menu → right-click **PRTS** → **Pin to taskbar**.
+
+**KDE Plasma notes:** make sure your desktop folder matches `XDG_DESKTOP_DIR` (default `~/Desktop`) — if your language localizes it (`~/桌面`), Plasma won't watch `~/Desktop`. The first time you see the desktop icon, right-click it → **Allow Launching**. To pin PRTS to the dock/taskbar, open the app launcher, find **PRTS**, right-click → **Pin to Task Manager** (the app-menu entry is what the dock needs).
+
+Only one launcher is created (a marker file prevents duplicates); remove `~/.config/prts/.shortcut-done` to allow it again, or set `DSH_PRTS_DESKTOP` to target another folder (used in CI).
+
+### Updating
+
+**One-click update** (recommended):
+
+```sh
+bash update.sh        # Linux / macOS — from the repo checkout
+update.bat            # Windows
+# or point either at a newer tarball:
+bash update.sh ./dsh-prts-ui-<new-version>.tgz
+```
+
+It rebuilds the tarball, updates the plugin inside the `prts` profile, and refreshes the desktop + app-menu shortcuts. The manual equivalent is:
+
+```sh
+pnpm bundle && pnpm pack
+dsh plugin --profile prts install ./dsh-prts-ui-<new-version>.tgz
+rm -f ~/.config/prts/.shortcut-done
+dsh --profile prts --shortcut
+```
+
+To update the dsh harness itself: `npm i -g @deepseek-ai/dsh@latest`.
+
+### Removing PRTS
+
+```sh
+# remove the plugin from the prts profile (forwards to pnpm remove)
+dsh plugin --profile prts remove dsh-prts-ui
+
+# clean up shortcuts, config and the profile
+rm -f ~/Desktop/dsh-prts.desktop ~/.local/share/applications/dsh-prts.desktop
+rm -rf ~/.config/prts ~/.dsh/profiles/prts
+# on macOS / Windows remove the matching PRTS.command / .lnk instead.
+```
+
+### Where your data and API key live
+
+Everything is stored **locally** under the platform config dir:
+
+| Platform | Config dir |
+| --- | --- |
+| Linux | `~/.config/prts/` |
+| macOS | `~/Library/Application Support/prts/` |
+| Windows | `%APPDATA%\prts\` |
+
+- `config.json` — locale, UI theme, and the API settings (`baseUrl`, **`apiKey`**, `model`, `strength`).
+- `projects/<id>/meta.json` — per-project metadata.
+- `projects/<id>/history.jsonl` — per-project messages and session dividers.
+
+The API key is stored **in `config.json` only, never in a project** (projects hold messages/history only), and it is never sent anywhere except to the `baseUrl` you configure (default `https://api.deepseek.com`) as the `Authorization: Bearer` header. It is plaintext on disk in your own user directory — the same model as most local CLI tools (e.g. `gh`, `aws`). To harden it: keep the config dir permissions restrictive (it is under your home directory) and use an API key with limited quota. Projects and session history are deleted through the trash buttons in the sidebar and the header's clear-history button.
+
+Deleting: hover a project in the sidebar and use the trash button (or the Settings → project delete), and use the header clear-history button to wipe the current project's messages and sessions.
 
 ### Environment variables
 
@@ -55,6 +171,10 @@ Configuration and history live in the platform config dir (`~/.config/prts` on L
 | `DSH_PRTS_NO_SHORTCUT` | `1` disables shortcut install (CI) |
 | `DSH_PRTS_PROFILE` | profile name embedded in the shortcut (default `prts`) |
 | `DSH_PRTS_DEBUG` | verbose boot traces |
+
+### Platform support
+
+PRTS is written to behave identically on **Linux, macOS and Windows**: the same UI, config layout, per-project history, voice input and system panel run everywhere, and the desktop shortcut targets each platform's native launcher (`.desktop`, `.command`, `.lnk`). The Electron binary is pinned to `43.4.0` and downloaded per platform on first launch. That said, this project is developed and verified on **Linux**; the macOS/Windows paths are implemented but not exercised in CI here, so treat them as best-effort until validated on those systems.
 
 ## GUI
 

@@ -49,10 +49,11 @@
     const list = $('projectList');
     list.textContent = '';
     for (const p of A.projects) {
-      const row = document.createElement('button');
-      row.type = 'button';
+      const row = document.createElement('div');
       row.className = 'sbItem' + (p.id === A.config.project ? ' active' : '');
       row.dataset.project = p.id;
+      row.setAttribute('role', 'button');
+      row.tabIndex = 0;
       const name = document.createElement('span');
       name.className = 'name';
       name.textContent = p.name;
@@ -61,10 +62,35 @@
       meta.className = 'meta';
       meta.textContent = new Date(p.updatedAt || 0).toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' });
       row.appendChild(meta);
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'rowBtn';
+      del.title = A.t('common.delete');
+      del.setAttribute('aria-label', A.t('common.delete'));
+      del.innerHTML = P.icons['ma.trash'] || '';
+      del.addEventListener('click', (e) => { e.stopPropagation(); deleteProjectRow(p.id); });
+      row.appendChild(del);
       row.addEventListener('click', () => switchProject(p.id));
+      row.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchProject(p.id); }
+      });
       list.appendChild(row);
     }
     $('projectCount').textContent = String(A.projects.length);
+  }
+
+  async function deleteProjectRow(id) {
+    const proj = A.projects.find((p) => p.id === id);
+    if (!confirm(A.t('project.confirmDelete', { name: (proj && proj.name) || id }))) return;
+    await P.store.deleteProject(id);
+    if (A.config.project === id) await switchProject('default');
+    A.projects = await P.store.listProjects();
+    renderProjects();
+  }
+
+  async function clearCurrentHistory() {
+    if (!confirm(A.t('project.confirmClear'))) return;
+    await P.chat.clearHistory();
   }
 
   async function switchProject(id) {
@@ -84,7 +110,9 @@
   function refreshWsPop() {
     const pop = $('wsPop');
     if (!pop) return;
-    pop.innerHTML = A.projects.map((p) => '<div class="popItem' + (p.id === A.config.project ? ' selected' : '') + '" data-value="' + p.id + '"><span class="label">' + p.name + '</span><span class="tick">&#10003;</span></div>').join('');
+    pop.innerHTML = '<div class="popItem" data-value="__add"><span class="label">' + A.t('workspace.add') + '</span></div>' +
+      '<div class="popMeta">' + A.t('workspace.hint') + '</div>' +
+      A.projects.map((p) => '<div class="popItem' + (p.id === A.config.project ? ' selected' : '') + '" data-value="' + p.id + '"><span class="label">' + p.name + '</span><span class="tick">&#10003;</span></div>').join('');
   }
 
   function renderSessions() {
@@ -305,11 +333,20 @@
         await P.store.saveConfig(A.config);
         updateChips();
       });
+    // Mode (standard / ptc / minimal / creative)
+    attachPop($('modeChip'),
+      P.store.MODES.map((m) => '<div class="popItem' + ((A.config.mode || 'standard') === m ? ' selected' : '') + '" data-value="' + m + '"><span class="label">' + A.t('mode.' + m) + '</span><span class="tick">&#10003;</span></div>').join('') +
+      '<div class="popMeta">' + A.t('mode.hint') + '</div>',
+      async (value) => {
+        A.config.mode = value;
+        await P.store.saveConfig(A.config);
+        updateChips();
+      });
     // Commands
     attachPop($('commandsChip'),
       '<div class="popItem" data-value="new"><span class="label">' + A.t('sidebar.newSession') + '</span></div>' +
       '<div class="popItem" data-value="settings"><span class="label">' + A.t('sidebar.settings') + '</span></div>' +
-      '<div class="popItem" data-value="theme"><span class="label">Theme</span></div>',
+      '<div class="popItem" data-value="theme"><span class="label">' + A.t('common.theme') + '</span></div>',
       async (value) => {
         if (value === 'new') { await P.chat.branch(); }
         else if (value === 'settings') A.openSettings();
@@ -319,16 +356,38 @@
     attachPop($('meterBtn'),
       '<div class="popMeta" id="meterPopDetail" style="border:none;margin:0;">—</div>',
       null, true);
-    // Workspace (project switch)
+    // Workspace (project switch) — with "Add workspace" at the top.
     attachPop($('workspaceBtn'),
+      '<div class="popItem" data-value="__add"><span class="label">' + A.t('workspace.add') + '</span></div>' +
+      '<div class="popMeta">' + A.t('workspace.hint') + '</div>' +
       A.projects.map((p) => '<div class="popItem' + (p.id === A.config.project ? ' selected' : '') + '" data-value="' + p.id + '"><span class="label">' + p.name + '</span><span class="tick">&#10003;</span></div>').join(''),
-      (value) => switchProject(value));
+      async (value) => {
+        if (value === '__add') { await addWorkspace(); return; }
+        await switchProject(value);
+      });
+  }
+
+  async function addWorkspace() {
+    const name = prompt(A.t('project.name'));
+    if (!name || !name.trim()) return;
+    const id = P.store.slugify(name.trim());
+    await P.store.ensureProject(id);
+    await P.store.renameProject(id, name.trim());
+    await switchProject(id);
+    A.projects = await P.store.listProjects();
+    renderProjects();
+    refreshWsPop();
   }
 
   function updateChips() {
     $('modelChipLabel').textContent = A.config.api.model;
     $('strengthChipLabel').textContent = 'STRENGTH: ' + A.t('strength.' + A.config.api.strength);
     $('strengthChip').classList.toggle('on', A.config.api.strength !== 'off');
+    const mode = A.config.mode || 'standard';
+    $('modeChipLabel').textContent = A.t('mode.' + mode);
+    $('modeChip').classList.toggle('on', mode !== 'standard');
+    const hm = $('headerMode');
+    if (hm) hm.textContent = A.t('mode.' + mode);
     updateMeterPop();
     P.chat.updateMeter();
   }
@@ -619,6 +678,7 @@
     if (P.system && P.system.bind) P.system.bind();
 
     $('themeBtn').addEventListener('click', A.toggleTheme);
+    $('clearHistoryBtn').addEventListener('click', clearCurrentHistory);
     $('settingsBtn').addEventListener('click', () => A.openSettings());
     $('settingsClose').addEventListener('click', closeSettings);
     $('cfgSave').addEventListener('click', saveSettings);
@@ -655,7 +715,13 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') { closePops(); closeSettings(); if (P.system && P.system.open) P.system.close(); }
     });
-    window.addEventListener('resize', placeHandles);
+    window.addEventListener('resize', () => {
+      placeHandles();
+      // Fullscreen must extend the canvas view, not zoom the effect: refresh
+      // the backing store so the particle layers stay crisp.
+      if (A.introEngine) A.introEngine.resize();
+      if (A.heroEngine) A.heroEngine.resize();
+    });
 
     P.chat.init();
     updateCrumb();

@@ -136,10 +136,12 @@ function buildMessages(w) {
 }
 
 function buildHeader(w) {
-  const model = (T.config && T.config.api && T.config.api.model) || '-'
-  const strength = (T.config && T.config.api && T.config.api.strength) || '-'
+  const eff = P.store.resolveMode(T.config && T.config.mode, (T.config && T.config.api) || {})
+  const model = eff.model
+  const strength = eff.strength
+  const mode = (T.config && T.config.mode) || 'standard'
   const left = ' PRTS ◆ ' + T.projectId
-  const right = model + ' · ' + t('strength.' + strength) + ' · ' + (T.locale === 'zh' ? 'ZH' : 'EN')
+  const right = model + ' · ' + t('strength.' + strength) + ' · ' + t('mode.' + mode) + ' · ' + (T.locale === 'zh' ? 'ZH' : 'EN')
   const space = Math.max(1, w - clean(left).length - clean(right).length - 4)
   return C.bold + '┌─' + left + ' '.repeat(space) + right + '─┐' + C.r
 }
@@ -272,7 +274,7 @@ async function routeCommand(line) {
     case '/help':
       for (const r of [
         '── ' + t('tui.commands') + ' ──',
-        '/model [n|name]', '/strength off|low|medium|high',
+        '/model [n|name]', '/strength off|low|medium|high', '/mode standard|ptc|minimal|creative',
         '/lang zh|en', '/project <id> | new <name>', '/projects',
         '/key · /base <url>', '/new · /clear · /log · /quit',
       ]) pushSystem(r)
@@ -284,6 +286,10 @@ async function routeCommand(line) {
     case '/strength':
       if (arg) await setStrength(arg)
       else pushSystem(t('tui.helpStrength') + ': off · low · medium · high')
+      break
+    case '/mode':
+      if (arg) await setMode(arg)
+      else pushSystem(t('tui.helpMode') + ': ' + P.store.MODES.join(' · '))
       break
     case '/lang':
       if (/^zh/i.test(arg)) T.locale = 'zh'
@@ -366,6 +372,13 @@ async function setStrength(arg) {
   pushSystem('strength: ' + arg)
 }
 
+async function setMode(arg) {
+  if (!P.store.MODES.includes(arg)) { pushSystem(t('tui.badMode')); return }
+  T.config.mode = arg
+  await P.store.saveConfig(T.config)
+  pushSystem('mode: ' + arg)
+}
+
 /* ---------- chat ---------- */
 async function sendUser(text) {
   if (T.streaming) return
@@ -377,11 +390,12 @@ async function sendUser(text) {
   await P.store.touchProject(T.projectId)
   renderFull()
 
-  const asstMsg = { id: 'a' + Date.now(), k: 'm', role: 'assistant', content: '', reasoning: '', ts: Date.now(), streaming: true, model: cfg.api.model, strength: cfg.api.strength }
+  const eff = P.store.resolveMode(T.config.mode, cfg.api)
+  const asstMsg = { id: 'a' + Date.now(), k: 'm', role: 'assistant', content: '', reasoning: '', ts: Date.now(), streaming: true, model: eff.model, strength: eff.strength }
   T.messages.push(asstMsg)
   T.streaming = true
   T.abortCtrl = new AbortController()
-  const budget = P.store.STRENGTH_BUDGET[cfg.api.strength] || 0
+  const budget = P.store.STRENGTH_BUDGET[eff.strength] || 0
   const history = T.messages
     .filter((m) => m !== asstMsg && !m.streaming && (m.role === 'user' || m.role === 'assistant'))
     .map((m) => ({ role: m.role, content: m.content }))
@@ -390,6 +404,8 @@ async function sendUser(text) {
     config: cfg,
     messages: history,
     budget: b,
+    temperature: eff.temperature,
+    maxTokens: eff.maxTokens,
     signal: T.abortCtrl.signal,
     onDelta() { renderFull() },
     onReasoning() { renderFull() },

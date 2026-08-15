@@ -63,6 +63,15 @@
       canvas.width = W * dpr; canvas.height = H * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       CX = W / 2; CY = H / 2;
+      // Fullscreen / window resize should extend the view, not zoom the
+      // content: keep the model (it re-centres at a fixed size) and re-flow
+      // the ambient field so the larger canvas gets filled.
+      if (!model && particles.length) {
+        for (const p of particles) {
+          p.x = (Math.random() - 0.5) * W * 1.4;
+          p.y = (Math.random() - 0.5) * H * 1.4;
+        }
+      }
     }
 
     function spawn() {
@@ -283,18 +292,25 @@
         return api;
       },
       showIntro(maxPoints) {
-        // Wide and short wordmark: ~75% of width, ~32% of height.
-        assignTargets(drawModelIntro(maxPoints || 9000), { w: CX * 1.5, h: CY * 0.32 });
+        // Wide and short wordmark. Fixed cap so fullscreen extends the view
+        // rather than zooming the shape; small windows shrink to fit.
+        assignTargets(drawModelIntro(maxPoints || 9000), {
+          w: Math.min(720, CX * 1.6),
+          h: Math.min(170, CY * 0.4),
+        });
         return api;
       },
       showPp(maxPoints) {
-        // PRTS / DEEPSEEK banner, ~82% width, ~52% height.
-        assignTargets(drawModelPp(maxPoints || 11000), { w: CX * 1.64, h: CY * 0.52 });
+        // PRTS / DEEPSEEK banner, fixed cap.
+        assignTargets(drawModelPp(maxPoints || 11000), {
+          w: Math.min(880, CX * 1.8),
+          h: Math.min(280, CY * 0.55),
+        });
         return api;
       },
       showMark(scale, maxPoints) {
-        // Square diamond mark, ~60% of the smaller screen dimension, centred.
-        const side = 0.6 * Math.min(CX, CY);
+        // Square diamond mark, fixed cap.
+        const side = Math.min(300, 0.65 * Math.min(CX, CY));
         assignTargets(drawModelMark(scale || 1, maxPoints || 9000), { w: side * 2, h: side * 2 });
         return api;
       },

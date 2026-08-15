@@ -22,6 +22,7 @@ mac:
     - dmg
   category: public.app-category.productivity
 win:
+  icon: assets/prts.ico
   target:
     - nsis
 npmRebuild: false

@@ -8,6 +8,7 @@
 
   const DEFAULTS = {
     locale: 'auto',
+    mode: 'standard',
     api: {
       baseUrl: 'https://api.deepseek.com',
       apiKey: '',
@@ -21,6 +22,28 @@
   const STRENGTH_BUDGET = { off: 0, low: 1024, medium: 4096, high: 32768 };
 
   const MODELS = ['deepseek-chat', 'deepseek-reasoner'];
+
+  /** Chat modes (dsh-web style): each is a preset over the base model/strength. */
+  const MODES = ['standard', 'ptc', 'minimal', 'creative'];
+
+  /** Per-mode overrides applied on top of the user's model/strength settings. */
+  const MODE_PRESETS = {
+    standard: { temperature: 1.0 },
+    ptc: { model: 'deepseek-chat', strength: 'off', temperature: 0.6 },
+    minimal: { model: 'deepseek-chat', strength: 'off', temperature: 0.2, maxTokens: 400 },
+    creative: { model: 'deepseek-chat', strength: 'off', temperature: 1.5 },
+  };
+
+  /** Resolve the effective request settings for a mode + user config. */
+  function resolveMode(mode, api) {
+    const preset = MODE_PRESETS[mode] || MODE_PRESETS.standard;
+    return {
+      model: preset.model || api.model || 'deepseek-chat',
+      strength: preset.strength || api.strength || 'medium',
+      temperature: preset.temperature,
+      maxTokens: preset.maxTokens || 0,
+    };
+  }
 
   function dirs() {
     return { base: P.platform.configDir(), projects: P.platform.configDir() + '/projects' };
@@ -36,7 +59,7 @@
   }
 
   const store = {
-    dirs, STRENGTH_BUDGET, MODELS, slugify,
+    dirs, STRENGTH_BUDGET, MODELS, MODES, MODE_PRESETS, resolveMode, slugify,
 
     async loadConfig() {
       let cfg = JSON.parse(JSON.stringify(DEFAULTS));
@@ -46,6 +69,7 @@
         cfg = { ...cfg, ...parsed, api: { ...cfg.api, ...(parsed.api || {}) } };
       } catch (e) { /* first run */ }
       if (!cfg.project || !(await store.projectExists(cfg.project))) cfg.project = 'default';
+      await store.ensureProject(cfg.project);
       return cfg;
     },
 
@@ -99,6 +123,11 @@
       if (id === 'default') return;
       await P.io.deleteFile(metaPath(id));
       await P.io.deleteFile(historyPath(id));
+    },
+
+    async clearHistory(id) {
+      await P.io.writeFile(historyPath(id), '');
+      await store.touchProject(id);
     },
 
     async readHistory(id) {

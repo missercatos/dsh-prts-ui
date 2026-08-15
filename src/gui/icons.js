@@ -11,5 +11,7 @@
     'ma.like': S('<path d="M7 12.2s-4.8-2.9-4.8-6.1A2.6 2.6 0 0 1 7 4.4a2.6 2.6 0 0 1 4.8 1.7c0 3.2-4.8 6.1-4.8 6.1Z" stroke="currentColor" stroke-width="1.2"/>'),
     'ma.dislike': S('<path d="M7 1.8s4.8 2.9 4.8 6.1a2.6 2.6 0 0 1-4.8 1.7 2.6 2.6 0 0 1-4.8-1.7c0-3.2 4.8-6.1 4.8-6.1Z" stroke="currentColor" stroke-width="1.2"/>'),
     'ma.branch': S('<path d="M4 2v7a2 2 0 0 0 2 2h4" stroke="currentColor" stroke-width="1.2"/><path d="M5.2 1.2 7 3 5.2 4.8M8.8 9.2 10 11l-1.2 1.8" stroke="currentColor" stroke-width="1.2" fill="none"/>'),
+    'ma.trash': S('<path d="M2.5 4h9M5 4V2.8h4V4M4 4l.6 7.2h4.8L10 4" stroke="currentColor" stroke-width="1.2"/>'),
+    'ma.clear': S('<path d="M2.5 4h9M5.5 4V2.8h3V4" stroke="currentColor" stroke-width="1.2"/><path d="M4 4l.6 7.2h4.8L10 4" stroke="currentColor" stroke-width="1.2"/>'),
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

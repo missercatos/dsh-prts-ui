@@ -7,7 +7,7 @@
   'use strict';
   const P = G.PRTS = G.PRTS || {};
 
-  function endpoint(baseUrl, model, budget) {
+  function endpoint(baseUrl, model, budget, extra) {
     const base = String(baseUrl || 'https://api.deepseek.com').replace(/\/+$/, '');
     const body = {
       model,
@@ -17,6 +17,8 @@
     if (model === 'deepseek-chat' && budget > 0) {
       body.thinking = { budget_tokens: budget };
     }
+    if (extra && extra.temperature !== undefined) body.temperature = extra.temperature;
+    if (extra && extra.maxTokens > 0) body.max_tokens = extra.maxTokens;
     return { url: base + '/chat/completions', body };
   }
 
@@ -50,7 +52,7 @@
    */
   async function chat(opts) {
     const cfg = opts.config;
-    const { url, body } = endpoint(cfg.api.baseUrl, cfg.api.model, opts.budget);
+    const { url, body } = endpoint(cfg.api.baseUrl, cfg.api.model, opts.budget, { temperature: opts.temperature, maxTokens: opts.maxTokens });
     body.messages = opts.messages;
     const started = Date.now();
     let content = '';

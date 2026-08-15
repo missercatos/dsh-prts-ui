@@ -207,7 +207,12 @@
     abortCtrl = new AbortController();
     $('statusRow').hidden = false;
     swapSendStop(true);
-    const budget = P.store.STRENGTH_BUDGET[cfg.api.strength] || 0;
+    // Mode presets (standard / ptc / minimal / creative) may override model,
+    // thinking strength, temperature and a token cap.
+    const eff = P.store.resolveMode(cfg.mode, cfg.api);
+    const budget = P.store.STRENGTH_BUDGET[eff.strength] || 0;
+    asstMsg.model = eff.model;
+    asstMsg.strength = eff.strength;
     const history = C.messages
       .filter((m) => m !== asstMsg && !m.streaming && (m.role === 'user' || m.role === 'assistant'))
       .map((m) => ({ role: m.role, content: m.content }));
@@ -217,6 +222,8 @@
       config: cfg,
       messages: history,
       budget: b,
+      temperature: eff.temperature,
+      maxTokens: eff.maxTokens,
       signal: abortCtrl.signal,
       onDelta(t) { asstMsg.content += t; dirty = true; requestAnimationFrame(flush); },
       onReasoning(t) { asstMsg.reasoning += t; dirty = true; requestAnimationFrame(flush); },
@@ -292,6 +299,16 @@
     await saveBound(Date.now());
     renderFlow();
     P.app.updateSidebar();
+  }
+
+  async function clearHistory() {
+    const id = await projectId();
+    await P.store.clearHistory(id);
+    C.messages = [];
+    C.bounds = [];
+    renderFlow();
+    P.app.updateSidebar();
+    P.app.toast(P.i18n.t('chat.cleared', P.app.locale));
   }
 
   async function handleFlowClick(e) {
@@ -391,6 +408,7 @@
   C.updateSend = updateSend;
   C.scrollInputBottom = scrollInputBottom;
   C.toggleExpand = toggleExpand;
+  C.clearHistory = clearHistory;
   C.init = init;
   C.fmtDate = fmtDate;
   C.clock = clock;

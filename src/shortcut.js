@@ -50,6 +50,15 @@ async function installLinux(desktop) {
   ].join('\n')
   writeFileSync(target, content, 'utf8')
   chmodSync(target, 0o755)
+  // Register the same entry in the app-menu folder so the app shows up in
+  // launchers (KDE / GNOME / etc.) and can be pinned to the dock / taskbar.
+  try {
+    const appsDir = join(homedir(), '.local', 'share', 'applications')
+    mkdirSync(appsDir, { recursive: true })
+    const menu = join(appsDir, 'dsh-prts.desktop')
+    writeFileSync(menu, content, 'utf8')
+    chmodSync(menu, 0o755)
+  } catch (e) { /* non-fatal */ }
   return target
 }
 
@@ -62,13 +71,35 @@ async function installMac(desktop) {
 }
 
 async function installWindows(desktop) {
-  const target = join(desktop, 'PRTS.lnk')
+  // A windowless VBS launcher avoids the console flash when starting the GUI.
+  const configDir = process.platform === 'win32'
+    ? join(process.env.APPDATA || join(homedir(), 'AppData', 'Roaming'), 'prts')
+    : join(homedir(), '.prts')
+  mkdirSync(configDir, { recursive: true })
+  const vbs = join(configDir, 'prts.vbs')
+  writeFileSync(vbs, 'CreateObject("WScript.Shell").Run "dsh --profile ' + PROFILE + '", 0, False\n')
+  const icon = iconPath.replace(/\.png$/, '.ico')
+  const targets = [
+    join(desktop, 'PRTS.lnk'),
+    // Start-menu entry — this is what makes PRTS appear in the Start menu
+    // (the app launcher / "dock") and lets users pin it to the taskbar.
+    join(process.env.APPDATA || join(homedir(), 'AppData', 'Roaming'), 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'PRTS.lnk'),
+  ]
   const { execFileSync } = await import('node:child_process')
-  execFileSync('powershell.exe', [
-    '-NoProfile', '-Command',
-    '$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut(' + JSON.stringify(target) + '); $s.TargetPath = "powershell.exe"; $s.Arguments = "-NoProfile -Command dsh --profile ' + PROFILE + '"; $s.Save()',
-  ])
-  return target
+  const list = targets.map((t) => JSON.stringify(t)).join(', ')
+  const ps =
+    '$ws = New-Object -ComObject WScript.Shell;' +
+    'foreach ($p in @(' + list + ')) { ' +
+    '$s = $ws.CreateShortcut($p);' +
+    '$s.TargetPath = "wscript.exe";' +
+    '$s.Arguments = ' + JSON.stringify(JSON.stringify(vbs)) + ';' +
+    '$s.IconLocation = ' + JSON.stringify(icon + ',0') + ';' +
+    '$s.WorkingDirectory = ' + JSON.stringify(homedir()) + ';' +
+    '$s.Description = "PRTS";' +
+    '$s.Save();' +
+    '}'
+  execFileSync('powershell.exe', ['-NoProfile', '-Command', ps])
+  return targets[0]
 }
 
 export async function refreshShortcut() {

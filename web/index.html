@@ -653,6 +653,9 @@ button:focus:not(:focus-visible) { outline: none; }
           </div>
           <div class="headerUtils">
             <span class="pluginBar" id="pluginHeader"></span>
+            <button class="iconBtn" id="clearHistoryBtn" type="button" data-i18n-title="header.clearHistory">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 4h9M5.5 4V2.8h3V4" stroke="currentColor" stroke-width="1.2"/><path d="M4 4l.6 7.2h4.8L10 4" stroke="currentColor" stroke-width="1.2"/></svg>
+            </button>
             <button class="logBtn" id="logBtn" type="button">
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1.2a.8.8 0 0 1 .8.8v3.2h2.4a.8.8 0 0 1 .5 1.4l-3.4 3.4a.8.8 0 0 1-1.1 0L1.8 6.6a.8.8 0 0 1 .5-1.4h2.9V2a.8.8 0 0 1 .8-.8Z" fill="currentColor"/></svg>
               <span data-i18n="header.log">Session log</span>
@@ -715,6 +718,11 @@ button:focus:not(:focus-visible) { outline: none; }
                 </button>
                 <button class="chip" id="strengthChip" type="button">
                   <span class="label" id="strengthChipLabel">STRENGTH: MEDIUM</span>
+                  <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
+                </button>
+                <button class="chip" id="modeChip" type="button">
+                  <span class="dot"></span>
+                  <span class="label" id="modeChipLabel">STANDARD</span>
                   <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
                 </button>
                 <button class="chip" id="commandsChip" type="button">
@@ -973,6 +981,7 @@ button:focus:not(:focus-visible) { outline: none; }
       'header.trajectory': 'Trajectory',
       'header.log': 'Session log',
       'header.mode': 'STANDARD',
+      'header.clearHistory': 'Clear history',
 
       'composer.placeholder': 'Message PRTS',
       'composer.send': 'Send message',
@@ -988,6 +997,13 @@ button:focus:not(:focus-visible) { outline: none; }
       'strength.low': 'LOW',
       'strength.medium': 'MEDIUM',
       'strength.high': 'HIGH',
+      'mode.standard': 'STANDARD',
+      'mode.ptc': 'PTC',
+      'mode.minimal': 'MINIMAL',
+      'mode.creative': 'CREATIVE',
+      'mode.hint': 'Presets over model, thinking and temperature. PTC / MINIMAL use deepseek-chat; MINIMAL caps at 400 tokens; CREATIVE raises temperature.',
+      'workspace.add': '+ Add workspace',
+      'workspace.hint': 'A workspace is a project: its own history and settings.',
       'chips.context': '{pct}% of context used',
 
       'chat.thinking': 'Thinking',
@@ -1030,7 +1046,9 @@ button:focus:not(:focus-visible) { outline: none; }
       'project.create': 'Create',
       'project.delete': 'Delete',
       'project.confirmDelete': 'Delete project "{name}"? Its history will be removed.',
+      'project.confirmClear': 'Clear all messages and sessions for this project? This cannot be undone.',
       'project.rename': 'Rename',
+      'chat.cleared': 'History cleared',
 
       'common.cancel': 'Cancel',
       'common.confirm': 'Confirm',
@@ -1071,12 +1089,14 @@ button:focus:not(:focus-visible) { outline: none; }
       'tui.commands': 'Commands',
       'tui.helpModel': 'Model',
       'tui.helpStrength': 'Thinking strength',
+      'tui.helpMode': 'Mode',
       'tui.helpLang': 'Language',
       'tui.enterKey': 'Enter API Key',
       'tui.projects': 'Projects',
       'tui.project': 'Project',
       'tui.badModel': 'unknown model',
       'tui.badStrength': 'unknown strength',
+      'tui.badMode': 'unknown mode',
       'tui.exported': 'Exported to',
       'tui.unknown': 'unknown command',
 
@@ -1144,6 +1164,7 @@ button:focus:not(:focus-visible) { outline: none; }
       'header.trajectory': '轨迹',
       'header.log': '会话日志',
       'header.mode': '标准模式',
+      'header.clearHistory': '清空历史',
 
       'composer.placeholder': '给PRTS发消息',
       'composer.send': '发送消息',
@@ -1159,6 +1180,13 @@ button:focus:not(:focus-visible) { outline: none; }
       'strength.low': '低',
       'strength.medium': '中',
       'strength.high': '高',
+      'mode.standard': '标准模式',
+      'mode.ptc': 'PTC 模式',
+      'mode.minimal': '极简模式',
+      'mode.creative': '创造模式',
+      'mode.hint': '预设会覆盖模型、思考与温度。PTC/极简使用 deepseek-chat；极简上限 400 token；创造模式提高温度。',
+      'workspace.add': '+ 添加工作区',
+      'workspace.hint': '工作区即项目：拥有独立的历史记录与设置。',
       'chips.context': '上下文已用 {pct}%',
 
       'chat.thinking': '思考',
@@ -1201,7 +1229,9 @@ button:focus:not(:focus-visible) { outline: none; }
       'project.create': '创建',
       'project.delete': '删除',
       'project.confirmDelete': '删除项目「{name}」？其历史记录将被清除。',
+      'project.confirmClear': '清除该项目的全部消息与会话？此操作不可撤销。',
       'project.rename': '重命名',
+      'chat.cleared': '已清空历史',
 
       'common.cancel': '取消',
       'common.confirm': '确认',
@@ -1242,12 +1272,14 @@ button:focus:not(:focus-visible) { outline: none; }
       'tui.commands': '命令',
       'tui.helpModel': '模型',
       'tui.helpStrength': '思考强度',
+      'tui.helpMode': '模式',
       'tui.helpLang': '语言',
       'tui.enterKey': '输入 API Key',
       'tui.projects': '项目',
       'tui.project': '当前项目',
       'tui.badModel': '无效模型',
       'tui.badStrength': '无效强度',
+      'tui.badMode': '无效模式',
       'tui.exported': '已导出至',
       'tui.unknown': '未知命令',
 
@@ -1475,6 +1507,7 @@ button:focus:not(:focus-visible) { outline: none; }
 
   const DEFAULTS = {
     locale: 'auto',
+    mode: 'standard',
     api: {
       baseUrl: 'https://api.deepseek.com',
       apiKey: '',
@@ -1488,6 +1521,28 @@ button:focus:not(:focus-visible) { outline: none; }
   const STRENGTH_BUDGET = { off: 0, low: 1024, medium: 4096, high: 32768 };
 
   const MODELS = ['deepseek-chat', 'deepseek-reasoner'];
+
+  /** Chat modes (dsh-web style): each is a preset over the base model/strength. */
+  const MODES = ['standard', 'ptc', 'minimal', 'creative'];
+
+  /** Per-mode overrides applied on top of the user's model/strength settings. */
+  const MODE_PRESETS = {
+    standard: { temperature: 1.0 },
+    ptc: { model: 'deepseek-chat', strength: 'off', temperature: 0.6 },
+    minimal: { model: 'deepseek-chat', strength: 'off', temperature: 0.2, maxTokens: 400 },
+    creative: { model: 'deepseek-chat', strength: 'off', temperature: 1.5 },
+  };
+
+  /** Resolve the effective request settings for a mode + user config. */
+  function resolveMode(mode, api) {
+    const preset = MODE_PRESETS[mode] || MODE_PRESETS.standard;
+    return {
+      model: preset.model || api.model || 'deepseek-chat',
+      strength: preset.strength || api.strength || 'medium',
+      temperature: preset.temperature,
+      maxTokens: preset.maxTokens || 0,
+    };
+  }
 
   function dirs() {
     return { base: P.platform.configDir(), projects: P.platform.configDir() + '/projects' };
@@ -1503,7 +1558,7 @@ button:focus:not(:focus-visible) { outline: none; }
   }
 
   const store = {
-    dirs, STRENGTH_BUDGET, MODELS, slugify,
+    dirs, STRENGTH_BUDGET, MODELS, MODES, MODE_PRESETS, resolveMode, slugify,
 
     async loadConfig() {
       let cfg = JSON.parse(JSON.stringify(DEFAULTS));
@@ -1513,6 +1568,7 @@ button:focus:not(:focus-visible) { outline: none; }
         cfg = { ...cfg, ...parsed, api: { ...cfg.api, ...(parsed.api || {}) } };
       } catch (e) { /* first run */ }
       if (!cfg.project || !(await store.projectExists(cfg.project))) cfg.project = 'default';
+      await store.ensureProject(cfg.project);
       return cfg;
     },
 
@@ -1568,6 +1624,11 @@ button:focus:not(:focus-visible) { outline: none; }
       await P.io.deleteFile(historyPath(id));
     },
 
+    async clearHistory(id) {
+      await P.io.writeFile(historyPath(id), '');
+      await store.touchProject(id);
+    },
+
     async readHistory(id) {
       try {
         const raw = await P.io.readFile(historyPath(id));
@@ -1611,7 +1672,7 @@ button:focus:not(:focus-visible) { outline: none; }
   'use strict';
   const P = G.PRTS = G.PRTS || {};
 
-  function endpoint(baseUrl, model, budget) {
+  function endpoint(baseUrl, model, budget, extra) {
     const base = String(baseUrl || 'https://api.deepseek.com').replace(/\/+$/, '');
     const body = {
       model,
@@ -1621,6 +1682,8 @@ button:focus:not(:focus-visible) { outline: none; }
     if (model === 'deepseek-chat' && budget > 0) {
       body.thinking = { budget_tokens: budget };
     }
+    if (extra && extra.temperature !== undefined) body.temperature = extra.temperature;
+    if (extra && extra.maxTokens > 0) body.max_tokens = extra.maxTokens;
     return { url: base + '/chat/completions', body };
   }
 
@@ -1654,7 +1717,7 @@ button:focus:not(:focus-visible) { outline: none; }
    */
   async function chat(opts) {
     const cfg = opts.config;
-    const { url, body } = endpoint(cfg.api.baseUrl, cfg.api.model, opts.budget);
+    const { url, body } = endpoint(cfg.api.baseUrl, cfg.api.model, opts.budget, { temperature: opts.temperature, maxTokens: opts.maxTokens });
     body.messages = opts.messages;
     const started = Date.now();
     let content = '';
@@ -1825,6 +1888,15 @@ button:focus:not(:focus-visible) { outline: none; }
       canvas.width = W * dpr; canvas.height = H * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       CX = W / 2; CY = H / 2;
+      // Fullscreen / window resize should extend the view, not zoom the
+      // content: keep the model (it re-centres at a fixed size) and re-flow
+      // the ambient field so the larger canvas gets filled.
+      if (!model && particles.length) {
+        for (const p of particles) {
+          p.x = (Math.random() - 0.5) * W * 1.4;
+          p.y = (Math.random() - 0.5) * H * 1.4;
+        }
+      }
     }
 
     function spawn() {
@@ -2045,18 +2117,25 @@ button:focus:not(:focus-visible) { outline: none; }
         return api;
       },
       showIntro(maxPoints) {
-        // Wide and short wordmark: ~75% of width, ~32% of height.
-        assignTargets(drawModelIntro(maxPoints || 9000), { w: CX * 1.5, h: CY * 0.32 });
+        // Wide and short wordmark. Fixed cap so fullscreen extends the view
+        // rather than zooming the shape; small windows shrink to fit.
+        assignTargets(drawModelIntro(maxPoints || 9000), {
+          w: Math.min(720, CX * 1.6),
+          h: Math.min(170, CY * 0.4),
+        });
         return api;
       },
       showPp(maxPoints) {
-        // PRTS / DEEPSEEK banner, ~82% width, ~52% height.
-        assignTargets(drawModelPp(maxPoints || 11000), { w: CX * 1.64, h: CY * 0.52 });
+        // PRTS / DEEPSEEK banner, fixed cap.
+        assignTargets(drawModelPp(maxPoints || 11000), {
+          w: Math.min(880, CX * 1.8),
+          h: Math.min(280, CY * 0.55),
+        });
         return api;
       },
       showMark(scale, maxPoints) {
-        // Square diamond mark, ~60% of the smaller screen dimension, centred.
-        const side = 0.6 * Math.min(CX, CY);
+        // Square diamond mark, fixed cap.
+        const side = Math.min(300, 0.65 * Math.min(CX, CY));
         assignTargets(drawModelMark(scale || 1, maxPoints || 9000), { w: side * 2, h: side * 2 });
         return api;
       },
@@ -2105,6 +2184,8 @@ button:focus:not(:focus-visible) { outline: none; }
     'ma.like': S('<path d="M7 12.2s-4.8-2.9-4.8-6.1A2.6 2.6 0 0 1 7 4.4a2.6 2.6 0 0 1 4.8 1.7c0 3.2-4.8 6.1-4.8 6.1Z" stroke="currentColor" stroke-width="1.2"/>'),
     'ma.dislike': S('<path d="M7 1.8s4.8 2.9 4.8 6.1a2.6 2.6 0 0 1-4.8 1.7 2.6 2.6 0 0 1-4.8-1.7c0-3.2 4.8-6.1 4.8-6.1Z" stroke="currentColor" stroke-width="1.2"/>'),
     'ma.branch': S('<path d="M4 2v7a2 2 0 0 0 2 2h4" stroke="currentColor" stroke-width="1.2"/><path d="M5.2 1.2 7 3 5.2 4.8M8.8 9.2 10 11l-1.2 1.8" stroke="currentColor" stroke-width="1.2" fill="none"/>'),
+    'ma.trash': S('<path d="M2.5 4h9M5 4V2.8h4V4M4 4l.6 7.2h4.8L10 4" stroke="currentColor" stroke-width="1.2"/>'),
+    'ma.clear': S('<path d="M2.5 4h9M5.5 4V2.8h3V4" stroke="currentColor" stroke-width="1.2"/><path d="M4 4l.6 7.2h4.8L10 4" stroke="currentColor" stroke-width="1.2"/>'),
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
@@ -2995,7 +3076,12 @@ button:focus:not(:focus-visible) { outline: none; }
     abortCtrl = new AbortController();
     $('statusRow').hidden = false;
     swapSendStop(true);
-    const budget = P.store.STRENGTH_BUDGET[cfg.api.strength] || 0;
+    // Mode presets (standard / ptc / minimal / creative) may override model,
+    // thinking strength, temperature and a token cap.
+    const eff = P.store.resolveMode(cfg.mode, cfg.api);
+    const budget = P.store.STRENGTH_BUDGET[eff.strength] || 0;
+    asstMsg.model = eff.model;
+    asstMsg.strength = eff.strength;
     const history = C.messages
       .filter((m) => m !== asstMsg && !m.streaming && (m.role === 'user' || m.role === 'assistant'))
       .map((m) => ({ role: m.role, content: m.content }));
@@ -3005,6 +3091,8 @@ button:focus:not(:focus-visible) { outline: none; }
       config: cfg,
       messages: history,
       budget: b,
+      temperature: eff.temperature,
+      maxTokens: eff.maxTokens,
       signal: abortCtrl.signal,
       onDelta(t) { asstMsg.content += t; dirty = true; requestAnimationFrame(flush); },
       onReasoning(t) { asstMsg.reasoning += t; dirty = true; requestAnimationFrame(flush); },
@@ -3080,6 +3168,16 @@ button:focus:not(:focus-visible) { outline: none; }
     await saveBound(Date.now());
     renderFlow();
     P.app.updateSidebar();
+  }
+
+  async function clearHistory() {
+    const id = await projectId();
+    await P.store.clearHistory(id);
+    C.messages = [];
+    C.bounds = [];
+    renderFlow();
+    P.app.updateSidebar();
+    P.app.toast(P.i18n.t('chat.cleared', P.app.locale));
   }
 
   async function handleFlowClick(e) {
@@ -3179,6 +3277,7 @@ button:focus:not(:focus-visible) { outline: none; }
   C.updateSend = updateSend;
   C.scrollInputBottom = scrollInputBottom;
   C.toggleExpand = toggleExpand;
+  C.clearHistory = clearHistory;
   C.init = init;
   C.fmtDate = fmtDate;
   C.clock = clock;
@@ -3240,10 +3339,11 @@ button:focus:not(:focus-visible) { outline: none; }
     const list = $('projectList');
     list.textContent = '';
     for (const p of A.projects) {
-      const row = document.createElement('button');
-      row.type = 'button';
+      const row = document.createElement('div');
       row.className = 'sbItem' + (p.id === A.config.project ? ' active' : '');
       row.dataset.project = p.id;
+      row.setAttribute('role', 'button');
+      row.tabIndex = 0;
       const name = document.createElement('span');
       name.className = 'name';
       name.textContent = p.name;
@@ -3252,10 +3352,35 @@ button:focus:not(:focus-visible) { outline: none; }
       meta.className = 'meta';
       meta.textContent = new Date(p.updatedAt || 0).toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' });
       row.appendChild(meta);
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'rowBtn';
+      del.title = A.t('common.delete');
+      del.setAttribute('aria-label', A.t('common.delete'));
+      del.innerHTML = P.icons['ma.trash'] || '';
+      del.addEventListener('click', (e) => { e.stopPropagation(); deleteProjectRow(p.id); });
+      row.appendChild(del);
       row.addEventListener('click', () => switchProject(p.id));
+      row.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchProject(p.id); }
+      });
       list.appendChild(row);
     }
     $('projectCount').textContent = String(A.projects.length);
+  }
+
+  async function deleteProjectRow(id) {
+    const proj = A.projects.find((p) => p.id === id);
+    if (!confirm(A.t('project.confirmDelete', { name: (proj && proj.name) || id }))) return;
+    await P.store.deleteProject(id);
+    if (A.config.project === id) await switchProject('default');
+    A.projects = await P.store.listProjects();
+    renderProjects();
+  }
+
+  async function clearCurrentHistory() {
+    if (!confirm(A.t('project.confirmClear'))) return;
+    await P.chat.clearHistory();
   }
 
   async function switchProject(id) {
@@ -3275,7 +3400,9 @@ button:focus:not(:focus-visible) { outline: none; }
   function refreshWsPop() {
     const pop = $('wsPop');
     if (!pop) return;
-    pop.innerHTML = A.projects.map((p) => '<div class="popItem' + (p.id === A.config.project ? ' selected' : '') + '" data-value="' + p.id + '"><span class="label">' + p.name + '</span><span class="tick">&#10003;</span></div>').join('');
+    pop.innerHTML = '<div class="popItem" data-value="__add"><span class="label">' + A.t('workspace.add') + '</span></div>' +
+      '<div class="popMeta">' + A.t('workspace.hint') + '</div>' +
+      A.projects.map((p) => '<div class="popItem' + (p.id === A.config.project ? ' selected' : '') + '" data-value="' + p.id + '"><span class="label">' + p.name + '</span><span class="tick">&#10003;</span></div>').join('');
   }
 
   function renderSessions() {
@@ -3496,11 +3623,20 @@ button:focus:not(:focus-visible) { outline: none; }
         await P.store.saveConfig(A.config);
         updateChips();
       });
+    // Mode (standard / ptc / minimal / creative)
+    attachPop($('modeChip'),
+      P.store.MODES.map((m) => '<div class="popItem' + ((A.config.mode || 'standard') === m ? ' selected' : '') + '" data-value="' + m + '"><span class="label">' + A.t('mode.' + m) + '</span><span class="tick">&#10003;</span></div>').join('') +
+      '<div class="popMeta">' + A.t('mode.hint') + '</div>',
+      async (value) => {
+        A.config.mode = value;
+        await P.store.saveConfig(A.config);
+        updateChips();
+      });
     // Commands
     attachPop($('commandsChip'),
       '<div class="popItem" data-value="new"><span class="label">' + A.t('sidebar.newSession') + '</span></div>' +
       '<div class="popItem" data-value="settings"><span class="label">' + A.t('sidebar.settings') + '</span></div>' +
-      '<div class="popItem" data-value="theme"><span class="label">Theme</span></div>',
+      '<div class="popItem" data-value="theme"><span class="label">' + A.t('common.theme') + '</span></div>',
       async (value) => {
         if (value === 'new') { await P.chat.branch(); }
         else if (value === 'settings') A.openSettings();
@@ -3510,16 +3646,38 @@ button:focus:not(:focus-visible) { outline: none; }
     attachPop($('meterBtn'),
       '<div class="popMeta" id="meterPopDetail" style="border:none;margin:0;">—</div>',
       null, true);
-    // Workspace (project switch)
+    // Workspace (project switch) — with "Add workspace" at the top.
     attachPop($('workspaceBtn'),
+      '<div class="popItem" data-value="__add"><span class="label">' + A.t('workspace.add') + '</span></div>' +
+      '<div class="popMeta">' + A.t('workspace.hint') + '</div>' +
       A.projects.map((p) => '<div class="popItem' + (p.id === A.config.project ? ' selected' : '') + '" data-value="' + p.id + '"><span class="label">' + p.name + '</span><span class="tick">&#10003;</span></div>').join(''),
-      (value) => switchProject(value));
+      async (value) => {
+        if (value === '__add') { await addWorkspace(); return; }
+        await switchProject(value);
+      });
+  }
+
+  async function addWorkspace() {
+    const name = prompt(A.t('project.name'));
+    if (!name || !name.trim()) return;
+    const id = P.store.slugify(name.trim());
+    await P.store.ensureProject(id);
+    await P.store.renameProject(id, name.trim());
+    await switchProject(id);
+    A.projects = await P.store.listProjects();
+    renderProjects();
+    refreshWsPop();
   }
 
   function updateChips() {
     $('modelChipLabel').textContent = A.config.api.model;
     $('strengthChipLabel').textContent = 'STRENGTH: ' + A.t('strength.' + A.config.api.strength);
     $('strengthChip').classList.toggle('on', A.config.api.strength !== 'off');
+    const mode = A.config.mode || 'standard';
+    $('modeChipLabel').textContent = A.t('mode.' + mode);
+    $('modeChip').classList.toggle('on', mode !== 'standard');
+    const hm = $('headerMode');
+    if (hm) hm.textContent = A.t('mode.' + mode);
     updateMeterPop();
     P.chat.updateMeter();
   }
@@ -3810,6 +3968,7 @@ button:focus:not(:focus-visible) { outline: none; }
     if (P.system && P.system.bind) P.system.bind();
 
     $('themeBtn').addEventListener('click', A.toggleTheme);
+    $('clearHistoryBtn').addEventListener('click', clearCurrentHistory);
     $('settingsBtn').addEventListener('click', () => A.openSettings());
     $('settingsClose').addEventListener('click', closeSettings);
     $('cfgSave').addEventListener('click', saveSettings);
@@ -3846,7 +4005,13 @@ button:focus:not(:focus-visible) { outline: none; }
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') { closePops(); closeSettings(); if (P.system && P.system.open) P.system.close(); }
     });
-    window.addEventListener('resize', placeHandles);
+    window.addEventListener('resize', () => {
+      placeHandles();
+      // Fullscreen must extend the canvas view, not zoom the effect: refresh
+      // the backing store so the particle layers stay crisp.
+      if (A.introEngine) A.introEngine.resize();
+      if (A.heroEngine) A.heroEngine.resize();
+    });
 
     P.chat.init();
     updateCrumb();

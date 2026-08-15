@@ -5,7 +5,8 @@
   "type": "module",
   "main": "./src/runner.js",
   "bin": {
-    "dsh-prts-ui": "bin/dsh-prts-ui.js"
+    "dsh-prts-ui": "bin/dsh-prts-ui.js",
+    "prts": "bin/dsh-prts-ui.js"
   },
   "exports": {
     "./startup": "./src/startup.js",
@@ -22,7 +23,12 @@
     "cordis.patch.yml",
     "README.md",
     "README.zh.md",
-    "LICENSE"
+    "LICENSE",
+    "install.sh",
+    "install.bat",
+    "build-exe.bat",
+    "update.sh",
+    "update.bat"
   ],
   "scripts": {
     "postinstall": "node scripts/postinstall.mjs",
