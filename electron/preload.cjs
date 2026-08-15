@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('prts', {
   env: {
     platform: process.platform,
     home: process.env.HOME || process.env.USERPROFILE || '',
+    dshHome: process.env.DSH_HOME || (process.env.HOME || process.env.USERPROFILE || '') + '/.dsh',
     xdgConfigHome: process.env.XDG_CONFIG_HOME || '',
     xdgDesktopDir: process.env.XDG_DESKTOP_DIR || '',
     appData: process.env.APPDATA || '',

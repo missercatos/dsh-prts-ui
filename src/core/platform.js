@@ -36,6 +36,12 @@
     return '.';
   }
 
+  function dshHome() {
+    const e = env();
+    if (e.dshHome) return e.dshHome;
+    return homedir() + '/.dsh';
+  }
+
   function configDir() {
     const o = os();
     const home = homedir();
@@ -44,6 +50,17 @@
     if (o === 'macos') return home + '/Library/Application Support/prts';
     if (o === 'windows') return (e.APPDATA ? e.APPDATA : home + '/AppData/Roaming') + '/prts';
     return home + '/.prts';
+  }
+
+  /** PRTS's own window-chrome config: lives with the prts profile under ~/.dsh. */
+  function prtsUiConfigPath() {
+    return prtsProfileDir() + '/prts-ui.json';
+  }
+
+  /** The prts profile directory under the dsh home. */
+  function prtsProfileDir() {
+    const profile = env().DSH_PRTS_PROFILE || 'prts';
+    return dshHome() + '/profiles/' + profile;
   }
 
   function desktopDir() {
@@ -72,7 +89,10 @@
   P.platform = {
     os: os,
     homedir: homedir,
+    dshHome: dshHome,
     configDir: configDir,
+    prtsProfileDir: prtsProfileDir,
+    prtsUiConfigPath: prtsUiConfigPath,
     desktopDir: desktopDir,
     detectLocale: detectLocale,
   };

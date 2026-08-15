@@ -118,7 +118,7 @@ rm -rf ~/.config/prts ~/.dsh/profiles/prts
 
 ### Where data lives
 
-PRTS keeps **only its own window chrome** (theme, locale) under the platform config dir (`~/.config/prts`, `~/Library/Application Support/prts`, `%APPDATA%\prts`). Everything agent-related — workspaces, sessions, history, models, credentials, API keys, tools, plugins — lives in **dsh** (`~/.dsh/`), because PRTS is just a GUI over dsh. Deleting a workspace or archiving a session in PRTS does the corresponding dsh operation (`workspace.delete` / `workspace.archiveSession`).
+PRTS keeps **only its own window chrome** (theme, locale) in `~/.dsh/profiles/prts/prts-ui.json` (the `prts` profile directory under the dsh home — removed together with the profile). Everything agent-related — workspaces, sessions, history, models, credentials, API keys, tools, plugins — lives in **dsh** (`~/.dsh/`), because PRTS is just a GUI over dsh. Deleting a workspace or archiving a session in PRTS does the corresponding dsh operation (`workspace.delete` / `workspace.archiveSession`).
 
 ### Settings → Providers & API keys
 

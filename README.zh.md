@@ -1,6 +1,6 @@
 # dsh-prts-ui
 
-PRTS 是 **dsh 的 GUI 外壳**，不是独立 agent。它启动 dsh 的 web 后端、在其上打开窗口，并通过 dsh 的 `/api` RPC + WebSocket 协议镜像 dsh 的真实状态：工作区、会话、模型、凭证、工具、插件都来自 dsh。PRTS 额外提供的只是外观：单色鹰角风界面、粒子开场、系统面板、语音输入。
+PRTS 是 **dsh 的 GUI 外壳**，不是独立 agent。它启动 dsh 的 web 后端、在其上打开窗口，并通过 dsh 的 `/api` RPC + WebSocket 协议镜像 dsh 的真实状态：工作区、会话、模型、凭证、工具、插件都来自 dsh。PRTS 额外提供的只是外观：单色界面、粒子开场、系统面板、语音输入。
 
 因为 PRTS 只依赖 dsh 稳定的 `/api` 协议，dsh 升级不会让它失效。
 
@@ -116,7 +116,7 @@ rm -rf ~/.config/prts ~/.dsh/profiles/prts
 
 ### 数据存在哪里
 
-PRTS **只保存自己的窗口外观**（主题、语言）在平台配置目录（`~/.config/prts`、`~/Library/Application Support/prts`、`%APPDATA%\prts`）。与 agent 相关的一切 —— 工作区、会话、历史、模型、凭证、API Key、工具、插件 —— 都存在 **dsh**（`~/.dsh/`）里，因为 PRTS 只是 dsh 的 GUI。在 PRTS 里删除工作区或归档会话，执行的就是对应的 dsh 操作（`workspace.delete` / `workspace.archiveSession`）。
+PRTS **只保存自己的窗口外观**（主题、语言）在 `~/.dsh/profiles/prts/prts-ui.json`（dsh 主目录下的 prts profile 目录里 —— 删除 profile 时一并移除）。与 agent 相关的一切 —— 工作区、会话、历史、模型、凭证、API Key、工具、插件 —— 都存在 **dsh**（`~/.dsh/`）里，因为 PRTS 只是 dsh 的 GUI。在 PRTS 里删除工作区或归档会话，执行的就是对应的 dsh 操作（`workspace.delete` / `workspace.archiveSession`）。
 
 ### 设置 → 提供商与 API Key
 
