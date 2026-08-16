@@ -1,10 +1,20 @@
-# dsh-prts-ui (PRTS)
+# dsh-prts-ui
+
+<p align="center">
+  <img src="assets/prts.png" width="160" alt="PRTS logo">
+</p>
+
+<p align="center">
+  <a href="https://github.com/missercatos/dsh-prts-ui/releases"><img src="https://img.shields.io/badge/version-v0.6.2-7aa2f7?style=flat-square" alt="v0.6.2"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-9ece6a?style=flat-square" alt="MIT"></a>
+  <a href="https://github.com/missercatos/dsh-prts-ui/releases"><img src="https://img.shields.io/badge/release-0.6.2-bb9af7?style=flat-square" alt="release"></a>
+</p>
 
 > [中文](./README.zh.md)
 
-PRTS is a **GUI shell for dsh (DeepSeek Harness)** — not a standalone app. It mirrors dsh's real state (workspaces, sessions, models, credentials, tools, plugins) over dsh's stable `/api` RPC + WebSocket protocol; PRTS adds only the look and the control surface. Because it depends on the stable `/api` contract, dsh upgrades do not break it.
+**v0.6.2** · PRTS is a **GUI shell for dsh (DeepSeek Harness)** — not a standalone app. It mirrors dsh's real state (workspaces, sessions, models, credentials, tools, plugins) over dsh's stable `/api` RPC + WebSocket protocol; PRTS adds only the look and the control surface. Because it depends on the stable `/api` contract, dsh upgrades do not break it.
 
-Version 0.2.0 has been fixed and tested against the **current dsh core (v4-generation wire: `session.list`→`items`, `/api/events.mux` as a WebSocket)**.
+Version 0.6.x is fixed and tested against the **current dsh core (v4-generation wire: `session.list`→`items`, `/api/events.mux` as a WebSocket)**.
 
 ## Features (mirroring dsh's capabilities)
 

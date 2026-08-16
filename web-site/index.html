@@ -404,15 +404,37 @@
   /* Release mapping — point these at your host. Files are served from
      ./releases/ by default; edit PRTS_RELEASES to override per platform. */
   window.PRTS_RELEASES = window.PRTS_RELEASES || {
-    windows: 'releases/PRTS-Setup-0.2.0-windows-x64.exe',
-    linux: 'releases/PRTS-0.2.0-linux-x64.run',
-    macos: 'releases/PRTS-0.2.0-macos.sh',
-    android: 'releases/PRTS-0.2.0-android.zip',
+    windows: 'releases/PRTS-Setup-0.6.2-windows-x64.exe',
+    linux: 'releases/PRTS-0.6.2-linux-x64.run',
+    macos: 'releases/PRTS-0.6.2-macos.sh',
+    android: 'releases/PRTS-0.6.2-android.zip',
   };
 
   let lang = 'zh';
   let phaseIndex = 0;
+  let chunkIndex = 0;
   let phaseTimer = null;
+
+  // Break a phrase into short pieces (5-6 chars each): words stay whole and
+  // are re-joined with '·' when they still fit. No glyph ever runs off the
+  // stage, and long platform lists render word by word in a smaller font.
+  function splitPhase(text) {
+    const words = String(text).split(/\s*·\s*|\s+/).filter(Boolean);
+    if (words.length > 1) {
+      const out = [];
+      let cur = '';
+      for (const w of words) {
+        const next = cur ? cur + ' · ' + w : w;
+        if (next.length > 9 && cur) { out.push(cur); cur = w; }
+        else cur = next;
+      }
+      if (cur) out.push(cur);
+      return out;
+    }
+    const out = [];
+    for (let i = 0; i < text.length; i += 6) out.push(text.slice(i, i + 6));
+    return out;
+  }
 
   const engine = window.PRTS_PARTICLES;
   engine.start();
@@ -458,14 +480,19 @@
     toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
   }
 
-  function cycle(delay) {
+  function cycle() {
     clearTimeout(phaseTimer);
     const phases = I18N[lang].phases;
-    const text = phases[phaseIndex % phases.length];
-    engine.showText(text, text.length > 20 ? 56 : 92);
-    phaseIndex++;
-    // Each image lingers much longer before the next reassembly.
-    phaseTimer = setTimeout(() => cycle(3200), 8200);
+    const chunks = splitPhase(phases[phaseIndex % phases.length]);
+    const text = chunks[chunkIndex % chunks.length];
+    const ascii = /[A-Za-z]/.test(text);
+    // Small font for the platform words (windows/macos/linux/android) so the
+    // tail of the list never clips off the stage; Chinese chunks stay big.
+    engine.showText(text, ascii ? 44 : 84);
+    chunkIndex++;
+    if (chunkIndex % chunks.length === 0) { phaseIndex++; chunkIndex = 0; }
+    // Short linger per chunk: the phrase reads piece by piece.
+    phaseTimer = setTimeout(() => cycle(), ascii ? 3000 : 2600);
   }
 
   $('langBtn').addEventListener('click', () => setLang(lang === 'zh' ? 'en' : 'zh'));

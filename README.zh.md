@@ -1,8 +1,18 @@
-# dsh-prts-ui (PRTS)
+# dsh-prts-ui
 
-PRTS 是 **dsh（DeepSeek Harness）的 GUI 外壳**，不是独立软件。它复用 dsh 的 `/api` RPC + WebSocket 协议镜像 dsh 的真实状态：工作区、会话、模型、凭证、工具、插件都来自 dsh；PRTS 只提供外观与操作面板。因为只依赖 dsh 稳定的 `/api` 协议，dsh 升级不会让它失效。
+<p align="center">
+  <img src="assets/prts.png" width="160" alt="PRTS 标志">
+</p>
 
-本版（0.2.0）已针对**当前 dsh 内核（v4 代 / `session.list`→`items`、`/api/events.mux` 为 WebSocket）**逐项修正并实测。
+<p align="center">
+  <a href="https://github.com/missercatos/dsh-prts-ui/releases"><img src="https://img.shields.io/badge/版本-v0.6.2-7aa2f7?style=flat-square" alt="v0.6.2"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/许可-MIT-9ece6a?style=flat-square" alt="MIT"></a>
+  <a href="https://github.com/missercatos/dsh-prts-ui/releases"><img src="https://img.shields.io/badge/发布-0.6.2-bb9af7?style=flat-square" alt="release"></a>
+</p>
+
+**v0.6.2** · PRTS 是 **dsh（DeepSeek Harness）的 GUI 外壳**，不是独立软件。它复用 dsh 的 `/api` RPC + WebSocket 协议镜像 dsh 的真实状态：工作区、会话、模型、凭证、工具、插件都来自 dsh；PRTS 只提供外观与操作面板。因为只依赖 dsh 稳定的 `/api` 协议，dsh 升级不会让它失效。
+
+本版（0.6.x）已针对**当前 dsh 内核（v4 代 / `session.list`→`items`、`/api/events.mux` 为 WebSocket）**逐项修正并实测。
 
 ## 功能（全部照搬 dsh 的能力）
 
