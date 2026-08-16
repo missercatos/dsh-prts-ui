@@ -81,13 +81,13 @@ await click('#settingsClose')
 await sleep(300)
 
 // 4. Sidebar collapse -> expand chip -> reopen.
-await click('#sbCollapseBtn')
+await click('#sbToggleBtn')
 await sleep(400)
-const collapsed = await ev(`(() => ({ cls: document.getElementById('app').classList.contains('sbCollapsed'), chip: !document.getElementById('sbExpandBtn').hidden }))()`)
-await click('#sbExpandBtn')
+const collapsed = await ev(`(() => ({ cls: document.getElementById('app').classList.contains('sbCollapsed'), exp: document.getElementById('sbToggleBtn').getAttribute('aria-expanded') }))()`)
+await click('#sbToggleBtn')
 await sleep(400)
-const reopened = await ev(`(() => ({ cls: document.getElementById('app').classList.contains('sbCollapsed'), chip: !document.getElementById('sbExpandBtn').hidden }))()`)
-check('sidebar collapse + floating reopen', collapsed.cls === true && collapsed.chip === true && reopened.cls === false && reopened.chip === false, JSON.stringify({ collapsed, reopened }))
+const reopened = await ev(`(() => ({ cls: document.getElementById('app').classList.contains('sbCollapsed'), exp: document.getElementById('sbToggleBtn').getAttribute('aria-expanded') }))()`)
+check('sidebar single-button collapse + reopen', collapsed.cls === true && collapsed.exp === 'false' && reopened.cls === false && reopened.exp === 'true', JSON.stringify({ collapsed, reopened }))
 
 // 5. Selection mode + bulk archive on the two throwaway sessions.
 // Create two throwaways first.

@@ -62,8 +62,10 @@
     throw new Error('dsh: unexpected response');
   }
 
-  /** Invoke an RPC method. Resolves with the business `value`, rejects on error. */
-  async function request(method, payload) {
+  /** Invoke an RPC method. Resolves with the business `value`, rejects on error.
+   *  `opts.timeoutMs` aborts the browser fetch after the given time (the
+   *  Electron bridge cannot abort; it simply stays pending there). */
+  async function request(method, payload, opts) {
     const id = rpcId();
     const env = { type: 'client-request', rpcId: id, method, payload: payload || {} };
     const bridge = dshBridge();
@@ -71,15 +73,21 @@
       const body = await bridge.request(method, payload || {});
       return parseResponse(id, body);
     }
+    const timeoutMs = opts && opts.timeoutMs;
+    const ac = timeoutMs ? new AbortController() : null;
+    const timer = ac ? setTimeout(() => ac.abort(), timeoutMs) : null;
     let res;
     try {
       res = await fetch(apiUrl(method), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(env),
+        signal: ac ? ac.signal : undefined,
       });
     } catch (e) {
       throw new Error('dsh: network error (' + (e && e.message) + ')');
+    } finally {
+      if (timer) clearTimeout(timer);
     }
     if (!res.ok) throw new Error('dsh: HTTP ' + res.status);
     return parseResponse(id, await res.json().catch(() => null));

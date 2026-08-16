@@ -35,6 +35,7 @@ contextBridge.exposeInMainWorld('prts', {
     pluginAdd: (pkg) => ipcRenderer.invoke('prts:pluginAdd', pkg),
     pluginClone: (repo) => ipcRenderer.invoke('prts:pluginClone', repo),
     update: () => ipcRenderer.invoke('prts:update'),
+    download: (url) => ipcRenderer.invoke('prts:download', url),
     sttFile: (rel) => ipcRenderer.invoke('prts:sttFile', rel),
     dsh: {
       request: (method, payload) => ipcRenderer.invoke('prts:dshRequest', method, payload),

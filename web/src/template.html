@@ -10,6 +10,11 @@
 </head>
 <body>
 <div id="app" class="frame" data-details-collapsed>
+  <!-- The single sidebar toggle: top-left, always visible. It collapses and
+       re-expands the sidebar and never moves or hides. -->
+  <button class="sbToggleBtn" id="sbToggleBtn" type="button" data-i18n-title="sidebar.collapse" aria-expanded="true" aria-label="Collapse sidebar">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7.8 3.2 4.6 7l3.2 3.8M9.6 3.2 6.4 7l3.2 3.8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
   <aside class="sbCol" id="sbCol">
     <div class="sb bracket">
       <div class="logoRow">
@@ -19,11 +24,16 @@
           <canvas class="brandFx" id="brandFx" width="48" height="16"></canvas>
         </button>
         <div class="sbActions">
-          <button class="iconBtn" id="themeBtn" type="button" title="Toggle theme">
-            <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1a6.5 6.5 0 1 0 0 13c.4 0 .7-.4.6-.8a2 2 0 0 1 1.6-2.4c3.2-.4 4.9-2.6 4.9-5.3a6.3 6.3 0 0 0-5-4.3A1 1 0 0 1 7.5 1Z" fill="currentColor"/></svg>
-          </button>
-          <button class="iconBtn" id="sbCollapseBtn" type="button" title="Collapse sidebar">
-            <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M8.5 1.5a1 1 0 0 1 .996 1.093l-.009.09L8.83 7.5l.657 4.817a1 1 0 0 1-1.99.246l-.01-.09-.713-5.225a1.5 1.5 0 0 1 0-.496l.713-5.225A1 1 0 0 1 8.5 1.5Z" fill="currentColor"/><path d="M4 3.5a1 1 0 0 1 .993.883L5 4.5v6a1 1 0 0 1-1.993.117L3 10.5v-6a1 1 0 0 1 1-1Z" fill="currentColor"/></svg>
+          <button class="iconBtn themeBtn" id="themeBtn" type="button" data-i18n-title="common.theme" aria-label="Toggle theme">
+            <span class="themeIcons">
+              <svg class="themeSun" width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                <circle cx="7.5" cy="7.5" r="3" stroke="currentColor" stroke-width="1.2"/>
+                <path d="M7.5 1.2v1.4M7.5 12.4v1.4M1.2 7.5h1.4M12.4 7.5h1.4M3 3l1 1M11 11l1 1M12 3l-1 1M4 11l-1 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              </svg>
+              <svg class="themeMoon" width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                <path d="M12.6 9.6A5.4 5.4 0 0 1 5.4 2.4 5.6 5.6 0 1 0 12.6 9.6Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+              </svg>
+            </span>
           </button>
         </div>
       </div>
@@ -130,6 +140,7 @@
               <span class="rhombus-lg"></span>
               <span class="heroWord">PRTS</span>
             </div>
+            <div class="heroTagline" id="heroTagline" data-i18n="hero.tagline">欢迎回归，博士</div>
             <div class="heroSub">
               <span class="rule"></span>
               <span class="heroReady" id="heroReady" data-i18n="hero.online">SYSTEM ONLINE</span>
@@ -174,6 +185,10 @@
                 </button>
                 <button class="chip reasoningChip" id="reasoningChip" type="button" hidden data-i18n-title="reasoning.title">
                   <span class="label" id="reasoningChipLabel">—</span>
+                  <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
+                </button>
+                <button class="chip" id="composerPermissionChip" type="button" hidden data-i18n-title="permission.title">
+                  <span class="label" id="composerPermissionChipLabel">—</span>
                   <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
                 </button>
                 <button class="chip" id="commandsChip" type="button">
@@ -225,10 +240,6 @@
   <div class="handle" data-side="details" id="handleDetails"></div>
   <div class="handle" data-side="sidebar" id="handleSidebar"></div>
 </div>
-
-<button class="sbExpandBtn" id="sbExpandBtn" type="button" hidden data-i18n-title="sidebar.expand">
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9.5 1.5 5 7l4.5 5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-</button>
 
 <div class="overlay" id="settingsOverlay">
   <div class="settingsCard">
@@ -349,6 +360,9 @@
       <span class="title" id="modalTitle">PRTS</span>
     </div>
     <input class="sInput" id="modalInput" type="text" spellcheck="false" autocomplete="off">
+    <div class="modalExtra" id="modalExtra" hidden>
+      <button class="sBtn" id="modalBrowseBtn" type="button">浏览…</button>
+    </div>
     <div class="modalActions">
       <button class="sBtn" id="modalCancel" type="button" data-i18n="common.cancel">Cancel</button>
       <button class="sBtn primary" id="modalOk" type="button" data-i18n="common.ok">OK</button>

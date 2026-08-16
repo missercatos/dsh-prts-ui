@@ -60,6 +60,19 @@ ipcMain.handle('prts:exists', async (_e, p) => {
 ipcMain.handle('prts:mkdir', (_e, p) => fs.promises.mkdir(p, { recursive: true }))
 ipcMain.handle('prts:listDir', (_e, p) => fs.promises.readdir(p))
 
+/* Native download (Session log ZIP): Electron's download manager shows the
+   save dialog and writes the file — no binary corruption through the text
+   IPC bridge. */
+ipcMain.handle('prts:download', (_e, url) => {
+  try {
+    if (!win || win.isDestroyed()) throw new Error('window unavailable')
+    win.webContents.downloadURL(String(url))
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: String(err && err.message || err) }
+  }
+})
+
 /* ---------- http bridge (streaming SSE) ---------- */
 ipcMain.handle('prts:http', async (e, req) => {
   const ctrl = new AbortController()

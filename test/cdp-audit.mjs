@@ -38,7 +38,7 @@ const evaluate = async (expr) => {
 }
 
 const audit = await evaluate(`(() => {
-  const ids = ['brandBtn','themeBtn','sbCollapseBtn','newProjectBtn','newSessionBtn',
+  const ids = ['brandBtn','themeBtn','sbToggleBtn','newProjectBtn','newSessionBtn',
     'sessionSearch','sessionSearchClear','costBtn','marketBtn','detailsBtn','settingsBtn',
     'crumbProject','modeChip','permissionChip','clearHistoryBtn','logBtn',
     'modelChip','reasoningChip','commandsChip','attachBtn','voiceBtn','meterBtn','sendBtn',

@@ -21,9 +21,17 @@
             y: -((y / ch) * 2 - 1),
             a: 0.35 + 0.65 * Math.random(),
           });
-          if (pts.length >= maxPoints) return pts;
         }
       }
+    }
+    // Cover the WHOLE glyph area — the old early return truncated long text
+    // mid-character (the "half character" bug). When there are more sampled
+    // points than particles, thin them out uniformly instead of cutting.
+    if (pts.length > maxPoints) {
+      const stride = pts.length / maxPoints;
+      const out = [];
+      for (let i = 0; i < maxPoints; i++) out.push(pts[Math.floor(i * stride)]);
+      return out;
     }
     return pts;
   }

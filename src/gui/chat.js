@@ -627,6 +627,7 @@
         P.app.toast(t('session.createFail'));
         return;
       }
+      C.sessionId = id;
     }
     const input = $('composerInput');
     if (input) input.value = '';
@@ -637,6 +638,9 @@
     C.streaming = true;
     swapSendStop(true);
     if (C.onStreaming) { try { C.onStreaming(true); } catch (e) { /* noop */ } }
+    // Sending from the welcome screen starts the conversation: leave the
+    // hero (dsh web behaviour) so the stream is visible.
+    if (P.app && P.app.enterChat) P.app.enterChat();
     try {
       await P.dshState.prompt(C.sessionId, content);
       // The mux delivers the events; the prompt only needs to be accepted.
@@ -744,10 +748,27 @@
         }
         e.preventDefault();
         const v = input.value.trim();
-        if (v) send(v);
+        if (!v) return;
+        // A leading '/' is a command: run it through the host command
+        // executor (dsh web's path). Unknown commands fall back to a
+        // normal message so the line is never lost.
+        if (v[0] === '/') { tryCommandLine(v); return; }
+        send(v);
       } else if (e.key === 'Tab' && cmdCompletion) {
         e.preventDefault();
         completeCommand();
+      } else if (e.key === 'ArrowDown' && cmdCompletion && cmdCompletion.length) {
+        e.preventDefault();
+        cmdActive = Math.min(cmdCompletion.length - 1, cmdActive + 1);
+        renderCompletion();
+      } else if (e.key === 'ArrowUp' && cmdCompletion && cmdCompletion.length) {
+        e.preventDefault();
+        cmdActive = Math.max(0, cmdActive - 1);
+        renderCompletion();
+      } else if (e.key === 'Escape' && cmdCompletion) {
+        e.preventDefault();
+        cmdCompletion = null;
+        hideCompletion();
       }
     });
     $('composerExpand').addEventListener('click', toggleExpand);
@@ -769,21 +790,24 @@
 
   /* ---------- slash-command auto-detection ---------- */
   let cmdCompletion = null;   // [{name, description}]
+  let cmdActive = 0;
   let composeToken = 0;
   function onComposeChange() {
     const token = ++composeToken;
     const input = $('composerInput');
     const v = input.value;
-    // Only when the very first char is '/', with no space yet.
-    if (v.length > 1 && v[0] === '/' && v.indexOf(' ') === -1) {
+    // Command mode: the very first char is '/', with no space yet. A bare
+    // '/' lists every command (host directory incl. plugin-extended ones).
+    if (v[0] === '/' && v.indexOf(' ') === -1) {
       const partial = v.slice(1).toLowerCase();
       if (!P.dshState.currentSessionId) return;
       P.dshState.commandsList(P.dshState.currentSessionId).then((cmds) => {
         if (token !== composeToken) return;   // stale keystroke
-        const matches = cmds.filter((c) => c.name.toLowerCase().indexOf(partial) === 0);
+        const matches = cmds.filter((c) => String(c.name || '').toLowerCase().indexOf(partial) === 0);
         if (matches.length) {
           cmdCompletion = matches;
-          showCompletion(matches);
+          cmdActive = 0;
+          renderCompletion();
         } else { cmdCompletion = null; hideCompletion(); }
       }).catch(() => { if (token === composeToken) { cmdCompletion = null; hideCompletion(); } });
     } else {
@@ -791,7 +815,7 @@
       hideCompletion();
     }
   }
-  function showCompletion(matches) {
+  function showCompletion() {
     let pop = $('cmdCompletionPop');
     if (!pop) {
       pop = document.createElement('div');
@@ -799,15 +823,35 @@
       pop.className = 'pop cmdCompletion';
       $('composerArea').appendChild(pop);
     }
-    pop.innerHTML = matches.slice(0, 6).map((c) => '<div class="popItem" data-name="' + c.name + '"><span class="label">/' + c.name + '</span></div>').join('');
-    pop.style.display = 'block';
-    pop.style.bottom = '';
     const composer = $('composerCard');
     const r = composer.getBoundingClientRect();
     pop.style.bottom = (window.innerHeight - r.top + 8) + 'px';
     pop.style.left = '0';
     pop.style.right = '0';
     pop.style.maxWidth = '420px';
+    pop.style.display = 'block';
+  }
+  function renderCompletion() {
+    const pop = $('cmdCompletionPop');
+    if (!pop || !cmdCompletion || !cmdCompletion.length) { hideCompletion(); return; }
+    showCompletion();
+    pop.innerHTML = cmdCompletion.slice(0, 7).map((c, i) =>
+      '<div class="popItem' + (i === cmdActive ? ' active' : '') + '" data-name="' + esc(c.name) + '" data-i="' + i + '">' +
+      '<span class="label">/' + esc(c.name) + '</span>' +
+      (c.description ? '<span class="desc">' + esc(c.description) + '</span>' : '') +
+      '</div>'
+    ).join('');
+    for (const row of pop.querySelectorAll('.popItem')) {
+      row.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        cmdActive = Number(row.dataset.i || 0);
+        completeCommand();
+      });
+      row.addEventListener('mouseenter', () => {
+        cmdActive = Number(row.dataset.i || 0);
+        pop.querySelectorAll('.popItem').forEach((x, i) => x.classList.toggle('active', i === cmdActive));
+      });
+    }
   }
   function hideCompletion() {
     const pop = $('cmdCompletionPop');
@@ -816,7 +860,7 @@
   function completeCommand() {
     const input = $('composerInput');
     if (!cmdCompletion || !cmdCompletion.length) return;
-    const first = cmdCompletion[0];
+    const first = cmdCompletion[Math.min(cmdActive, cmdCompletion.length - 1)] || cmdCompletion[0];
     input.value = '/' + first.name + ' ';
     cmdCompletion = null;
     hideCompletion();
@@ -825,8 +869,38 @@
     scrollInputBottom();
   }
 
+  /** Execute a slash line through the host command executor; fall back to a
+   *  normal message when the host doesn't know the command. */
+  async function tryCommandLine(line) {
+    if (!C.sessionId) {
+      const id = await P.app.ensureSession();
+      if (!id) { P.app.toast(t('session.createFail')); return; }
+      C.sessionId = id;
+    }
+    const input = $('composerInput');
+    let admitted = false;
+    let errText = null;
+    try {
+      const out = await P.dshState.executeCommand(C.sessionId, line);
+      admitted = !!(out && out.admitted);
+      if (admitted && out.result && out.result.kind === 'error' && out.result.text) errText = out.result.text;
+    } catch (e) {
+      admitted = false;
+    }
+    if (admitted) {
+      if (input) input.value = '';
+      updateSend();
+      if (errText) P.app.toast(t('commands.execFailed', { msg: errText }));
+    } else {
+      // Unknown or transport failure — never lose the line.
+      if (input) input.value = '';
+      send(line);
+    }
+  }
+
   C.send = send;
   C.stop = stop;
+  C.tryCommandLine = tryCommandLine;
   C.renderFlow = renderFlow;
   C.renderTimeline = renderTimeline;
   C.renderLog = renderLog;

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-16T06:29:32.238Z",
+  "generatedAt": "2026-08-16T06:41:46.082Z",
   "plugins": [
     {
       "pkg": "@liustack/modlens",
@@ -135,20 +135,20 @@
       "repo": "git+https://github.com/awesome-dsh-plugin/dsh-find-plugin.git"
     },
     {
-      "name": "@crazy_th/dsh-computer-use",
-      "displayName": "@crazy_th/dsh-computer-use",
-      "description": "Native Windows Computer Use tools for DeepSeek Harness.",
-      "source": "npm",
-      "pkg": "@crazy_th/dsh-computer-use",
-      "repo": "git+https://github.com/ThreeBody6666/dsh-computer-use.git"
-    },
-    {
       "name": "design-playbook",
       "displayName": "design-playbook",
       "description": "Design I/O for coding agents: controllable UI generation via declarations (spec/domain/craft/design/components/template) and contracts (skill/evaluator). Use for product UI—console, dashboard, agent-ops, CJK-first apps.",
       "source": "npm",
       "pkg": "design-playbook",
       "repo": "git+https://github.com/Bandersnatch0x/design-playbook.git"
+    },
+    {
+      "name": "@crazy_th/dsh-computer-use",
+      "displayName": "@crazy_th/dsh-computer-use",
+      "description": "Native Windows Computer Use tools for DeepSeek Harness.",
+      "source": "npm",
+      "pkg": "@crazy_th/dsh-computer-use",
+      "repo": "git+https://github.com/ThreeBody6666/dsh-computer-use.git"
     },
     {
       "name": "dsh-testkit",
@@ -263,19 +263,19 @@
       "repo": "git+https://github.com/kami-mura/dsh-cost.git"
     },
     {
-      "name": "@deepseek-ai/dsh-headless",
-      "displayName": "@deepseek-ai/dsh-headless",
-      "description": "The dsh one-shot bundle: a direct core Agent/Session runner over dsh-base with no Host, HTTP, or browser layer",
-      "source": "npm",
-      "pkg": "@deepseek-ai/dsh-headless",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
-    },
-    {
       "name": "@deepseek-ai/dsh-skill-badge",
       "displayName": "@deepseek-ai/dsh-skill-badge",
       "description": "Bundled dsh badge skill provider for DeepSeek Harness",
       "source": "npm",
       "pkg": "@deepseek-ai/dsh-skill-badge",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-headless",
+      "displayName": "@deepseek-ai/dsh-headless",
+      "description": "The dsh one-shot bundle: a direct core Agent/Session runner over dsh-base with no Host, HTTP, or browser layer",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-headless",
       "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
     },
     {

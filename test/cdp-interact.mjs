@@ -77,11 +77,11 @@ await sleep(200)
 
 // 5. Sidebar collapse toggles.
 const sbW1 = await evaluate(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dsh-sb'))`)
-await click('#sbCollapseBtn')
+await click('#sbToggleBtn')
 await sleep(300)
 const sbW2 = await evaluate(`parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dsh-sb'))`)
 check('sidebar collapse toggles', sbW1 > 0 && sbW2 === 0, sbW1 + ' → ' + sbW2)
-await click('#sbCollapseBtn')
+await click('#sbToggleBtn')
 await sleep(200)
 
 // 6. Reasoning popover opens with efforts.

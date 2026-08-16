@@ -132,7 +132,7 @@ EOF
 
 # ---------- 6. Checksums + release manifest ----------
 say "Writing SHA256SUMS and releases.json…"
-( cd "$OUT" && sha256sum dsh-prts-ui-*.tgz PRTS-*.run PRTS-*.sh PRTS-Setup-*.exe PRTS-Setup-*.zip PRTS-*.zip 2>/dev/null > SHA256SUMS )
+( cd "$OUT" && sha256sum dsh-prts-ui-*.tgz PRTS-[0-9]*.run PRTS-[0-9]*.sh PRTS-[0-9]*.zip PRTS-Setup-*.exe PRTS-Setup-*.zip 2>/dev/null > SHA256SUMS )
 
 BASE="${PRTS_RELEASE_BASE:-https://your-domain.example.com/releases}"
 node - "$VERSION" "$BASE" "$OUT" <<'NODE'

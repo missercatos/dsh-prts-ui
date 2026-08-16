@@ -28,12 +28,12 @@ PRTS 是 **dsh（DeepSeek Harness）的 GUI 外壳**，不是独立软件。它�
 | `session.list` 返回 `{items}`（旧代码读 `sessions`） | 已对齐；会话标题读 projection `values.title` |
 | `session.history` 返回 `{events:[{event,view}]}` | 已对齐，并支持 `beforeSeq/maxMessages` 分页回读（大会话秒开） |
 | 流式事件只有 `assistant/chunk`（reasoning-delta/text-delta/tool-call-delta/usage/finish） | 折叠逻辑全部重写，边流边渲染 |
-| 无 `commands.list` RPC | 命令目录从会话 `command/run` 历史 + 内置命令构建 |
+| 命令目录 | 走 `commands/list` RPC（与 dsh web 同源，含插件扩展指令）；旧版无 RPC 时回退为会话 `command/run` 历史 + 内置命令 |
 | `session.search` 在部分部署被禁用 | 自动降级为本地标题过滤 |
 | Electron 禁用 `window.prompt()`（“新建工作区”等按钮点击即崩） | 换成 PRTS 风格模态框 |
 | 审批/提问应答格式 | `respond` 现在正确打包 `{ok:true,value:{...}}` |
 | 头部弹层在窗口顶端打开时跑出屏幕 | 弹层按触发器位置自动改为向下展开 |
-| 死按钮 | 侧栏折叠（折叠后左侧出现悬浮展开条，可随时重开）、对话/轨迹页签、会话日志、上下文仪表均已接线 |
+| 死按钮 | 侧栏折叠/展开统一为左上角固定按钮（折叠后按钮不隐藏，再次点击恢复原宽度）、对话/轨迹页签、会话日志（dsh-web 同款 ZIP 下载 + 原始事件兜底）、上下文仪表均已接线 |
 | 设置里“模型配置”折叠钮无效（CSS `display` 压过 `hidden` 属性） | 全局 `[hidden]{display:none!important}`，同时修好附件条/状态行等同类隐患 |
 | 发送后卡在“停止”状态（mux 断流导致 streaming 永久为 true） | 流结束/断线都会复位 |
 | 流式期间每条 chunk 全量重渲染（大 session 卡顿） | 渲染按帧批处理 + 90ms 节流（实测一轮 9 秒只重写 DOM 16 次）；粒子 willReadFrequently；历史重载 30 秒冷却 |

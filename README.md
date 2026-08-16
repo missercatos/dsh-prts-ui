@@ -19,7 +19,7 @@ Version 0.2.0 has been fixed and tested against the **current dsh core (v4-gener
 - **Context meter**: live context-window pressure ring next to the composer
 - **Bottom stats dock**: the same live stats line as the session UI — turns · steps | LLM · tool time | avg TTFT · tok/s | cache hit % | in/out tokens (projection frames + 8 s poll)
 - **Voice input**: real microphone speech-to-text — first-use consent modal, VAD auto start/stop, local whisper-tiny ONNX engine (engine + model cached from npmmirror / hf-mirror on first use, fully offline after; webkitSpeechRecognition preferred when present)
-- **Trajectory & log split**: the Trajectory tab is a step timeline (grouped by turn/step with durations); the Session log button is a separate raw-event overlay with JSON export
+- **Trajectory & log split**: the Trajectory tab is a step timeline (grouped by turn/step with durations); the Session log button downloads the dsh-web-style ZIP archive (`/api/session.export`) and falls back to a raw-event overlay with JSON export
 - Plus: three-phase particle intro (welcome → PRTS·DEEPSEEK banner → diamond mark, 3.2 s each, click to skip), system panel (hardware telemetry), cost panel, plugin market, zh/en UI, light/dark theme
 
 ## Compatibility fixes in 0.2.0
@@ -28,7 +28,7 @@ Version 0.2.0 has been fixed and tested against the **current dsh core (v4-gener
 - `session.list` `items` shape, titles from `projections.values.title`
 - `session.history` `{events:[{event,view}]}` shape + paged back-read (`beforeSeq`/`maxMessages`) so huge sessions open instantly
 - Streaming via `assistant/chunk` (`reasoning-delta`/`text-delta`/`tool-call-delta`/`usage`/`finish`)
-- No `commands.list` RPC — the command directory is built from the session's `command/run` history + built-ins
+- The command directory comes from the `commands/list` RPC (the dsh web source — includes plugin-extended commands), with a local fallback from the session's `command/run` history + built-ins for older builds
 - `session.search` degrades to a local title filter when the deployment disables the index
 - `window.prompt()`/`window.confirm()` replaced with PRTS-styled modals (Electron disables `prompt()` — this was the "buttons do nothing" bug)
 - Approval/question answers wrapped correctly as `{ok:true,value:{...}}`

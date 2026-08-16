@@ -19,6 +19,7 @@
     url: 'http://127.0.0.1:3085',
     workspaces: [],
     sessions: [],       // raw session.list items (projections included)
+    archivedSessionIds: [],  // workspace.list archive set (session.list does NOT filter it)
     models: [],         // provider groups: { id, name, models: [...] }
     providers: [],      // { provider, displayName, active, ... }
     currentWorkspaceId: null,
@@ -58,12 +59,16 @@
   async function listWorkspaces() {
     const r = await P.dsh.request('workspace.list', {});
     S.workspaces = (r && r.items) || [];
+    // dsh keeps the archive set on workspace.list only — session.list still
+    // returns archived sessions, so PRTS filters them client-side here.
+    if (Array.isArray(r && r.archivedSessionIds)) S.archivedSessionIds = r.archivedSessionIds;
     return S.workspaces;
   }
 
   async function listSessions() {
     const r = await P.dsh.request('session.list', {});
-    S.sessions = (r && r.items) || [];
+    const archived = new Set(S.archivedSessionIds);
+    S.sessions = ((r && r.items) || []).filter((s) => !archived.has(s.sessionId));
     return S.sessions;
   }
 
@@ -132,7 +137,10 @@
   }
 
   async function refreshAll() {
-    await Promise.allSettled([listWorkspaces(), listSessions(), listModels(), listProviders(), listPresets()]);
+    // Workspaces must load before sessions: the archive set from
+    // workspace.list is what filters archived sessions out of the list.
+    await listWorkspaces().catch(() => {});
+    await Promise.allSettled([listSessions(), listModels(), listProviders(), listPresets()]);
   }
 
   /** The open session's exact model selection (session.models.current). */
@@ -198,6 +206,12 @@
   async function archiveSession(sessionId) {
     // dsh has no session.delete — sessions are archived from their workspace.
     await P.dsh.request('workspace.archiveSession', { sessionId });
+    // The wire session.list does not filter archived sessions, so keep the
+    // archive set locally and drop the row immediately (the sidebar must
+    // reflect the deletion without waiting on any other refresh).
+    if (S.archivedSessionIds.indexOf(sessionId) < 0) S.archivedSessionIds.push(sessionId);
+    S.sessions = S.sessions.filter((s) => s.sessionId !== sessionId);
+    return S.archivedSessionIds;
   }
 
   /** Archive several sessions (bulk delete). Returns the first error, if any. */
@@ -250,8 +264,14 @@
     return url;
   }
 
-  /** Apply a permission preset through dsh's `/permission` slash command. */
+  /** Apply a permission preset through dsh's `/permission` command. The
+   *  commands/execute RPC is the same path dsh web uses; older builds without
+   *  the RPC fall back to queuing the slash line as a prompt. */
   async function setPermissionPreset(sessionId, preset) {
+    try {
+      const out = await executeCommand(sessionId, '/permission ' + preset);
+      if (out && out.admitted) return out;
+    } catch (e) { /* fall back below */ }
     return P.dsh.request('session.prompt', {
       sessionId,
       mode: 'queue',
@@ -278,15 +298,18 @@
     return P.dsh.request('credentials.unset', { ref });
   }
 
-  /** Commands known to this session. dsh does not expose a command-list RPC on
-   *  the /api wire, so PRTS builds the directory from the session's own
-   *  `command/run` events plus well-known built-ins, and refreshes it as the
-   *  history grows. */
+  /** Commands known to this session. Current dsh builds expose the real
+   *  command directory over the `commands/list` RPC (the same source the dsh
+   *  web GUI uses — it includes every plugin-extended command). Older builds
+   *  without the RPC fall back to the session's own `command/run` events plus
+   *  well-known built-ins. Results are cached briefly so slash-autocomplete
+   *  doesn't hammer the wire on every keystroke. */
   const KNOWN_COMMANDS = [
     { name: 'permission', description: 'permission preset (sandbox + approvals)' },
     { name: 'plan', description: 'plan mode' },
   ];
-  async function commandsList(sessionId, events) {
+  const commandCache = new Map();   // sessionId -> { at, list }
+  function buildLocalCommands(events) {
     const names = new Map();
     for (const c of KNOWN_COMMANDS) names.set(c.name, c.description || '');
     const evs = Array.isArray(events) ? events : S.events;
@@ -297,6 +320,69 @@
       }
     }
     return [...names.entries()].map(([name, description]) => ({ name, description }));
+  }
+  async function commandsList(sessionId, events) {
+    if (!sessionId) return buildLocalCommands(events);
+    const hit = commandCache.get(sessionId);
+    if (hit && Date.now() - hit.at < 4000) return hit.list;
+    let list;
+    try {
+      const r = await P.dsh.request('commands/list', { args: { agentId: sessionId } });
+      const wire = Array.isArray(r) ? r : [];
+      // Merge the built-ins the harness knows but may not list yet.
+      const names = new Set();
+      const out = [];
+      for (const c of wire) {
+        if (!c || !c.name || names.has(c.name)) continue;
+        names.add(c.name);
+        out.push({ name: c.name, description: c.description || '' });
+      }
+      for (const c of buildLocalCommands(events)) {
+        if (names.has(c.name)) continue;
+        names.add(c.name);
+        out.push(c);
+      }
+      list = out;
+    } catch (e) {
+      list = buildLocalCommands(events);
+    }
+    commandCache.set(sessionId, { at: Date.now(), list });
+    return list;
+  }
+  function invalidateCommands() { commandCache.clear(); }
+
+  /** Execute a slash line through the host command executor (the same path
+   *  dsh web's composer uses). Resolves { admitted: false } when the host
+   *  does not know the command (or the RPC is unavailable). */
+  async function executeCommand(sessionId, line) {
+    const r = await P.dsh.request('commands/execute', { args: { agentId: sessionId, line } });
+    if (r === undefined || r === null) return { admitted: false };
+    return { admitted: true, commandId: r.commandId || null, result: r.result || null };
+  }
+
+  /** Native directory picker (dsh web's workspace-browse path). Resolves the
+   *  chosen path, or null when the user cancelled. */
+  async function pickDirectory() {
+    const r = await P.dsh.request('host.pickDirectory', {}, { timeoutMs: 30000 });
+    return (r && r.path) || null;
+  }
+
+  /** dsh web's Session log endpoint: the ZIP archive download URL. */
+  function sessionLogUrl(sessionId) {
+    return S.url.replace(/\/+$/, '') + '/api/session.export?sessionId=' +
+      encodeURIComponent(sessionId) + '&includeDescendants=true';
+  }
+
+  /** Product display label for a permission preset (mirrors dsh web:
+   *  danger-full-access → "Full access", kebab names → Title Case). */
+  function permissionDisplayName(o) {
+    if (!o) return '';
+    if (o.value === 'danger-full-access') return 'Full access';
+    const n = String(o.name || o.value || '');
+    if (/^[a-z0-9]+(-[a-z0-9]+)*$/.test(n)) {
+      return n.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
+    return n;
   }
 
   // Host version (Settings -> Version) straight from dsh, not from PRTS.
@@ -352,6 +438,11 @@
   S.credentialsSet = credentialsSet;
   S.credentialsUnset = credentialsUnset;
   S.commandsList = commandsList;
+  S.invalidateCommands = invalidateCommands;
+  S.executeCommand = executeCommand;
+  S.pickDirectory = pickDirectory;
+  S.sessionLogUrl = sessionLogUrl;
+  S.permissionDisplayName = permissionDisplayName;
   S.agentPresetSelect = function (sessionId, agentPreset) {
     return P.dsh.request('agentPreset.select', { sessionId, agentPreset });
   };

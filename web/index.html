@@ -187,6 +187,7 @@
 .overlay.open .modalCard { transform: translateY(0); }
 .modalHead { margin-bottom: 14px; }
 .modalHead .title { font-size: 13px; letter-spacing: 0.12em; color: var(--prts-ink); }
+.modalExtra { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
 .modalActions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 
 /* Approval / question request stack. */
@@ -323,7 +324,7 @@
 
 /* ===== Sidebar ===== */
 .sb { display: flex; flex-direction: column; height: 100%; padding: 6px 10px; }
-.logoRow { display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 8px 4px 8px 10px; }
+.logoRow { display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 8px 4px 8px 46px; }
 .brand { display: inline-flex; align-items: center; gap: 8px; padding: 0; border: none; background: transparent; cursor: pointer; color: var(--prts-ink); }
 .brand .word {
   font-size: 15px; font-weight: 600; letter-spacing: 0.22em; font-style: italic;
@@ -383,28 +384,44 @@
 .headBtn:hover { color: var(--prts-ink); background: var(--prts-surface-2); }
 .headBtn.on { color: var(--prts-ink); background: var(--prts-surface-2); box-shadow: inset 0 0 0 1px var(--prts-hairline-strong); }
 .bulkBar {
-  display: flex; align-items: center; gap: 8px; margin: 4px 2px 0; padding: 6px 8px;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin: 4px 2px 0; padding: 6px 8px;
   border: 1px solid var(--prts-hairline); border-radius: 8px; background: var(--prts-surface);
 }
-.bulkLabel { font-size: 11px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+.bulkLabel { min-width: 0; flex: 0 1 auto; font-size: 11px; color: var(--prts-ink-faint); font-family: var(--prts-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bulkBar .spacer { flex: 1; min-width: 8px; }
 .bulkBtn {
-  height: 24px; padding: 0 10px; border: 1px solid var(--prts-hairline); border-radius: 12px;
-  background: transparent; color: var(--prts-ink-dim); font-size: 11px; line-height: 22px; cursor: pointer;
+  height: auto; min-height: 24px; padding: 1px 10px; border: 1px solid var(--prts-hairline); border-radius: 12px;
+  background: transparent; color: var(--prts-ink-dim); font-size: 11px; line-height: 20px; cursor: pointer;
+  white-space: nowrap; flex: none;
   transition: border-color 0.12s var(--prts-ease), color 0.12s var(--prts-ease);
 }
 .bulkBtn:hover { border-color: var(--prts-hairline-strong); color: var(--prts-ink); }
 .bulkBtn.danger { color: var(--prts-ink); border-color: var(--prts-hairline-strong); }
 .bulkBtn:disabled { opacity: 0.35; cursor: default; }
-/* Floating expand chip for the collapsed sidebar. */
-.sbExpandBtn {
-  position: fixed; left: 10px; top: 50%; transform: translateY(-50%); z-index: 40;
+/* Single sidebar toggle — fixed at the top-left, never hidden. It collapses
+   and re-expands the sidebar in place; the chevron mirrors across the two
+   states so it reads as one control. */
+.sbToggleBtn {
+  position: fixed; left: 10px; top: 12px; z-index: 60;
   display: inline-flex; align-items: center; justify-content: center;
-  width: 22px; height: 52px; padding: 0; border: 1px solid var(--prts-hairline);
-  border-radius: 11px; background: var(--prts-panel); color: var(--prts-ink-dim); cursor: pointer;
-  box-shadow: var(--prts-shadow);
-  transition: color 0.12s var(--prts-ease), border-color 0.12s var(--prts-ease);
+  width: 28px; height: 28px; padding: 0; border: 1px solid var(--prts-hairline);
+  border-radius: 8px; background: var(--prts-panel); color: var(--prts-ink-dim);
+  cursor: pointer; box-shadow: var(--prts-shadow);
+  transition: color 0.15s var(--prts-ease), border-color 0.15s var(--prts-ease), background 0.15s var(--prts-ease);
 }
-.sbExpandBtn:hover { color: var(--prts-ink); border-color: var(--prts-hairline-strong); }
+.sbToggleBtn:hover { color: var(--prts-ink); border-color: var(--prts-hairline-strong); background: var(--prts-surface-2); }
+.sbToggleBtn svg { transition: transform 0.3s var(--prts-ease-out); }
+.frame.sbCollapsed .sbToggleBtn svg { transform: rotate(180deg); }
+
+/* Theme toggle: hairline sun/moon pair, crossfading with the theme. */
+.themeBtn { position: relative; overflow: hidden; }
+.themeIcons { position: relative; display: block; width: 15px; height: 15px; }
+.themeIcons svg { position: absolute; inset: 0; transition: opacity 0.25s var(--prts-ease), transform 0.35s var(--prts-ease-out); }
+.themeSun { opacity: 0; transform: rotate(-60deg) scale(0.6); }
+.themeMoon { opacity: 1; transform: rotate(0) scale(1); }
+[data-theme='light'] .themeSun { opacity: 1; transform: rotate(0) scale(1); }
+[data-theme='light'] .themeMoon { opacity: 0; transform: rotate(60deg) scale(0.6); }
+
 .sbEmpty { padding: 8px 10px; font-size: 12px; line-height: 18px; color: var(--prts-ink-faint); }
 /* Session search field. */
 .sbSearch {
@@ -499,6 +516,11 @@
 .heroSub { display: flex; align-items: center; gap: 10px; }
 .heroSub .rule { width: 44px; height: 1px; background: var(--prts-hairline-strong); }
 .heroReady { font-size: 12px; letter-spacing: 0.26em; color: var(--prts-ink-faint); }
+.heroTagline {
+  margin-top: 2px; font-size: 12px; line-height: 18px;
+  letter-spacing: 0.3em; text-indent: 0.3em; color: var(--prts-ink-dim);
+  font-weight: 400; white-space: nowrap;
+}
 .heroProjectRow { margin-top: 8px; }
 .workspaceBtn {
   display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px;
@@ -596,6 +618,8 @@
   position: absolute; z-index: 80; margin: 0 16px; left: 0; right: 0;
   max-height: 240px; overflow-y: auto;
 }
+.cmdCompletion .popItem.active { background: var(--prts-surface); }
+.cmdCompletion .popItem.active .label { color: var(--prts-ink); }
 
 /* ===== Brand waveform (voice input line effect on the PRTS mark) ===== */
 .brandFx { width: 48px; height: 16px; opacity: 0; transition: opacity 0.2s var(--prts-ease); pointer-events: none; }
@@ -866,6 +890,11 @@ button:focus:not(:focus-visible) { outline: none; }
 </head>
 <body>
 <div id="app" class="frame" data-details-collapsed>
+  <!-- The single sidebar toggle: top-left, always visible. It collapses and
+       re-expands the sidebar and never moves or hides. -->
+  <button class="sbToggleBtn" id="sbToggleBtn" type="button" data-i18n-title="sidebar.collapse" aria-expanded="true" aria-label="Collapse sidebar">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7.8 3.2 4.6 7l3.2 3.8M9.6 3.2 6.4 7l3.2 3.8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
   <aside class="sbCol" id="sbCol">
     <div class="sb bracket">
       <div class="logoRow">
@@ -875,11 +904,16 @@ button:focus:not(:focus-visible) { outline: none; }
           <canvas class="brandFx" id="brandFx" width="48" height="16"></canvas>
         </button>
         <div class="sbActions">
-          <button class="iconBtn" id="themeBtn" type="button" title="Toggle theme">
-            <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1a6.5 6.5 0 1 0 0 13c.4 0 .7-.4.6-.8a2 2 0 0 1 1.6-2.4c3.2-.4 4.9-2.6 4.9-5.3a6.3 6.3 0 0 0-5-4.3A1 1 0 0 1 7.5 1Z" fill="currentColor"/></svg>
-          </button>
-          <button class="iconBtn" id="sbCollapseBtn" type="button" title="Collapse sidebar">
-            <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M8.5 1.5a1 1 0 0 1 .996 1.093l-.009.09L8.83 7.5l.657 4.817a1 1 0 0 1-1.99.246l-.01-.09-.713-5.225a1.5 1.5 0 0 1 0-.496l.713-5.225A1 1 0 0 1 8.5 1.5Z" fill="currentColor"/><path d="M4 3.5a1 1 0 0 1 .993.883L5 4.5v6a1 1 0 0 1-1.993.117L3 10.5v-6a1 1 0 0 1 1-1Z" fill="currentColor"/></svg>
+          <button class="iconBtn themeBtn" id="themeBtn" type="button" data-i18n-title="common.theme" aria-label="Toggle theme">
+            <span class="themeIcons">
+              <svg class="themeSun" width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                <circle cx="7.5" cy="7.5" r="3" stroke="currentColor" stroke-width="1.2"/>
+                <path d="M7.5 1.2v1.4M7.5 12.4v1.4M1.2 7.5h1.4M12.4 7.5h1.4M3 3l1 1M11 11l1 1M12 3l-1 1M4 11l-1 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              </svg>
+              <svg class="themeMoon" width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                <path d="M12.6 9.6A5.4 5.4 0 0 1 5.4 2.4 5.6 5.6 0 1 0 12.6 9.6Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+              </svg>
+            </span>
           </button>
         </div>
       </div>
@@ -986,6 +1020,7 @@ button:focus:not(:focus-visible) { outline: none; }
               <span class="rhombus-lg"></span>
               <span class="heroWord">PRTS</span>
             </div>
+            <div class="heroTagline" id="heroTagline" data-i18n="hero.tagline">欢迎回归，博士</div>
             <div class="heroSub">
               <span class="rule"></span>
               <span class="heroReady" id="heroReady" data-i18n="hero.online">SYSTEM ONLINE</span>
@@ -1030,6 +1065,10 @@ button:focus:not(:focus-visible) { outline: none; }
                 </button>
                 <button class="chip reasoningChip" id="reasoningChip" type="button" hidden data-i18n-title="reasoning.title">
                   <span class="label" id="reasoningChipLabel">—</span>
+                  <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
+                </button>
+                <button class="chip" id="composerPermissionChip" type="button" hidden data-i18n-title="permission.title">
+                  <span class="label" id="composerPermissionChipLabel">—</span>
                   <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
                 </button>
                 <button class="chip" id="commandsChip" type="button">
@@ -1081,10 +1120,6 @@ button:focus:not(:focus-visible) { outline: none; }
   <div class="handle" data-side="details" id="handleDetails"></div>
   <div class="handle" data-side="sidebar" id="handleSidebar"></div>
 </div>
-
-<button class="sbExpandBtn" id="sbExpandBtn" type="button" hidden data-i18n-title="sidebar.expand">
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9.5 1.5 5 7l4.5 5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-</button>
 
 <div class="overlay" id="settingsOverlay">
   <div class="settingsCard">
@@ -1205,6 +1240,9 @@ button:focus:not(:focus-visible) { outline: none; }
       <span class="title" id="modalTitle">PRTS</span>
     </div>
     <input class="sInput" id="modalInput" type="text" spellcheck="false" autocomplete="off">
+    <div class="modalExtra" id="modalExtra" hidden>
+      <button class="sBtn" id="modalBrowseBtn" type="button">浏览…</button>
+    </div>
     <div class="modalActions">
       <button class="sBtn" id="modalCancel" type="button" data-i18n="common.cancel">Cancel</button>
       <button class="sBtn primary" id="modalOk" type="button" data-i18n="common.ok">OK</button>
@@ -1224,7 +1262,7 @@ button:focus:not(:focus-visible) { outline: none; }
 
 <script>
 window.PRTS_MARKET = {
-  "generatedAt": "2026-08-16T06:29:32.238Z",
+  "generatedAt": "2026-08-16T06:41:46.082Z",
   "plugins": [
     {
       "pkg": "@liustack/modlens",
@@ -1360,20 +1398,20 @@ window.PRTS_MARKET = {
       "repo": "git+https://github.com/awesome-dsh-plugin/dsh-find-plugin.git"
     },
     {
-      "name": "@crazy_th/dsh-computer-use",
-      "displayName": "@crazy_th/dsh-computer-use",
-      "description": "Native Windows Computer Use tools for DeepSeek Harness.",
-      "source": "npm",
-      "pkg": "@crazy_th/dsh-computer-use",
-      "repo": "git+https://github.com/ThreeBody6666/dsh-computer-use.git"
-    },
-    {
       "name": "design-playbook",
       "displayName": "design-playbook",
       "description": "Design I/O for coding agents: controllable UI generation via declarations (spec/domain/craft/design/components/template) and contracts (skill/evaluator). Use for product UI—console, dashboard, agent-ops, CJK-first apps.",
       "source": "npm",
       "pkg": "design-playbook",
       "repo": "git+https://github.com/Bandersnatch0x/design-playbook.git"
+    },
+    {
+      "name": "@crazy_th/dsh-computer-use",
+      "displayName": "@crazy_th/dsh-computer-use",
+      "description": "Native Windows Computer Use tools for DeepSeek Harness.",
+      "source": "npm",
+      "pkg": "@crazy_th/dsh-computer-use",
+      "repo": "git+https://github.com/ThreeBody6666/dsh-computer-use.git"
     },
     {
       "name": "dsh-testkit",
@@ -1488,19 +1526,19 @@ window.PRTS_MARKET = {
       "repo": "git+https://github.com/kami-mura/dsh-cost.git"
     },
     {
-      "name": "@deepseek-ai/dsh-headless",
-      "displayName": "@deepseek-ai/dsh-headless",
-      "description": "The dsh one-shot bundle: a direct core Agent/Session runner over dsh-base with no Host, HTTP, or browser layer",
-      "source": "npm",
-      "pkg": "@deepseek-ai/dsh-headless",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
-    },
-    {
       "name": "@deepseek-ai/dsh-skill-badge",
       "displayName": "@deepseek-ai/dsh-skill-badge",
       "description": "Bundled dsh badge skill provider for DeepSeek Harness",
       "source": "npm",
       "pkg": "@deepseek-ai/dsh-skill-badge",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-headless",
+      "displayName": "@deepseek-ai/dsh-headless",
+      "description": "The dsh one-shot bundle: a direct core Agent/Session runner over dsh-base with no Host, HTTP, or browser layer",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-headless",
       "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
     },
     {
@@ -2064,6 +2102,20 @@ window.PRTS_MARKET = {
       'traj.duration': '{d}',
       'log.title': 'Session log',
       'log.export': 'Export',
+      'log.preparing': 'Preparing session log…',
+      'log.started': 'Session log download started',
+      'log.failed': 'Session log export failed: {msg}',
+      'log.fallback': 'ZIP export unavailable — showing raw events',
+
+      'hero.tagline': 'Welcome back, Doctor',
+      'session.created': 'New session created',
+      'session.archivedOne': 'Session archived',
+      'workspace.created': 'Workspace created',
+      'workspace.browse': 'Browse…',
+      'workspace.browseUnavailable': 'Directory picker unavailable on this platform',
+      'workspace.browseNameOnly': 'This browser only reports the folder name — verify the path',
+      'commands.execFailed': 'Command failed: {msg}',
+      'commands.typeHint': 'Commands — press / to autocomplete',
 
       'voice.consent.title': 'Microphone permission',
       'voice.consent.body': 'Voice input captures your microphone and sends audio to the speech recognition backend. Allow PRTS to use the microphone?',
@@ -2376,6 +2428,20 @@ window.PRTS_MARKET = {
       'traj.duration': '{d}',
       'log.title': '会话日志',
       'log.export': '导出',
+      'log.preparing': '正在准备会话日志…',
+      'log.started': '会话日志已开始下载',
+      'log.failed': '会话日志导出失败：{msg}',
+      'log.fallback': 'ZIP 导出不可用 —— 已显示原始事件',
+
+      'hero.tagline': '欢迎回归，博士',
+      'session.created': '已新建会话',
+      'session.archivedOne': '会话已归档',
+      'workspace.created': '工作区已创建',
+      'workspace.browse': '浏览…',
+      'workspace.browseUnavailable': '当前平台不支持目录选择器',
+      'workspace.browseNameOnly': '当前浏览器只能返回文件夹名称 —— 请核对路径',
+      'commands.execFailed': '指令执行失败：{msg}',
+      'commands.typeHint': '指令 —— 输入 / 自动补全',
 
       'voice.consent.title': '麦克风权限',
       'voice.consent.body': '语音输入会采集麦克风音频并发送给语音识别引擎。允许 PRTS 使用麦克风吗？',
@@ -2669,8 +2735,10 @@ window.PRTS_MARKET = {
     throw new Error('dsh: unexpected response');
   }
 
-  /** Invoke an RPC method. Resolves with the business `value`, rejects on error. */
-  async function request(method, payload) {
+  /** Invoke an RPC method. Resolves with the business `value`, rejects on error.
+   *  `opts.timeoutMs` aborts the browser fetch after the given time (the
+   *  Electron bridge cannot abort; it simply stays pending there). */
+  async function request(method, payload, opts) {
     const id = rpcId();
     const env = { type: 'client-request', rpcId: id, method, payload: payload || {} };
     const bridge = dshBridge();
@@ -2678,15 +2746,21 @@ window.PRTS_MARKET = {
       const body = await bridge.request(method, payload || {});
       return parseResponse(id, body);
     }
+    const timeoutMs = opts && opts.timeoutMs;
+    const ac = timeoutMs ? new AbortController() : null;
+    const timer = ac ? setTimeout(() => ac.abort(), timeoutMs) : null;
     let res;
     try {
       res = await fetch(apiUrl(method), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(env),
+        signal: ac ? ac.signal : undefined,
       });
     } catch (e) {
       throw new Error('dsh: network error (' + (e && e.message) + ')');
+    } finally {
+      if (timer) clearTimeout(timer);
     }
     if (!res.ok) throw new Error('dsh: HTTP ' + res.status);
     return parseResponse(id, await res.json().catch(() => null));
@@ -2901,6 +2975,7 @@ window.PRTS_MARKET = {
     url: 'http://127.0.0.1:3085',
     workspaces: [],
     sessions: [],       // raw session.list items (projections included)
+    archivedSessionIds: [],  // workspace.list archive set (session.list does NOT filter it)
     models: [],         // provider groups: { id, name, models: [...] }
     providers: [],      // { provider, displayName, active, ... }
     currentWorkspaceId: null,
@@ -2940,12 +3015,16 @@ window.PRTS_MARKET = {
   async function listWorkspaces() {
     const r = await P.dsh.request('workspace.list', {});
     S.workspaces = (r && r.items) || [];
+    // dsh keeps the archive set on workspace.list only — session.list still
+    // returns archived sessions, so PRTS filters them client-side here.
+    if (Array.isArray(r && r.archivedSessionIds)) S.archivedSessionIds = r.archivedSessionIds;
     return S.workspaces;
   }
 
   async function listSessions() {
     const r = await P.dsh.request('session.list', {});
-    S.sessions = (r && r.items) || [];
+    const archived = new Set(S.archivedSessionIds);
+    S.sessions = ((r && r.items) || []).filter((s) => !archived.has(s.sessionId));
     return S.sessions;
   }
 
@@ -3014,7 +3093,10 @@ window.PRTS_MARKET = {
   }
 
   async function refreshAll() {
-    await Promise.allSettled([listWorkspaces(), listSessions(), listModels(), listProviders(), listPresets()]);
+    // Workspaces must load before sessions: the archive set from
+    // workspace.list is what filters archived sessions out of the list.
+    await listWorkspaces().catch(() => {});
+    await Promise.allSettled([listSessions(), listModels(), listProviders(), listPresets()]);
   }
 
   /** The open session's exact model selection (session.models.current). */
@@ -3080,6 +3162,12 @@ window.PRTS_MARKET = {
   async function archiveSession(sessionId) {
     // dsh has no session.delete — sessions are archived from their workspace.
     await P.dsh.request('workspace.archiveSession', { sessionId });
+    // The wire session.list does not filter archived sessions, so keep the
+    // archive set locally and drop the row immediately (the sidebar must
+    // reflect the deletion without waiting on any other refresh).
+    if (S.archivedSessionIds.indexOf(sessionId) < 0) S.archivedSessionIds.push(sessionId);
+    S.sessions = S.sessions.filter((s) => s.sessionId !== sessionId);
+    return S.archivedSessionIds;
   }
 
   /** Archive several sessions (bulk delete). Returns the first error, if any. */
@@ -3132,8 +3220,14 @@ window.PRTS_MARKET = {
     return url;
   }
 
-  /** Apply a permission preset through dsh's `/permission` slash command. */
+  /** Apply a permission preset through dsh's `/permission` command. The
+   *  commands/execute RPC is the same path dsh web uses; older builds without
+   *  the RPC fall back to queuing the slash line as a prompt. */
   async function setPermissionPreset(sessionId, preset) {
+    try {
+      const out = await executeCommand(sessionId, '/permission ' + preset);
+      if (out && out.admitted) return out;
+    } catch (e) { /* fall back below */ }
     return P.dsh.request('session.prompt', {
       sessionId,
       mode: 'queue',
@@ -3160,15 +3254,18 @@ window.PRTS_MARKET = {
     return P.dsh.request('credentials.unset', { ref });
   }
 
-  /** Commands known to this session. dsh does not expose a command-list RPC on
-   *  the /api wire, so PRTS builds the directory from the session's own
-   *  `command/run` events plus well-known built-ins, and refreshes it as the
-   *  history grows. */
+  /** Commands known to this session. Current dsh builds expose the real
+   *  command directory over the `commands/list` RPC (the same source the dsh
+   *  web GUI uses — it includes every plugin-extended command). Older builds
+   *  without the RPC fall back to the session's own `command/run` events plus
+   *  well-known built-ins. Results are cached briefly so slash-autocomplete
+   *  doesn't hammer the wire on every keystroke. */
   const KNOWN_COMMANDS = [
     { name: 'permission', description: 'permission preset (sandbox + approvals)' },
     { name: 'plan', description: 'plan mode' },
   ];
-  async function commandsList(sessionId, events) {
+  const commandCache = new Map();   // sessionId -> { at, list }
+  function buildLocalCommands(events) {
     const names = new Map();
     for (const c of KNOWN_COMMANDS) names.set(c.name, c.description || '');
     const evs = Array.isArray(events) ? events : S.events;
@@ -3179,6 +3276,69 @@ window.PRTS_MARKET = {
       }
     }
     return [...names.entries()].map(([name, description]) => ({ name, description }));
+  }
+  async function commandsList(sessionId, events) {
+    if (!sessionId) return buildLocalCommands(events);
+    const hit = commandCache.get(sessionId);
+    if (hit && Date.now() - hit.at < 4000) return hit.list;
+    let list;
+    try {
+      const r = await P.dsh.request('commands/list', { args: { agentId: sessionId } });
+      const wire = Array.isArray(r) ? r : [];
+      // Merge the built-ins the harness knows but may not list yet.
+      const names = new Set();
+      const out = [];
+      for (const c of wire) {
+        if (!c || !c.name || names.has(c.name)) continue;
+        names.add(c.name);
+        out.push({ name: c.name, description: c.description || '' });
+      }
+      for (const c of buildLocalCommands(events)) {
+        if (names.has(c.name)) continue;
+        names.add(c.name);
+        out.push(c);
+      }
+      list = out;
+    } catch (e) {
+      list = buildLocalCommands(events);
+    }
+    commandCache.set(sessionId, { at: Date.now(), list });
+    return list;
+  }
+  function invalidateCommands() { commandCache.clear(); }
+
+  /** Execute a slash line through the host command executor (the same path
+   *  dsh web's composer uses). Resolves { admitted: false } when the host
+   *  does not know the command (or the RPC is unavailable). */
+  async function executeCommand(sessionId, line) {
+    const r = await P.dsh.request('commands/execute', { args: { agentId: sessionId, line } });
+    if (r === undefined || r === null) return { admitted: false };
+    return { admitted: true, commandId: r.commandId || null, result: r.result || null };
+  }
+
+  /** Native directory picker (dsh web's workspace-browse path). Resolves the
+   *  chosen path, or null when the user cancelled. */
+  async function pickDirectory() {
+    const r = await P.dsh.request('host.pickDirectory', {}, { timeoutMs: 30000 });
+    return (r && r.path) || null;
+  }
+
+  /** dsh web's Session log endpoint: the ZIP archive download URL. */
+  function sessionLogUrl(sessionId) {
+    return S.url.replace(/\/+$/, '') + '/api/session.export?sessionId=' +
+      encodeURIComponent(sessionId) + '&includeDescendants=true';
+  }
+
+  /** Product display label for a permission preset (mirrors dsh web:
+   *  danger-full-access → "Full access", kebab names → Title Case). */
+  function permissionDisplayName(o) {
+    if (!o) return '';
+    if (o.value === 'danger-full-access') return 'Full access';
+    const n = String(o.name || o.value || '');
+    if (/^[a-z0-9]+(-[a-z0-9]+)*$/.test(n)) {
+      return n.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
+    return n;
   }
 
   // Host version (Settings -> Version) straight from dsh, not from PRTS.
@@ -3234,6 +3394,11 @@ window.PRTS_MARKET = {
   S.credentialsSet = credentialsSet;
   S.credentialsUnset = credentialsUnset;
   S.commandsList = commandsList;
+  S.invalidateCommands = invalidateCommands;
+  S.executeCommand = executeCommand;
+  S.pickDirectory = pickDirectory;
+  S.sessionLogUrl = sessionLogUrl;
+  S.permissionDisplayName = permissionDisplayName;
   S.agentPresetSelect = function (sessionId, agentPreset) {
     return P.dsh.request('agentPreset.select', { sessionId, agentPreset });
   };
@@ -3265,9 +3430,17 @@ window.PRTS_MARKET = {
             y: -((y / ch) * 2 - 1),
             a: 0.35 + 0.65 * Math.random(),
           });
-          if (pts.length >= maxPoints) return pts;
         }
       }
+    }
+    // Cover the WHOLE glyph area — the old early return truncated long text
+    // mid-character (the "half character" bug). When there are more sampled
+    // points than particles, thin them out uniformly instead of cutting.
+    if (pts.length > maxPoints) {
+      const stride = pts.length / maxPoints;
+      const out = [];
+      for (let i = 0; i < maxPoints; i++) out.push(pts[Math.floor(i * stride)]);
+      return out;
     }
     return pts;
   }
@@ -5257,6 +5430,7 @@ window.PRTS_MARKET = {
         P.app.toast(t('session.createFail'));
         return;
       }
+      C.sessionId = id;
     }
     const input = $('composerInput');
     if (input) input.value = '';
@@ -5267,6 +5441,9 @@ window.PRTS_MARKET = {
     C.streaming = true;
     swapSendStop(true);
     if (C.onStreaming) { try { C.onStreaming(true); } catch (e) { /* noop */ } }
+    // Sending from the welcome screen starts the conversation: leave the
+    // hero (dsh web behaviour) so the stream is visible.
+    if (P.app && P.app.enterChat) P.app.enterChat();
     try {
       await P.dshState.prompt(C.sessionId, content);
       // The mux delivers the events; the prompt only needs to be accepted.
@@ -5374,10 +5551,27 @@ window.PRTS_MARKET = {
         }
         e.preventDefault();
         const v = input.value.trim();
-        if (v) send(v);
+        if (!v) return;
+        // A leading '/' is a command: run it through the host command
+        // executor (dsh web's path). Unknown commands fall back to a
+        // normal message so the line is never lost.
+        if (v[0] === '/') { tryCommandLine(v); return; }
+        send(v);
       } else if (e.key === 'Tab' && cmdCompletion) {
         e.preventDefault();
         completeCommand();
+      } else if (e.key === 'ArrowDown' && cmdCompletion && cmdCompletion.length) {
+        e.preventDefault();
+        cmdActive = Math.min(cmdCompletion.length - 1, cmdActive + 1);
+        renderCompletion();
+      } else if (e.key === 'ArrowUp' && cmdCompletion && cmdCompletion.length) {
+        e.preventDefault();
+        cmdActive = Math.max(0, cmdActive - 1);
+        renderCompletion();
+      } else if (e.key === 'Escape' && cmdCompletion) {
+        e.preventDefault();
+        cmdCompletion = null;
+        hideCompletion();
       }
     });
     $('composerExpand').addEventListener('click', toggleExpand);
@@ -5399,21 +5593,24 @@ window.PRTS_MARKET = {
 
   /* ---------- slash-command auto-detection ---------- */
   let cmdCompletion = null;   // [{name, description}]
+  let cmdActive = 0;
   let composeToken = 0;
   function onComposeChange() {
     const token = ++composeToken;
     const input = $('composerInput');
     const v = input.value;
-    // Only when the very first char is '/', with no space yet.
-    if (v.length > 1 && v[0] === '/' && v.indexOf(' ') === -1) {
+    // Command mode: the very first char is '/', with no space yet. A bare
+    // '/' lists every command (host directory incl. plugin-extended ones).
+    if (v[0] === '/' && v.indexOf(' ') === -1) {
       const partial = v.slice(1).toLowerCase();
       if (!P.dshState.currentSessionId) return;
       P.dshState.commandsList(P.dshState.currentSessionId).then((cmds) => {
         if (token !== composeToken) return;   // stale keystroke
-        const matches = cmds.filter((c) => c.name.toLowerCase().indexOf(partial) === 0);
+        const matches = cmds.filter((c) => String(c.name || '').toLowerCase().indexOf(partial) === 0);
         if (matches.length) {
           cmdCompletion = matches;
-          showCompletion(matches);
+          cmdActive = 0;
+          renderCompletion();
         } else { cmdCompletion = null; hideCompletion(); }
       }).catch(() => { if (token === composeToken) { cmdCompletion = null; hideCompletion(); } });
     } else {
@@ -5421,7 +5618,7 @@ window.PRTS_MARKET = {
       hideCompletion();
     }
   }
-  function showCompletion(matches) {
+  function showCompletion() {
     let pop = $('cmdCompletionPop');
     if (!pop) {
       pop = document.createElement('div');
@@ -5429,15 +5626,35 @@ window.PRTS_MARKET = {
       pop.className = 'pop cmdCompletion';
       $('composerArea').appendChild(pop);
     }
-    pop.innerHTML = matches.slice(0, 6).map((c) => '<div class="popItem" data-name="' + c.name + '"><span class="label">/' + c.name + '</span></div>').join('');
-    pop.style.display = 'block';
-    pop.style.bottom = '';
     const composer = $('composerCard');
     const r = composer.getBoundingClientRect();
     pop.style.bottom = (window.innerHeight - r.top + 8) + 'px';
     pop.style.left = '0';
     pop.style.right = '0';
     pop.style.maxWidth = '420px';
+    pop.style.display = 'block';
+  }
+  function renderCompletion() {
+    const pop = $('cmdCompletionPop');
+    if (!pop || !cmdCompletion || !cmdCompletion.length) { hideCompletion(); return; }
+    showCompletion();
+    pop.innerHTML = cmdCompletion.slice(0, 7).map((c, i) =>
+      '<div class="popItem' + (i === cmdActive ? ' active' : '') + '" data-name="' + esc(c.name) + '" data-i="' + i + '">' +
+      '<span class="label">/' + esc(c.name) + '</span>' +
+      (c.description ? '<span class="desc">' + esc(c.description) + '</span>' : '') +
+      '</div>'
+    ).join('');
+    for (const row of pop.querySelectorAll('.popItem')) {
+      row.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        cmdActive = Number(row.dataset.i || 0);
+        completeCommand();
+      });
+      row.addEventListener('mouseenter', () => {
+        cmdActive = Number(row.dataset.i || 0);
+        pop.querySelectorAll('.popItem').forEach((x, i) => x.classList.toggle('active', i === cmdActive));
+      });
+    }
   }
   function hideCompletion() {
     const pop = $('cmdCompletionPop');
@@ -5446,7 +5663,7 @@ window.PRTS_MARKET = {
   function completeCommand() {
     const input = $('composerInput');
     if (!cmdCompletion || !cmdCompletion.length) return;
-    const first = cmdCompletion[0];
+    const first = cmdCompletion[Math.min(cmdActive, cmdCompletion.length - 1)] || cmdCompletion[0];
     input.value = '/' + first.name + ' ';
     cmdCompletion = null;
     hideCompletion();
@@ -5455,8 +5672,38 @@ window.PRTS_MARKET = {
     scrollInputBottom();
   }
 
+  /** Execute a slash line through the host command executor; fall back to a
+   *  normal message when the host doesn't know the command. */
+  async function tryCommandLine(line) {
+    if (!C.sessionId) {
+      const id = await P.app.ensureSession();
+      if (!id) { P.app.toast(t('session.createFail')); return; }
+      C.sessionId = id;
+    }
+    const input = $('composerInput');
+    let admitted = false;
+    let errText = null;
+    try {
+      const out = await P.dshState.executeCommand(C.sessionId, line);
+      admitted = !!(out && out.admitted);
+      if (admitted && out.result && out.result.kind === 'error' && out.result.text) errText = out.result.text;
+    } catch (e) {
+      admitted = false;
+    }
+    if (admitted) {
+      if (input) input.value = '';
+      updateSend();
+      if (errText) P.app.toast(t('commands.execFailed', { msg: errText }));
+    } else {
+      // Unknown or transport failure — never lose the line.
+      if (input) input.value = '';
+      send(line);
+    }
+  }
+
   C.send = send;
   C.stop = stop;
+  C.tryCommandLine = tryCommandLine;
   C.renderFlow = renderFlow;
   C.renderTimeline = renderTimeline;
   C.renderLog = renderLog;
@@ -5529,7 +5776,8 @@ window.PRTS_MARKET = {
   /* ---------- PRTS modal (replaces window.prompt / window.confirm, which
      Electron disables) ---------- */
   let modalResolve = null;
-  function openModal(kind, title, placeholder, labels) {
+  let modalBrowseCb = null;
+  function openModal(kind, title, placeholder, labels, opts) {
     const ov = $('modalOverlay');
     $('modalTitle').textContent = title;
     const input = $('modalInput');
@@ -5539,6 +5787,15 @@ window.PRTS_MARKET = {
     $('modalOk').textContent = (labels && labels.ok) || A.t('common.ok');
     $('modalCancel').textContent = (labels && labels.cancel) || A.t('common.cancel');
     $('modalCancel').hidden = kind === 'alert';
+    const extra = $('modalExtra');
+    if (opts && typeof opts.onBrowse === 'function') {
+      modalBrowseCb = opts.onBrowse;
+      $('modalBrowseBtn').textContent = opts.browseLabel || '…';
+      extra.hidden = false;
+    } else {
+      modalBrowseCb = null;
+      extra.hidden = true;
+    }
     ov.classList.add('open');
     if (kind === 'prompt') setTimeout(() => input.focus(), 40);
     return new Promise((resolve) => { modalResolve = resolve; });
@@ -5594,13 +5851,13 @@ window.PRTS_MARKET = {
     try {
       await P.dshState.archiveSessions(ids);
       A.selectedSessions.clear();
+      const clearedCurrent = P.dshState.currentSessionId && ids.indexOf(P.dshState.currentSessionId) >= 0;
+      if (clearedCurrent) P.dshState.currentSessionId = null;
       await refreshSessions();
-      if (P.dshState.currentSessionId && ids.indexOf(P.dshState.currentSessionId) >= 0) {
-        P.dshState.currentSessionId = null;
-        P.chat.messages = [];
-        P.chat.renderFlow();
-        A.toast(A.t('session.archivedSelected', { n: ids.length }));
-      }
+      await P.dshState.listWorkspaces().catch(() => {});
+      renderWorkspaces();
+      if (clearedCurrent) A.enterHero();
+      A.toast(A.t('session.archivedSelected', { n: ids.length }));
     } catch (e) { A.toast(e.message); }
   }
 
@@ -5744,24 +6001,51 @@ window.PRTS_MARKET = {
   }
 
   async function newSession() {
-    const wsId = P.dshState.currentWorkspaceId;
-    const id = await P.dshState.createSession(wsId, A.currentPreset || undefined);
-    if (id) {
-      await refreshSessions();
-      await selectSession(id);
+    try {
+      const wsId = P.dshState.currentWorkspaceId;
+      const id = await P.dshState.createSession(wsId, A.currentPreset || undefined);
+      if (id) {
+        // dsh web behaviour: a fresh session lands on the welcome screen
+        // (logo + tagline), with the composer ready to take the first line.
+        P.dshState.currentSessionId = id;
+        if (A.currentPreset) $('headerMode').textContent = presetLabel(A.currentPreset);
+        await refreshSessions();
+        P.dshState.permissions = P.dshState.permissionState(id);
+        updatePermissionChip();
+        if (A.refreshPermissionPop) A.refreshPermissionPop();
+        A.enterHero();
+        renderSessions();
+        updateCrumb();
+        updateMeter();
+        renderStatsDock();
+        A.toast(A.t('session.created'));
+        try { await P.dshState.sessionModels(id); } catch (e) { /* model catalog may be warming up */ }
+        updateModelChip();
+        updateReasoningChip();
+      }
+    } catch (e) {
+      A.toast(A.t('session.createFail') + ' — ' + String(e && e.message ? e.message : e));
     }
   }
 
   async function archiveSession(id) {
     const ok = await A.askConfirm(A.t('session.confirmArchive'));
     if (!ok) return;
-    await P.dshState.archiveSession(id);
-    await refreshSessions();
-    if (P.dshState.currentSessionId === id) {
-      P.dshState.currentSessionId = null;
-      P.chat.messages = [];
-      P.chat.renderFlow();
+    try {
+      await P.dshState.archiveSession(id);
+    } catch (e) {
+      A.toast(String(e && e.message || e));
+      return;
     }
+    await refreshSessions();
+    await P.dshState.listWorkspaces().catch(() => {});
+    renderWorkspaces();
+    if (P.dshState.currentSessionId === id) {
+      // The open session was deleted — return to the welcome screen.
+      P.dshState.currentSessionId = null;
+      A.enterHero();
+    }
+    A.toast(A.t('session.archivedOne'));
   }
 
   async function deleteWorkspace(id) {
@@ -5769,14 +6053,57 @@ window.PRTS_MARKET = {
     if (!ok) return;
     await P.dshState.deleteWorkspace(id);
     await refreshAll();
+    // The open session may have died with its workspace — land on the hero.
+    if (P.dshState.currentSessionId && !P.dshState.sessionSummary(P.dshState.currentSessionId)) {
+      P.dshState.currentSessionId = null;
+      A.enterHero();
+    }
+  }
+
+  async function browseWorkspacePath() {
+    const input = $('modalInput');
+    if (!input) return;
+    try {
+      const path = await P.dshState.pickDirectory();
+      if (path) { input.value = path; input.focus(); }
+    } catch (e) {
+      // Non-Electron / picker-less hosts: fall back to the browser-native
+      // directory picker where it exists (Chromium).
+      try {
+        if (typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function') {
+          const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+          if (handle) {
+            input.value = handle.name;
+            input.focus();
+            A.toast(A.t('workspace.browseNameOnly'));
+            return;
+          }
+        }
+      } catch (e2) { /* user cancelled — stay silent */ return; }
+      A.toast(A.t('workspace.browseUnavailable'));
+    }
   }
 
   async function newWorkspace() {
-    const path = await A.askPrompt(A.t('workspace.pathPrompt'), '/path/to/project');
+    const path = await A.askPrompt(A.t('workspace.pathPrompt'), '/path/to/project', {
+      browseLabel: A.t('workspace.browse'),
+      onBrowse: browseWorkspacePath,
+    });
     if (!path || !path.trim()) return;
     try {
-      await P.dshState.createWorkspace(path.trim());
+      const r = await P.dshState.createWorkspace(path.trim());
       await refreshAll();
+      const createdId = r && r.workspace && r.workspace.workspaceId;
+      if (createdId) P.dshState.currentWorkspaceId = createdId;
+      else {
+        const ws = P.dshState.workspaces.find((w) => w.path === path.trim());
+        if (ws) P.dshState.currentWorkspaceId = ws.workspaceId;
+      }
+      renderWorkspaces();
+      updateCrumb();
+      // dsh web behaviour: a fresh workspace lands on the welcome screen.
+      A.enterHero();
+      A.toast(A.t('workspace.created'));
     } catch (e) {
       A.toast(e.message);
     }
@@ -5854,17 +6181,20 @@ window.PRTS_MARKET = {
     chip.title = A.t('reasoning.title');
   }
 
-  /* ---------- permission chip ---------- */
+  /* ---------- permission chip (header + composer) ---------- */
   function updatePermissionChip() {
-    const chip = $('permissionChip');
-    const label = $('permissionChipLabel');
-    if (!chip || !label) return;
     const st = P.dshState.permissions;
-    if (!st || !st.options || !st.options.length) { chip.hidden = true; return; }
-    chip.hidden = false;
-    const cur = st.options.find((o) => o.value === st.currentValue);
-    label.textContent = cur ? (cur.name || cur.value) : (st.currentValue || '—');
-    chip.title = A.t('permission.title');
+    const has = !!(st && st.options && st.options.length);
+    const cur = has ? st.options.find((o) => o.value === st.currentValue) : null;
+    const label = has ? P.dshState.permissionDisplayName(cur || st.options[0]) : '—';
+    for (const [chipId, labelId] of [['permissionChip', 'permissionChipLabel'], ['composerPermissionChip', 'composerPermissionChipLabel']]) {
+      const chip = $(chipId);
+      const el = $(labelId);
+      if (!chip || !el) continue;
+      chip.hidden = !has;
+      el.textContent = label;
+      chip.title = A.t('permission.title');
+    }
   }
 
   /* ---------- session stats dock (turns · steps / LLM · tools / TTFT · tok/s / cache / tokens) ---------- */
@@ -6243,13 +6573,35 @@ window.PRTS_MARKET = {
   /* ---------- phase / tabs ---------- */
   A.enterChat = function () {
     A.heroVisible = false;
+    if (A.heroEngine) { A.heroEngine.stop(); A.heroEngine = null; }
     const cvt = $('cvt');
     cvt.dataset.phase = 'active';
     $('header').hidden = false;
     $('heroView').hidden = true;
     $('chatScroll').hidden = false;
-    if (A.heroEngine) A.heroEngine.stop();
     switchView('chat');
+  };
+  // Welcome screen (dsh web's logo view): the diamond + italic PRTS wordmark
+  // with the tagline, ambient particles, and the composer ready below.
+  A.enterHero = function () {
+    A.heroVisible = true;
+    if (A.heroEngine) { A.heroEngine.stop(); A.heroEngine = null; }
+    // Keep the composer's session pointer in sync: sending from the welcome
+    // screen must address the freshly created/selected session, not null.
+    P.chat.sessionId = P.dshState.currentSessionId || null;
+    P.chat.messages = [];
+    P.chat.renderFlow();
+    const cvt = $('cvt');
+    cvt.dataset.phase = 'hero';
+    $('header').hidden = true;
+    $('heroView').hidden = false;
+    $('chatScroll').hidden = true;
+    const traj = $('trajView');
+    if (traj) traj.hidden = true;
+    const composer = $('composerArea');
+    if (composer) composer.style.display = '';
+    document.querySelectorAll('.tab').forEach((b) => b.classList.toggle('active', b.dataset.view === 'chat'));
+    startHeroAmbient();
   };
   function switchView(view) {
     const chat = $('chatScroll');
@@ -6343,9 +6695,14 @@ window.PRTS_MARKET = {
   }
   function toggleSidebar() {
     const collapsed = appEl().classList.toggle('sbCollapsed');
+    // Restoring always returns to the previous width (the "original position").
     appEl().style.setProperty('--dsh-sb', collapsed ? '0px' : A_.sbWidth + 'px');
-    const expand = $('sbExpandBtn');
-    if (expand) expand.hidden = !collapsed;
+    const btn = $('sbToggleBtn');
+    if (btn) {
+      btn.title = A.t(collapsed ? 'sidebar.expand' : 'sidebar.collapse');
+      btn.setAttribute('aria-expanded', String(!collapsed));
+      btn.setAttribute('aria-label', A.t(collapsed ? 'sidebar.expand' : 'sidebar.collapse'));
+    }
     placeHandles();
   }
 
@@ -6419,7 +6776,7 @@ window.PRTS_MARKET = {
     const st = P.dshState.permissions;
     if (!st || !st.options || !st.options.length) return '<div class="popMeta">' + A.t('permission.none') + '</div>';
     return st.options.map((o) =>
-      '<div class="popItem' + (o.value === st.currentValue ? ' selected' : '') + '" data-permission="' + o.value + '"><span class="label">' + (o.name || o.value) + '</span><span class="tick">&#10003;</span></div>'
+      '<div class="popItem' + (o.value === st.currentValue ? ' selected' : '') + '" data-permission="' + o.value + '"><span class="label">' + P.dshState.permissionDisplayName(o) + '</span><span class="tick">&#10003;</span></div>'
     ).join('');
   }
 
@@ -6458,23 +6815,37 @@ window.PRTS_MARKET = {
     A.reasoningPop = reasoningPop;
     A.refreshReasoningPop = () => { reasoningPop.innerHTML = buildReasoningPop(); };
 
-    const permissionPop = attachPop($('permissionChip'), buildPermissionPop(), async (item) => {
-      if (!item.dataset.permission) return;
+    async function applyPermissionPreset(value) {
       if (!P.dshState.currentSessionId) { A.toast(A.t('session.selectFirst')); return; }
+      const st = P.dshState.permissions;
+      const opt = st && st.options ? st.options.find((o) => o.value === value) : null;
+      const label = opt ? P.dshState.permissionDisplayName(opt) : value;
       try {
-        await P.dshState.setPermissionPreset(P.dshState.currentSessionId, item.dataset.permission);
+        await P.dshState.setPermissionPreset(P.dshState.currentSessionId, value);
         closePops();
-        A.toast(A.t('permission.applying', { preset: item.dataset.permission }));
+        A.toast(A.t('permission.applying', { preset: label }));
         setTimeout(async () => {
           await P.dshState.listSessions();
           P.dshState.permissions = P.dshState.permissionState(P.dshState.currentSessionId);
           updatePermissionChip();
         }, 1200);
       } catch (e) { A.toast(e.message); }
-    });
-    A.permissionPop = permissionPop;
-    A.refreshPermissionPop = () => { permissionPop.innerHTML = buildPermissionPop(); };
-    $('permissionChip').addEventListener('click', () => { A.refreshPermissionPop(); });
+    }
+    // The permission selector lives in two places — the header chip and the
+    // composer chip under the input (dsh web shows it there too).
+    const permissionPops = [];
+    for (const triggerId of ['permissionChip', 'composerPermissionChip']) {
+      const trigger = $(triggerId);
+      if (!trigger) continue;
+      const pop = attachPop(trigger, buildPermissionPop(), async (item) => {
+        if (item.dataset.permission) await applyPermissionPreset(item.dataset.permission);
+      });
+      permissionPops.push(pop);
+      trigger.addEventListener('click', () => { pop.innerHTML = buildPermissionPop(); });
+    }
+    A.refreshPermissionPop = () => {
+      for (const pop of permissionPops) pop.innerHTML = buildPermissionPop();
+    };
 
     // Work modes = dsh's own agent presets (the same set dsh web offers).
     // dsh locks the preset once a session has started (`agent-preset-locked`),
@@ -6549,10 +6920,11 @@ window.PRTS_MARKET = {
     A.cmdPop = cmdPop;
     A.refreshCmdPop = async () => {
       if (!P.dshState.currentSessionId) { cmdPop.innerHTML = '<div class="popMeta">' + A.t('session.selectFirst') + '</div>'; return; }
+      const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
       try {
         const cmds = await P.dshState.commandsList(P.dshState.currentSessionId);
         cmdPop.innerHTML = cmds.length
-          ? cmds.map((c) => '<div class="popItem" data-name="' + c.name + '"><span class="label">/' + c.name + '</span><span class="desc">' + (c.description || '') + '</span></div>').join('')
+          ? cmds.map((c) => '<div class="popItem" data-name="' + esc(c.name) + '"><span class="label">/' + esc(c.name) + '</span><span class="desc">' + esc(c.description || '') + '</span></div>').join('')
           : '<div class="popMeta">' + A.t('commands.none') + '</div>';
       } catch (e) {
         cmdPop.innerHTML = '<div class="popMeta">' + A.t('commands.none') + '</div>';
@@ -6757,12 +7129,15 @@ window.PRTS_MARKET = {
     }, 1000);
   }
 
+  let heroPointerBound = false;
   function startHeroAmbient() {
     const cv = $('heroCanvas');
     if (A.heroEngine) { A.heroEngine.stop(); A.heroEngine = null; }
     A.heroEngine = P.particles.create(cv, { count: 1600, speedRange: [0.006, 0.02] });
     A.heroEngine.start();
     A.heroEngine.scatter();
+    if (heroPointerBound) return;
+    heroPointerBound = true;
     cv.addEventListener('pointermove', (e) => {
       const r = cv.getBoundingClientRect();
       A.heroEngine.onMouse(e.clientX - r.left, e.clientY - r.top);
@@ -6922,8 +7297,7 @@ window.PRTS_MARKET = {
     if (P.system && P.system.bind) P.system.bind();
 
     $('themeBtn').addEventListener('click', A.toggleTheme);
-    $('sbCollapseBtn').addEventListener('click', toggleSidebar);
-    $('sbExpandBtn').addEventListener('click', toggleSidebar);
+    $('sbToggleBtn').addEventListener('click', toggleSidebar);
     $('sessionSelectBtn').addEventListener('click', toggleSelecting);
     $('sessionBulkArchive').addEventListener('click', archiveSelected);
     $('sessionBulkAll').addEventListener('click', () => {
@@ -6935,7 +7309,6 @@ window.PRTS_MARKET = {
       updateBulkBar();
     });
     $('sessionBulkCancel').addEventListener('click', () => setSelecting(false));
-    $('sbCollapseBtn').addEventListener('click', toggleSidebar);
     $('clearHistoryBtn').addEventListener('click', async () => {
       const ok = await A.askConfirm(A.t('session.confirmArchive'));
       if (!ok) return;
@@ -7005,15 +7378,48 @@ window.PRTS_MARKET = {
     document.querySelectorAll('.tab').forEach((b) => {
       b.addEventListener('click', () => switchView(b.dataset.view));
     });
-    // Session log: a separate raw-event overlay (distinct from the tab).
-    $('logBtn').addEventListener('click', () => {
+    // Session log — dsh web's Session log downloads the ZIP archive from
+    // `/api/session.export`; PRTS mirrors that, and falls back to the
+    // raw-event overlay on older dsh builds without the endpoint.
+    async function downloadSessionLog() {
+      const sid = P.dshState.currentSessionId;
+      if (!sid) { A.toast(A.t('session.selectFirst')); return; }
+      const url = P.dshState.sessionLogUrl(sid);
+      A.toast(A.t('log.preparing'));
+      const bridge = (typeof window !== 'undefined' && window.prts && window.prts.bridge) || null;
+      if (bridge && typeof bridge.download === 'function') {
+        try {
+          const r = await bridge.download(url);
+          if (r && r.ok === false) throw new Error(r.error || 'download failed');
+          A.toast(A.t('log.started'));
+        } catch (e) {
+          A.toast(A.t('log.failed', { msg: String(e && e.message || e) }));
+        }
+        return;
+      }
+      try {
+        const res = await fetch(url, { method: 'HEAD' });
+        if (res.ok) {
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'dsh-session-' + String(sid).replace(/[^A-Za-z0-9_-]/g, '_') + '.zip';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          A.toast(A.t('log.started'));
+          return;
+        }
+      } catch (e) { /* fall through to the raw overlay */ }
       P.chat.renderLog();
       $('logOverlay').classList.add('open');
-    });
+      A.toast(A.t('log.fallback'));
+    }
+    $('logBtn').addEventListener('click', downloadSessionLog);
     $('logClose').addEventListener('click', () => $('logOverlay').classList.remove('open'));
     $('logExport').addEventListener('click', () => P.chat.exportLog());
 
     // Modal (prompt / confirm).
+    $('modalBrowseBtn').addEventListener('click', () => { if (modalBrowseCb) modalBrowseCb(); });
     $('modalOk').addEventListener('click', () => {
       const input = $('modalInput');
       const value = input.hidden ? true : input.value;
@@ -7080,6 +7486,9 @@ window.PRTS_MARKET = {
     runIntro();
 
     P.dsh.on('connect', () => { refreshAll().catch(() => { /* dsh may still be warming up */ }); });
+    // The host command directory changed (plugin added/removed a command) —
+    // drop the cached directory so the chip and autocomplete repull.
+    P.dsh.on('commands/change', () => { if (P.dshState.invalidateCommands) P.dshState.invalidateCommands(); });
     // Live projection frames → stats dock, permission chip and meter.
     P.dsh.on('session/projection', (frame) => {
       const pl = frame.payload || {};
@@ -7128,7 +7537,9 @@ window.PRTS_MARKET = {
 
   // Make sure a session is open so the composer, model switch and mode switch
   // all work immediately. Selects the first workspace, then the most recent
-  // session, and creates a blank one when none exists.
+  // session, and creates a blank one when none exists. A freshly created
+  // session lands on the welcome screen (dsh web behaviour); an existing
+  // session opens the chat directly.
   A.ensureSession = async function () {
     if (P.dshState.currentSessionId) return P.dshState.currentSessionId;
     if (!P.dshState.currentWorkspaceId && P.dshState.workspaces.length) {
@@ -7140,8 +7551,9 @@ window.PRTS_MARKET = {
     }
     const id = await P.dshState.createSession(P.dshState.currentWorkspaceId || undefined);
     if (!id) return null;
+    P.dshState.currentSessionId = id;
     await refreshSessions();
-    await selectSession(id);
+    A.enterHero();
     return id;
   };
 

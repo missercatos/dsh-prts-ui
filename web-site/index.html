@@ -147,6 +147,13 @@
   let raf = 0, t0 = 0;
   let running = false;
 
+  // Camera state: the whole point-cloud sways with the mouse (translation +
+  // a hint of rotation). Smoothed so the motion reads as a camera, not as a
+  // jitter. recoverBoost snaps particles back to their targets fast after
+  // the mouse leaves (the repulsion hole closes quickly, nothing is lost).
+  let cam = { x: 0, y: 0, rot: 0 };
+  let recoverUntil = 0;
+
   const ink = () => getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() || '#FAFAFA';
 
   function resize() {
@@ -177,9 +184,18 @@
       for (let x = 0; x < cw; x += step) {
         if (data[(y * cw + x) * 4 + 3] > 128) {
           pts.push({ x: (x / cw) * 2 - 1, y: -((y / ch) * 2 - 1), a: 0.35 + 0.65 * Math.random() });
-          if (pts.length >= maxPoints) return pts;
         }
       }
+    }
+    // Cover the WHOLE glyph area: the old early-return truncated long text
+    // mid-character (the "half character" bug — one half of a glyph never
+    // formed, the rest reappeared in the next image). When there are more
+    // points than particles, thin them out uniformly instead of cutting.
+    if (pts.length > maxPoints) {
+      const stride = pts.length / maxPoints;
+      const out = [];
+      for (let i = 0; i < maxPoints; i++) out.push(pts[Math.floor(i * stride)]);
+      return out;
     }
     return pts;
   }
@@ -239,8 +255,21 @@
 
   function step() {
     const dt = (performance.now() - t0) / 1000;
-    const par = mouse.active ? 0.03 : 0.01;
-    const mx = (mouse.x - CX) * par, my = (mouse.y - CY) * par;
+    // Camera: a much stronger sway than before, smoothed over frames.
+    const par = 0.10;
+    const txCam = mouse.active ? (mouse.x - CX) * par : 0;
+    const tyCam = mouse.active ? (mouse.y - CY) * par : 0;
+    const rotCam = mouse.active ? ((mouse.x - CX) / Math.max(1, CX)) * 0.018 : 0;
+    const camK = 0.12;
+    cam.x += (txCam - cam.x) * camK;
+    cam.y += (tyCam - cam.y) * camK;
+    cam.rot += (rotCam - cam.rot) * camK;
+    const mx = cam.x, my = cam.y;
+    const recovering = performance.now() < recoverUntil;
+    // Mouse repulsion: a hole around the cursor. Particles are pushed aside
+    // but NEVER removed; when the mouse leaves they race back to their
+    // targets (recoverUntil) so the hole closes quickly.
+    const HOLE_R = 120, PUSH = 30;
     for (const p of particles) {
       let tx, ty, ta;
       if (model && p.target >= 0) {
@@ -260,9 +289,19 @@
         ty = p.y + p.drift.y * 24 * dt + my * 0.6;
         ta = 0.045;
       }
-      const s = p.speed;
+      const s = p.speed * (recovering ? 3.2 : 1);
       p.x += (tx - p.x) * s;
       p.y += (ty - p.y) * s;
+      if (mouse.active) {
+        const dx = p.x - mouse.x, dy = p.y - mouse.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < HOLE_R * HOLE_R && d2 > 0.01) {
+          const d = Math.sqrt(d2);
+          const f = (1 - d / HOLE_R) * PUSH;
+          p.x += (dx / d) * f;
+          p.y += (dy / d) * f;
+        }
+      }
       p.a += (ta - p.a) * Math.min(1, s * 2.2);
     }
   }
@@ -272,6 +311,12 @@
     t0 = performance.now();
     ctx.clearRect(0, 0, W, H);
     step();
+    ctx.save();
+    if (cam.rot !== 0) {
+      ctx.translate(CX, CY);
+      ctx.rotate(cam.rot);
+      ctx.translate(-CX, -CY);
+    }
     ctx.fillStyle = ink();
     for (const p of particles) {
       if (p.a <= 0.008) continue;
@@ -280,6 +325,7 @@
       ctx.fillRect(p.x, p.y, Math.max(1, size), Math.max(1, size));
     }
     ctx.globalAlpha = 1;
+    ctx.restore();
     raf = requestAnimationFrame(frame);
   }
 
@@ -301,7 +347,11 @@
     },
     resize,
     onMouse(x, y) { mouse.x = x; mouse.y = y; mouse.active = true; },
-    clearMouse() { mouse.active = false; },
+    clearMouse() {
+      mouse.active = false;
+      // Snap the hole closed: particles race back to their targets.
+      recoverUntil = performance.now() + 750;
+    },
   };
 })();
 
@@ -318,13 +368,13 @@
       dock: '选择平台 · 下载安装包',
       phases: [
         '欢迎使用PRTS',
-        '这里是dsh-prts官网',
-        'PRTS 是 DeepSeek Harness (dsh) 的 GUI 外壳',
-        '一键安装 dsh + 插件 + 界面 + 更新脚本',
-        'Windows · Linux · macOS · Android 全平台',
-        '无需访问 GitHub，国内网络即可安装',
-        '下载后运行安装包，按提示完成安装',
-        '点击下方按钮，选择你的平台',
+        '这里是 dsh-prts 官网',
+        'PRTS · dsh 的 GUI 外壳',
+        '一键安装 dsh + 插件 + 界面',
+        'Windows · Linux · macOS · Android',
+        '无需 GitHub · 国内网络直连',
+        '运行安装包 · 按提示完成',
+        '点击下方按钮 · 选择你的平台',
       ],
       buttons: { windows: 'Windows 安装包', linux: 'Linux 安装包', macos: 'macOS 安装包', android: 'Android 安装包' },
       os: { windows: '.exe', linux: '.run', macos: '.sh', android: '.zip' },
@@ -337,12 +387,12 @@
       phases: [
         'Welcome to PRTS',
         'This is the dsh-prts official site',
-        'PRTS is the GUI shell for DeepSeek Harness (dsh)',
-        'One-click install: dsh + plugins + GUI + updater',
+        'PRTS · the GUI shell for dsh',
+        'One-click: dsh + plugins + GUI',
         'Windows · Linux · macOS · Android',
-        'No GitHub access required — mirrors for CN networks',
-        'Run the installer and follow the prompts',
-        'Click a button below to choose your platform',
+        'No GitHub · CN mirror friendly',
+        'Run the installer · follow the steps',
+        'Click below · pick your platform',
       ],
       buttons: { windows: 'Windows installer', linux: 'Linux installer', macos: 'macOS installer', android: 'Android installer' },
       os: { windows: '.exe', linux: '.run', macos: '.sh', android: '.zip' },
@@ -412,9 +462,10 @@
     clearTimeout(phaseTimer);
     const phases = I18N[lang].phases;
     const text = phases[phaseIndex % phases.length];
-    engine.showText(text, text.length > 24 ? 52 : 92);
+    engine.showText(text, text.length > 20 ? 56 : 92);
     phaseIndex++;
-    phaseTimer = setTimeout(() => cycle(3200), 3600);
+    // Each image lingers much longer before the next reassembly.
+    phaseTimer = setTimeout(() => cycle(3200), 8200);
   }
 
   $('langBtn').addEventListener('click', () => setLang(lang === 'zh' ? 'en' : 'zh'));
@@ -429,6 +480,13 @@
     engine.onMouse(e.clientX - r.left, e.clientY - r.top);
   });
   canvas.addEventListener('pointerleave', () => engine.clearMouse());
+  // Click on the stage = skip to the next image (particles reassemble at
+  // once). Buttons/dock sit above the canvas and never trigger this.
+  canvas.addEventListener('pointerdown', (e) => {
+    const r = canvas.getBoundingClientRect();
+    engine.onMouse(e.clientX - r.left, e.clientY - r.top);
+    cycle(0);
+  });
   window.addEventListener('resize', () => engine.resize());
 
   // Service worker (PWA — installable on Android as an app).

@@ -53,7 +53,8 @@
   /* ---------- PRTS modal (replaces window.prompt / window.confirm, which
      Electron disables) ---------- */
   let modalResolve = null;
-  function openModal(kind, title, placeholder, labels) {
+  let modalBrowseCb = null;
+  function openModal(kind, title, placeholder, labels, opts) {
     const ov = $('modalOverlay');
     $('modalTitle').textContent = title;
     const input = $('modalInput');
@@ -63,6 +64,15 @@
     $('modalOk').textContent = (labels && labels.ok) || A.t('common.ok');
     $('modalCancel').textContent = (labels && labels.cancel) || A.t('common.cancel');
     $('modalCancel').hidden = kind === 'alert';
+    const extra = $('modalExtra');
+    if (opts && typeof opts.onBrowse === 'function') {
+      modalBrowseCb = opts.onBrowse;
+      $('modalBrowseBtn').textContent = opts.browseLabel || '…';
+      extra.hidden = false;
+    } else {
+      modalBrowseCb = null;
+      extra.hidden = true;
+    }
     ov.classList.add('open');
     if (kind === 'prompt') setTimeout(() => input.focus(), 40);
     return new Promise((resolve) => { modalResolve = resolve; });
@@ -118,13 +128,13 @@
     try {
       await P.dshState.archiveSessions(ids);
       A.selectedSessions.clear();
+      const clearedCurrent = P.dshState.currentSessionId && ids.indexOf(P.dshState.currentSessionId) >= 0;
+      if (clearedCurrent) P.dshState.currentSessionId = null;
       await refreshSessions();
-      if (P.dshState.currentSessionId && ids.indexOf(P.dshState.currentSessionId) >= 0) {
-        P.dshState.currentSessionId = null;
-        P.chat.messages = [];
-        P.chat.renderFlow();
-        A.toast(A.t('session.archivedSelected', { n: ids.length }));
-      }
+      await P.dshState.listWorkspaces().catch(() => {});
+      renderWorkspaces();
+      if (clearedCurrent) A.enterHero();
+      A.toast(A.t('session.archivedSelected', { n: ids.length }));
     } catch (e) { A.toast(e.message); }
   }
 
@@ -268,24 +278,51 @@
   }
 
   async function newSession() {
-    const wsId = P.dshState.currentWorkspaceId;
-    const id = await P.dshState.createSession(wsId, A.currentPreset || undefined);
-    if (id) {
-      await refreshSessions();
-      await selectSession(id);
+    try {
+      const wsId = P.dshState.currentWorkspaceId;
+      const id = await P.dshState.createSession(wsId, A.currentPreset || undefined);
+      if (id) {
+        // dsh web behaviour: a fresh session lands on the welcome screen
+        // (logo + tagline), with the composer ready to take the first line.
+        P.dshState.currentSessionId = id;
+        if (A.currentPreset) $('headerMode').textContent = presetLabel(A.currentPreset);
+        await refreshSessions();
+        P.dshState.permissions = P.dshState.permissionState(id);
+        updatePermissionChip();
+        if (A.refreshPermissionPop) A.refreshPermissionPop();
+        A.enterHero();
+        renderSessions();
+        updateCrumb();
+        updateMeter();
+        renderStatsDock();
+        A.toast(A.t('session.created'));
+        try { await P.dshState.sessionModels(id); } catch (e) { /* model catalog may be warming up */ }
+        updateModelChip();
+        updateReasoningChip();
+      }
+    } catch (e) {
+      A.toast(A.t('session.createFail') + ' — ' + String(e && e.message ? e.message : e));
     }
   }
 
   async function archiveSession(id) {
     const ok = await A.askConfirm(A.t('session.confirmArchive'));
     if (!ok) return;
-    await P.dshState.archiveSession(id);
-    await refreshSessions();
-    if (P.dshState.currentSessionId === id) {
-      P.dshState.currentSessionId = null;
-      P.chat.messages = [];
-      P.chat.renderFlow();
+    try {
+      await P.dshState.archiveSession(id);
+    } catch (e) {
+      A.toast(String(e && e.message || e));
+      return;
     }
+    await refreshSessions();
+    await P.dshState.listWorkspaces().catch(() => {});
+    renderWorkspaces();
+    if (P.dshState.currentSessionId === id) {
+      // The open session was deleted — return to the welcome screen.
+      P.dshState.currentSessionId = null;
+      A.enterHero();
+    }
+    A.toast(A.t('session.archivedOne'));
   }
 
   async function deleteWorkspace(id) {
@@ -293,14 +330,57 @@
     if (!ok) return;
     await P.dshState.deleteWorkspace(id);
     await refreshAll();
+    // The open session may have died with its workspace — land on the hero.
+    if (P.dshState.currentSessionId && !P.dshState.sessionSummary(P.dshState.currentSessionId)) {
+      P.dshState.currentSessionId = null;
+      A.enterHero();
+    }
+  }
+
+  async function browseWorkspacePath() {
+    const input = $('modalInput');
+    if (!input) return;
+    try {
+      const path = await P.dshState.pickDirectory();
+      if (path) { input.value = path; input.focus(); }
+    } catch (e) {
+      // Non-Electron / picker-less hosts: fall back to the browser-native
+      // directory picker where it exists (Chromium).
+      try {
+        if (typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function') {
+          const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+          if (handle) {
+            input.value = handle.name;
+            input.focus();
+            A.toast(A.t('workspace.browseNameOnly'));
+            return;
+          }
+        }
+      } catch (e2) { /* user cancelled — stay silent */ return; }
+      A.toast(A.t('workspace.browseUnavailable'));
+    }
   }
 
   async function newWorkspace() {
-    const path = await A.askPrompt(A.t('workspace.pathPrompt'), '/path/to/project');
+    const path = await A.askPrompt(A.t('workspace.pathPrompt'), '/path/to/project', {
+      browseLabel: A.t('workspace.browse'),
+      onBrowse: browseWorkspacePath,
+    });
     if (!path || !path.trim()) return;
     try {
-      await P.dshState.createWorkspace(path.trim());
+      const r = await P.dshState.createWorkspace(path.trim());
       await refreshAll();
+      const createdId = r && r.workspace && r.workspace.workspaceId;
+      if (createdId) P.dshState.currentWorkspaceId = createdId;
+      else {
+        const ws = P.dshState.workspaces.find((w) => w.path === path.trim());
+        if (ws) P.dshState.currentWorkspaceId = ws.workspaceId;
+      }
+      renderWorkspaces();
+      updateCrumb();
+      // dsh web behaviour: a fresh workspace lands on the welcome screen.
+      A.enterHero();
+      A.toast(A.t('workspace.created'));
     } catch (e) {
       A.toast(e.message);
     }
@@ -378,17 +458,20 @@
     chip.title = A.t('reasoning.title');
   }
 
-  /* ---------- permission chip ---------- */
+  /* ---------- permission chip (header + composer) ---------- */
   function updatePermissionChip() {
-    const chip = $('permissionChip');
-    const label = $('permissionChipLabel');
-    if (!chip || !label) return;
     const st = P.dshState.permissions;
-    if (!st || !st.options || !st.options.length) { chip.hidden = true; return; }
-    chip.hidden = false;
-    const cur = st.options.find((o) => o.value === st.currentValue);
-    label.textContent = cur ? (cur.name || cur.value) : (st.currentValue || '—');
-    chip.title = A.t('permission.title');
+    const has = !!(st && st.options && st.options.length);
+    const cur = has ? st.options.find((o) => o.value === st.currentValue) : null;
+    const label = has ? P.dshState.permissionDisplayName(cur || st.options[0]) : '—';
+    for (const [chipId, labelId] of [['permissionChip', 'permissionChipLabel'], ['composerPermissionChip', 'composerPermissionChipLabel']]) {
+      const chip = $(chipId);
+      const el = $(labelId);
+      if (!chip || !el) continue;
+      chip.hidden = !has;
+      el.textContent = label;
+      chip.title = A.t('permission.title');
+    }
   }
 
   /* ---------- session stats dock (turns · steps / LLM · tools / TTFT · tok/s / cache / tokens) ---------- */
@@ -767,13 +850,35 @@
   /* ---------- phase / tabs ---------- */
   A.enterChat = function () {
     A.heroVisible = false;
+    if (A.heroEngine) { A.heroEngine.stop(); A.heroEngine = null; }
     const cvt = $('cvt');
     cvt.dataset.phase = 'active';
     $('header').hidden = false;
     $('heroView').hidden = true;
     $('chatScroll').hidden = false;
-    if (A.heroEngine) A.heroEngine.stop();
     switchView('chat');
+  };
+  // Welcome screen (dsh web's logo view): the diamond + italic PRTS wordmark
+  // with the tagline, ambient particles, and the composer ready below.
+  A.enterHero = function () {
+    A.heroVisible = true;
+    if (A.heroEngine) { A.heroEngine.stop(); A.heroEngine = null; }
+    // Keep the composer's session pointer in sync: sending from the welcome
+    // screen must address the freshly created/selected session, not null.
+    P.chat.sessionId = P.dshState.currentSessionId || null;
+    P.chat.messages = [];
+    P.chat.renderFlow();
+    const cvt = $('cvt');
+    cvt.dataset.phase = 'hero';
+    $('header').hidden = true;
+    $('heroView').hidden = false;
+    $('chatScroll').hidden = true;
+    const traj = $('trajView');
+    if (traj) traj.hidden = true;
+    const composer = $('composerArea');
+    if (composer) composer.style.display = '';
+    document.querySelectorAll('.tab').forEach((b) => b.classList.toggle('active', b.dataset.view === 'chat'));
+    startHeroAmbient();
   };
   function switchView(view) {
     const chat = $('chatScroll');
@@ -867,9 +972,14 @@
   }
   function toggleSidebar() {
     const collapsed = appEl().classList.toggle('sbCollapsed');
+    // Restoring always returns to the previous width (the "original position").
     appEl().style.setProperty('--dsh-sb', collapsed ? '0px' : A_.sbWidth + 'px');
-    const expand = $('sbExpandBtn');
-    if (expand) expand.hidden = !collapsed;
+    const btn = $('sbToggleBtn');
+    if (btn) {
+      btn.title = A.t(collapsed ? 'sidebar.expand' : 'sidebar.collapse');
+      btn.setAttribute('aria-expanded', String(!collapsed));
+      btn.setAttribute('aria-label', A.t(collapsed ? 'sidebar.expand' : 'sidebar.collapse'));
+    }
     placeHandles();
   }
 
@@ -943,7 +1053,7 @@
     const st = P.dshState.permissions;
     if (!st || !st.options || !st.options.length) return '<div class="popMeta">' + A.t('permission.none') + '</div>';
     return st.options.map((o) =>
-      '<div class="popItem' + (o.value === st.currentValue ? ' selected' : '') + '" data-permission="' + o.value + '"><span class="label">' + (o.name || o.value) + '</span><span class="tick">&#10003;</span></div>'
+      '<div class="popItem' + (o.value === st.currentValue ? ' selected' : '') + '" data-permission="' + o.value + '"><span class="label">' + P.dshState.permissionDisplayName(o) + '</span><span class="tick">&#10003;</span></div>'
     ).join('');
   }
 
@@ -982,23 +1092,37 @@
     A.reasoningPop = reasoningPop;
     A.refreshReasoningPop = () => { reasoningPop.innerHTML = buildReasoningPop(); };
 
-    const permissionPop = attachPop($('permissionChip'), buildPermissionPop(), async (item) => {
-      if (!item.dataset.permission) return;
+    async function applyPermissionPreset(value) {
       if (!P.dshState.currentSessionId) { A.toast(A.t('session.selectFirst')); return; }
+      const st = P.dshState.permissions;
+      const opt = st && st.options ? st.options.find((o) => o.value === value) : null;
+      const label = opt ? P.dshState.permissionDisplayName(opt) : value;
       try {
-        await P.dshState.setPermissionPreset(P.dshState.currentSessionId, item.dataset.permission);
+        await P.dshState.setPermissionPreset(P.dshState.currentSessionId, value);
         closePops();
-        A.toast(A.t('permission.applying', { preset: item.dataset.permission }));
+        A.toast(A.t('permission.applying', { preset: label }));
         setTimeout(async () => {
           await P.dshState.listSessions();
           P.dshState.permissions = P.dshState.permissionState(P.dshState.currentSessionId);
           updatePermissionChip();
         }, 1200);
       } catch (e) { A.toast(e.message); }
-    });
-    A.permissionPop = permissionPop;
-    A.refreshPermissionPop = () => { permissionPop.innerHTML = buildPermissionPop(); };
-    $('permissionChip').addEventListener('click', () => { A.refreshPermissionPop(); });
+    }
+    // The permission selector lives in two places — the header chip and the
+    // composer chip under the input (dsh web shows it there too).
+    const permissionPops = [];
+    for (const triggerId of ['permissionChip', 'composerPermissionChip']) {
+      const trigger = $(triggerId);
+      if (!trigger) continue;
+      const pop = attachPop(trigger, buildPermissionPop(), async (item) => {
+        if (item.dataset.permission) await applyPermissionPreset(item.dataset.permission);
+      });
+      permissionPops.push(pop);
+      trigger.addEventListener('click', () => { pop.innerHTML = buildPermissionPop(); });
+    }
+    A.refreshPermissionPop = () => {
+      for (const pop of permissionPops) pop.innerHTML = buildPermissionPop();
+    };
 
     // Work modes = dsh's own agent presets (the same set dsh web offers).
     // dsh locks the preset once a session has started (`agent-preset-locked`),
@@ -1073,10 +1197,11 @@
     A.cmdPop = cmdPop;
     A.refreshCmdPop = async () => {
       if (!P.dshState.currentSessionId) { cmdPop.innerHTML = '<div class="popMeta">' + A.t('session.selectFirst') + '</div>'; return; }
+      const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
       try {
         const cmds = await P.dshState.commandsList(P.dshState.currentSessionId);
         cmdPop.innerHTML = cmds.length
-          ? cmds.map((c) => '<div class="popItem" data-name="' + c.name + '"><span class="label">/' + c.name + '</span><span class="desc">' + (c.description || '') + '</span></div>').join('')
+          ? cmds.map((c) => '<div class="popItem" data-name="' + esc(c.name) + '"><span class="label">/' + esc(c.name) + '</span><span class="desc">' + esc(c.description || '') + '</span></div>').join('')
           : '<div class="popMeta">' + A.t('commands.none') + '</div>';
       } catch (e) {
         cmdPop.innerHTML = '<div class="popMeta">' + A.t('commands.none') + '</div>';
@@ -1281,12 +1406,15 @@
     }, 1000);
   }
 
+  let heroPointerBound = false;
   function startHeroAmbient() {
     const cv = $('heroCanvas');
     if (A.heroEngine) { A.heroEngine.stop(); A.heroEngine = null; }
     A.heroEngine = P.particles.create(cv, { count: 1600, speedRange: [0.006, 0.02] });
     A.heroEngine.start();
     A.heroEngine.scatter();
+    if (heroPointerBound) return;
+    heroPointerBound = true;
     cv.addEventListener('pointermove', (e) => {
       const r = cv.getBoundingClientRect();
       A.heroEngine.onMouse(e.clientX - r.left, e.clientY - r.top);
@@ -1446,8 +1574,7 @@
     if (P.system && P.system.bind) P.system.bind();
 
     $('themeBtn').addEventListener('click', A.toggleTheme);
-    $('sbCollapseBtn').addEventListener('click', toggleSidebar);
-    $('sbExpandBtn').addEventListener('click', toggleSidebar);
+    $('sbToggleBtn').addEventListener('click', toggleSidebar);
     $('sessionSelectBtn').addEventListener('click', toggleSelecting);
     $('sessionBulkArchive').addEventListener('click', archiveSelected);
     $('sessionBulkAll').addEventListener('click', () => {
@@ -1459,7 +1586,6 @@
       updateBulkBar();
     });
     $('sessionBulkCancel').addEventListener('click', () => setSelecting(false));
-    $('sbCollapseBtn').addEventListener('click', toggleSidebar);
     $('clearHistoryBtn').addEventListener('click', async () => {
       const ok = await A.askConfirm(A.t('session.confirmArchive'));
       if (!ok) return;
@@ -1529,15 +1655,48 @@
     document.querySelectorAll('.tab').forEach((b) => {
       b.addEventListener('click', () => switchView(b.dataset.view));
     });
-    // Session log: a separate raw-event overlay (distinct from the tab).
-    $('logBtn').addEventListener('click', () => {
+    // Session log — dsh web's Session log downloads the ZIP archive from
+    // `/api/session.export`; PRTS mirrors that, and falls back to the
+    // raw-event overlay on older dsh builds without the endpoint.
+    async function downloadSessionLog() {
+      const sid = P.dshState.currentSessionId;
+      if (!sid) { A.toast(A.t('session.selectFirst')); return; }
+      const url = P.dshState.sessionLogUrl(sid);
+      A.toast(A.t('log.preparing'));
+      const bridge = (typeof window !== 'undefined' && window.prts && window.prts.bridge) || null;
+      if (bridge && typeof bridge.download === 'function') {
+        try {
+          const r = await bridge.download(url);
+          if (r && r.ok === false) throw new Error(r.error || 'download failed');
+          A.toast(A.t('log.started'));
+        } catch (e) {
+          A.toast(A.t('log.failed', { msg: String(e && e.message || e) }));
+        }
+        return;
+      }
+      try {
+        const res = await fetch(url, { method: 'HEAD' });
+        if (res.ok) {
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'dsh-session-' + String(sid).replace(/[^A-Za-z0-9_-]/g, '_') + '.zip';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          A.toast(A.t('log.started'));
+          return;
+        }
+      } catch (e) { /* fall through to the raw overlay */ }
       P.chat.renderLog();
       $('logOverlay').classList.add('open');
-    });
+      A.toast(A.t('log.fallback'));
+    }
+    $('logBtn').addEventListener('click', downloadSessionLog);
     $('logClose').addEventListener('click', () => $('logOverlay').classList.remove('open'));
     $('logExport').addEventListener('click', () => P.chat.exportLog());
 
     // Modal (prompt / confirm).
+    $('modalBrowseBtn').addEventListener('click', () => { if (modalBrowseCb) modalBrowseCb(); });
     $('modalOk').addEventListener('click', () => {
       const input = $('modalInput');
       const value = input.hidden ? true : input.value;
@@ -1604,6 +1763,9 @@
     runIntro();
 
     P.dsh.on('connect', () => { refreshAll().catch(() => { /* dsh may still be warming up */ }); });
+    // The host command directory changed (plugin added/removed a command) —
+    // drop the cached directory so the chip and autocomplete repull.
+    P.dsh.on('commands/change', () => { if (P.dshState.invalidateCommands) P.dshState.invalidateCommands(); });
     // Live projection frames → stats dock, permission chip and meter.
     P.dsh.on('session/projection', (frame) => {
       const pl = frame.payload || {};
@@ -1652,7 +1814,9 @@
 
   // Make sure a session is open so the composer, model switch and mode switch
   // all work immediately. Selects the first workspace, then the most recent
-  // session, and creates a blank one when none exists.
+  // session, and creates a blank one when none exists. A freshly created
+  // session lands on the welcome screen (dsh web behaviour); an existing
+  // session opens the chat directly.
   A.ensureSession = async function () {
     if (P.dshState.currentSessionId) return P.dshState.currentSessionId;
     if (!P.dshState.currentWorkspaceId && P.dshState.workspaces.length) {
@@ -1664,8 +1828,9 @@
     }
     const id = await P.dshState.createSession(P.dshState.currentWorkspaceId || undefined);
     if (!id) return null;
+    P.dshState.currentSessionId = id;
     await refreshSessions();
-    await selectSession(id);
+    A.enterHero();
     return id;
   };
 
