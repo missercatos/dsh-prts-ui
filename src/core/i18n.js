@@ -552,6 +552,7 @@
       // —— 0.5.0: message actions & trajectory ——
       'chat.copy': 'Copy',
       'chat.copied': 'Copied',
+      'chat.loading': 'LOADING…',
       'chat.copyFail': 'Copy failed',
       'chat.good': 'Good answer',
       'chat.bad': 'Bad answer',
@@ -1149,6 +1150,7 @@
       // —— 0.5.0: 消息动作与轨迹 ——
       'chat.copy': '复制',
       'chat.copied': '已复制',
+      'chat.loading': '读取中…',
       'chat.copyFail': '复制失败',
       'chat.good': '回答得好',
       'chat.bad': '回答有问题',
