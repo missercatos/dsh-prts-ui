@@ -1,0 +1,10 @@
+{
+  "//": "PRTS installer/updater configuration. The installer copies this to ~/.dsh/profiles/prts/prts.config.json on first install; later updates preserve your copy. Edit the profile copy to change behavior.",
+  "releaseBase": "https://your-domain.example.com/releases",
+  "releaseManifest": "releases.json",
+  "npmRegistry": "",
+  "npmRegistryFallback": "https://registry.npmmirror.com",
+  "electronMirror": "https://npmmirror.com/mirrors/electron/",
+  "dshPackage": "@deepseek-ai/dsh",
+  "plugins": []
+}

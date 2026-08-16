@@ -252,6 +252,43 @@
       'sys.none': 'none',
       'sys.busy': 'gathering\u2026',
       'sys.updated': 'updated {t}',
+
+      'sidebar.searchSessions': 'Search sessions',
+      'sidebar.searchNone': 'No matching sessions',
+
+      'permission.title': 'Permission level (sandbox + approvals)',
+      'permission.none': 'No permission presets available.',
+      'permission.applying': 'Applying permission preset {preset}…',
+
+      'reasoning.title': 'Reasoning level',
+      'reasoning.none': 'This model has no reasoning levels.',
+
+      'meter.context': '{pct}% of the context window used',
+      'meter.none': 'No context usage yet.',
+      'meter.pressure': 'Context pressure',
+      'meter.window': 'Context window',
+      'meter.input': 'Uncached input',
+      'meter.output': 'Output',
+      'meter.cache': 'Cache read',
+
+      'approval.title': 'Approval requested',
+      'approval.allow': 'Allow once',
+      'approval.reject': 'Reject',
+
+      'question.title': 'Question',
+      'question.multi': 'multi-select',
+      'question.custom': 'Other (optional)…',
+      'question.answer': 'Answer',
+
+      'traj.empty': 'No events yet — the trajectory appears while the agent works.',
+
+      'composer.attach': 'Attach images (PNG / JPEG / WebP / GIF)',
+      'composer.attachBad': 'Only image files can be attached (PNG / JPEG / WebP / GIF).',
+
+      'chat.step': 'WORKING · STEP {n}',
+      'chat.permissionSet': 'permission preset → {preset}',
+      'chat.sandboxMode': 'sandbox mode → {mode}',
+      'chat.approvalPolicy': 'approval policy → {policy}',
     },
 
     zh: {
@@ -499,6 +536,43 @@
       'sys.none': '无',
       'sys.busy': '读取中…',
       'sys.updated': '更新于 {t}',
+
+      'sidebar.searchSessions': '搜索会话',
+      'sidebar.searchNone': '没有匹配的会话',
+
+      'permission.title': '权限等级（沙箱 + 审批策略）',
+      'permission.none': '暂无可用权限预设。',
+      'permission.applying': '正在应用权限预设 {preset}…',
+
+      'reasoning.title': '推理等级',
+      'reasoning.none': '该模型没有可选的推理等级。',
+
+      'meter.context': '已用 {pct}% 上下文窗口',
+      'meter.none': '暂无上下文用量。',
+      'meter.pressure': '上下文压力',
+      'meter.window': '上下文窗口',
+      'meter.input': '非缓存输入',
+      'meter.output': '输出',
+      'meter.cache': '缓存读取',
+
+      'approval.title': '需要审批',
+      'approval.allow': '允许一次',
+      'approval.reject': '拒绝',
+
+      'question.title': '问题',
+      'question.multi': '多选',
+      'question.custom': '其他（可选）…',
+      'question.answer': '回答',
+
+      'traj.empty': '暂无事件 —— 智能体工作时轨迹会显示在这里。',
+
+      'composer.attach': '附加图片（PNG / JPEG / WebP / GIF）',
+      'composer.attachBad': '只能附加图片文件（PNG / JPEG / WebP / GIF）。',
+
+      'chat.step': '工作中 · 第 {n} 步',
+      'chat.permissionSet': '权限预设 → {preset}',
+      'chat.sandboxMode': '沙箱模式 → {mode}',
+      'chat.approvalPolicy': '审批策略 → {policy}',
     },
   };
 

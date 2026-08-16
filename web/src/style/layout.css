@@ -35,7 +35,8 @@ button:focus:not(:focus-visible) { outline: none; }
 }
 .frame[data-dragging] { transition: none; }
 
-.sbCol { min-width: 0; overflow: hidden; background: var(--prts-panel); border-right: 1px solid var(--prts-hairline); }
+.sbCol { min-width: 0; overflow: hidden; background: var(--prts-panel); border-right: 1px solid var(--prts-hairline); transition: border-color 0.3s var(--prts-ease); }
+.frame.sbCollapsed .sbCol { border-right-color: transparent; }
 .ctCol { min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
 .dtCol { min-width: 0; overflow: hidden; border-left: 1px solid var(--prts-hairline); background: var(--prts-panel); }
 .frame[data-details-collapsed] .dtCol { border-left: none; }

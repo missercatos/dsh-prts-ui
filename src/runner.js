@@ -48,6 +48,15 @@ export async function apply(ctx) {
       io.exit(1)
       return
     }
+    // Stay alive for the life of the window, then tear down the dsh web backend
+    // we spawned so it never lingers on port 3080 (and blocks `dsh web`).
+    const onSignal = () => { launched.cleanup(); io.exit(130) }
+    process.on('SIGINT', onSignal)
+    process.on('SIGTERM', onSignal)
+    await launched.electronExited
+    process.off('SIGINT', onSignal)
+    process.off('SIGTERM', onSignal)
+    launched.cleanup()
     io.exit(0)
   } catch (error) {
     dbg('error: ' + (error instanceof Error ? error.stack : String(error)))

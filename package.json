@@ -1,7 +1,7 @@
 {
   "name": "dsh-prts-ui",
-  "version": "0.1.0",
-  "description": "PRTS — a monochrome DeepSeek chat client for dsh: black/white UI, particle welcome intro, GUI window and terminal (TUI) surfaces, projects, models and thinking-strength settings.",
+  "version": "0.2.0",
+  "description": "PRTS — the monochrome GUI shell for dsh (DeepSeek Harness): particle intro, workspaces/sessions with search, mode/model/reasoning/permission selectors, image attachments, approvals & questions, cost + system panels, voice input. Ships one-click installers for Windows/Linux/macOS/Android and the particle download site.",
   "type": "module",
   "main": "./src/runner.js",
   "bin": {
@@ -26,9 +26,14 @@
     "LICENSE",
     "install.sh",
     "install.bat",
-    "build-exe.bat",
+    "install-android.sh",
     "update.sh",
-    "update.bat"
+    "update.bat",
+    "build-exe.bat",
+    "prts.config.example.json",
+    "web-site",
+    "test",
+    "plugin"
   ],
   "scripts": {
     "bundle": "node scripts/bundle-gui.mjs",

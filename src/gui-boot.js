@@ -53,6 +53,9 @@ async function bootDshWeb() {
     if (await dshUp(defaultUrl)) return { url: defaultUrl, child };
     await new Promise((r) => setTimeout(r, 500));
   }
+  // The backend we spawned never came up — kill it so it cannot squat on the
+  // port and block the official `dsh web` later.
+  try { child.kill('SIGKILL') } catch (e) { /* already gone */ }
   throw new Error('dsh web did not start in time — check that `dsh web` boots (its agent tree may be unhealthy)');
 }
 
@@ -138,17 +141,37 @@ export async function ensureElectron() {
   throw new Error('failed to fetch electron ' + VERSION + ' (' + p + '/' + a + '): ' + (lastErr && lastErr.message))
 }
 
-/** Boot dsh web and open the PRTS window over it. */
+/** Boot dsh web and open the PRTS window over it. The returned handle keeps
+ *  the runner alive until the window closes, then tears the backend down — so
+ *  a PRTS-spawned `dsh web` can never outlive its window and squat on port
+ *  3080 (which would break the official `dsh web`). */
 export async function launchGui(opts) {
-  const { url } = await bootDshWeb()
+  const { url, child: dshChild } = await bootDshWeb()
   const bin = await ensureElectron()
   const main = join(pkgRoot, 'electron', 'main.cjs')
   const child = spawn(bin, ['--no-sandbox', main, url], {
-    detached: true,
     stdio: 'ignore',
-    env: Object.assign({}, process.env, { PRTS_GUI: '1', DSH_WEB_URL: url }),
+    env: Object.assign({}, process.env, {
+      PRTS_GUI: '1',
+      DSH_WEB_URL: url,
+      // Pass the spawned backend's PID so Electron can clean it up on quit
+      // even if this runner dies abnormally first.
+      DSH_WEB_PID: dshChild ? String(dshChild.pid) : '',
+    }),
   })
-  child.on('error', () => { /* window already detached */ })
-  child.unref()
-  return { ok: true, url, pid: child.pid }
+  // Not detached: the Electron child keeps the runner's event loop alive, so
+  // the runner stays around to clean up the backend it spawned.
+  const electronExited = new Promise((resolve) => {
+    child.on('exit', resolve)
+    child.on('error', resolve)
+  })
+  return {
+    ok: true, url, pid: child.pid,
+    electronExited,
+    cleanup() {
+      // Kill only the dsh web WE spawned — a reused (already-running) backend
+      // is left alone.
+      if (dshChild) { try { dshChild.kill('SIGKILL') } catch (e) { /* already gone */ } }
+    },
+  }
 }

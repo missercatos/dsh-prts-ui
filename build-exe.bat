@@ -1,16 +1,18 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
 REM ============================================================
-REM  Build a Windows .exe installer (PRTS-Setup.exe) from install.bat
-REM  using IExpress, which ships with Windows (no extra tools needed).
+REM  Build a Windows .exe installer (PRTS-Setup.exe) using
+REM  IExpress, which ships with Windows (no extra tools needed).
 REM  Run this on a Windows machine inside the repo checkout.
+REM  The exe self-extracts the full source tree and runs
+REM  install.bat (dsh + plugins + GUI + config + updater).
 REM ============================================================
 set "SRC=%~dp0"
 set "STAGE=%TEMP%\prts-setup-build"
 if exist "%STAGE%" rmdir /s /q "%STAGE%" >nul 2>nul
 mkdir "%STAGE%"
 
-REM find the tarball
+REM find the tarball (build it if missing)
 set "TGZ="
 for /f "delims=" %%i in ('dir /b "%SRC%dsh-prts-ui-*.tgz" 2^>nul') do set "TGZ=%%i"
 if "%TGZ%"=="" (
@@ -25,7 +27,13 @@ if "%TGZ%"=="" (
   exit /b 1
 )
 
-copy /y "%SRC%install.bat" "%STAGE%\install.bat" >nul
+REM stage the full payload (same set make-dist.sh ships)
+for %%d in (bin src web electron assets scripts) do (
+  xcopy /e /i /q /y "%SRC%%%d" "%STAGE%\%%d" >nul
+)
+for %%f in (cordis.patch.yml package.json LICENSE README.md README.zh.md install.sh install.bat install-android.sh update.sh update.bat prts.config.example.json) do (
+  if exist "%SRC%%%f" copy /y "%SRC%%%f" "%STAGE%\%%f" >nul
+)
 copy /y "%SRC%%TGZ%" "%STAGE%\%TGZ%" >nul
 cd /d "%STAGE%"
 
@@ -42,17 +50,14 @@ cd /d "%STAGE%"
   echo RunProgram=install.bat
   echo InstallPrompt=PRTS Setup
   echo DisplayLicense=
-  echo FinishMessage=PRTS has been installed.
+  echo FinishMessage=PRTS has been installed. Run "prts" to open the GUI.
   echo CustomInitialPrompt=
   echo UninstallCmd=
   echo RebootMode=N
   echo.
   echo [SourceFiles]
-  echo SourceFiles0=.
+  echo SourceFiles0=%STAGE%
   echo.
-  echo [SourceFiles0]
-  echo %%FILE0%%=install.bat
-  echo %%FILE1%%=%TGZ%
 )
 
 echo Building PRTS-Setup.exe with IExpress...
@@ -64,3 +69,5 @@ if not exist "PRTS-Setup.exe" (
 copy /y "PRTS-Setup.exe" "%SRC%PRTS-Setup.exe" >nul
 echo.
 echo Done: %SRC%PRTS-Setup.exe
+echo (The make-dist.sh build produces a ready-made exe without IExpress.)
+endlocal

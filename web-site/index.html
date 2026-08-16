@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PRTS · dsh-prts 官网</title>
+<meta name="description" content="PRTS —— DeepSeek Harness (dsh) 的 GUI 外壳。一键安装包：Windows / Linux / macOS / Android。无需 GitHub 访问。">
+<meta name="theme-color" content="#0A0A0B">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='14' y='14' width='36' height='36' transform='rotate(45 32 32)' fill='none' stroke='%23FAFAFA' stroke-width='2.5'/%3E%3Ctext x='32' y='42' font-size='18' font-style='italic' font-weight='700' fill='%23FAFAFA' text-anchor='middle' font-family='sans-serif'%3EPRTS%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #0A0A0B;
+    --panel: #0D0D0E;
+    --surface: #111112;
+    --surface-2: #161618;
+    --ink: #FAFAFA;
+    --ink-dim: #9C9CA1;
+    --ink-faint: #626266;
+    --hairline: rgba(250, 250, 250, 0.14);
+    --hairline-strong: rgba(250, 250, 250, 0.3);
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas, Menlo, 'Liberation Mono', monospace;
+  }
+  [data-theme='light'] {
+    --bg: #FAFAFA; --panel: #FFFFFF; --surface: #F3F3F3; --surface-2: #EBEBEB;
+    --ink: #0A0A0B; --ink-dim: #5C5C60; --ink-faint: #A6A6AA;
+    --hairline: rgba(10, 10, 11, 0.14); --hairline-strong: rgba(10, 10, 11, 0.3);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; font-family: var(--font); color: var(--ink); background: var(--bg);
+    overflow: hidden; -webkit-font-smoothing: antialiased;
+  }
+  #stage { position: fixed; inset: 0; }
+  #canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 26px; pointer-events: none;
+  }
+  .brand { display: inline-flex; align-items: center; gap: 10px; pointer-events: auto; }
+  .brand .rhombus {
+    width: 14px; height: 14px; border: 1.5px solid var(--ink); transform: rotate(45deg); position: relative;
+  }
+  .brand .rhombus::after {
+    content: ''; position: absolute; inset: 4px; background: var(--ink);
+  }
+  .brand .word { font-size: 15px; font-weight: 600; letter-spacing: 0.22em; font-style: italic; }
+  .topActions { display: inline-flex; gap: 8px; pointer-events: auto; }
+  .iconBtn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 32px; padding: 0 12px; border: 1px solid var(--hairline); border-radius: 16px;
+    background: transparent; color: var(--ink-dim); font-size: 12px; cursor: pointer;
+    transition: border-color .15s var(--ease), color .15s var(--ease);
+  }
+  .iconBtn:hover { border-color: var(--hairline-strong); color: var(--ink); }
+
+  .introTag {
+    position: fixed; left: 50%; bottom: 27vh; transform: translateX(-50%); z-index: 5;
+    font-size: 11px; letter-spacing: 0.5em; text-indent: 0.5em; color: var(--ink-faint);
+    white-space: nowrap; pointer-events: none;
+  }
+
+  .dock {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    padding: 0 20px calc(20px + env(safe-area-inset-bottom));
+  }
+  .dockLabel { font-size: 10px; letter-spacing: 0.42em; text-indent: 0.42em; color: var(--ink-faint); text-transform: uppercase; }
+  .dlRow { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .dlBtn {
+    display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 20px;
+    border: 1px solid var(--hairline); border-radius: 20px; background: transparent;
+    color: var(--ink-dim); font-size: 13px; letter-spacing: 0.04em; cursor: pointer;
+    text-decoration: none; transition: border-color .15s var(--ease), color .15s var(--ease), background .15s var(--ease);
+  }
+  .dlBtn:hover { border-color: var(--hairline-strong); color: var(--ink); background: var(--surface-2); }
+  .dlBtn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .dlBtn.primary:hover { opacity: 0.85; }
+  .dlBtn .os { font-family: var(--mono); font-size: 11px; color: inherit; opacity: 0.7; }
+  .dlFoot { display: flex; gap: 18px; font-size: 11px; color: var(--ink-faint); }
+  .dlFoot a { color: var(--ink-dim); text-decoration: none; border-bottom: 1px solid var(--hairline-strong); }
+  .dlFoot a:hover { color: var(--ink); }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 130px; transform: translateX(-50%) translateY(8px); z-index: 20;
+    padding: 8px 18px; border-radius: 4px; background: var(--ink); color: var(--bg);
+    font-size: 13px; opacity: 0; pointer-events: none;
+    transition: opacity .2s var(--ease), transform .2s var(--ease);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 640px) {
+    .dlBtn { height: 36px; padding: 0 14px; font-size: 12px; }
+    .dock { gap: 8px; }
+    .introTag { bottom: 30vh; letter-spacing: 0.3em; }
+  }
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="canvas"></canvas></div>
+<div class="introTag" id="introTag"></div>
+
+<header class="topbar">
+  <span class="brand"><span class="rhombus"></span><span class="word">PRTS</span></span>
+  <span class="topActions">
+    <button class="iconBtn" id="langBtn" type="button">中文 / EN</button>
+    <button class="iconBtn" id="themeBtn" type="button">◐</button>
+  </span>
+</header>
+
+<nav class="dock" id="dock">
+  <div class="dockLabel" id="dockLabel">DOWNLOAD</div>
+  <div class="dlRow" id="dlRow"></div>
+  <div class="dlFoot">
+    <a id="sumsLink" href="releases/SHA256SUMS" target="_blank" rel="noopener">SHA256SUMS</a>
+    <a href="releases/releases.json" target="_blank" rel="noopener">releases.json</a>
+    <a id="readmeLink" href="README.zh.md" target="_blank" rel="noopener">README</a>
+  </div>
+</nav>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ============================================================
+   PRTS particle engine (site edition) — monochrome point-cloud
+   text. Same engine family as the PRTS GUI intro.
+   ============================================================ */
+(function () {
+  'use strict';
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d', { alpha: true });
+  const scratch = document.createElement('canvas');
+  const sctx = scratch.getContext('2d', { willReadFrequently: true });
+  const mouse = { x: 0, y: 0, active: false };
+
+  const N = 9000;
+  const speedRange = [0.02, 0.055];
+  let W = 0, H = 0, CX = 0, CY = 0;
+  let model = null, pxMap = null, modelCenter = { x: 0, y: 0 };
+  let particles = [];
+  let raf = 0, t0 = 0;
+  let running = false;
+
+  const ink = () => getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() || '#FAFAFA';
+
+  function resize() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = canvas.clientWidth; H = canvas.clientHeight;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    CX = W / 2; CY = H / 2;
+  }
+
+  function spawn() {
+    particles = new Array(N).fill(0).map(() => ({
+      x: (Math.random() - 0.5) * W * 1.4,
+      y: (Math.random() - 0.5) * H * 1.4,
+      z: 0.4 + 0.6 * Math.random(),
+      a: 0,
+      speed: speedRange[0] + Math.random() * (speedRange[1] - speedRange[0]),
+      target: -1, tx: 0, ty: 0, ta: 0,
+      drift: { x: (Math.random() - 0.5) * 0.6, y: (Math.random() - 0.5) * 0.6 },
+    }));
+  }
+
+  function sampleFromCanvas(cw, ch, maxPoints, step) {
+    sctx.drawImage(scratch, 0, 0);
+    const data = sctx.getImageData(0, 0, cw, ch).data;
+    const pts = [];
+    for (let y = 0; y < ch; y += step) {
+      for (let x = 0; x < cw; x += step) {
+        if (data[(y * cw + x) * 4 + 3] > 128) {
+          pts.push({ x: (x / cw) * 2 - 1, y: -((y / ch) * 2 - 1), a: 0.35 + 0.65 * Math.random() });
+          if (pts.length >= maxPoints) return pts;
+        }
+      }
+    }
+    return pts;
+  }
+
+  function drawModelText(text, fontPx, maxPoints) {
+    const pad = 40;
+    const maxW = Math.max(120, Math.floor(W - pad * 2));
+    scratch.width = maxW;
+    scratch.height = Math.max(48, Math.floor(fontPx * 1.7));
+    sctx.clearRect(0, 0, scratch.width, scratch.height);
+    sctx.fillStyle = '#fff';
+    sctx.textAlign = 'center';
+    sctx.textBaseline = 'middle';
+    let size = fontPx;
+    while (size > 14) {
+      sctx.font = '600 ' + size + 'px ' + getFontStack();
+      if (sctx.measureText(text).width <= maxW) break;
+      size -= 4;
+    }
+    scratch.height = Math.max(48, Math.floor(size * 1.7));
+    sctx.font = '600 ' + size + 'px ' + getFontStack();
+    sctx.fillText(text, scratch.width / 2, scratch.height / 2);
+    return sampleFromCanvas(scratch.width, scratch.height, maxPoints, Math.max(2, Math.round(size / 46)));
+  }
+
+  function getFontStack() {
+    const s = getComputedStyle(document.documentElement);
+    return s.getPropertyValue('--font').trim() || 'sans-serif';
+  }
+
+  function assignTargets(m, target) {
+    model = m || null;
+    pxMap = null;
+    if (model) {
+      let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+      for (const pt of model) {
+        if (pt.x < minX) minX = pt.x;
+        if (pt.x > maxX) maxX = pt.x;
+        if (pt.y < minY) minY = pt.y;
+        if (pt.y > maxY) maxY = pt.y;
+      }
+      modelCenter = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+      const cw = scratch.width || 1, ch = scratch.height || 1;
+      const wPx = ((maxX - minX) / 2) * cw;
+      const hPx = ((maxY - minY) / 2) * ch;
+      const cx0 = ((minX + maxX + 2) / 4) * cw;
+      const cy0 = ((2 - minY - maxY) / 4) * ch;
+      const tw = target ? target.w : Math.min(CX, CY) * 1.4;
+      const th = target ? target.h : Math.min(CX, CY) * 1.4;
+      pxMap = { cw, ch, cx0, cy0, scale: Math.min(wPx > 0 ? tw / wPx : 1, hPx > 0 ? th / hPx : 1) };
+    }
+    for (const p of particles) {
+      if (model) { p.target = Math.floor(Math.random() * model.length); p.speed = speedRange[0] + Math.random() * (speedRange[1] - speedRange[0]); }
+      else { p.target = -1; p.ta = 0.05; }
+    }
+  }
+
+  function step() {
+    const dt = (performance.now() - t0) / 1000;
+    const par = mouse.active ? 0.03 : 0.01;
+    const mx = (mouse.x - CX) * par, my = (mouse.y - CY) * par;
+    for (const p of particles) {
+      let tx, ty, ta;
+      if (model && p.target >= 0) {
+        const pt = model[p.target];
+        if (pxMap) {
+          const sx = ((pt.x + 1) / 2) * pxMap.cw;
+          const sy = ((1 - pt.y) / 2) * pxMap.ch;
+          tx = CX + (sx - pxMap.cx0) * pxMap.scale + mx;
+          ty = CY + (sy - pxMap.cy0) * pxMap.scale + my;
+        } else {
+          tx = CX + (pt.x - modelCenter.x) * CX * 0.7 + mx;
+          ty = CY - (pt.y - modelCenter.y) * CY * 0.7 + my;
+        }
+        ta = pt.a;
+      } else {
+        tx = p.x + p.drift.x * 24 * dt + mx * 0.6;
+        ty = p.y + p.drift.y * 24 * dt + my * 0.6;
+        ta = 0.045;
+      }
+      const s = p.speed;
+      p.x += (tx - p.x) * s;
+      p.y += (ty - p.y) * s;
+      p.a += (ta - p.a) * Math.min(1, s * 2.2);
+    }
+  }
+
+  function frame() {
+    if (!running) return;
+    t0 = performance.now();
+    ctx.clearRect(0, 0, W, H);
+    step();
+    ctx.fillStyle = ink();
+    for (const p of particles) {
+      if (p.a <= 0.008) continue;
+      ctx.globalAlpha = p.a;
+      const size = p.z * 1.6;
+      ctx.fillRect(p.x, p.y, Math.max(1, size), Math.max(1, size));
+    }
+    ctx.globalAlpha = 1;
+    raf = requestAnimationFrame(frame);
+  }
+
+  window.PRTS_PARTICLES = {
+    showText(text, fontPx) {
+      assignTargets(drawModelText(text, fontPx || 84, 9000), {
+        w: Math.min(W * 0.92, 1100),
+        h: Math.min(H * 0.16, 130),
+      });
+    },
+    scatter() { assignTargets(null); },
+    start() {
+      if (running) return;
+      running = true;
+      t0 = performance.now();
+      resize();
+      if (!particles.length) spawn();
+      raf = requestAnimationFrame(frame);
+    },
+    resize,
+    onMouse(x, y) { mouse.x = x; mouse.y = y; mouse.active = true; },
+    clearMouse() { mouse.active = false; },
+  };
+})();
+
+/* ============================================================
+   Site logic — phrase phases, download buttons, language.
+   ============================================================ */
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  const I18N = {
+    zh: {
+      tag: 'dsh · GUI · 官网',
+      dock: '选择平台 · 下载安装包',
+      phases: [
+        '欢迎使用PRTS',
+        '这里是dsh-prts官网',
+        'PRTS 是 DeepSeek Harness (dsh) 的 GUI 外壳',
+        '一键安装 dsh + 插件 + 界面 + 更新脚本',
+        'Windows · Linux · macOS · Android 全平台',
+        '无需访问 GitHub，国内网络即可安装',
+        '下载后运行安装包，按提示完成安装',
+        '点击下方按钮，选择你的平台',
+      ],
+      buttons: { windows: 'Windows 安装包', linux: 'Linux 安装包', macos: 'macOS 安装包', android: 'Android 安装包' },
+      os: { windows: '.exe', linux: '.run', macos: '.sh', android: '.zip' },
+      started: '开始下载：',
+      installed: '已加入：',
+    },
+    en: {
+      tag: 'dsh · GUI · official site',
+      dock: 'choose your platform · download',
+      phases: [
+        'Welcome to PRTS',
+        'This is the dsh-prts official site',
+        'PRTS is the GUI shell for DeepSeek Harness (dsh)',
+        'One-click install: dsh + plugins + GUI + updater',
+        'Windows · Linux · macOS · Android',
+        'No GitHub access required — mirrors for CN networks',
+        'Run the installer and follow the prompts',
+        'Click a button below to choose your platform',
+      ],
+      buttons: { windows: 'Windows installer', linux: 'Linux installer', macos: 'macOS installer', android: 'Android installer' },
+      os: { windows: '.exe', linux: '.run', macos: '.sh', android: '.zip' },
+      started: 'Download started: ',
+      installed: 'Added: ',
+    },
+  };
+
+  /* Release mapping — point these at your host. Files are served from
+     ./releases/ by default; edit PRTS_RELEASES to override per platform. */
+  window.PRTS_RELEASES = window.PRTS_RELEASES || {
+    windows: 'releases/PRTS-Setup-0.2.0-windows-x64.exe',
+    linux: 'releases/PRTS-0.2.0-linux-x64.run',
+    macos: 'releases/PRTS-0.2.0-macos.sh',
+    android: 'releases/PRTS-0.2.0-android.zip',
+  };
+
+  let lang = 'zh';
+  let phaseIndex = 0;
+  let phaseTimer = null;
+
+  const engine = window.PRTS_PARTICLES;
+  engine.start();
+  engine.scatter();
+
+  function setLang(next) {
+    lang = next;
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+    document.getElementById('langBtn').textContent = lang === 'zh' ? '中文 / EN' : 'EN / 中文';
+    document.getElementById('dockLabel').textContent = I18N[lang].dock;
+    document.getElementById('introTag').textContent = I18N[lang].tag;
+    renderButtons();
+    phaseIndex = 0;
+    cycle(0);
+  }
+
+  function renderButtons() {
+    const row = $('dlRow');
+    row.textContent = '';
+    const order = ['windows', 'linux', 'macos', 'android'];
+    order.forEach((os, i) => {
+      const a = document.createElement('a');
+      a.className = 'dlBtn' + (os === 'windows' ? ' primary' : '');
+      a.href = window.PRTS_RELEASES[os];
+      a.download = '';
+      const label = document.createElement('span');
+      label.textContent = I18N[lang].buttons[os];
+      const badge = document.createElement('span');
+      badge.className = 'os';
+      badge.textContent = I18N[lang].os[os];
+      a.appendChild(label); a.appendChild(badge);
+      a.addEventListener('click', () => toast(I18N[lang].started + a.href.split('/').pop()));
+      row.appendChild(a);
+    });
+  }
+
+  let toastTimer = null;
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  function cycle(delay) {
+    clearTimeout(phaseTimer);
+    const phases = I18N[lang].phases;
+    const text = phases[phaseIndex % phases.length];
+    engine.showText(text, text.length > 24 ? 52 : 92);
+    phaseIndex++;
+    phaseTimer = setTimeout(() => cycle(3200), 3600);
+  }
+
+  $('langBtn').addEventListener('click', () => setLang(lang === 'zh' ? 'en' : 'zh'));
+  $('themeBtn').addEventListener('click', () => {
+    document.documentElement.dataset.theme =
+      document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  });
+
+  const canvas = $('canvas');
+  canvas.addEventListener('pointermove', (e) => {
+    const r = canvas.getBoundingClientRect();
+    engine.onMouse(e.clientX - r.left, e.clientY - r.top);
+  });
+  canvas.addEventListener('pointerleave', () => engine.clearMouse());
+  window.addEventListener('resize', () => engine.resize());
+
+  // Service worker (PWA — installable on Android as an app).
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => { /* offline first is optional */ });
+    });
+  }
+
+  setLang('zh');
+})();
+</script>
+</body>
+</html>

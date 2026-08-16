@@ -91,17 +91,66 @@ ipcMain.handle('prts:abort', (_e, token) => {
   if (c) c.abort()
 })
 
-/* ---------- dsh bridge: RPC + mux SSE relay (no CORS in Node) ---------- */
-// dsh's mux is a Server-Sent-Events GET stream (/api/events.mux), not a
-// WebSocket. Frames arrive as `data: <json>\n\n` lines. This relays them to
-// the renderer and reconnects on drop.
+/* ---------- dsh bridge: RPC + mux relay (no CORS in Node) ---------- */
+// Current dsh builds serve `/api/events.mux` as a **WebSocket** (a plain GET
+// answers "upgrade required"); older builds served it as an SSE stream.
+// This relays either carrier to the renderer over IPC and reconnects on drop.
 let dshMuxAbort = null
+let dshMuxWs = null
+let dshMuxTimer = null
+
+function dshMuxPush(data) {
+  try {
+    if (win && !win.isDestroyed()) win.webContents.send('prts:dshFrame', data)
+  } catch (e) { /* window gone */ }
+}
+
+function dshMuxParseLines(buf) {
+  let idx
+  while ((idx = buf.indexOf('\n\n')) >= 0) {
+    const chunk = buf.slice(0, idx)
+    buf = buf.slice(idx + 2)
+    for (const line of chunk.split('\n')) {
+      if (line.startsWith('data: ')) dshMuxPush(line.slice(6).trim())
+    }
+  }
+  return buf
+}
+
 function dshMuxConnect() {
   try { if (dshMuxAbort) dshMuxAbort.abort() } catch (e) {}
+  dshMuxAbort = null
+  try { if (dshMuxWs) dshMuxWs.close() } catch (e) {}
+  dshMuxWs = null
+  clearTimeout(dshMuxTimer)
+
+  const base = DSH_WEB_URL.replace(/\/+$/, '')
+  if (typeof WebSocket !== 'undefined') {
+    const wsUrl = base.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:') + '/api/events.mux'
+    let ws
+    try { ws = new WebSocket(wsUrl) } catch (e) { ws = null }
+    if (ws) {
+      let opened = false
+      dshMuxWs = ws
+      ws.onopen = () => { opened = true }
+      ws.onmessage = (e) => dshMuxPush(String(e.data))
+      const teardown = () => {
+        if (dshMuxWs === ws) dshMuxWs = null
+        if (!opened) { dshMuxSse() ; return }   // refused upgrade -> SSE build
+        dshMuxTimer = setTimeout(dshMuxConnect, 1000)
+      }
+      ws.onclose = teardown
+      ws.onerror = teardown
+      return
+    }
+  }
+  dshMuxSse()
+}
+
+function dshMuxSse() {
   const ac = new AbortController()
   dshMuxAbort = ac
-  const muxUrl = DSH_WEB_URL.replace(/\/+$/, '') + '/api/events.mux'
-  fetch(muxUrl, { signal: ac.signal })
+  fetch(base || DSH_WEB_URL.replace(/\/+$/, '') + '/api/events.mux', { signal: ac.signal })
     .then((res) => {
       if (!res.ok || !res.body) throw new Error('mux ' + res.status)
       const reader = res.body.getReader()
@@ -110,23 +159,16 @@ function dshMuxConnect() {
       const pump = () => reader.read().then(({ done, value }) => {
         if (done) return
         buf += dec.decode(value, { stream: true })
-        let idx
-        while ((idx = buf.indexOf('\n\n')) >= 0) {
-          const chunk = buf.slice(0, idx)
-          buf = buf.slice(idx + 2)
-          for (const line of chunk.split('\n')) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6).trim()
-              if (data && win && !win.isDestroyed()) win.webContents.send('prts:dshFrame', data)
-            }
-          }
-        }
+        buf = dshMuxParseLines(buf)
         return pump()
       })
       return pump()
     })
     .catch(() => {})
-    .finally(() => { dshMuxAbort = null; setTimeout(dshMuxConnect, 1000) })
+    .finally(() => {
+      if (dshMuxAbort === ac) dshMuxAbort = null
+      dshMuxTimer = setTimeout(dshMuxConnect, 1000)
+    })
 }
 ipcMain.handle('prts:dshRequest', async (_e, method, payload) => {
   const res = await fetch(DSH_WEB_URL.replace(/\/+$/, '') + '/api/' + method, {
@@ -329,4 +371,13 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => app.quit())
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow()
+})
+
+// If PRTS spawned its own `dsh web` backend, tear it down when the window
+// closes so it never lingers on port 3080 and blocks the official `dsh web`.
+app.on('before-quit', () => {
+  const pid = Number(process.env.DSH_WEB_PID || 0)
+  if (pid > 1) {
+    try { process.kill(pid, 'SIGKILL') } catch (e) { /* already gone */ }
+  }
 })

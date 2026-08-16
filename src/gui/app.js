@@ -2,7 +2,9 @@
  * PRTS GUI shell — the window over dsh. It boots the dsh connection, lists
  * dsh workspaces + sessions, renders the conversation (session events), and
  * keeps the PRTS chrome: particle intro, theme, system panel, plugin buttons,
- * voice input.
+ * voice input. On top of that it carries the full dsh control surface:
+ * workspace picker, session search, mode (agent preset), model + reasoning
+ * level, permission level, file attachment, approvals and questions.
  */
 (function (G) {
   'use strict';
@@ -16,10 +18,11 @@
   let toastTimer;
   A.toast = function (msg) {
     const t = $('toast');
+    if (!t) return;
     t.textContent = msg;
     t.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
   };
 
   /* ---------- i18n ---------- */
@@ -45,7 +48,35 @@
     await P.store.saveConfig(A.config);
   };
 
+  /* ---------- PRTS modal (replaces window.prompt / window.confirm, which
+     Electron disables) ---------- */
+  let modalResolve = null;
+  function openModal(kind, title, placeholder) {
+    const ov = $('modalOverlay');
+    $('modalTitle').textContent = title;
+    const input = $('modalInput');
+    input.value = '';
+    input.placeholder = placeholder || '';
+    input.hidden = kind !== 'prompt';
+    $('modalOk').textContent = A.t('common.ok');
+    $('modalCancel').hidden = kind === 'alert';
+    ov.classList.add('open');
+    if (kind === 'prompt') setTimeout(() => input.focus(), 40);
+    return new Promise((resolve) => { modalResolve = resolve; });
+  }
+  function settleModal(value) {
+    $('modalOverlay').classList.remove('open');
+    const r = modalResolve;
+    modalResolve = null;
+    if (r) r(value);
+  }
+  A.askPrompt = (title, placeholder) => openModal('prompt', title, placeholder);
+  A.askConfirm = (title) => openModal('confirm', title);
+  A.alert = (title) => openModal('alert', title);
+
   /* ---------- sidebar: workspaces + sessions (dsh) ---------- */
+  let sessionFilter = '';
+
   function renderWorkspaces() {
     const list = $('projectList');
     list.textContent = '';
@@ -78,10 +109,27 @@
     $('projectCount').textContent = String(ws.length);
   }
 
+  function visibleSessions() {
+    const ss = P.dshState.sessions;
+    const q = sessionFilter.trim().toLowerCase();
+    if (!q) return ss;
+    return ss.filter((s) => {
+      const title = P.dshState.sessionTitle(s);
+      const sid = String(s.sessionId || '');
+      return title.toLowerCase().indexOf(q) >= 0 || sid.toLowerCase().indexOf(q) >= 0;
+    });
+  }
+
   function renderSessions() {
     const list = $('sessionList');
     list.textContent = '';
-    const ss = P.dshState.sessions;
+    const ss = visibleSessions();
+    if (!ss.length) {
+      const empty = document.createElement('div');
+      empty.className = 'sbEmpty';
+      empty.textContent = A.t(sessionFilter ? 'sidebar.searchNone' : 'sidebar.sessionsEmpty');
+      list.appendChild(empty);
+    }
     for (const s of ss) {
       const row = document.createElement('div');
       row.className = 'sbItem' + (s.sessionId === P.dshState.currentSessionId ? ' active' : '');
@@ -90,7 +138,7 @@
       row.tabIndex = 0;
       const name = document.createElement('span');
       name.className = 'name';
-      name.textContent = s.title || s.sessionId.slice(0, 8);
+      name.textContent = P.dshState.sessionTitle(s);
       if (s.running) name.textContent += ' …';
       row.appendChild(name);
       const del = document.createElement('button');
@@ -112,6 +160,7 @@
     await refreshSessions();
     renderWorkspaces();
     updateCrumb();
+    refreshWorkspacePop();
   }
 
   async function refreshSessions() {
@@ -121,22 +170,36 @@
 
   async function selectSession(id) {
     P.dshState.currentSessionId = id;
-    P.dshState.selectedModel = null;
+    const summary = P.dshState.sessionSummary(id);
+    if (summary && summary.agentPreset) {
+      P.dshState.currentPreset = summary.agentPreset;
+      $('headerMode').textContent = presetLabel(summary.agentPreset);
+    }
+    P.dshState.permissions = P.dshState.permissionState(id);
+    updatePermissionChip();
+    if (A.refreshPermissionPop) A.refreshPermissionPop();
     A.enterChat();
+    try { await P.dshState.sessionModels(id); } catch (e) { /* model catalog may be warming up */ }
+    updateModelChip();
+    updateReasoningChip();
     await P.chat.loadHistory(id);
     renderSessions();
-    updateModelChip();
+    updateMeter();
     updateCrumb();
   }
 
   async function newSession() {
     const wsId = P.dshState.currentWorkspaceId;
-    const id = await P.dshState.createSession(wsId);
-    if (id) await selectSession(id);
+    const id = await P.dshState.createSession(wsId, A.currentPreset || undefined);
+    if (id) {
+      await refreshSessions();
+      await selectSession(id);
+    }
   }
 
   async function archiveSession(id) {
-    if (!confirm(A.t('session.confirmArchive'))) return;
+    const ok = await A.askConfirm(A.t('session.confirmArchive'));
+    if (!ok) return;
     await P.dshState.archiveSession(id);
     await refreshSessions();
     if (P.dshState.currentSessionId === id) {
@@ -147,13 +210,14 @@
   }
 
   async function deleteWorkspace(id) {
-    if (!confirm(A.t('workspace.confirmDelete'))) return;
+    const ok = await A.askConfirm(A.t('workspace.confirmDelete'));
+    if (!ok) return;
     await P.dshState.deleteWorkspace(id);
     await refreshAll();
   }
 
   async function newWorkspace() {
-    const path = prompt(A.t('workspace.pathPrompt'));
+    const path = await A.askPrompt(A.t('workspace.pathPrompt'), '/path/to/project');
     if (!path || !path.trim()) return;
     try {
       await P.dshState.createWorkspace(path.trim());
@@ -172,103 +236,116 @@
     renderWorkspaces();
     renderSessions();
     updateModelChip();
+    updateReasoningChip();
+    updatePermissionChip();
     if (A.refreshModelPop) A.refreshModelPop();
+    if (A.refreshReasoningPop) A.refreshReasoningPop();
+    if (A.refreshPermissionPop) A.refreshPermissionPop();
     if (A.refreshModePop) A.refreshModePop();
     if (A.refreshWorkspacePop) A.refreshWorkspacePop();
+    updateMeter();
     updateCrumb();
   }
 
-  /* ---------- model chip (dsh provider + model selection) ---------- */
-  function currentModel() {
+  /* ---------- mode (agent preset) ---------- */
+  function presetLabel(id) {
+    const p = P.dshState.presets.find((x) => (x.id || x.agentPreset) === id);
+    return p ? (p.name || id) : id;
+  }
+
+  /* ---------- model + reasoning chips ---------- */
+  function modelGroup(provider) {
+    return P.dshState.models.find((g) => g.id === provider) || null;
+  }
+  function currentModelEntry() {
+    const cm = P.dshState.currentModel;
+    if (cm && cm.model) {
+      const grp = modelGroup(cm.provider);
+      if (grp) {
+        const m = grp.models.find((x) => x.id === cm.model);
+        if (m) return { group: grp, model: m, provider: cm.provider };
+      }
+      return { group: null, model: { id: cm.model }, provider: cm.provider };
+    }
     const g = P.dshState.models;
     if (!g || !g.length) return null;
     const grp = g[0];
-    return (grp.models && grp.models[0]) ? { group: grp, model: grp.models[0] } : null;
+    return (grp.models && grp.models[0]) ? { group: grp, model: grp.models[0], provider: grp.id } : null;
   }
 
   function updateModelChip() {
     const label = $('modelChipLabel');
     if (!label) return;
-    if (P.dshState.selectedModel && P.dshState.selectedModel.model) {
-      label.textContent = P.dshState.selectedModel.model;
+    const e = currentModelEntry();
+    label.textContent = e ? e.model.id : '—';
+    label.title = e ? (e.provider || '') + ' / ' + e.model.id : '';
+  }
+
+  function updateReasoningChip() {
+    const chip = $('reasoningChip');
+    const label = $('reasoningChipLabel');
+    if (!chip || !label) return;
+    const e = currentModelEntry();
+    const reasoning = e && e.model.reasoning;
+    if (!reasoning || !reasoning.efforts || !reasoning.efforts.length) {
+      chip.hidden = true;
       return;
     }
-    const m = currentModel();
-    label.textContent = m ? m.model.id : '—';
+    chip.hidden = false;
+    const cur = (P.dshState.currentModel && P.dshState.currentModel.reasoningEffort) || reasoning.defaultEffort;
+    const eff = reasoning.efforts.find((x) => x.id === cur) || reasoning.efforts[0];
+    label.textContent = eff.name || eff.id;
+    chip.title = A.t('reasoning.title');
   }
 
-  // Make sure a session is open so the composer, model switch and mode switch
-  // all work immediately. Selects the first workspace, then the most recent
-  // session, and creates a blank one when none exists.
-  A.ensureSession = async function () {
-    if (P.dshState.currentSessionId) return P.dshState.currentSessionId;
-    if (!P.dshState.currentWorkspaceId && P.dshState.workspaces.length) {
-      P.dshState.currentWorkspaceId = P.dshState.workspaces[0].workspaceId;
-    }
-    if (P.dshState.sessions.length) {
-      await selectSession(P.dshState.sessions[0].sessionId);
-      return P.dshState.currentSessionId;
-    }
-    const id = await P.dshState.createSession(P.dshState.currentWorkspaceId || undefined);
-    if (!id) return null;
-    await selectSession(id);
-    await refreshSessions();
-    return id;
-  };
-
-  /** Provider -> credential ref, by the dsh convention (e.g. deepseek -> DEEPSEEK_API_KEY). */
-  function providerRef(provider) {
-    const base = String(provider || '').replace(/^llm-/, '').toUpperCase().replace(/-/g, '_');
-    return base + '_API_KEY';
+  /* ---------- permission chip ---------- */
+  function updatePermissionChip() {
+    const chip = $('permissionChip');
+    const label = $('permissionChipLabel');
+    if (!chip || !label) return;
+    const st = P.dshState.permissions;
+    if (!st || !st.options || !st.options.length) { chip.hidden = true; return; }
+    chip.hidden = false;
+    const cur = st.options.find((o) => o.value === st.currentValue);
+    label.textContent = cur ? (cur.name || cur.value) : (st.currentValue || '—');
+    chip.title = A.t('permission.title');
   }
 
-  // Credential state by provider: { provider -> { ref, configured } }.
-  A.credentialState = {};
-  async function loadCredentialState() {
-    const providers = P.dshState.providers || [];
-    const refs = providers.map((p) => providerRef(p.provider));
-    let creds = {};
-    try { creds = await P.dshState.credentialsDescribe(refs); } catch (e) { /* noop */ }
-    const map = {};
-    for (const p of providers) {
-      const ref = providerRef(p.provider);
-      map[p.provider] = { ref, configured: !!(creds[ref] && creds[ref].configured) };
-    }
-    A.credentialState = map;
-    return map;
+  /* ---------- context meter (composer ring) ---------- */
+  function sessionUsage(sessionId) {
+    const s = P.dshState.sessionSummary(sessionId);
+    const v = s && s.projections && s.projections.values;
+    if (!v) return null;
+    return {
+      pressure: v.contextPressure && v.contextPressure.pressureTokens,
+      window: v.contextPressure && v.contextPressure.contextWindow,
+      usage: v.tokenUsage || null,
+    };
   }
-
-  // Only providers whose API key is configured are usable in the composer.
-  function configuredProviders() {
-    return (P.dshState.providers || []).filter((p) => A.credentialState[p.provider] && A.credentialState[p.provider].configured);
+  function updateMeter() {
+    const ring = $('meterRing');
+    const label = $('meterLabel');
+    if (!ring || !label) return;
+    const u = sessionUsage(P.dshState.currentSessionId);
+    const pct = u && u.pressure && u.window ? Math.min(100, Math.max(0, (u.pressure / u.window) * 100)) : 0;
+    const R = 5.5, CIRC = 2 * Math.PI * R;
+    ring.style.strokeDasharray = String(CIRC);
+    ring.style.strokeDashoffset = String(CIRC * (1 - pct / 100));
+    label.textContent = Math.round(pct) + '%';
+    label.title = A.t('meter.context', { pct: Math.round(pct) });
   }
-
-  let currentModelProvider = null;
-
-  async function pickProvider(provider) {
-    currentModelProvider = provider;
-    renderModelsPicker();
-  }
-
-  function renderModelsPicker() {
-    const box = A.modelPop;
-    const grp = P.dshState.models.find((g) => g.id === currentModelProvider);
-    if (!grp || !grp.models || !grp.models.length) {
-      box.innerHTML = '<div class="popItem" data-back="1"><span class="label">← ' + A.t('model.back') + '</span></div><div class="popMeta">' + A.t('model.none') + '</div>';
-      return;
-    }
-    box.innerHTML =
-      '<div class="popItem" data-back="1"><span class="label">← ' + A.t('model.back') + '</span></div>' +
-      grp.models.map((m) => '<div class="popItem" data-model="' + m.id + '"><span class="label">' + m.id + '</span><span class="tick">&#10003;</span></div>').join('');
-  }
-
-  function buildModelPop() {
-    if (currentModelProvider) return '<div class="popMeta">' + currentModelProvider + '</div>';
-    const avail = configuredProviders();
-    if (!avail.length) {
-      return '<div class="popItem" data-settings="1"><span class="label">' + A.t('model.noConfiguredKey') + '</span></div>';
-    }
-    return avail.map((p) => '<div class="popItem" data-provider="' + p.provider + '"><span class="label">' + (p.displayName || p.provider) + '</span></div>').join('');
+  function renderMeterPop() {
+    const u = sessionUsage(P.dshState.currentSessionId);
+    if (!u) return '<div class="popMeta">' + A.t('meter.none') + '</div>';
+    const usage = u.usage || {};
+    const rows = [
+      [A.t('meter.pressure'), u.pressure !== undefined ? String(u.pressure) : '—'],
+      [A.t('meter.window'), u.window ? String(u.window) : '—'],
+      [A.t('meter.input'), usage.uncachedInputTokens !== undefined ? String(usage.uncachedInputTokens) : '—'],
+      [A.t('meter.output'), usage.outputTokens !== undefined ? String(usage.outputTokens) : '—'],
+      [A.t('meter.cache'), usage.cacheReadTokens !== undefined ? String(usage.cacheReadTokens) : '—'],
+    ];
+    return rows.map(([k, v]) => '<div class="meterRow"><span class="label">' + k + '</span><span class="value">' + v + '</span></div>').join('');
   }
 
   /* ---------- settings overlay (Language / Model config / Plugins / Version) ---------- */
@@ -281,8 +358,6 @@
   }
   function closeSettings() { $('settingsOverlay').classList.remove('open'); }
 
-  // opencode-style: a flat list of providers; expand one to edit its API key
-  // and see its models. The key is written to dsh's own credential store.
   async function renderModelConfig() {
     const box = $('cfgProviders');
     box.textContent = '';
@@ -348,7 +423,6 @@
         : A.t('model.none');
       body.appendChild(modelsLine);
 
-      const state = head.querySelector('.pState');
       head.addEventListener('click', () => {
         const open = card.classList.toggle('open');
         body.style.display = open ? '' : 'none';
@@ -455,9 +529,6 @@
   }
 
   /* ---------- plugin market ---------- */
-  // The catalog comes from web/market.json (built by scripts/scan-market.mjs,
-  // which discovers real dsh plugins on GitHub + npm and filters them). The
-  // three known-good entries are always kept as a fallback.
   const MARKET_FALLBACK = [
     { pkg: '@liustack/modlens', displayName: 'ModLens', description: () => A.t('market.modlens'), source: 'npm' },
     { pkg: 'dsh-cost-meter', displayName: 'Cost Meter', description: () => A.t('market.costMeter'), source: 'npm' },
@@ -549,7 +620,7 @@
     $('workspaceLabel').textContent = label;
   }
 
-  /* ---------- phase switch ---------- */
+  /* ---------- phase / tabs ---------- */
   A.enterChat = function () {
     A.heroVisible = false;
     const cvt = $('cvt');
@@ -558,7 +629,24 @@
     $('heroView').hidden = true;
     $('chatScroll').hidden = false;
     if (A.heroEngine) A.heroEngine.stop();
+    switchView('chat');
   };
+  function switchView(view) {
+    const chat = $('chatScroll');
+    const traj = $('trajView');
+    const composer = $('composerArea');
+    if (view === 'trajectory') {
+      chat.hidden = true;
+      traj.hidden = false;
+      composer.style.display = 'none';
+      P.chat.renderTraj();
+    } else {
+      chat.hidden = false;
+      traj.hidden = true;
+      composer.style.display = '';
+    }
+    document.querySelectorAll('.tab').forEach((b) => b.classList.toggle('active', b.dataset.view === view));
+  }
 
   /* ---------- details panel ---------- */
   A.showDetails = function (msg) {
@@ -624,6 +712,7 @@
       A_.sbWidth = Math.min(420, Math.max(240, x));
       appEl().style.setProperty('--dsh-sb', A_.sbWidth + 'px');
       $('handleSidebar').style.left = (A_.sbWidth - 4) + 'px';
+      appEl().classList.remove('sbCollapsed');
     });
     attachDrag($('handleDetails'), (x) => {
       const r = appEl().getBoundingClientRect();
@@ -631,6 +720,11 @@
       appEl().style.setProperty('--dsh-dt', A_.dtWidth + 'px');
       $('handleDetails').style.left = (r.width - A_.dtWidth - 4) + 'px';
     });
+  }
+  function toggleSidebar() {
+    const collapsed = appEl().classList.toggle('sbCollapsed');
+    appEl().style.setProperty('--dsh-sb', collapsed ? '0px' : A_.sbWidth + 'px');
+    placeHandles();
   }
 
   /* ---------- popovers ---------- */
@@ -652,32 +746,113 @@
       e.stopPropagation();
       if (openPop === pop) { closePops(); return; }
       closePops();
+      // Header chips open downward (the composer chips open upward).
+      const r = trigger.getBoundingClientRect();
+      if (r.top < 220) { pop.classList.add('below'); }
       pop.classList.add('open');
       openPop = pop;
     });
     return pop;
   }
 
+  function buildModelPop() {
+    // Provider list: session.models groups (with provider display names).
+    const groups = P.dshState.models || [];
+    if (!groups.length) return '<div class="popMeta">' + A.t('model.none') + '</div>';
+    if (currentModelProvider) {
+      const grp = groups.find((g) => g.id === currentModelProvider);
+      if (!grp || !grp.models || !grp.models.length) {
+        return '<div class="popItem" data-back="1"><span class="label">← ' + A.t('model.back') + '</span></div><div class="popMeta">' + A.t('model.none') + '</div>';
+      }
+      const cur = P.dshState.currentModel;
+      return '<div class="popItem" data-back="1"><span class="label">← ' + A.t('model.back') + '</span></div>' +
+        grp.models.map((m) => {
+          const sel = cur && cur.provider === grp.id && cur.model === m.id;
+          const eff = m.reasoning && m.reasoning.efforts ? m.reasoning.efforts.map((e) => e.name || e.id).join(' / ') : '';
+          return '<div class="popItem' + (sel ? ' selected' : '') + '" data-model="' + m.id + '"><span class="label">' + m.id + (eff ? '<span class="desc"> ' + eff + '</span>' : '') + '</span><span class="tick">&#10003;</span></div>';
+        }).join('');
+    }
+    const provName = (id) => {
+      const p = P.dshState.providers.find((x) => x.provider === id);
+      return p ? (p.displayName || p.provider) : (id || 'provider');
+    };
+    const cur = P.dshState.currentModel;
+    return groups.map((g) => {
+      const sel = cur && cur.provider === g.id;
+      return '<div class="popItem' + (sel ? ' selected' : '') + '" data-provider="' + g.id + '"><span class="label">' + provName(g.id) + '</span><span class="tick">&#10003;</span></div>';
+    }).join('');
+  }
+
+  function buildReasoningPop() {
+    const e = currentModelEntry();
+    const reasoning = e && e.model.reasoning;
+    if (!reasoning || !reasoning.efforts) return '<div class="popMeta">' + A.t('reasoning.none') + '</div>';
+    const cur = (P.dshState.currentModel && P.dshState.currentModel.reasoningEffort) || reasoning.defaultEffort;
+    return reasoning.efforts.map((x) =>
+      '<div class="popItem' + (x.id === cur ? ' selected' : '') + '" data-effort="' + x.id + '"><span class="label">' + (x.name || x.id) + '</span><span class="desc">' + (x.description || '') + '</span><span class="tick">&#10003;</span></div>'
+    ).join('');
+  }
+
+  function buildPermissionPop() {
+    const st = P.dshState.permissions;
+    if (!st || !st.options || !st.options.length) return '<div class="popMeta">' + A.t('permission.none') + '</div>';
+    return st.options.map((o) =>
+      '<div class="popItem' + (o.value === st.currentValue ? ' selected' : '') + '" data-permission="' + o.value + '"><span class="label">' + (o.name || o.value) + '</span><span class="tick">&#10003;</span></div>'
+    ).join('');
+  }
+
   function bindPopovers() {
     const modelPop = attachPop($('modelChip'), buildModelPop(), async (item) => {
-      if (!P.dshState.currentSessionId) { A.toast(A.t('session.selectFirst')); return; }
-      // No key configured yet -> send the user to Model configuration.
-      if (item.dataset.settings === '1') { closePops(); openSettings(); return; }
-      // Back to provider list.
       if (item.dataset.back === '1') { currentModelProvider = null; A.refreshModelPop(); return; }
-      // Provider picked -> its models.
-      if (item.dataset.provider) { await pickProvider(item.dataset.provider); return; }
-      // Model picked -> select, then close the pop.
+      if (item.dataset.provider) { currentModelProvider = item.dataset.provider; A.refreshModelPop(); return; }
       if (item.dataset.model) {
+        if (!P.dshState.currentSessionId) { A.toast(A.t('session.selectFirst')); return; }
         try {
-          await P.dshState.selectModel(P.dshState.currentSessionId, currentModelProvider, item.dataset.model);
+          const eff = (P.dshState.currentModel && P.dshState.currentModel.reasoningEffort) || undefined;
+          await P.dshState.selectModel(P.dshState.currentSessionId, currentModelProvider, item.dataset.model, eff);
+          await P.dshState.sessionModels(P.dshState.currentSessionId);
           updateModelChip();
+          updateReasoningChip();
           closePops();
         } catch (e) { A.toast(e.message); }
       }
     });
     A.modelPop = modelPop;
     A.refreshModelPop = () => { modelPop.innerHTML = buildModelPop(); };
+
+    const reasoningPop = attachPop($('reasoningChip'), buildReasoningPop(), async (item) => {
+      if (!item.dataset.effort) return;
+      if (!P.dshState.currentSessionId) { A.toast(A.t('session.selectFirst')); return; }
+      const e = currentModelEntry();
+      if (!e) return;
+      try {
+        await P.dshState.selectModel(P.dshState.currentSessionId, e.provider, e.model.id, item.dataset.effort);
+        await P.dshState.sessionModels(P.dshState.currentSessionId);
+        updateModelChip();
+        updateReasoningChip();
+        closePops();
+      } catch (err) { A.toast(err.message); }
+    });
+    A.reasoningPop = reasoningPop;
+    A.refreshReasoningPop = () => { reasoningPop.innerHTML = buildReasoningPop(); };
+
+    const permissionPop = attachPop($('permissionChip'), buildPermissionPop(), async (item) => {
+      if (!item.dataset.permission) return;
+      if (!P.dshState.currentSessionId) { A.toast(A.t('session.selectFirst')); return; }
+      try {
+        await P.dshState.setPermissionPreset(P.dshState.currentSessionId, item.dataset.permission);
+        closePops();
+        A.toast(A.t('permission.applying', { preset: item.dataset.permission }));
+        setTimeout(async () => {
+          await P.dshState.listSessions();
+          P.dshState.permissions = P.dshState.permissionState(P.dshState.currentSessionId);
+          updatePermissionChip();
+        }, 1200);
+      } catch (e) { A.toast(e.message); }
+    });
+    A.permissionPop = permissionPop;
+    A.refreshPermissionPop = () => { permissionPop.innerHTML = buildPermissionPop(); };
+    $('permissionChip').addEventListener('click', () => { A.refreshPermissionPop(); });
 
     // Work modes = dsh's own agent presets (the same set dsh web offers).
     const modePop = attachPop($('modeChip'), '<div class="popMeta">' + A.t('mode.loading') + '</div>', async (item) => {
@@ -686,19 +861,20 @@
       try {
         await P.dshState.agentPresetSelect(P.dshState.currentSessionId, item.dataset.preset);
         A.currentPreset = item.dataset.preset;
-        $('headerMode').textContent = item.dataset.preset;
+        $('headerMode').textContent = presetLabel(item.dataset.preset);
         closePops();
       } catch (e) { A.toast(e.message); }
     });
     A.modePop = modePop;
     A.refreshModePop = async () => {
       try {
-        const presets = await P.dshState.agentPresetList();
+        const presets = await P.dshState.listPresets();
+        const cur = A.currentPreset || (P.dshState.currentSessionId ? (P.dshState.sessionSummary(P.dshState.currentSessionId) || {}).agentPreset : null);
         modePop.innerHTML = presets.length
           ? presets.map((p) => {
             const id = p.id || p.agentPreset;
             const label = p.name || id;
-            return '<div class="popItem" data-preset="' + id + '"><span class="label">' + label + '</span></div>';
+            return '<div class="popItem' + (id === cur ? ' selected' : '') + '" data-preset="' + id + '"><span class="label">' + label + '</span><span class="tick">&#10003;</span></div>';
           }).join('')
           : '<div class="popMeta">' + A.t('mode.none') + '</div>';
       } catch (e) {
@@ -721,7 +897,9 @@
     };
     A.refreshWorkspacePop();
 
-    // Commands chip — lists dsh's installed commands (e.g. givemyflag's).
+    // Commands chip — lists the session's known commands (from its own
+    // command/run history plus well-known built-ins; dsh exposes no
+    // command-directory RPC on the /api wire).
     const cmdPop = attachPop($('commandsChip'), '<div class="popMeta">' + A.t('commands.loading') + '</div>', async (item) => {
       const input = $('composerInput');
       if (input) {
@@ -744,6 +922,132 @@
       }
     };
     $('commandsChip').addEventListener('click', () => { A.refreshCmdPop(); });
+
+    // Context meter popover.
+    const meterPop = attachPop($('meterBtn'), '<div class="popMeta">' + A.t('meter.none') + '</div>', () => {});
+    $('meterBtn').addEventListener('click', () => { meterPop.innerHTML = renderMeterPop(); });
+  }
+
+  /* ---------- approvals + questions (server-request frames) ---------- */
+  const openRequests = new Map();   // key -> { el, rpcId, kind }
+
+  function closeRequest(key) {
+    const rec = openRequests.get(key);
+    if (!rec) return;
+    openRequests.delete(key);
+    rec.el.classList.add('closing');
+    setTimeout(() => rec.el.remove(), 180);
+    if (!openRequests.size) $('requestOverlay').classList.remove('open');
+  }
+  function addRequestCard(key, card) {
+    const box = $('requestCards');
+    box.appendChild(card);
+    openRequests.set(key, { el: card });
+    $('requestOverlay').classList.add('open');
+  }
+
+  function bindRequests() {
+    P.dsh.on('approval/requested', (frame) => {
+      const pl = frame.payload || {};
+      if (!pl.approvalId) return;
+      const key = 'ap-' + pl.approvalId;
+      if (openRequests.has(key)) return;
+      const card = document.createElement('div');
+      card.className = 'reqCard';
+      const head = el0('div', 'reqHead');
+      head.appendChild(el0('span', 'reqKicker', A.t('approval.title')));
+      head.appendChild(el0('span', 'reqMeta', pl.toolName || ''));
+      card.appendChild(head);
+      const reason = el0('div', 'reqReason', pl.reason || '');
+      card.appendChild(reason);
+      const actions = el0('div', 'reqActions');
+      const reject = el0('button', 'sBtn', A.t('approval.reject'));
+      reject.type = 'button';
+      reject.addEventListener('click', () => {
+        P.dsh.respond(frame.rpcId, { sessionId: pl.sessionId, approvalId: pl.approvalId, outcome: 'rejected' });
+        closeRequest(key);
+      });
+      const allow = el0('button', 'sBtn primary', A.t('approval.allow'));
+      allow.type = 'button';
+      allow.addEventListener('click', () => {
+        P.dsh.respond(frame.rpcId, { sessionId: pl.sessionId, approvalId: pl.approvalId, outcome: 'allowed-once' });
+        closeRequest(key);
+      });
+      actions.appendChild(reject); actions.appendChild(allow);
+      card.appendChild(actions);
+      addRequestCard(key, card);
+    });
+    P.dsh.on('approval/resolved', (frame) => {
+      const pl = frame.payload || {};
+      closeRequest('ap-' + pl.approvalId);
+    });
+
+    P.dsh.on('question/requested', (frame) => {
+      const pl = frame.payload || {};
+      const questions = pl.questions || [];
+      if (!questions.length) return;
+      const key = 'q-' + frame.rpcId;
+      if (openRequests.has(key)) return;
+      const card = document.createElement('div');
+      card.className = 'reqCard';
+      card.appendChild(el0('div', 'reqKicker', A.t('question.title')));
+      const answers = [];
+      for (const q of questions) {
+        const block = el0('div', 'reqQ');
+        const head = el0('div', 'reqQHead');
+        head.appendChild(el0('span', 'reqQTitle', q.question || q.header || q.id || ''));
+        const multi = !!(q.multiSelect);
+        if (multi) head.appendChild(el0('span', 'reqMeta', A.t('question.multi')));
+        block.appendChild(head);
+        const opts = el0('div', 'reqOpts');
+        const selected = new Set();
+        const optionBtns = [];
+        for (const o of q.options || []) {
+          const b = el0('button', 'reqOpt', o.label || o);
+          b.type = 'button';
+          b.dataset.value = String(o.value !== undefined ? o.value : (o.label || o));
+          b.addEventListener('click', () => {
+            if (!multi) {
+              selected.clear();
+              optionBtns.forEach((x) => x.classList.remove('on'));
+            }
+            if (selected.has(b.dataset.value)) { selected.delete(b.dataset.value); b.classList.remove('on'); }
+            else { selected.add(b.dataset.value); b.classList.add('on'); }
+          });
+          optionBtns.push(b);
+          opts.appendChild(b);
+        }
+        block.appendChild(opts);
+        const custom = document.createElement('input');
+        custom.type = 'text';
+        custom.className = 'sInput reqCustom';
+        custom.placeholder = A.t('question.custom');
+        block.appendChild(custom);
+        card.appendChild(block);
+        answers.push({ q, selected, optionBtns, custom });
+      }
+      const actions = el0('div', 'reqActions');
+      const submit = el0('button', 'sBtn primary', A.t('question.answer'));
+      submit.type = 'button';
+      submit.addEventListener('click', () => {
+        const answer = { answers: answers.map((a) => ({ id: a.q.id, selected: [...a.selected], custom: a.custom.value })) };
+        P.dsh.respond(frame.rpcId, { sessionId: pl.sessionId, answer });
+        closeRequest(key);
+      });
+      actions.appendChild(submit);
+      card.appendChild(actions);
+      addRequestCard(key, card);
+    });
+    P.dsh.on('question/resolved', (frame) => {
+      const pl = frame.payload || {};
+      closeRequest('q-' + pl.questionRpcId);
+    });
+  }
+  function el0(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
   }
 
   /* ---------- particles: intro + hero ---------- */
@@ -754,8 +1058,6 @@
     const tag = $('introTag');
     tag.textContent = A.t('intro.welcome');
 
-    // The intro is a loading shell: it cycles the three wordmark phases until
-    // dsh is connected and the first session is ready. No progress bar.
     A.introDone = false;
     A.ready = false;
 
@@ -763,9 +1065,9 @@
       if (A.introDone) return;
       A.introDone = true;
       clearTimeout(A.introTimer);
+      removeIntroSkip();
       $('intro').classList.add('done');
       setTimeout(() => { $('intro').style.display = 'none'; A.introEngine.stop(); }, 800);
-      // If dsh never connected we are still on the hero view — start its field.
       if (!$('cvt').dataset.phase || $('cvt').dataset.phase === 'hero') startHeroAmbient();
     };
     A.finishIntro = finish;
@@ -777,9 +1079,11 @@
     };
     window.addEventListener('pointerdown', skip);
     window.addEventListener('keydown', skip);
+    const removeIntroSkip = () => {
+      window.removeEventListener('pointerdown', skip);
+      window.removeEventListener('keydown', skip);
+    };
 
-    // Three-phase loop. It always plays the full three-image cycle at least
-    // once, then keeps cycling until dsh is ready — only a click skips ahead.
     A.phaseCount = 0;
     let phase = 0;
     const tick = () => {
@@ -795,7 +1099,6 @@
     A.introTimer = setTimeout(tick, 500);
   }
 
-  // Particle "WAIT" hint at the click point, one second then dissipates.
   function showWaitHint(e) {
     const x = (e && (e.clientX ?? e.x)) ?? window.innerWidth / 2;
     const y = (e && (e.clientY ?? e.y)) ?? window.innerHeight / 2;
@@ -817,6 +1120,7 @@
 
   function startHeroAmbient() {
     const cv = $('heroCanvas');
+    if (A.heroEngine) { A.heroEngine.stop(); A.heroEngine = null; }
     A.heroEngine = P.particles.create(cv, { count: 1600, speedRange: [0.006, 0.02] });
     A.heroEngine.start();
     A.heroEngine.scatter();
@@ -850,10 +1154,6 @@
     }
     ctx.globalAlpha = 1;
   }
-  // Central diamond: dB drives the scale, the dominant frequency nudges the
-  // rotation. The inner square vibrates too, but on its own phase. `.speaking`
-  // is the same path reserved for dsh voice *output* — when dsh gains speech,
-  // produced audio drives this diamond identically.
   function drawVoiceDiamond(frame) {
     const el = $('voiceDiamond');
     if (!el) return;
@@ -905,7 +1205,7 @@
   }
 
   /* ---------- community plugins ---------- */
-  function renderPlugins() {
+  function renderCommunityPlugins() {
     for (const area of ['composer', 'header']) {
       const host = area === 'composer' ? $('pluginComposer') : $('pluginHeader');
       host.textContent = '';
@@ -926,6 +1226,27 @@
     }
   }
 
+  /* ---------- provider credentials ---------- */
+  function providerRef(provider) {
+    const base = String(provider || '').replace(/^llm-/, '').toUpperCase().replace(/-/g, '_');
+    return base + '_API_KEY';
+  }
+  A.credentialState = {};
+  async function loadCredentialState() {
+    const providers = P.dshState.providers || [];
+    const refs = providers.map((p) => providerRef(p.provider));
+    let creds = {};
+    try { creds = await P.dshState.credentialsDescribe(refs); } catch (e) { /* noop */ }
+    const map = {};
+    for (const p of providers) {
+      const ref = providerRef(p.provider);
+      map[p.provider] = { ref, configured: !!(creds[ref] && creds[ref].configured) };
+    }
+    A.credentialState = map;
+    return map;
+  }
+  let currentModelProvider = null;
+
   /* ---------- boot ---------- */
   async function boot() {
     A.config = await P.store.loadConfig();
@@ -937,12 +1258,15 @@
     bindDrag();
     bindPopovers();
     bindVoice();
-    if (P.plugins) { P.plugins.onChange(renderPlugins); P.plugins.adoptSeeded(); renderPlugins(); }
+    bindRequests();
+    if (P.plugins) { P.plugins.onChange(renderCommunityPlugins); P.plugins.adoptSeeded(); renderCommunityPlugins(); }
     if (P.system && P.system.bind) P.system.bind();
 
     $('themeBtn').addEventListener('click', A.toggleTheme);
+    $('sbCollapseBtn').addEventListener('click', toggleSidebar);
     $('clearHistoryBtn').addEventListener('click', async () => {
-      if (!confirm(A.t('session.confirmArchive'))) return;
+      const ok = await A.askConfirm(A.t('session.confirmArchive'));
+      if (!ok) return;
       if (P.dshState.currentSessionId) await P.dshState.archiveSession(P.dshState.currentSessionId);
       await newSession();
     });
@@ -969,7 +1293,6 @@
       closeSettings();
       A.toast(A.t('settings.saved'));
     });
-    // Model configuration is hidden until the abstract toggle is clicked.
     $('modelCfgToggle').addEventListener('click', () => {
       const btn = $('modelCfgToggle');
       const body = $('modelCfgBody');
@@ -978,7 +1301,6 @@
       btn.setAttribute('aria-expanded', String(open));
       btn.classList.toggle('open', open);
     });
-    // Update: run the packaged updater script from the main process.
     $('updateBtn').addEventListener('click', async () => {
       const status = $('updateStatus');
       status.textContent = A.t('settings.updating');
@@ -993,11 +1315,48 @@
         }
       } catch (e) { status.textContent = A.t('settings.updateFail', { msg: e.message }); }
     });
+    // Search sessions: client-side filter (instant) — the wire session.search
+    // stays a best-effort supplement for deployments where the index is on.
+    const searchInput = $('sessionSearch');
+    let searchTimer = null;
+    searchInput.addEventListener('input', () => {
+      sessionFilter = searchInput.value;
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => renderSessions(), 120);
+    });
+    $('sessionSearchClear').addEventListener('click', () => {
+      searchInput.value = '';
+      sessionFilter = '';
+      renderSessions();
+    });
+
+    // Tabs: chat / trajectory.
+    document.querySelectorAll('.tab').forEach((b) => {
+      b.addEventListener('click', () => switchView(b.dataset.view));
+    });
+    $('logBtn').addEventListener('click', () => switchView('trajectory'));
+
+    // Modal (prompt / confirm).
+    $('modalOk').addEventListener('click', () => {
+      const input = $('modalInput');
+      const value = input.hidden ? true : input.value;
+      settleModal(value);
+    });
+    $('modalCancel').addEventListener('click', () => settleModal(inputHidden() ? false : null));
+    $('modalOverlay').addEventListener('click', (e) => {
+      if (e.target === $('modalOverlay')) settleModal(inputHidden() ? false : null);
+    });
+    function inputHidden() { return $('modalInput').hidden; }
+
     $('flow').addEventListener('click', (e) => {
       const item = e.target.closest('.assistantItem') || e.target.closest('.userBubble');
-      if (item) {
-        const id = item.closest('.assistantItem') ? item.closest('.assistantItem').dataset.msg : null;
-        const msg = id ? P.chat.messages.find((m) => m.id === id) : P.chat.messages.filter((m) => m.role === 'user').pop();
+      if (!item) return;
+      if (item.classList.contains('assistantItem')) {
+        const id = item.dataset.msg;
+        const msg = P.chat.messages.find((m) => m.id === id);
+        if (msg) A.showDetails(msg);
+      } else {
+        const msg = P.chat.messages.filter((m) => m.role === 'user').pop();
         if (msg) A.showDetails(msg);
       }
     });
@@ -1014,7 +1373,6 @@
       closePops(); closeSettings(); closeMarket();
       if (P.system && P.system.open) P.system.close();
       if (now - lastEscAt < 500) {
-        // Double-Esc: cancel the running conversation / task.
         lastEscAt = 0;
         if (P.chat && P.chat.stop) P.chat.stop();
         A.toast(A.t('chat.cancelled'));
@@ -1028,10 +1386,18 @@
       if (A.heroEngine) A.heroEngine.resize();
     });
 
+    // Status row + streaming sync.
+    const statusRow = $('statusRow');
+    const statusText = $('statusText');
+    P.chat.onStatus = (text) => {
+      if (!statusRow || !statusText) return;
+      if (text) { statusRow.hidden = false; statusText.textContent = text; }
+      else statusRow.hidden = true;
+    };
+    P.chat.onStreaming = () => { /* swapSendStop is handled inside chat.js */ };
+
     P.chat.init();
 
-    // The window shows immediately; the particle intro acts as a loading shell
-    // while dsh connects and the first session is prepared in the background.
     updateCrumb();
     placeHandles();
     runIntro();
@@ -1040,8 +1406,6 @@
     (async () => {
       try {
         await P.dshState.connect();
-        // Wait until dsh actually answers (the /api route may still be warming
-        // up); the intro keeps cycling meanwhile.
         let up = false;
         for (let i = 0; i < 40; i++) {
           if (await P.dshState.ping()) { up = true; break; }
@@ -1056,15 +1420,37 @@
       } catch (e) {
         A.toast(A.t('dsh.connectFail', { msg: e.message }));
       }
-      // Mark ready — the intro finishes once its full three-image cycle has
-      // played (or immediately on a click).
       A.ready = true;
     })();
   }
 
+  // Make sure a session is open so the composer, model switch and mode switch
+  // all work immediately. Selects the first workspace, then the most recent
+  // session, and creates a blank one when none exists.
+  A.ensureSession = async function () {
+    if (P.dshState.currentSessionId) return P.dshState.currentSessionId;
+    if (!P.dshState.currentWorkspaceId && P.dshState.workspaces.length) {
+      P.dshState.currentWorkspaceId = P.dshState.workspaces[0].workspaceId;
+    }
+    if (P.dshState.sessions.length) {
+      await selectSession(P.dshState.sessions[0].sessionId);
+      return P.dshState.currentSessionId;
+    }
+    const id = await P.dshState.createSession(P.dshState.currentWorkspaceId || undefined);
+    if (!id) return null;
+    await refreshSessions();
+    await selectSession(id);
+    return id;
+  };
+
   A.updateCrumb = updateCrumb;
   A.renderWorkspaces = renderWorkspaces;
   A.renderSessions = renderSessions;
+  A.updateModelChip = updateModelChip;
+  A.updateReasoningChip = updateReasoningChip;
+  A.updatePermissionChip = updatePermissionChip;
+  A.updateMeter = updateMeter;
+  A.switchView = switchView;
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();

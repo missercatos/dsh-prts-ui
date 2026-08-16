@@ -31,6 +31,24 @@
 .sbItem .rowBtn { display: none; width: 22px; height: 22px; }
 .sbItem:hover .rowBtn { display: inline-flex; }
 .sbEmpty { padding: 8px 10px; font-size: 12px; line-height: 18px; color: var(--prts-ink-faint); }
+/* Session search field. */
+.sbSearch {
+  display: flex; align-items: center; gap: 6px; margin: 2px 4px 6px; padding: 0 8px;
+  height: 28px; border: 1px solid var(--prts-hairline); border-radius: 6px;
+  color: var(--prts-ink-faint); background: transparent;
+}
+.sbSearch:focus-within { border-color: var(--prts-hairline-strong); color: var(--prts-ink-dim); }
+.sbSearch input {
+  flex: 1; min-width: 0; height: 100%; border: none; outline: none; background: transparent;
+  color: var(--prts-ink); font-size: 12px; line-height: 18px;
+}
+.sbSearch input::placeholder { color: var(--prts-ink-faint); }
+.sbSearchClear {
+  display: none; width: 16px; height: 16px; padding: 0; border: none; border-radius: 3px;
+  background: transparent; color: var(--prts-ink-faint); font-size: 12px; line-height: 16px; cursor: pointer;
+}
+.sbSearchClear:hover { color: var(--prts-ink); }
+.sbSearch:focus-within .sbSearchClear, .sbSearch.hasText .sbSearchClear { display: inline-flex; align-items: center; justify-content: center; }
 .sbFoot { margin-top: auto; display: flex; flex-direction: column; gap: 2px; padding-top: 8px; border-top: 1px solid var(--prts-hairline); }
 .sbFootItem { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border: none; border-radius: 6px; background: transparent; cursor: pointer; color: var(--prts-ink-dim); font-size: 13px; line-height: 20px; }
 .sbFootItem:hover { background: var(--prts-surface-2); color: var(--prts-ink); }
@@ -186,6 +204,8 @@
   box-shadow: var(--prts-shadow); color: var(--prts-ink);
 }
 .pop.open { display: block; }
+/* Header chips open downward (they sit near the top edge). */
+.pop.below { bottom: auto; top: calc(100% + 6px); }
 .pop::-webkit-scrollbar { width: 6px; }
 .popItem { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px; border-radius: 4px; font-size: 13px; line-height: 20px; cursor: pointer; }
 .popItem:hover { background: var(--prts-surface); }

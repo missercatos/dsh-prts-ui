@@ -1,0 +1,20 @@
+{
+  "name": "PRTS · dsh-prts 官网",
+  "short_name": "PRTS",
+  "description": "PRTS —— DeepSeek Harness (dsh) 的 GUI 外壳：一键安装包下载（Windows / Linux / macOS / Android）。",
+  "lang": "zh-CN",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0A0A0B",
+  "theme_color": "#0A0A0B",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='14' y='14' width='36' height='36' transform='rotate(45 32 32)' fill='none' stroke='%23FAFAFA' stroke-width='2.5'/%3E%3Ctext x='32' y='42' font-size='18' font-style='italic' font-weight='700' fill='%23FAFAFA' text-anchor='middle' font-family='sans-serif'%3EPRTS%3C/text%3E%3C/svg%3E",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

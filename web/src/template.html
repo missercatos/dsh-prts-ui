@@ -49,6 +49,11 @@
           <span class="eyebrow" data-i18n="sidebar.sessions">Sessions</span>
           <span class="count" id="sessionCount"></span>
         </div>
+        <div class="sbSearch">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5.2" cy="5.2" r="3.6" stroke="currentColor" stroke-width="1.1"/><path d="M8 8l2.8 2.8" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+          <input id="sessionSearch" type="text" spellcheck="false" autocomplete="off" data-i18n-placeholder="sidebar.searchSessions">
+          <button class="sbSearchClear" id="sessionSearchClear" type="button" title="Clear">×</button>
+        </div>
         <div class="sbList" id="sessionList" style="overflow-y:auto;"></div>
       </div>
       <div class="sbFoot">
@@ -84,6 +89,10 @@
             </button>
             <button class="chip modeChip" id="modeChip" type="button">
               <span class="headerMode" id="headerMode" data-i18n="header.mode">STANDARD</span>
+              <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
+            </button>
+            <button class="chip modeChip permissionChip" id="permissionChip" type="button" hidden data-i18n-title="permission.title">
+              <span class="headerMode" id="permissionChipLabel">—</span>
               <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
             </button>
           </div>
@@ -143,6 +152,7 @@
             </button>
           </div>
           <div class="composerCard" id="composerCard">
+            <div class="attachStrip" id="attachStrip" hidden></div>
             <textarea class="composerInput" id="composerInput" rows="1" spellcheck="false" data-i18n-placeholder="composer.placeholder"></textarea>
             <div class="composerToolbar">
               <div class="toolGroup">
@@ -152,6 +162,10 @@
                   <span class="label" id="modelChipLabel">dsh</span>
                   <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
                 </button>
+                <button class="chip reasoningChip" id="reasoningChip" type="button" hidden data-i18n-title="reasoning.title">
+                  <span class="label" id="reasoningChipLabel">—</span>
+                  <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
+                </button>
                 <button class="chip" id="commandsChip" type="button">
                   <span data-i18n="composer.commands">Commands</span>
                   <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
@@ -159,6 +173,10 @@
               </div>
               <div class="spacer"></div>
               <div class="toolGroup">
+                <button class="meterBtn" id="attachBtn" type="button" data-i18n-title="composer.attach">
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.8 9.4V1.8M3.4 5.2 6.8 1.8l3.4 3.4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.2 7.6v2.4a1 1 0 0 0 1 1h6.6a1 1 0 0 0 1-1V7.6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+                </button>
+                <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif" multiple style="display:none;">
                 <button class="meterBtn voiceBtn" id="voiceBtn" type="button" title="Voice input" data-i18n-title="voice.off">
                   <svg class="micIcon" width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.2a2 2 0 0 0-2 2v3.1a2 2 0 0 0 4 0V3.2a2 2 0 0 0-2-2Z" stroke="currentColor" stroke-width="1.1"/><path d="M2.6 6a3.9 3.9 0 0 0 7.8 0M6.5 9.9v1.9M4.6 11.8h3.8" stroke="currentColor" stroke-width="1.1"/></svg>
                 </button>
@@ -291,6 +309,23 @@
     <div class="hint" data-i18n="market.hint" style="margin-bottom:14px;">Install dsh plugins from npm into the profile. Installed plugins are marked.</div>
     <div id="marketList"></div>
   </div>
+</div>
+
+<div class="overlay" id="modalOverlay">
+  <div class="modalCard">
+    <div class="modalHead">
+      <span class="title" id="modalTitle">PRTS</span>
+    </div>
+    <input class="sInput" id="modalInput" type="text" spellcheck="false" autocomplete="off">
+    <div class="modalActions">
+      <button class="sBtn" id="modalCancel" type="button" data-i18n="common.cancel">Cancel</button>
+      <button class="sBtn primary" id="modalOk" type="button" data-i18n="common.ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay reqOverlay" id="requestOverlay">
+  <div class="reqStack" id="requestCards"></div>
 </div>
 
 <div class="intro" id="intro">
