@@ -1054,7 +1054,10 @@
     const pop = document.createElement('div');
     pop.className = 'pop';
     if (alignRight) { pop.style.left = 'auto'; pop.style.right = '0'; }
-    pop.innerHTML = itemsHtml;
+    // A function builder is re-run on EVERY open, so a popover can never
+    // show a stale snapshot (the old "Max selected but High is ticked" bug).
+    const build = typeof itemsHtml === 'function' ? itemsHtml : () => itemsHtml;
+    pop.innerHTML = build();
     trigger.appendChild(pop);
     pop.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1067,7 +1070,9 @@
       closePops();
       // Header chips open downward (the composer chips open upward).
       const r = trigger.getBoundingClientRect();
-      if (r.top < 220) { pop.classList.add('below'); }
+      if (r.top < 220) pop.classList.add('below');
+      else pop.classList.remove('below');
+      pop.innerHTML = build();
       pop.classList.add('open');
       openPop = pop;
     });
@@ -1144,7 +1149,7 @@
     for (const id of ['modelChip', 'heroModelChip']) {
       const trigger = $(id);
       if (!trigger) continue;
-      modelPops.push(attachPop(trigger, buildModelPop(), applyModelPick));
+      modelPops.push(attachPop(trigger, buildModelPop, applyModelPick));
     }
     A.refreshModelPop = () => { for (const pop of modelPops) pop.innerHTML = buildModelPop(); };
 
@@ -1158,6 +1163,7 @@
         await P.dshState.sessionModels(P.dshState.currentSessionId);
         updateModelChip();
         updateReasoningChip();
+        if (A.refreshReasoningPop) A.refreshReasoningPop();
         closePops();
       } catch (err) { A.toast(err.message); }
     }
@@ -1165,7 +1171,7 @@
     for (const id of ['reasoningChip', 'heroReasoningChip']) {
       const trigger = $(id);
       if (!trigger) continue;
-      reasoningPops.push(attachPop(trigger, buildReasoningPop(), applyReasoningPick));
+      reasoningPops.push(attachPop(trigger, buildReasoningPop, applyReasoningPick));
     }
     A.refreshReasoningPop = () => { for (const pop of reasoningPops) pop.innerHTML = buildReasoningPop(); };
 
@@ -1191,11 +1197,10 @@
     for (const triggerId of ['composerPermissionChip']) {
       const trigger = $(triggerId);
       if (!trigger) continue;
-      const pop = attachPop(trigger, buildPermissionPop(), async (item) => {
+      const pop = attachPop(trigger, buildPermissionPop, async (item) => {
         if (item.dataset.permission) await applyPermissionPreset(item.dataset.permission);
       });
       permissionPops.push(pop);
-      trigger.addEventListener('click', () => { pop.innerHTML = buildPermissionPop(); });
     }
     A.refreshPermissionPop = () => {
       for (const pop of permissionPops) pop.innerHTML = buildPermissionPop();
@@ -1216,6 +1221,7 @@
             A.currentPreset = item.dataset.preset;
             setModeLabel(presetLabel(item.dataset.preset));
           }
+          A.refreshModePop();
           closePops();
           return;
         }
@@ -1232,7 +1238,7 @@
     for (const id of ['heroModeChip']) {
       const trigger = $(id);
       if (!trigger) continue;
-      modePops.push(attachPop(trigger, '<div class="popMeta">' + A.t('mode.loading') + '</div>', applyModePick));
+      modePops.push(attachPop(trigger, () => '<div class="popMeta">' + A.t('mode.loading') + '</div>', applyModePick));
       trigger.addEventListener('click', () => { A.refreshModePop(); });
     }
     const modeChipEl = $('modeChip');
@@ -1272,7 +1278,7 @@
     for (const id of ['crumbProject', 'heroWsBtn', 'sidebarWsBtn']) {
       const trigger = $(id);
       if (!trigger) continue;
-      wsPops.push(attachPop(trigger, '', applyWsPick));
+      wsPops.push(attachPop(trigger, buildWsPop, applyWsPick));
     }
     A.refreshWorkspacePop = () => { for (const pop of wsPops) pop.innerHTML = buildWsPop(); };
     A.refreshWorkspacePop();
