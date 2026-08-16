@@ -1321,6 +1321,7 @@
 
   ST.open = open;
   ST.close = close;
+  ST.show = function (id) { current = id; render(); };
   ST.render = render;
   ST.SECTIONS = SECTIONS;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

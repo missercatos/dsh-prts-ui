@@ -51,7 +51,12 @@ function createWindow() {
 
 /* ---------- filesystem bridge ---------- */
 ipcMain.handle('prts:readFile', (_e, p) => fs.promises.readFile(p, 'utf8'))
-ipcMain.handle('prts:writeFile', (_e, p, d) => fs.promises.writeFile(p, d, 'utf8'))
+ipcMain.handle('prts:writeFile', async (_e, p, d) => {
+  await fs.promises.writeFile(p, d, 'utf8')
+  // PRTS config holds account tokens (github/deepseek) — keep it owner-only.
+  try { await fs.promises.chmod(p, 0o600) } catch (err) { /* noop */ }
+  return undefined
+})
 ipcMain.handle('prts:appendFile', (_e, p, d) => fs.promises.appendFile(p, d, 'utf8'))
 ipcMain.handle('prts:deleteFile', (_e, p) => fs.promises.rm(p, { force: true }))
 ipcMain.handle('prts:exists', async (_e, p) => {

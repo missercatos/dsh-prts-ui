@@ -9,7 +9,7 @@
 
   const DEFAULTS = {
     locale: 'auto',
-    ui: { theme: 'dark' },
+    ui: { theme: 'dark', onboardedApiKey: false },
     // 博士称呼: empty = 默认「博士」; set = 「博士.<name>」/「Dr.<name>」
     persona: { userName: '' },
     // DeepSeek 官方平台账户: 首次登录后 loggedIn=true, apiKey 同时写入 dsh 凭证

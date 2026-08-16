@@ -174,9 +174,29 @@
     input.value = '';
     input.placeholder = placeholder || '';
     input.hidden = kind !== 'prompt';
-    $('modalOk').textContent = (labels && labels.ok) || A.t('common.ok');
-    $('modalCancel').textContent = (labels && labels.cancel) || A.t('common.cancel');
-    $('modalCancel').hidden = kind === 'alert';
+    const bodyEl = $('modalBody');
+    if (bodyEl) {
+      bodyEl.textContent = opts && opts.body ? opts.body : '';
+      bodyEl.style.display = opts && opts.body ? '' : 'none';
+    }
+    const actions = $('modalActions');
+    actions.textContent = '';
+    const makeBtn = (label, cls, value) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'sBtn ' + (cls || '');
+      b.textContent = label;
+      b.addEventListener('click', () => settleModal(value));
+      return b;
+    };
+    if (kind === 'choice' && opts && Array.isArray(opts.choices)) {
+      for (const c of opts.choices) actions.appendChild(makeBtn(c.label, c.primary ? 'primary' : '', c.id));
+    } else if (kind === 'alert') {
+      actions.appendChild(makeBtn((labels && labels.ok) || A.t('common.ok'), 'primary', true));
+    } else {
+      actions.appendChild(makeBtn((labels && labels.cancel) || A.t('common.cancel'), '', kind === 'confirm' ? false : null));
+      actions.appendChild(makeBtn((labels && labels.ok) || A.t('common.ok'), 'primary', kind === 'confirm' ? true : undefined));
+    }
     const extra = $('modalExtra');
     if (opts && typeof opts.onBrowse === 'function') {
       modalBrowseCb = opts.onBrowse;
@@ -186,10 +206,17 @@
       modalBrowseCb = null;
       extra.hidden = true;
     }
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && kind === 'prompt') settleModal(input.value);
+    });
     ov.classList.add('open');
     if (kind === 'prompt') setTimeout(() => input.focus(), 40);
     return new Promise((resolve) => { modalResolve = resolve; });
   }
+  /** Three-way choice dialog: resolves the chosen id. */
+  A.askChoice = function (title, body, choices) {
+    return openModal('choice', title, '', null, { body, choices });
+  };
   function settleModal(value) {
     $('modalOverlay').classList.remove('open');
     const r = modalResolve;
@@ -1842,16 +1869,9 @@
 
     // Modal (prompt / confirm).
     $('modalBrowseBtn').addEventListener('click', () => { if (modalBrowseCb) modalBrowseCb(); });
-    $('modalOk').addEventListener('click', () => {
-      const input = $('modalInput');
-      const value = input.hidden ? true : input.value;
-      settleModal(value);
-    });
-    $('modalCancel').addEventListener('click', () => settleModal(inputHidden() ? false : null));
     $('modalOverlay').addEventListener('click', (e) => {
-      if (e.target === $('modalOverlay')) settleModal(inputHidden() ? false : null);
+      if (e.target === $('modalOverlay')) settleModal($('modalInput').hidden ? false : null);
     });
-    function inputHidden() { return $('modalInput').hidden; }
 
     $('flow').addEventListener('click', (e) => {
       const item = e.target.closest('.assistantItem') || e.target.closest('.userBubble');
@@ -1985,8 +2005,41 @@
     A.afterIntro = function () {
       if (A.ready) {
         A.ensureSession().catch(() => { /* session load is best-effort */ });
+        maybeOnboardApiKey();
       }
     };
+
+    /** First-run onboarding (dsh-web parity): prompt to configure the
+     *  DeepSeek API key; if the Doctor has no key, offer a jump to the
+     *  official site to register one. Runs exactly once per profile. */
+    async function maybeOnboardApiKey() {
+      A.config.ui = A.config.ui || {};
+      if (A.config.ui.onboardedApiKey) return;
+      A.config.ui.onboardedApiKey = true;
+      await P.store.saveConfig(A.config);
+      let configured = false;
+      try {
+        const creds = await P.dshState.credentialsDescribe(['DEEPSEEK_OFFICIAL_API_KEY']);
+        configured = !!(creds && creds.DEEPSEEK_OFFICIAL_API_KEY && creds.DEEPSEEK_OFFICIAL_API_KEY.configured);
+      } catch (e) { /* credential store unavailable */ }
+      if (configured) return;
+      const choice = await A.askChoice(
+        A.t('onboard.apiKey.title'),
+        A.t('onboard.apiKey.body'),
+        [
+          { id: 'settings', label: A.t('onboard.apiKey.settings'), primary: true },
+          { id: 'register', label: A.t('onboard.apiKey.register') },
+          { id: 'later', label: A.t('onboard.apiKey.later') },
+        ],
+      );
+      if (choice === 'settings') {
+        A.openSettings();
+        if (P.settingsPanel && P.settingsPanel.show) P.settingsPanel.show('models');
+      } else if (choice === 'register') {
+        if (P.balance && P.balance.openPlatform) P.balance.openPlatform();
+        else { try { window.open('https://platform.deepseek.com/sign_in', '_blank', 'noopener'); } catch (e) { /* noop */ } }
+      }
+    }
     (async () => {
       // dsh may still be booting in the background (PRTS spawns it silently).
       // Keep polling until it answers — the particle intro keeps looping the
