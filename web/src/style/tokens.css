@@ -21,6 +21,9 @@
   --prts-accent: var(--prts-ink);
   --prts-diamond: var(--prts-ink);
   --prts-square: var(--prts-ink);
+  /* liquid-glass blur radii; the settings toggle zeroes them */
+  --prts-glass: 12px;
+  --prts-glass-strong: 20px;
   --prts-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --prts-mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas, Menlo,
@@ -43,3 +46,5 @@
   --prts-shadow: 0 12px 32px rgba(10, 10, 11, 0.12), 0 0 0 1px rgba(10, 10, 11, 0.04);
   color-scheme: light;
 }
+
+body[data-glass='off'] { --prts-glass: 0px; --prts-glass-strong: 0px; }

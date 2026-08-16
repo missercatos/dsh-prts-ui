@@ -57,6 +57,17 @@
     'sun': S('<circle cx="7.5" cy="7.5" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M7.5 1.2v1.4M7.5 12.4v1.4M1.2 7.5h1.4M12.4 7.5h1.4M3 3l1 1M11 11l1 1M12 3l-1 1M4 11l-1 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>', 15),
     'moon': S('<path d="M12.6 9.6A5.4 5.4 0 0 1 5.4 2.4 5.6 5.6 0 1 0 12.6 9.6Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>', 15),
 
+    // —— feedback (non-heart), modes, permission shields ——
+    'ma.good': S('<path d="M7 2.2 12.4 7 7 11.8 1.6 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M7 9.2V4.8M4.6 7.2 7 4.8l2.4 2.4" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>'),
+    'ma.bad': S('<path d="M7 2.2 12.4 7 7 11.8 1.6 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M7 4.8v4.4M4.6 6.8 7 9.2l2.4-2.4" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>'),
+    'mode.standard': S('<path d="M7 1.8 12.2 7 7 12.2 1.8 7Z" stroke="currentColor" stroke-width="1.2"/>'),
+    'mode.code': S('<path d="M7 1.8 12.2 7 7 12.2 1.8 7Z" stroke="currentColor" stroke-width="1.2"/><path d="M4.8 8.6 6 7 4.8 5.4M7.4 5.4l1.2 1.6-1.2 1.6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>'),
+    'mode.minimal': S('<path d="M7 3.2 10.8 7 7 10.8 3.2 7Z" stroke="currentColor" stroke-width="1.2"/>'),
+    'mode.cordis': S('<path d="M7 1.6 12.4 7 7 12.4 1.6 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M7 3.8 10.2 7 7 10.2 3.8 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M7 5.6 8.4 7 7 8.4 5.6 7Z" fill="currentColor"/>'),
+    'perm.readonly': S('<path d="M7 1.4 12.2 3.6v3.6c0 3-2.2 4.9-5.2 6-3-1.1-5.2-3-5.2-6V3.6Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><circle cx="7" cy="7.4" r="1.7" stroke="currentColor" stroke-width="1.15"/>'),
+    'perm.workspacewrite': S('<path d="M7 1.4 12.2 3.6v3.6c0 3-2.2 4.9-5.2 6-3-1.1-5.2-3-5.2-6V3.6Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M7 3.4 9.6 7 7 10.6 4.4 7Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/>'),
+    'perm.danger': S('<path d="M7 1.4 12.2 3.6v3.6c0 3-2.2 4.9-5.2 6-3-1.1-5.2-3-5.2-6V3.6Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M7 3.2 9.8 7 7 10.8 4.2 7Z" fill="currentColor"/>'),
+
     // —— settings nav (small marks, PRTS abstract) ——
     'general': S('<path d="M3.2 6.4a4.2 4.2 0 0 1 7.6 0" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/><path d="M2.2 7.6h9.6M2.2 9.8h9.6" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
     'models': S('<path d="M2.8 4.2h2.4v5.6H2.8zM6 4.2h2.4v5.6H6zM9.2 4.2h2v5.6h-2z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M3.6 4.2V2.6M7.2 4.2V2.6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>'),

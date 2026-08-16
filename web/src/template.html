@@ -34,6 +34,15 @@
               <svg class="themeMoon" width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
                 <path d="M12.6 9.6A5.4 5.4 0 0 1 5.4 2.4 5.6 5.6 0 1 0 12.6 9.6Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
               </svg>
+              <svg class="themeDiamond" width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                <defs>
+                  <linearGradient id="themeDiamondGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#7dcfff"/><stop offset="0.5" stop-color="#bb9af7"/><stop offset="1" stop-color="#f7768e"/>
+                  </linearGradient>
+                </defs>
+                <path d="M7.5 1.8 13.2 7.5 7.5 13.2 1.8 7.5Z" stroke="url(#themeDiamondGrad)" stroke-width="1.2"/>
+                <path d="M5.6 5.6h3.8v3.8H5.6Z" fill="url(#themeDiamondGrad)"/>
+              </svg>
             </span>
           </button>
         </div>
@@ -118,6 +127,7 @@
               <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
             </button>
             <button class="chip modeChip" id="modeChip" type="button">
+              <span class="modeChipIcon" id="modeChipIcon"></span>
               <span class="headerMode" id="headerMode" data-i18n="header.mode">STANDARD</span>
               <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
             </button>
@@ -128,6 +138,11 @@
           </div>
           <div class="headerUtils">
             <span class="pluginBar" id="pluginHeader"></span>
+            <button class="chip jobsChip" id="jobsBtn" type="button" hidden>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3.4 2.4h5.2L6 5.6 3.4 2.4Z" fill="currentColor"/><path d="M3.4 4.4v4a.8.8 0 0 0 .8.8h3.6a.8.8 0 0 0 .8-.8v-4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span class="jobsCount">0</span>
+              <span data-i18n="header.jobs">jobs</span>
+            </button>
             <button class="iconBtn" id="clearHistoryBtn" type="button" data-i18n-title="header.clearHistory">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 4h9M5.5 4V2.8h3V4" stroke="currentColor" stroke-width="1.2"/><path d="M4 4l.6 7.2h4.8L10 4" stroke="currentColor" stroke-width="1.2"/></svg>
             </button>
@@ -182,6 +197,7 @@
                 <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
               </button>
               <button class="chip" id="heroModeChip" type="button" data-i18n-title="mode.title">
+                <span class="modeChipIcon" id="heroModeChipIcon"></span>
                 <span class="label" id="heroModeLabel">STANDARD</span>
                 <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
               </button>

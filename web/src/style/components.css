@@ -455,7 +455,7 @@
 }
 .sysOverlay .sysCard {
   background: color-mix(in srgb, var(--prts-panel) 82%, transparent);
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(var(--prts-glass-strong, 20px)); -webkit-backdrop-filter: blur(var(--prts-glass-strong, 20px));
 }
 .sysStats { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
 @media (max-width: 760px) { .sysStats { grid-template-columns: 1fr; } }

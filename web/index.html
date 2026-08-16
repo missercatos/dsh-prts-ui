@@ -254,7 +254,7 @@
 .settingsCard {
   width: min(460px, calc(100vw - 48px)); max-height: calc(100vh - 80px); overflow-y: auto;
   background: color-mix(in srgb, var(--prts-panel) 82%, transparent);
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(var(--prts-glass-strong, 20px)); -webkit-backdrop-filter: blur(var(--prts-glass-strong, 20px));
   border: 1px solid var(--prts-hairline); border-radius: 12px;
   box-shadow: var(--prts-shadow); padding: 20px 22px;
   transform: translateY(10px); transition: transform 0.2s var(--prts-ease-out);
@@ -268,7 +268,7 @@
 .sInput {
   width: 100%; height: 34px; padding: 0 10px; border: 1px solid var(--prts-hairline); border-radius: 6px;
   background: color-mix(in srgb, var(--prts-surface) 72%, transparent);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(var(--prts-glass, 12px)); -webkit-backdrop-filter: blur(var(--prts-glass, 12px));
   color: var(--prts-ink); font-size: 13px; outline: none;
   transition: border-color 0.15s var(--prts-ease);
 }
@@ -279,7 +279,7 @@
   display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 14px;
   border: 1px solid var(--prts-hairline); border-radius: 6px;
   background: color-mix(in srgb, var(--prts-surface) 72%, transparent);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(var(--prts-glass, 12px)); -webkit-backdrop-filter: blur(var(--prts-glass, 12px));
   color: var(--prts-ink-dim); font-size: 13px; line-height: 20px; cursor: pointer;
   white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
   transition: border-color 0.15s var(--prts-ease), color 0.15s var(--prts-ease);
@@ -805,7 +805,7 @@
 }
 .sysOverlay .sysCard {
   background: color-mix(in srgb, var(--prts-panel) 82%, transparent);
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(var(--prts-glass-strong, 20px)); -webkit-backdrop-filter: blur(var(--prts-glass-strong, 20px));
 }
 .sysStats { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
 @media (max-width: 760px) { .sysStats { grid-template-columns: 1fr; } }
@@ -1157,20 +1157,19 @@ button:focus:not(:focus-visible) { outline: none; }
 /* Glass on the composer, chips, popovers and the message/trajectory surfaces */
 .composerCard {
   background: color-mix(in srgb, var(--prts-panel) 70%, transparent) !important;
-  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(var(--prts-glass-strong, 20px)); -webkit-backdrop-filter: blur(var(--prts-glass-strong, 20px));
 }
 .chip, .pop, .modalCard, .reqCard, .mTabs, .mSearch, .mGh, .skCard, .pCard, .mCat, .skChip {
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(var(--prts-glass, 12px)); -webkit-backdrop-filter: blur(var(--prts-glass, 12px));
 }
 .pop { background: color-mix(in srgb, var(--prts-panel) 85%, transparent); }
-.disclosure, .dBody, .assistantItem, .userBubble {
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-}
+/* conversation surfaces stay UN-glassed so the background
+   diamond/square marks stay visible behind the text */
 /* Wallpaper active: the sidebar and details columns turn translucent glass */
 body[data-wallpaper='on'] .sbCol,
 body[data-wallpaper='on'] .dtCol {
   background: color-mix(in srgb, var(--prts-panel) 55%, transparent);
-  backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px);
+  backdrop-filter: blur(var(--prts-glass-strong, 20px)); -webkit-backdrop-filter: blur(var(--prts-glass-strong, 20px));
 }
 body[data-wallpaper='on'] .sysCard,
 body[data-wallpaper='on'] .settingsCard {
@@ -1205,7 +1204,7 @@ body[data-wallpaper='on'] .settingsCard {
   transition: opacity 0.16s var(--prts-ease), transform 0.16s var(--prts-ease);
   padding: 2px; border-radius: 8px;
   background: color-mix(in srgb, var(--prts-panel) 78%, transparent);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(var(--prts-glass, 12px)); -webkit-backdrop-filter: blur(var(--prts-glass, 12px));
 }
 .assistantItem:hover .msgActions { opacity: 1; transform: none; }
 .maBtn {
@@ -1229,7 +1228,7 @@ body[data-wallpaper='on'] .settingsCard {
   height: 34px; padding: 0 10px; margin-bottom: 8px;
   border: 1px solid var(--prts-hairline); border-radius: 8px;
   background: color-mix(in srgb, var(--prts-panel) 82%, transparent);
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(var(--prts-glass, 12px)); -webkit-backdrop-filter: blur(var(--prts-glass, 12px));
   color: var(--prts-ink-faint);
 }
 .tlSearch input { flex: 1; min-width: 0; border: none; background: transparent; color: var(--prts-ink); font-size: 13px; outline: none; }
@@ -1257,7 +1256,7 @@ body[data-wallpaper='on'] .settingsCard {
   display: flex; align-items: center; gap: 10px; padding: 10px 12px;
   border: 1px solid var(--prts-hairline); border-radius: 10px;
   background: color-mix(in srgb, var(--prts-surface) 60%, transparent);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(var(--prts-glass, 12px)); -webkit-backdrop-filter: blur(var(--prts-glass, 12px));
 }
 .sPresetRow.current { border-color: var(--prts-accent); }
 .invList {
@@ -1265,6 +1264,105 @@ body[data-wallpaper='on'] .settingsCard {
   max-height: 430px; overflow-y: auto; padding-right: 4px;
 }
 .invList .pmeta { font-size: 10px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+
+/* ---------- 0.6.0: PRTS send button, animations, theme-linked accents ---------- */
+.sendBtn {
+  position: relative; width: 34px; height: 34px; padding: 0;
+  border: 1.2px solid var(--prts-accent); border-radius: 9px;
+  background: transparent; color: var(--prts-accent); cursor: pointer;
+  transform: rotate(45deg);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 0.18s var(--prts-ease), box-shadow 0.18s var(--prts-ease), opacity 0.18s var(--prts-ease);
+}
+.sendBtn svg { transform: rotate(-45deg); }
+.sendBtn:hover:not(:disabled) { background: color-mix(in srgb, var(--prts-accent) 16%, transparent); }
+.sendBtn:disabled { opacity: 0.35; cursor: default; }
+/* send pulse: a diamond ripple fires on every send */
+@keyframes prtsSendPulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--prts-accent) 55%, transparent); }
+  100% { box-shadow: 0 0 0 14px transparent; }
+}
+.sendBtn.sent { animation: prtsSendPulse 0.55s var(--prts-ease-out) 1; }
+/* running state: becomes a stop square with a breathing halo */
+.sendBtn.running { transform: rotate(45deg); border-color: var(--prts-accent); }
+.sendBtn.running svg { transform: rotate(-45deg); animation: prtsStopSpin 1.6s linear infinite; }
+@keyframes prtsStopSpin { to { transform: rotate(-405deg); } }
+@keyframes prtsRunningHalo {
+  0%, 100% { box-shadow: 0 0 6px color-mix(in srgb, var(--prts-accent) 45%, transparent); }
+  50% { box-shadow: 0 0 16px color-mix(in srgb, var(--prts-accent) 80%, transparent); }
+}
+.sendBtn.running { animation: prtsRunningHalo 1.4s ease-in-out infinite; }
+/* voice button follows the accent */
+.voiceBtn { color: var(--prts-accent); }
+.voiceBtn.on { border-color: var(--prts-accent); box-shadow: 0 0 10px color-mix(in srgb, var(--prts-accent) 35%, transparent); }
+/* disclosure chevrons: accent color + rotation animation */
+.dRow .chev, .dRow svg { color: var(--prts-accent); transition: transform 0.25s var(--prts-ease-out); }
+.disclosure.open .dRow svg.chev, .openArgs .dRow svg:first-child { transform: rotate(90deg); }
+.disclosure.open .dRow svg, .toolItem.openArgs .dRow svg { transform: rotate(90deg); }
+/* message actions live inline at the end of the output (bottom-right) */
+.msgActions {
+  position: static; display: inline-flex; gap: 4px; opacity: 0;
+  transform: none; margin-left: 6px; vertical-align: bottom;
+  background: transparent; padding: 0;
+  transition: opacity 0.16s var(--prts-ease);
+}
+.assistantItem:hover .msgActions { opacity: 1; }
+.maBtn { border: none; background: transparent; color: var(--prts-ink-faint); }
+.maBtn:hover { color: var(--prts-accent); border-color: transparent; }
+.maBtn.on { color: var(--prts-accent); }
+.maBtn svg { width: 12px; height: 12px; }
+/* deliverables: produced files at the reply's end, light up on hover */
+.dlvChips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.dlvChip {
+  display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px;
+  border: 1px solid var(--prts-hairline); border-radius: 13px;
+  background: color-mix(in srgb, var(--prts-surface) 60%, transparent);
+  color: var(--prts-ink-dim); font-size: 11px; font-family: var(--prts-mono); cursor: pointer;
+  max-width: 240px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  transition: border-color 0.15s var(--prts-ease), color 0.15s var(--prts-ease), box-shadow 0.15s var(--prts-ease);
+}
+.dlvChip svg { flex: none; width: 11px; height: 11px; color: var(--prts-accent); }
+.dlvChip:hover {
+  border-color: var(--prts-accent); color: var(--prts-ink);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--prts-accent) 35%, transparent);
+}
+/* waveform above the trajectory */
+.tlWave { margin-bottom: 6px; padding: 8px 10px; border: 1px solid var(--prts-hairline); border-radius: 10px; background: color-mix(in srgb, var(--prts-surface) 55%, transparent); }
+.tlWaveLegend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+.tlWaveKey { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+.tlWaveDot { width: 7px; height: 7px; border-radius: 2px; }
+/* theme toggle third state (colored diamond) */
+.themeDiamond { opacity: 0; transform: rotate(-60deg) scale(0.6); }
+[data-theme='custom'] .themeDiamond { opacity: 1; transform: rotate(0) scale(1); }
+[data-theme='custom'] .themeSun, [data-theme='custom'] .themeMoon { opacity: 0; transform: rotate(60deg) scale(0.6); }
+/* active session/workspace marker follows the accent (small diamond) */
+.sbItem.active { box-shadow: none; position: relative; }
+.sbItem.active::before {
+  content: ''; position: absolute; left: 4px; top: 50%; width: 6px; height: 6px;
+  transform: translateY(-50%) rotate(45deg); background: var(--prts-accent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--prts-accent) 55%, transparent);
+}
+.sbItem.active .name { color: var(--prts-ink); }
+/* header jobs chip */
+.jobsChip { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; position: relative; }
+.jobsCount { font-family: var(--prts-mono); color: var(--prts-accent); }
+.jobsPop { min-width: 220px; max-width: 320px; max-height: 300px; overflow-y: auto; }
+/* static header chips (pure labels) */
+.chip.static { cursor: default; }
+.chip.static:hover { background: transparent; }
+.modeChipIcon { display: inline-flex; flex: none; }
+.modeChipIcon svg { width: 12px; height: 12px; color: var(--prts-accent); }
+.permIcon { display: inline-flex; flex: none; margin-right: 4px; }
+.permIcon svg { width: 12px; height: 12px; color: var(--prts-accent); }
+/* sidebar smoothness: content-visibility + lighter transition */
+.sbList { content-visibility: auto; contain-intrinsic-size: 32px 40px; }
+.frame { transition: grid-template-columns 0.22s var(--prts-ease-out); will-change: grid-template-columns; }
+.sbCol { transition: border-color 0.3s var(--prts-ease), width 0.22s var(--prts-ease-out); }
+/* system panel: single-column horizontal rows (no vertical text) */
+.sysStats { display: flex; flex-direction: column; gap: 14px; }
+.sysRow { grid-template-columns: 110px minmax(0, 1fr) 150px; }
+.sysK { font-size: 12px; white-space: nowrap; }
+.sysV { font-size: 12px; white-space: nowrap; }
 
 /* PRTS design tokens — pure black/white. Dark is the default surface; light
    inverts the pair. Every component derives from these tokens only. */
@@ -1289,6 +1387,9 @@ body[data-wallpaper='on'] .settingsCard {
   --prts-accent: var(--prts-ink);
   --prts-diamond: var(--prts-ink);
   --prts-square: var(--prts-ink);
+  /* liquid-glass blur radii; the settings toggle zeroes them */
+  --prts-glass: 12px;
+  --prts-glass-strong: 20px;
   --prts-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --prts-mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas, Menlo,
@@ -1311,6 +1412,8 @@ body[data-wallpaper='on'] .settingsCard {
   --prts-shadow: 0 12px 32px rgba(10, 10, 11, 0.12), 0 0 0 1px rgba(10, 10, 11, 0.04);
   color-scheme: light;
 }
+
+body[data-glass='off'] { --prts-glass: 0px; --prts-glass-strong: 0px; }
 
 </style>
 </head>
@@ -1339,6 +1442,15 @@ body[data-wallpaper='on'] .settingsCard {
               </svg>
               <svg class="themeMoon" width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
                 <path d="M12.6 9.6A5.4 5.4 0 0 1 5.4 2.4 5.6 5.6 0 1 0 12.6 9.6Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+              </svg>
+              <svg class="themeDiamond" width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                <defs>
+                  <linearGradient id="themeDiamondGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#7dcfff"/><stop offset="0.5" stop-color="#bb9af7"/><stop offset="1" stop-color="#f7768e"/>
+                  </linearGradient>
+                </defs>
+                <path d="M7.5 1.8 13.2 7.5 7.5 13.2 1.8 7.5Z" stroke="url(#themeDiamondGrad)" stroke-width="1.2"/>
+                <path d="M5.6 5.6h3.8v3.8H5.6Z" fill="url(#themeDiamondGrad)"/>
               </svg>
             </span>
           </button>
@@ -1424,6 +1536,7 @@ body[data-wallpaper='on'] .settingsCard {
               <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
             </button>
             <button class="chip modeChip" id="modeChip" type="button">
+              <span class="modeChipIcon" id="modeChipIcon"></span>
               <span class="headerMode" id="headerMode" data-i18n="header.mode">STANDARD</span>
               <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
             </button>
@@ -1434,6 +1547,11 @@ body[data-wallpaper='on'] .settingsCard {
           </div>
           <div class="headerUtils">
             <span class="pluginBar" id="pluginHeader"></span>
+            <button class="chip jobsChip" id="jobsBtn" type="button" hidden>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3.4 2.4h5.2L6 5.6 3.4 2.4Z" fill="currentColor"/><path d="M3.4 4.4v4a.8.8 0 0 0 .8.8h3.6a.8.8 0 0 0 .8-.8v-4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span class="jobsCount">0</span>
+              <span data-i18n="header.jobs">jobs</span>
+            </button>
             <button class="iconBtn" id="clearHistoryBtn" type="button" data-i18n-title="header.clearHistory">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 4h9M5.5 4V2.8h3V4" stroke="currentColor" stroke-width="1.2"/><path d="M4 4l.6 7.2h4.8L10 4" stroke="currentColor" stroke-width="1.2"/></svg>
             </button>
@@ -1488,6 +1606,7 @@ body[data-wallpaper='on'] .settingsCard {
                 <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
               </button>
               <button class="chip" id="heroModeChip" type="button" data-i18n-title="mode.title">
+                <span class="modeChipIcon" id="heroModeChipIcon"></span>
                 <span class="label" id="heroModeLabel">STANDARD</span>
                 <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
               </button>
@@ -2990,6 +3109,21 @@ window.PRTS_MARKET = {
       'sys.back': 'Back',
       'sys.tokensIn': 'IN tokens',
       'sys.tokensOut': 'OUT tokens',
+      'header.jobs': 'jobs',
+      'jobs.none': '没有后台任务 / No background jobs',
+      'settings.general.glass': '液态玻璃 / Liquid glass',
+      'settings.general.glass.on': '开启 backdrop 模糊（关闭后界面完全实体）',
+      'settings.general.editor': '默认文本编辑器 / Text editor',
+      'settings.general.editor.hint': '打开文件时使用的编辑器。PRTS 自动检测本机可用软件（vscode、gedit、vim/nvim 等在终端打开）。',
+      'settings.general.sidebarButtons': '左侧侧边栏按钮 / Sidebar buttons',
+      'sidebar.btn.theme': '主题',
+      'sidebar.btn.git': 'Git',
+      'sidebar.btn.skill': 'Skill',
+      'sidebar.btn.market': '市场',
+      'sidebar.btn.details': '详情',
+      'sidebar.btn.settings': '设置',
+      'traj.tokenUpDown': 'TOKEN 上/下',
+
     },
 
     zh: {
@@ -3565,6 +3699,21 @@ window.PRTS_MARKET = {
       'sys.back': '返回',
       'sys.tokensIn': '输入 Token',
       'sys.tokensOut': '输出 Token',
+      'header.jobs': '任务',
+      'jobs.none': '没有后台任务',
+      'settings.general.glass': '液态玻璃',
+      'settings.general.glass.on': '开启背景模糊（关闭后界面完全实体）',
+      'settings.general.editor': '默认文本编辑器',
+      'settings.general.editor.hint': '打开文件时使用的编辑器。PRTS 自动检测本机可用软件（vscode、gedit、vim/nvim 等在终端打开）。',
+      'settings.general.sidebarButtons': '左侧侧边栏按钮',
+      'sidebar.btn.theme': '主题',
+      'sidebar.btn.git': 'Git',
+      'sidebar.btn.skill': 'Skill',
+      'sidebar.btn.market': '市场',
+      'sidebar.btn.details': '详情',
+      'sidebar.btn.settings': '设置',
+      'traj.tokenUpDown': 'TOKEN 上/下',
+
     },
   };
 
@@ -5069,6 +5218,17 @@ window.PRTS_MARKET = {
     'sun': S('<circle cx="7.5" cy="7.5" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M7.5 1.2v1.4M7.5 12.4v1.4M1.2 7.5h1.4M12.4 7.5h1.4M3 3l1 1M11 11l1 1M12 3l-1 1M4 11l-1 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>', 15),
     'moon': S('<path d="M12.6 9.6A5.4 5.4 0 0 1 5.4 2.4 5.6 5.6 0 1 0 12.6 9.6Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>', 15),
 
+    // —— feedback (non-heart), modes, permission shields ——
+    'ma.good': S('<path d="M7 2.2 12.4 7 7 11.8 1.6 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M7 9.2V4.8M4.6 7.2 7 4.8l2.4 2.4" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>'),
+    'ma.bad': S('<path d="M7 2.2 12.4 7 7 11.8 1.6 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M7 4.8v4.4M4.6 6.8 7 9.2l2.4-2.4" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>'),
+    'mode.standard': S('<path d="M7 1.8 12.2 7 7 12.2 1.8 7Z" stroke="currentColor" stroke-width="1.2"/>'),
+    'mode.code': S('<path d="M7 1.8 12.2 7 7 12.2 1.8 7Z" stroke="currentColor" stroke-width="1.2"/><path d="M4.8 8.6 6 7 4.8 5.4M7.4 5.4l1.2 1.6-1.2 1.6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>'),
+    'mode.minimal': S('<path d="M7 3.2 10.8 7 7 10.8 3.2 7Z" stroke="currentColor" stroke-width="1.2"/>'),
+    'mode.cordis': S('<path d="M7 1.6 12.4 7 7 12.4 1.6 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M7 3.8 10.2 7 7 10.2 3.8 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M7 5.6 8.4 7 7 8.4 5.6 7Z" fill="currentColor"/>'),
+    'perm.readonly': S('<path d="M7 1.4 12.2 3.6v3.6c0 3-2.2 4.9-5.2 6-3-1.1-5.2-3-5.2-6V3.6Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><circle cx="7" cy="7.4" r="1.7" stroke="currentColor" stroke-width="1.15"/>'),
+    'perm.workspacewrite': S('<path d="M7 1.4 12.2 3.6v3.6c0 3-2.2 4.9-5.2 6-3-1.1-5.2-3-5.2-6V3.6Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M7 3.4 9.6 7 7 10.6 4.4 7Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/>'),
+    'perm.danger': S('<path d="M7 1.4 12.2 3.6v3.6c0 3-2.2 4.9-5.2 6-3-1.1-5.2-3-5.2-6V3.6Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M7 3.2 9.8 7 7 10.8 4.2 7Z" fill="currentColor"/>'),
+
     // —— settings nav (small marks, PRTS abstract) ——
     'general': S('<path d="M3.2 6.4a4.2 4.2 0 0 1 7.6 0" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/><path d="M2.2 7.6h9.6M2.2 9.8h9.6" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
     'models': S('<path d="M2.8 4.2h2.4v5.6H2.8zM6 4.2h2.4v5.6H6zM9.2 4.2h2v5.6h-2z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M3.6 4.2V2.6M7.2 4.2V2.6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>'),
@@ -6566,20 +6726,37 @@ window.PRTS_MARKET = {
 
   /** Open a path in the file manager/system editor (dsh-web underline parity). */
   function openFilePath(path) {
-    const b = (typeof window !== 'undefined' && window.prts && window.prts.bridge) || null;
-    if (b && b.openPath) { b.openPath(path).catch(() => {}); return; }
-    try {
-      const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
-      fetch(origin + '/prts/api/open-path', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path }),
-      }).catch(() => {});
-    } catch (e) { /* noop */ }
+    if (P.app && P.app.openFile) P.app.openFile(path).catch(() => {});
+  }
+  const PATH_RE = /(?:[\s("'])(\/(?:home|workspace|workspaces|tmp|var|usr|etc|opt|srv|root|mnt|media|run|data)\/[^\s<>"']+)/g;
+  function extractPaths(text) {
+    const out = [];
+    const re = new RegExp(PATH_RE.source, 'g');
+    let m;
+    while ((m = re.exec(String(text || ''))) !== null) {
+      const clean = m[1].replace(/[),.;，。；：]+$/, '');
+      if (out.indexOf(clean) < 0) out.push(clean);
+    }
+    return out.slice(0, 12);
+  }
+  /** Deliverable chips: every file the answer produced, clickable. */
+  function deliverablesEl(text) {
+    const paths = extractPaths(text);
+    if (!paths.length) return null;
+    const box = el('div', 'dlvChips');
+    for (const p of paths) {
+      const chip = el('button', 'dlvChip');
+      chip.type = 'button';
+      chip.title = p;
+      chip.innerHTML = P.icons['ma.read'] + '<span>' + esc(p.split('/').pop() || p) + '</span>';
+      chip.addEventListener('click', (e) => { e.stopPropagation(); openFilePath(p); });
+      box.appendChild(chip);
+    }
+    return box;
   }
   /** Absolute paths get an underline link (click opens the file). */
   function linkifyPaths(html) {
-    return String(html || '').replace(/([\s("'])(\/(?:home|workspace|workspaces|tmp|var|usr|etc|opt|srv|root|mnt|media|run|data)\/[^\s<>"']+)/g, (m, pre, path) => {
+    return String(html || '').replace(PATH_RE, (m, pre, path) => {
       const clean = path.replace(/[),.;，。；：]+$/, '');
       return pre + '<a class="pathLink" data-path="' + esc(clean) + '">' + esc(clean) + '</a>';
     });
@@ -6641,6 +6818,9 @@ window.PRTS_MARKET = {
       item.appendChild(p);
     }
     for (const img of msg.images || []) item.appendChild(imageEl(img));
+    // deliverables: every produced file, clickable, always visible at the end
+    const dlv = deliverablesEl(msg.content || '');
+    if (dlv) item.appendChild(dlv);
     // meta: 完成时间 · 用时 · token (appears on hover)
     const meta = el('div', 'msgMeta');
     meta.appendChild(el('span', '', clock(msg.ts)));
@@ -6666,9 +6846,9 @@ window.PRTS_MARKET = {
         .catch(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copyFail')); });
     }));
     const fb = C.msgFeedback || {};
-    const up = mk('ma.like', t('chat.good'), () => sendFeedback(msg, fb[msg.id] === 'good' ? null : 'good'));
+    const up = mk('ma.good', t('chat.good'), () => sendFeedback(msg, fb[msg.id] === 'good' ? null : 'good'));
     if (fb[msg.id] === 'good') up.classList.add('on');
-    const dn = mk('ma.dislike', t('chat.bad'), () => sendFeedback(msg, fb[msg.id] === 'bad' ? null : 'bad'));
+    const dn = mk('ma.bad', t('chat.bad'), () => sendFeedback(msg, fb[msg.id] === 'bad' ? null : 'bad'));
     if (fb[msg.id] === 'bad') dn.classList.add('on');
     actions.appendChild(up); actions.appendChild(dn);
     actions.appendChild(mk('ma.branch', t('chat.branch'), () => branchFrom(msg)));
@@ -6701,6 +6881,8 @@ window.PRTS_MARKET = {
       body.appendChild(pre);
       d.appendChild(body);
       item.appendChild(d);
+      const dlv = deliverablesEl(msg.content);
+      if (dlv) item.appendChild(dlv);
     }
     return item;
   }
@@ -6712,20 +6894,36 @@ window.PRTS_MARKET = {
     return row;
   }
 
+  let flowRenderToken = 0;
   function renderFlow() {
     const flow = $('flow');
     if (!flow) return;
+    const token = ++flowRenderToken;
     flow.textContent = '';
-    for (const m of C.messages) {
-      if (m.role === 'user') flow.appendChild(renderUser(m));
-      else if (m.role === 'assistant') flow.appendChild(renderAssistant(m));
-      else if (m.role === 'tool') flow.appendChild(renderTool(m));
-      else if (m.role === 'system') flow.appendChild(renderSystem(m));
-    }
     if (!C.messages.length) {
       flow.appendChild(el('div', 'emptyChat', t('chat.empty')));
+      scrollBottom();
+      return;
     }
-    scrollBottom();
+    const CHUNK = 60;   // messages per frame — big histories stop janking switches
+    let i = 0;
+    const step = () => {
+      if (token !== flowRenderToken) return;
+      const end = Math.min(i + CHUNK, C.messages.length);
+      for (; i < end; i++) {
+        const m = C.messages[i];
+        if (m.role === 'user') flow.appendChild(renderUser(m));
+        else if (m.role === 'assistant') flow.appendChild(renderAssistant(m));
+        else if (m.role === 'tool') flow.appendChild(renderTool(m));
+        else if (m.role === 'system') flow.appendChild(renderSystem(m));
+      }
+      if (i < C.messages.length) {
+        requestAnimationFrame(step);
+      } else {
+        scrollBottom();
+      }
+    };
+    step();
   }
 
   function scrollBottom() {
@@ -6734,11 +6932,76 @@ window.PRTS_MARKET = {
 
   /* ---------- trajectory (dsh-web parity: colored blocks, per-node time &
      token cost, search — no black box) ---------- */
+  /** Waveform above the trajectory: color = activity kind (think/output/tool),
+   *  direction/area = token spend (in = up, out = down). */
+  function renderWave() {
+    const box = $('trajView');
+    if (!box) return;
+    const holder = el('div', 'tlWave');
+    const events = C.rawEvents.filter((ev) => {
+      const d = ev.data || {};
+      return d.turn !== undefined || d.step !== undefined;
+    });
+    if (!events.length) { box.appendChild(holder); return; }
+    const W = 900, H = 74;
+    const cols = [];
+    let pending = { in: 0, out: 0 };
+    for (const ev of events) {
+      const d = ev.data || {};
+      const c = d.chunk || {};
+      if (ev.type === 'assistant/chunk' && c.type === 'usage') {
+        const u = c.usage || c;
+        pending.in += u.prompt_tokens || 0;
+        pending.out += u.completion_tokens || 0;
+        cols.push({ kind: 'usage', color: '#7aa2f7', in: u.prompt_tokens || 0, out: u.completion_tokens || 0 });
+      } else if (ev.type === 'assistant/chunk' && c.type === 'reasoning-delta') {
+        cols.push({ kind: 'think', color: '#9d7cd8' });
+      } else if (ev.type === 'assistant/chunk' && c.type === 'text-delta') {
+        cols.push({ kind: 'output', color: '#9ece6a' });
+      } else if (ev.type === 'tool/call' || ev.type === 'tool/result' || (ev.type === 'assistant/chunk' && c.type === 'tool-call-delta')) {
+        cols.push({ kind: 'tool', color: '#e0af68' });
+      } else if (ev.type === 'user/message') {
+        cols.push({ kind: 'user', color: '#9C9CA1' });
+      } else {
+        cols.push({ kind: 'sys', color: '#626266' });
+      }
+    }
+    const n = Math.max(cols.length, 1);
+    const bw = Math.max(2, Math.floor(W / n) - 1);
+    let svg = '';
+    const maxTok = Math.max(1, Math.max(...cols.map((c) => Math.max(c.in || 0, c.out || 0))));
+    cols.forEach((c, i) => {
+      const x = i * (bw + 1);
+      if (c.kind === 'usage') {
+        const up = Math.max(2, Math.round((c.in / maxTok) * (H / 2 - 4)));
+        const down = Math.max(2, Math.round((c.out / maxTok) * (H / 2 - 4)));
+        svg += '<rect x="' + x + '" y="' + (H / 2 - up) + '" width="' + bw + '" height="' + up + '" fill="' + c.color + '" opacity="0.9"/>';
+        svg += '<rect x="' + x + '" y="' + (H / 2 + 1) + '" width="' + bw + '" height="' + down + '" fill="' + c.color + '" opacity="0.45"/>';
+      } else {
+        const h = c.kind === 'sys' ? 3 : 8;
+        svg += '<rect x="' + x + '" y="' + (H / 2 - h / 2) + '" width="' + bw + '" height="' + h + '" fill="' + c.color + '" opacity="0.75"/>';
+      }
+    });
+    const legend = el('div', 'tlWaveLegend');
+    [['#9d7cd8', t('traj.think')], ['#9ece6a', t('traj.output')], ['#e0af68', t('traj.tool')], ['#7aa2f7', t('traj.tokenUpDown')]].forEach(([c, l]) => {
+      const s = el('span', 'tlWaveKey');
+      const dot = el('span', 'tlWaveDot');
+      dot.style.background = c;
+      s.appendChild(dot);
+      s.appendChild(el('span', '', l));
+      legend.appendChild(s);
+    });
+    holder.appendChild(legend);
+    holder.innerHTML += '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:74px">' + svg + '</svg>';
+    box.appendChild(holder);
+  }
+
   let tlQuery = '';
   function renderTimeline() {
     const box = $('trajView');
     if (!box) return;
     box.textContent = '';
+    renderWave();
     const searchRow = el('div', 'tlSearch');
     searchRow.innerHTML = P.icons.search || '';
     const input = document.createElement('input');
@@ -6972,6 +7235,12 @@ window.PRTS_MARKET = {
     try {
       await P.dshState.prompt(C.sessionId, content);
       // The mux delivers the events; the prompt only needs to be accepted.
+      const sendBtnEl = $('sendBtn');
+      if (sendBtnEl) {
+        sendBtnEl.classList.remove('sent');
+        void sendBtnEl.offsetWidth;
+        sendBtnEl.classList.add('sent');
+      }
     } catch (e) {
       C.streaming = false;
       swapSendStop(false);
@@ -7299,11 +7568,49 @@ window.PRTS_MARKET = {
     if (A.introEngine) A.introEngine.refreshInk();
   }
   A.toggleTheme = async function () {
-    const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-    applyTheme(theme);
+    const cur = document.documentElement.dataset.theme;
+    const next = cur === 'dark' ? 'light' : cur === 'light' ? 'custom' : 'dark';
+    applyTheme(next);
     A.config.ui = A.config.ui || {};
-    A.config.ui.theme = theme;
+    A.config.ui.theme = next;
+    if (next === 'custom' && !A.config.ui.accent) {
+      A.config.ui.accent = { preset: 'tokyonight', primary: '#7aa2f7', diamond: '#7dcfff', square: '#bb9af7' };
+    }
+    applyAccent(A.config);
     await P.store.saveConfig(A.config);
+    if (A.applySidebarButtons) A.applySidebarButtons(A.config);
+  };
+
+  /** Left sidebar buttons are configurable (and extensible): the settings
+   *  page toggles them; every id in SIDEBAR_BUTTONS can show/hide. */
+  const SIDEBAR_BUTTONS = ['themeBtn', 'gitBtn', 'skillBtn', 'marketBtn', 'detailsBtn', 'settingsBtn'];
+  A.SIDEBAR_BUTTONS = SIDEBAR_BUTTONS;
+  function applySidebarButtons(cfg) {
+    const on = (cfg && cfg.ui && cfg.ui.sidebarButtons) || {};
+    for (const id of SIDEBAR_BUTTONS) {
+      const elt = document.getElementById(id);
+      if (!elt) continue;
+      const visible = on[id] !== false;   // default on
+      elt.style.display = visible ? '' : 'none';
+    }
+  }
+
+  /** One entry point for "open a file in the configured editor": Electron
+   *  bridge (editor-aware) or the /prts host route. */
+  A.openFile = async function (path, editorId) {
+    const b = (typeof window !== 'undefined' && window.prts && window.prts.bridge) || null;
+    const ed = editorId || (A.config && A.config.ui && A.config.ui.editor) || 'default';
+    if (b && b.openPath) {
+      try { await b.openPath(path, ed); return; } catch (e) { /* fall through */ }
+    }
+    try {
+      const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+      await fetch(origin + '/prts/api/open-path', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path, editor: ed }),
+      });
+    } catch (e) { /* noop */ }
   };
 
   /** Custom accent colors: primary (buttons/logo), diamond and square marks
@@ -7320,6 +7627,11 @@ window.PRTS_MARKET = {
       root.style.removeProperty('--prts-diamond');
       root.style.removeProperty('--prts-square');
     }
+  }
+
+  /** Liquid-glass master switch (default on). */
+  function applyGlass(cfg) {
+    document.body.dataset.glass = cfg && cfg.ui && cfg.ui.glass === false ? 'off' : 'on';
   }
 
   /** Custom wallpaper layer: image or video under everything except the
@@ -7778,11 +8090,22 @@ window.PRTS_MARKET = {
   }
 
   /** Keep every mode label in sync: header chip + hero chip. */
-  function setModeLabel(text) {
+  function modeIconFor(preset) {
+    const map = { standard: 'mode.standard', code: 'mode.code', minimal: 'mode.minimal', cordis: 'mode.cordis', prts: 'mode.cordis' };
+    return P.icons[map[preset]] || P.icons['mode.standard'] || '';
+  }
+  A.modeIconFor = modeIconFor;
+  function setModeLabel(text, presetId) {
     const h = $('headerMode');
     if (h) h.textContent = text;
     const hero = $('heroModeLabel');
     if (hero) hero.textContent = text;
+    // dedicated abstract mark per work mode (standard / PTC / 极简 / 创造)
+    const icon = modeIconFor(presetId || A.currentPreset);
+    for (const id of ['modeChipIcon', 'heroModeChipIcon']) {
+      const box = $(id);
+      if (box) box.innerHTML = icon;
+    }
   }
 
   /* ---------- model + reasoning chips ---------- */
@@ -7837,6 +8160,11 @@ window.PRTS_MARKET = {
   }
 
   /* ---------- permission chip (header + composer) ---------- */
+  function permissionIconFor(value) {
+    const map = { 'read-only': 'perm.readonly', 'workspace-write': 'perm.workspacewrite', 'danger-full-access': 'perm.danger' };
+    return P.icons[map[value]] || P.icons['perm.readonly'] || '';
+  }
+  A.permissionIconFor = permissionIconFor;
   function updatePermissionChip() {
     const st = P.dshState.permissions;
     const has = !!(st && st.options && st.options.length);
@@ -7849,6 +8177,14 @@ window.PRTS_MARKET = {
       chip.hidden = !has;
       el.textContent = label;
       chip.title = A.t('permission.title');
+      // shield mark per permission preset (abstract glyphs inside a shield)
+      let iconBox = chip.querySelector('.permIcon');
+      if (!iconBox) {
+        iconBox = document.createElement('span');
+        iconBox.className = 'permIcon';
+        chip.insertBefore(iconBox, chip.firstChild);
+      }
+      iconBox.innerHTML = permissionIconFor(cur ? cur.value : null);
     }
   }
 
@@ -8283,7 +8619,7 @@ window.PRTS_MARKET = {
     // The permission selector lives in two places — the header chip and the
     // composer chip under the input (dsh web shows it there too).
     const permissionPops = [];
-    for (const triggerId of ['permissionChip', 'composerPermissionChip']) {
+    for (const triggerId of ['composerPermissionChip']) {
       const trigger = $(triggerId);
       if (!trigger) continue;
       const pop = attachPop(trigger, buildPermissionPop(), async (item) => {
@@ -8322,13 +8658,16 @@ window.PRTS_MARKET = {
         await newSession();
       } catch (e) { A.toast(e.message); }
     }
+    // The header mode chip is a pure label (the hero chip keeps its picker).
     const modePops = [];
-    for (const id of ['modeChip', 'heroModeChip']) {
+    for (const id of ['heroModeChip']) {
       const trigger = $(id);
       if (!trigger) continue;
       modePops.push(attachPop(trigger, '<div class="popMeta">' + A.t('mode.loading') + '</div>', applyModePick));
       trigger.addEventListener('click', () => { A.refreshModePop(); });
     }
+    const modeChipEl = $('modeChip');
+    if (modeChipEl) modeChipEl.classList.add('static');
     A.refreshModePop = async () => {
       let html;
       try {
@@ -8787,6 +9126,8 @@ window.PRTS_MARKET = {
     applyTheme(A.config.ui && A.config.ui.theme === 'light' ? 'light' : A.config.ui && A.config.ui.theme === 'custom' ? 'custom' : 'dark');
     applyAccent(A.config);
     applyWallpaper(A.config).catch(() => { /* wallpaper is decorative */ });
+    applySidebarButtons(A.config);
+    applyGlass(A.config);
     applyI18n();
     A.heroVisible = true;
 
@@ -8810,6 +9151,43 @@ window.PRTS_MARKET = {
       updateBulkBar();
     });
     $('sessionBulkCancel').addEventListener('click', () => setSelecting(false));
+    // Background jobs: session/jobs mux frames + an expandable header chip.
+    P.dshState.liveJobs = P.dshState.liveJobs || {};
+    const jobsBtn = $('jobsBtn');
+    let jobsPop = null;
+    if (jobsBtn) {
+      jobsPop = document.createElement('div');
+      jobsPop.className = 'pop jobsPop';
+      jobsBtn.appendChild(jobsPop);
+      jobsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (openPop === jobsPop) { closePops(); return; }
+        closePops();
+        const jobs = P.dshState.liveJobs[P.dshState.currentSessionId] || [];
+        jobsPop.innerHTML = jobs.length
+          ? jobs.map((j) => '<div class="popItem" style="cursor:default"><span class="label">' + esc2(j.name || j.id || 'job') + '</span><span class="desc">' + esc2(j.status || '') + '</span></div>').join('')
+          : '<div class="popMeta">' + A.t('jobs.none') + '</div>';
+        jobsPop.classList.add('open');
+        openPop = jobsPop;
+      });
+    }
+    function esc2(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])); }
+    function updateJobsChip() {
+      const btn = $('jobsBtn');
+      if (!btn) return;
+      const jobs = P.dshState.liveJobs[P.dshState.currentSessionId] || [];
+      const label = btn.querySelector('.jobsCount');
+      if (label) label.textContent = String(jobs.length);
+      btn.hidden = jobs.length === 0;
+    }
+    A.updateJobsChip = updateJobsChip;
+    P.dsh.on('session/jobs', (frame) => {
+      const pl = frame.payload || {};
+      if (!pl.sessionId) return;
+      P.dshState.liveJobs[pl.sessionId] = Array.isArray(pl.jobs) ? pl.jobs : [];
+      updateJobsChip();
+    });
+
     $('clearHistoryBtn').addEventListener('click', async () => {
       const ok = await A.askConfirm(A.t('session.confirmArchive'));
       if (!ok) return;
@@ -8996,23 +9374,40 @@ window.PRTS_MARKET = {
         updateMeter();
       }).catch(() => { /* noop */ });
     }, 8000);
-    // Session data loads only after the intro finishes (or once dsh is up,
-    // whichever is later) so the particle intro never competes with big DOM
-    // renders — the backend boots in the background while the effect runs.
-    let postIntroStarted = false;
-    async function startSessionLoad() {
-      if (postIntroStarted) return;
-      postIntroStarted = true;
+    // Readiness gate: the intro stays "NOT READY" until the workspace +
+    // session data actually finished loading. The preload runs frame-yielded
+    // so the particle effect never stutters while dsh boots; only when it is
+    // done does A.ready flip and the intro offer "READY — click to enter".
+    let preloadStarted = false;
+    const rafYield = () => new Promise((r) => requestAnimationFrame(r));
+    async function preloadData() {
+      if (preloadStarted) return;
+      preloadStarted = true;
       try {
-        await refreshAll();
-        await A.ensureSession();
+        await P.dshState.listWorkspaces().catch(() => {});
+        await rafYield();
+        await P.dshState.listSessions().catch(() => {});
+        await rafYield();
+        await Promise.allSettled([P.dshState.listModels(), P.dshState.listProviders(), P.dshState.listPresets()]);
+        await rafYield();
+        renderWorkspaces();
+        renderSessions();
+        await rafYield();
+        A.ready = true;
+        if (A.introDone) {
+          await rafYield();
+          await A.ensureSession();
+        } else {
+          A._loadOnIntro = true;
+        }
       } catch (e) {
         A.toast(A.t('dsh.connectFail', { msg: e.message }));
       }
     }
     A.afterIntro = function () {
-      if (A._dshUp) startSessionLoad();
-      else A._loadOnIntro = true;
+      if (A.ready) {
+        A.ensureSession().catch(() => { /* session load is best-effort */ });
+      }
     };
     (async () => {
       // dsh may still be booting in the background (PRTS spawns it silently).
@@ -9027,13 +9422,10 @@ window.PRTS_MARKET = {
           delay = Math.min(4000, Math.round(delay * 1.25));
         }
         A._dshUp = true;
-        if (A.introDone) startSessionLoad();
+        preloadData();
       } catch (e) {
         A.toast(A.t('dsh.connectFail', { msg: e.message }));
       }
-      // Only now is the app "ready": the intro may end, and early clicks
-      // stop showing the not-loaded hint.
-      A.ready = true;
     })();
   }
 
@@ -9068,6 +9460,8 @@ window.PRTS_MARKET = {
   A.updateMeter = updateMeter;
   A.switchView = switchView;
   A.applyTheme = applyTheme;
+  A.applySidebarButtons = applySidebarButtons;
+  A.applyGlass = applyGlass;
   A.applyAccent = applyAccent;
   A.applyWallpaper = applyWallpaper;
   A.applyI18n = applyI18n;
@@ -10039,31 +10433,15 @@ window.PRTS_MARKET = {
         nameLine.appendChild(tag);
       }
       meta.appendChild(nameLine);
-      const desc = el('div', 'skDesc', s.description || '');
-      desc.title = s.description || '';
-      meta.appendChild(desc);
       row.appendChild(meta);
       const actions = el('div', 'skActions');
       const openBtn = el('button', 'sBtn', t('skills.openFile'));
       openBtn.type = 'button';
       openBtn.addEventListener('click', () => SK.openFile(s));
       actions.appendChild(openBtn);
-      const editBtn = el('button', 'sBtn', t('skills.edit'));
+      const editBtn = el('button', 'sBtn', t('skills.openFile'));
       editBtn.type = 'button';
-      const editorBox = el('div', 'skEditor');
-      editorBox.style.display = 'none';
-      let loaded = false;
-      editBtn.addEventListener('click', async () => {
-        const open = editorBox.style.display !== 'none';
-        editorBox.style.display = open ? 'none' : '';
-        editBtn.textContent = open ? t('skills.edit') : t('skills.editClose');
-        if (!open && !loaded) {
-          loaded = true;
-          try {
-            ta.value = await SK.read(s.name);
-          } catch (e) { ta.value = '# ' + s.name + '\n\n' + e.message; }
-        }
-      });
+      editBtn.addEventListener('click', () => SK.openFile(s));
       actions.appendChild(editBtn);
       const rm = el('button', 'rowBtn', P.icons['trash2'] || '×');
       rm.type = 'button';
@@ -10077,31 +10455,6 @@ window.PRTS_MARKET = {
       actions.appendChild(rm);
       row.appendChild(actions);
       card.appendChild(row);
-      const ta = document.createElement('textarea');
-      ta.className = 'sTextarea';
-      ta.rows = 14;
-      ta.spellcheck = false;
-      editorBox.appendChild(ta);
-      const saveRow = el('div', 'sRow');
-      saveRow.style.marginTop = '6px';
-      const save = el('button', 'sBtn primary', t('common.save'));
-      save.type = 'button';
-      save.addEventListener('click', async () => {
-        try {
-          await SK.write(s.name, ta.value);
-          P.app.toast(t('skills.saved', { name: s.name }));
-        } catch (e) { P.app.toast(e.message); }
-      });
-      saveRow.appendChild(save);
-      const closeBtn = el('button', 'sBtn', t('skills.editClose'));
-      closeBtn.type = 'button';
-      closeBtn.addEventListener('click', () => {
-        editorBox.style.display = 'none';
-        editBtn.textContent = t('skills.edit');
-      });
-      saveRow.appendChild(closeBtn);
-      editorBox.appendChild(saveRow);
-      card.appendChild(editorBox);
       lSec.appendChild(card);
     }
     // GitHub install row
@@ -10567,6 +10920,18 @@ window.PRTS_MARKET = {
   function bridge() {
     try { return (typeof window !== 'undefined' && window.prts && window.prts.bridge) || null; } catch (e) { return null; }
   }
+  async function detectEditors() {
+    const b = bridge();
+    if (b && typeof b.detectEditors === 'function') {
+      try { return await b.detectEditors(); } catch (e) { /* fall through */ }
+    }
+    try {
+      const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+      const res = await fetch(origin + '/prts/api/detect-editors');
+      if (res.ok) return await res.json();
+    } catch (e) { /* no host route */ }
+    return [{ id: 'default', name: '系统默认' }];
+  }
   function currentAccent() {
     config.ui = config.ui || {};
     if (!config.ui.accent) config.ui.accent = { preset: 'tokyonight', primary: '#7aa2f7', diamond: '#7dcfff', square: '#bb9af7' };
@@ -10787,7 +11152,7 @@ window.PRTS_MARKET = {
       const opRow = el('div', 'inlineForm');
       opRow.appendChild(el('span', 'fLabel', t('settings.general.wallpaper.opacity')));
       const op = document.createElement('input');
-      op.type = 'range'; op.min = '0.05'; op.max = '1'; op.step = '0.05';
+      op.type = 'range'; op.min = '0'; op.max = '1'; op.step = '0.01';
       op.value = String(w.opacity !== undefined ? w.opacity : 0.35);
       op.className = 'accRange';
       op.addEventListener('input', async () => {
@@ -10826,6 +11191,72 @@ window.PRTS_MARKET = {
       }
     }
     box.appendChild(wpSec);
+
+    // —— 液态玻璃开关 ——
+    const glassSec = el('div', 'sSection');
+    glassSec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.general.glass')));
+    const glassRow = el('div', 'inlineForm');
+    const glassLabel = el('label', 'mCheck');
+    const glassBox = document.createElement('input');
+    glassBox.type = 'checkbox';
+    glassBox.checked = (config.ui && config.ui.glass) !== false;
+    glassLabel.appendChild(glassBox);
+    glassLabel.appendChild(el('span', '', t('settings.general.glass.on')));
+    glassRow.appendChild(glassLabel);
+    glassSec.appendChild(glassRow);
+    glassBox.addEventListener('change', async () => {
+      config.ui = config.ui || {};
+      config.ui.glass = glassBox.checked;
+      await P.store.saveConfig(config);
+      if (P.app.applyGlass) P.app.applyGlass(config);
+    });
+    box.appendChild(glassSec);
+
+    // —— 默认文本编辑器（自动检测） ——
+    const edSec = el('div', 'sSection');
+    edSec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.general.editor')));
+    edSec.appendChild(el('div', 'hint', t('settings.general.editor.hint')));
+    const edSel = el('select', 'sInput sSelect');
+    let editors = [];
+    try { editors = await detectEditors(); } catch (e) { editors = []; }
+    if (!editors.length) editors = [{ id: 'default', name: '系统默认' }];
+    for (const e of editors) {
+      const o = document.createElement('option');
+      o.value = e.id;
+      o.textContent = e.name || e.id;
+      if ((config.ui && config.ui.editor) === e.id || (!config.ui || !config.ui.editor) && e.id === 'default') o.selected = true;
+      edSel.appendChild(o);
+    }
+    edSel.addEventListener('change', async () => {
+      config.ui = config.ui || {};
+      config.ui.editor = edSel.value;
+      await P.store.saveConfig(config);
+    });
+    edSec.appendChild(edSel);
+    box.appendChild(edSec);
+
+    // —— 左侧侧边栏按钮显隐 ——
+    const sbSec = el('div', 'sSection');
+    sbSec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.general.sidebarButtons')));
+    const sbChips = el('div', 'skChips');
+    const ids = (P.app && P.app.SIDEBAR_BUTTONS) || ['themeBtn', 'gitBtn', 'skillBtn', 'marketBtn', 'detailsBtn', 'settingsBtn'];
+    const cur = (config.ui && config.ui.sidebarButtons) || {};
+    for (const id of ids) {
+      const on = cur[id] !== false;
+      const c = el('button', 'skChip' + (on ? ' on' : ''), t('sidebar.btn.' + id.replace('Btn', ''), { default: id }));
+      c.type = 'button';
+      c.addEventListener('click', async () => {
+        config.ui = config.ui || {};
+        config.ui.sidebarButtons = config.ui.sidebarButtons || {};
+        config.ui.sidebarButtons[id] = cur[id] !== false ? false : true;
+        await P.store.saveConfig(config);
+        if (P.app.applySidebarButtons) P.app.applySidebarButtons(config);
+        renderGeneral(box);
+      });
+      sbChips.appendChild(c);
+    }
+    sbSec.appendChild(sbChips);
+    box.appendChild(sbSec);
 
     // Doctor name (PRTS persona)
     const nameSec = el('div', 'sSection');

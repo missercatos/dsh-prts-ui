@@ -224,20 +224,19 @@
 /* Glass on the composer, chips, popovers and the message/trajectory surfaces */
 .composerCard {
   background: color-mix(in srgb, var(--prts-panel) 70%, transparent) !important;
-  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(var(--prts-glass-strong, 20px)); -webkit-backdrop-filter: blur(var(--prts-glass-strong, 20px));
 }
 .chip, .pop, .modalCard, .reqCard, .mTabs, .mSearch, .mGh, .skCard, .pCard, .mCat, .skChip {
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(var(--prts-glass, 12px)); -webkit-backdrop-filter: blur(var(--prts-glass, 12px));
 }
 .pop { background: color-mix(in srgb, var(--prts-panel) 85%, transparent); }
-.disclosure, .dBody, .assistantItem, .userBubble {
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-}
+/* conversation surfaces stay UN-glassed so the background
+   diamond/square marks stay visible behind the text */
 /* Wallpaper active: the sidebar and details columns turn translucent glass */
 body[data-wallpaper='on'] .sbCol,
 body[data-wallpaper='on'] .dtCol {
   background: color-mix(in srgb, var(--prts-panel) 55%, transparent);
-  backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px);
+  backdrop-filter: blur(var(--prts-glass-strong, 20px)); -webkit-backdrop-filter: blur(var(--prts-glass-strong, 20px));
 }
 body[data-wallpaper='on'] .sysCard,
 body[data-wallpaper='on'] .settingsCard {
@@ -272,7 +271,7 @@ body[data-wallpaper='on'] .settingsCard {
   transition: opacity 0.16s var(--prts-ease), transform 0.16s var(--prts-ease);
   padding: 2px; border-radius: 8px;
   background: color-mix(in srgb, var(--prts-panel) 78%, transparent);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(var(--prts-glass, 12px)); -webkit-backdrop-filter: blur(var(--prts-glass, 12px));
 }
 .assistantItem:hover .msgActions { opacity: 1; transform: none; }
 .maBtn {
@@ -296,7 +295,7 @@ body[data-wallpaper='on'] .settingsCard {
   height: 34px; padding: 0 10px; margin-bottom: 8px;
   border: 1px solid var(--prts-hairline); border-radius: 8px;
   background: color-mix(in srgb, var(--prts-panel) 82%, transparent);
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(var(--prts-glass, 12px)); -webkit-backdrop-filter: blur(var(--prts-glass, 12px));
   color: var(--prts-ink-faint);
 }
 .tlSearch input { flex: 1; min-width: 0; border: none; background: transparent; color: var(--prts-ink); font-size: 13px; outline: none; }
@@ -324,7 +323,7 @@ body[data-wallpaper='on'] .settingsCard {
   display: flex; align-items: center; gap: 10px; padding: 10px 12px;
   border: 1px solid var(--prts-hairline); border-radius: 10px;
   background: color-mix(in srgb, var(--prts-surface) 60%, transparent);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(var(--prts-glass, 12px)); -webkit-backdrop-filter: blur(var(--prts-glass, 12px));
 }
 .sPresetRow.current { border-color: var(--prts-accent); }
 .invList {
@@ -332,3 +331,102 @@ body[data-wallpaper='on'] .settingsCard {
   max-height: 430px; overflow-y: auto; padding-right: 4px;
 }
 .invList .pmeta { font-size: 10px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+
+/* ---------- 0.6.0: PRTS send button, animations, theme-linked accents ---------- */
+.sendBtn {
+  position: relative; width: 34px; height: 34px; padding: 0;
+  border: 1.2px solid var(--prts-accent); border-radius: 9px;
+  background: transparent; color: var(--prts-accent); cursor: pointer;
+  transform: rotate(45deg);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 0.18s var(--prts-ease), box-shadow 0.18s var(--prts-ease), opacity 0.18s var(--prts-ease);
+}
+.sendBtn svg { transform: rotate(-45deg); }
+.sendBtn:hover:not(:disabled) { background: color-mix(in srgb, var(--prts-accent) 16%, transparent); }
+.sendBtn:disabled { opacity: 0.35; cursor: default; }
+/* send pulse: a diamond ripple fires on every send */
+@keyframes prtsSendPulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--prts-accent) 55%, transparent); }
+  100% { box-shadow: 0 0 0 14px transparent; }
+}
+.sendBtn.sent { animation: prtsSendPulse 0.55s var(--prts-ease-out) 1; }
+/* running state: becomes a stop square with a breathing halo */
+.sendBtn.running { transform: rotate(45deg); border-color: var(--prts-accent); }
+.sendBtn.running svg { transform: rotate(-45deg); animation: prtsStopSpin 1.6s linear infinite; }
+@keyframes prtsStopSpin { to { transform: rotate(-405deg); } }
+@keyframes prtsRunningHalo {
+  0%, 100% { box-shadow: 0 0 6px color-mix(in srgb, var(--prts-accent) 45%, transparent); }
+  50% { box-shadow: 0 0 16px color-mix(in srgb, var(--prts-accent) 80%, transparent); }
+}
+.sendBtn.running { animation: prtsRunningHalo 1.4s ease-in-out infinite; }
+/* voice button follows the accent */
+.voiceBtn { color: var(--prts-accent); }
+.voiceBtn.on { border-color: var(--prts-accent); box-shadow: 0 0 10px color-mix(in srgb, var(--prts-accent) 35%, transparent); }
+/* disclosure chevrons: accent color + rotation animation */
+.dRow .chev, .dRow svg { color: var(--prts-accent); transition: transform 0.25s var(--prts-ease-out); }
+.disclosure.open .dRow svg.chev, .openArgs .dRow svg:first-child { transform: rotate(90deg); }
+.disclosure.open .dRow svg, .toolItem.openArgs .dRow svg { transform: rotate(90deg); }
+/* message actions live inline at the end of the output (bottom-right) */
+.msgActions {
+  position: static; display: inline-flex; gap: 4px; opacity: 0;
+  transform: none; margin-left: 6px; vertical-align: bottom;
+  background: transparent; padding: 0;
+  transition: opacity 0.16s var(--prts-ease);
+}
+.assistantItem:hover .msgActions { opacity: 1; }
+.maBtn { border: none; background: transparent; color: var(--prts-ink-faint); }
+.maBtn:hover { color: var(--prts-accent); border-color: transparent; }
+.maBtn.on { color: var(--prts-accent); }
+.maBtn svg { width: 12px; height: 12px; }
+/* deliverables: produced files at the reply's end, light up on hover */
+.dlvChips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.dlvChip {
+  display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px;
+  border: 1px solid var(--prts-hairline); border-radius: 13px;
+  background: color-mix(in srgb, var(--prts-surface) 60%, transparent);
+  color: var(--prts-ink-dim); font-size: 11px; font-family: var(--prts-mono); cursor: pointer;
+  max-width: 240px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  transition: border-color 0.15s var(--prts-ease), color 0.15s var(--prts-ease), box-shadow 0.15s var(--prts-ease);
+}
+.dlvChip svg { flex: none; width: 11px; height: 11px; color: var(--prts-accent); }
+.dlvChip:hover {
+  border-color: var(--prts-accent); color: var(--prts-ink);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--prts-accent) 35%, transparent);
+}
+/* waveform above the trajectory */
+.tlWave { margin-bottom: 6px; padding: 8px 10px; border: 1px solid var(--prts-hairline); border-radius: 10px; background: color-mix(in srgb, var(--prts-surface) 55%, transparent); }
+.tlWaveLegend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+.tlWaveKey { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+.tlWaveDot { width: 7px; height: 7px; border-radius: 2px; }
+/* theme toggle third state (colored diamond) */
+.themeDiamond { opacity: 0; transform: rotate(-60deg) scale(0.6); }
+[data-theme='custom'] .themeDiamond { opacity: 1; transform: rotate(0) scale(1); }
+[data-theme='custom'] .themeSun, [data-theme='custom'] .themeMoon { opacity: 0; transform: rotate(60deg) scale(0.6); }
+/* active session/workspace marker follows the accent (small diamond) */
+.sbItem.active { box-shadow: none; position: relative; }
+.sbItem.active::before {
+  content: ''; position: absolute; left: 4px; top: 50%; width: 6px; height: 6px;
+  transform: translateY(-50%) rotate(45deg); background: var(--prts-accent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--prts-accent) 55%, transparent);
+}
+.sbItem.active .name { color: var(--prts-ink); }
+/* header jobs chip */
+.jobsChip { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; position: relative; }
+.jobsCount { font-family: var(--prts-mono); color: var(--prts-accent); }
+.jobsPop { min-width: 220px; max-width: 320px; max-height: 300px; overflow-y: auto; }
+/* static header chips (pure labels) */
+.chip.static { cursor: default; }
+.chip.static:hover { background: transparent; }
+.modeChipIcon { display: inline-flex; flex: none; }
+.modeChipIcon svg { width: 12px; height: 12px; color: var(--prts-accent); }
+.permIcon { display: inline-flex; flex: none; margin-right: 4px; }
+.permIcon svg { width: 12px; height: 12px; color: var(--prts-accent); }
+/* sidebar smoothness: content-visibility + lighter transition */
+.sbList { content-visibility: auto; contain-intrinsic-size: 32px 40px; }
+.frame { transition: grid-template-columns 0.22s var(--prts-ease-out); will-change: grid-template-columns; }
+.sbCol { transition: border-color 0.3s var(--prts-ease), width 0.22s var(--prts-ease-out); }
+/* system panel: single-column horizontal rows (no vertical text) */
+.sysStats { display: flex; flex-direction: column; gap: 14px; }
+.sysRow { grid-template-columns: 110px minmax(0, 1fr) 150px; }
+.sysK { font-size: 12px; white-space: nowrap; }
+.sysV { font-size: 12px; white-space: nowrap; }

@@ -288,31 +288,15 @@
         nameLine.appendChild(tag);
       }
       meta.appendChild(nameLine);
-      const desc = el('div', 'skDesc', s.description || '');
-      desc.title = s.description || '';
-      meta.appendChild(desc);
       row.appendChild(meta);
       const actions = el('div', 'skActions');
       const openBtn = el('button', 'sBtn', t('skills.openFile'));
       openBtn.type = 'button';
       openBtn.addEventListener('click', () => SK.openFile(s));
       actions.appendChild(openBtn);
-      const editBtn = el('button', 'sBtn', t('skills.edit'));
+      const editBtn = el('button', 'sBtn', t('skills.openFile'));
       editBtn.type = 'button';
-      const editorBox = el('div', 'skEditor');
-      editorBox.style.display = 'none';
-      let loaded = false;
-      editBtn.addEventListener('click', async () => {
-        const open = editorBox.style.display !== 'none';
-        editorBox.style.display = open ? 'none' : '';
-        editBtn.textContent = open ? t('skills.edit') : t('skills.editClose');
-        if (!open && !loaded) {
-          loaded = true;
-          try {
-            ta.value = await SK.read(s.name);
-          } catch (e) { ta.value = '# ' + s.name + '\n\n' + e.message; }
-        }
-      });
+      editBtn.addEventListener('click', () => SK.openFile(s));
       actions.appendChild(editBtn);
       const rm = el('button', 'rowBtn', P.icons['trash2'] || '×');
       rm.type = 'button';
@@ -326,31 +310,6 @@
       actions.appendChild(rm);
       row.appendChild(actions);
       card.appendChild(row);
-      const ta = document.createElement('textarea');
-      ta.className = 'sTextarea';
-      ta.rows = 14;
-      ta.spellcheck = false;
-      editorBox.appendChild(ta);
-      const saveRow = el('div', 'sRow');
-      saveRow.style.marginTop = '6px';
-      const save = el('button', 'sBtn primary', t('common.save'));
-      save.type = 'button';
-      save.addEventListener('click', async () => {
-        try {
-          await SK.write(s.name, ta.value);
-          P.app.toast(t('skills.saved', { name: s.name }));
-        } catch (e) { P.app.toast(e.message); }
-      });
-      saveRow.appendChild(save);
-      const closeBtn = el('button', 'sBtn', t('skills.editClose'));
-      closeBtn.type = 'button';
-      closeBtn.addEventListener('click', () => {
-        editorBox.style.display = 'none';
-        editBtn.textContent = t('skills.edit');
-      });
-      saveRow.appendChild(closeBtn);
-      editorBox.appendChild(saveRow);
-      card.appendChild(editorBox);
       lSec.appendChild(card);
     }
     // GitHub install row

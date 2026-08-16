@@ -143,6 +143,18 @@
   function bridge() {
     try { return (typeof window !== 'undefined' && window.prts && window.prts.bridge) || null; } catch (e) { return null; }
   }
+  async function detectEditors() {
+    const b = bridge();
+    if (b && typeof b.detectEditors === 'function') {
+      try { return await b.detectEditors(); } catch (e) { /* fall through */ }
+    }
+    try {
+      const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+      const res = await fetch(origin + '/prts/api/detect-editors');
+      if (res.ok) return await res.json();
+    } catch (e) { /* no host route */ }
+    return [{ id: 'default', name: '系统默认' }];
+  }
   function currentAccent() {
     config.ui = config.ui || {};
     if (!config.ui.accent) config.ui.accent = { preset: 'tokyonight', primary: '#7aa2f7', diamond: '#7dcfff', square: '#bb9af7' };
@@ -363,7 +375,7 @@
       const opRow = el('div', 'inlineForm');
       opRow.appendChild(el('span', 'fLabel', t('settings.general.wallpaper.opacity')));
       const op = document.createElement('input');
-      op.type = 'range'; op.min = '0.05'; op.max = '1'; op.step = '0.05';
+      op.type = 'range'; op.min = '0'; op.max = '1'; op.step = '0.01';
       op.value = String(w.opacity !== undefined ? w.opacity : 0.35);
       op.className = 'accRange';
       op.addEventListener('input', async () => {
@@ -402,6 +414,72 @@
       }
     }
     box.appendChild(wpSec);
+
+    // —— 液态玻璃开关 ——
+    const glassSec = el('div', 'sSection');
+    glassSec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.general.glass')));
+    const glassRow = el('div', 'inlineForm');
+    const glassLabel = el('label', 'mCheck');
+    const glassBox = document.createElement('input');
+    glassBox.type = 'checkbox';
+    glassBox.checked = (config.ui && config.ui.glass) !== false;
+    glassLabel.appendChild(glassBox);
+    glassLabel.appendChild(el('span', '', t('settings.general.glass.on')));
+    glassRow.appendChild(glassLabel);
+    glassSec.appendChild(glassRow);
+    glassBox.addEventListener('change', async () => {
+      config.ui = config.ui || {};
+      config.ui.glass = glassBox.checked;
+      await P.store.saveConfig(config);
+      if (P.app.applyGlass) P.app.applyGlass(config);
+    });
+    box.appendChild(glassSec);
+
+    // —— 默认文本编辑器（自动检测） ——
+    const edSec = el('div', 'sSection');
+    edSec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.general.editor')));
+    edSec.appendChild(el('div', 'hint', t('settings.general.editor.hint')));
+    const edSel = el('select', 'sInput sSelect');
+    let editors = [];
+    try { editors = await detectEditors(); } catch (e) { editors = []; }
+    if (!editors.length) editors = [{ id: 'default', name: '系统默认' }];
+    for (const e of editors) {
+      const o = document.createElement('option');
+      o.value = e.id;
+      o.textContent = e.name || e.id;
+      if ((config.ui && config.ui.editor) === e.id || (!config.ui || !config.ui.editor) && e.id === 'default') o.selected = true;
+      edSel.appendChild(o);
+    }
+    edSel.addEventListener('change', async () => {
+      config.ui = config.ui || {};
+      config.ui.editor = edSel.value;
+      await P.store.saveConfig(config);
+    });
+    edSec.appendChild(edSel);
+    box.appendChild(edSec);
+
+    // —— 左侧侧边栏按钮显隐 ——
+    const sbSec = el('div', 'sSection');
+    sbSec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.general.sidebarButtons')));
+    const sbChips = el('div', 'skChips');
+    const ids = (P.app && P.app.SIDEBAR_BUTTONS) || ['themeBtn', 'gitBtn', 'skillBtn', 'marketBtn', 'detailsBtn', 'settingsBtn'];
+    const cur = (config.ui && config.ui.sidebarButtons) || {};
+    for (const id of ids) {
+      const on = cur[id] !== false;
+      const c = el('button', 'skChip' + (on ? ' on' : ''), t('sidebar.btn.' + id.replace('Btn', ''), { default: id }));
+      c.type = 'button';
+      c.addEventListener('click', async () => {
+        config.ui = config.ui || {};
+        config.ui.sidebarButtons = config.ui.sidebarButtons || {};
+        config.ui.sidebarButtons[id] = cur[id] !== false ? false : true;
+        await P.store.saveConfig(config);
+        if (P.app.applySidebarButtons) P.app.applySidebarButtons(config);
+        renderGeneral(box);
+      });
+      sbChips.appendChild(c);
+    }
+    sbSec.appendChild(sbChips);
+    box.appendChild(sbSec);
 
     // Doctor name (PRTS persona)
     const nameSec = el('div', 'sSection');

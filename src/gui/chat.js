@@ -394,20 +394,37 @@
 
   /** Open a path in the file manager/system editor (dsh-web underline parity). */
   function openFilePath(path) {
-    const b = (typeof window !== 'undefined' && window.prts && window.prts.bridge) || null;
-    if (b && b.openPath) { b.openPath(path).catch(() => {}); return; }
-    try {
-      const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
-      fetch(origin + '/prts/api/open-path', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path }),
-      }).catch(() => {});
-    } catch (e) { /* noop */ }
+    if (P.app && P.app.openFile) P.app.openFile(path).catch(() => {});
+  }
+  const PATH_RE = /(?:[\s("'])(\/(?:home|workspace|workspaces|tmp|var|usr|etc|opt|srv|root|mnt|media|run|data)\/[^\s<>"']+)/g;
+  function extractPaths(text) {
+    const out = [];
+    const re = new RegExp(PATH_RE.source, 'g');
+    let m;
+    while ((m = re.exec(String(text || ''))) !== null) {
+      const clean = m[1].replace(/[),.;，。；：]+$/, '');
+      if (out.indexOf(clean) < 0) out.push(clean);
+    }
+    return out.slice(0, 12);
+  }
+  /** Deliverable chips: every file the answer produced, clickable. */
+  function deliverablesEl(text) {
+    const paths = extractPaths(text);
+    if (!paths.length) return null;
+    const box = el('div', 'dlvChips');
+    for (const p of paths) {
+      const chip = el('button', 'dlvChip');
+      chip.type = 'button';
+      chip.title = p;
+      chip.innerHTML = P.icons['ma.read'] + '<span>' + esc(p.split('/').pop() || p) + '</span>';
+      chip.addEventListener('click', (e) => { e.stopPropagation(); openFilePath(p); });
+      box.appendChild(chip);
+    }
+    return box;
   }
   /** Absolute paths get an underline link (click opens the file). */
   function linkifyPaths(html) {
-    return String(html || '').replace(/([\s("'])(\/(?:home|workspace|workspaces|tmp|var|usr|etc|opt|srv|root|mnt|media|run|data)\/[^\s<>"']+)/g, (m, pre, path) => {
+    return String(html || '').replace(PATH_RE, (m, pre, path) => {
       const clean = path.replace(/[),.;，。；：]+$/, '');
       return pre + '<a class="pathLink" data-path="' + esc(clean) + '">' + esc(clean) + '</a>';
     });
@@ -469,6 +486,9 @@
       item.appendChild(p);
     }
     for (const img of msg.images || []) item.appendChild(imageEl(img));
+    // deliverables: every produced file, clickable, always visible at the end
+    const dlv = deliverablesEl(msg.content || '');
+    if (dlv) item.appendChild(dlv);
     // meta: 完成时间 · 用时 · token (appears on hover)
     const meta = el('div', 'msgMeta');
     meta.appendChild(el('span', '', clock(msg.ts)));
@@ -494,9 +514,9 @@
         .catch(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copyFail')); });
     }));
     const fb = C.msgFeedback || {};
-    const up = mk('ma.like', t('chat.good'), () => sendFeedback(msg, fb[msg.id] === 'good' ? null : 'good'));
+    const up = mk('ma.good', t('chat.good'), () => sendFeedback(msg, fb[msg.id] === 'good' ? null : 'good'));
     if (fb[msg.id] === 'good') up.classList.add('on');
-    const dn = mk('ma.dislike', t('chat.bad'), () => sendFeedback(msg, fb[msg.id] === 'bad' ? null : 'bad'));
+    const dn = mk('ma.bad', t('chat.bad'), () => sendFeedback(msg, fb[msg.id] === 'bad' ? null : 'bad'));
     if (fb[msg.id] === 'bad') dn.classList.add('on');
     actions.appendChild(up); actions.appendChild(dn);
     actions.appendChild(mk('ma.branch', t('chat.branch'), () => branchFrom(msg)));
@@ -529,6 +549,8 @@
       body.appendChild(pre);
       d.appendChild(body);
       item.appendChild(d);
+      const dlv = deliverablesEl(msg.content);
+      if (dlv) item.appendChild(dlv);
     }
     return item;
   }
@@ -540,20 +562,36 @@
     return row;
   }
 
+  let flowRenderToken = 0;
   function renderFlow() {
     const flow = $('flow');
     if (!flow) return;
+    const token = ++flowRenderToken;
     flow.textContent = '';
-    for (const m of C.messages) {
-      if (m.role === 'user') flow.appendChild(renderUser(m));
-      else if (m.role === 'assistant') flow.appendChild(renderAssistant(m));
-      else if (m.role === 'tool') flow.appendChild(renderTool(m));
-      else if (m.role === 'system') flow.appendChild(renderSystem(m));
-    }
     if (!C.messages.length) {
       flow.appendChild(el('div', 'emptyChat', t('chat.empty')));
+      scrollBottom();
+      return;
     }
-    scrollBottom();
+    const CHUNK = 60;   // messages per frame — big histories stop janking switches
+    let i = 0;
+    const step = () => {
+      if (token !== flowRenderToken) return;
+      const end = Math.min(i + CHUNK, C.messages.length);
+      for (; i < end; i++) {
+        const m = C.messages[i];
+        if (m.role === 'user') flow.appendChild(renderUser(m));
+        else if (m.role === 'assistant') flow.appendChild(renderAssistant(m));
+        else if (m.role === 'tool') flow.appendChild(renderTool(m));
+        else if (m.role === 'system') flow.appendChild(renderSystem(m));
+      }
+      if (i < C.messages.length) {
+        requestAnimationFrame(step);
+      } else {
+        scrollBottom();
+      }
+    };
+    step();
   }
 
   function scrollBottom() {
@@ -562,11 +600,76 @@
 
   /* ---------- trajectory (dsh-web parity: colored blocks, per-node time &
      token cost, search — no black box) ---------- */
+  /** Waveform above the trajectory: color = activity kind (think/output/tool),
+   *  direction/area = token spend (in = up, out = down). */
+  function renderWave() {
+    const box = $('trajView');
+    if (!box) return;
+    const holder = el('div', 'tlWave');
+    const events = C.rawEvents.filter((ev) => {
+      const d = ev.data || {};
+      return d.turn !== undefined || d.step !== undefined;
+    });
+    if (!events.length) { box.appendChild(holder); return; }
+    const W = 900, H = 74;
+    const cols = [];
+    let pending = { in: 0, out: 0 };
+    for (const ev of events) {
+      const d = ev.data || {};
+      const c = d.chunk || {};
+      if (ev.type === 'assistant/chunk' && c.type === 'usage') {
+        const u = c.usage || c;
+        pending.in += u.prompt_tokens || 0;
+        pending.out += u.completion_tokens || 0;
+        cols.push({ kind: 'usage', color: '#7aa2f7', in: u.prompt_tokens || 0, out: u.completion_tokens || 0 });
+      } else if (ev.type === 'assistant/chunk' && c.type === 'reasoning-delta') {
+        cols.push({ kind: 'think', color: '#9d7cd8' });
+      } else if (ev.type === 'assistant/chunk' && c.type === 'text-delta') {
+        cols.push({ kind: 'output', color: '#9ece6a' });
+      } else if (ev.type === 'tool/call' || ev.type === 'tool/result' || (ev.type === 'assistant/chunk' && c.type === 'tool-call-delta')) {
+        cols.push({ kind: 'tool', color: '#e0af68' });
+      } else if (ev.type === 'user/message') {
+        cols.push({ kind: 'user', color: '#9C9CA1' });
+      } else {
+        cols.push({ kind: 'sys', color: '#626266' });
+      }
+    }
+    const n = Math.max(cols.length, 1);
+    const bw = Math.max(2, Math.floor(W / n) - 1);
+    let svg = '';
+    const maxTok = Math.max(1, Math.max(...cols.map((c) => Math.max(c.in || 0, c.out || 0))));
+    cols.forEach((c, i) => {
+      const x = i * (bw + 1);
+      if (c.kind === 'usage') {
+        const up = Math.max(2, Math.round((c.in / maxTok) * (H / 2 - 4)));
+        const down = Math.max(2, Math.round((c.out / maxTok) * (H / 2 - 4)));
+        svg += '<rect x="' + x + '" y="' + (H / 2 - up) + '" width="' + bw + '" height="' + up + '" fill="' + c.color + '" opacity="0.9"/>';
+        svg += '<rect x="' + x + '" y="' + (H / 2 + 1) + '" width="' + bw + '" height="' + down + '" fill="' + c.color + '" opacity="0.45"/>';
+      } else {
+        const h = c.kind === 'sys' ? 3 : 8;
+        svg += '<rect x="' + x + '" y="' + (H / 2 - h / 2) + '" width="' + bw + '" height="' + h + '" fill="' + c.color + '" opacity="0.75"/>';
+      }
+    });
+    const legend = el('div', 'tlWaveLegend');
+    [['#9d7cd8', t('traj.think')], ['#9ece6a', t('traj.output')], ['#e0af68', t('traj.tool')], ['#7aa2f7', t('traj.tokenUpDown')]].forEach(([c, l]) => {
+      const s = el('span', 'tlWaveKey');
+      const dot = el('span', 'tlWaveDot');
+      dot.style.background = c;
+      s.appendChild(dot);
+      s.appendChild(el('span', '', l));
+      legend.appendChild(s);
+    });
+    holder.appendChild(legend);
+    holder.innerHTML += '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:74px">' + svg + '</svg>';
+    box.appendChild(holder);
+  }
+
   let tlQuery = '';
   function renderTimeline() {
     const box = $('trajView');
     if (!box) return;
     box.textContent = '';
+    renderWave();
     const searchRow = el('div', 'tlSearch');
     searchRow.innerHTML = P.icons.search || '';
     const input = document.createElement('input');
@@ -800,6 +903,12 @@
     try {
       await P.dshState.prompt(C.sessionId, content);
       // The mux delivers the events; the prompt only needs to be accepted.
+      const sendBtnEl = $('sendBtn');
+      if (sendBtnEl) {
+        sendBtnEl.classList.remove('sent');
+        void sendBtnEl.offsetWidth;
+        sendBtnEl.classList.add('sent');
+      }
     } catch (e) {
       C.streaming = false;
       swapSendStop(false);

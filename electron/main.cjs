@@ -560,14 +560,81 @@ ipcMain.handle('prts:skillInstall', (_e, repo, subdir) => new Promise((resolve) 
   if (!child) resolve({ ok: false, error: 'git unavailable' })
 }))
 
-ipcMain.handle('prts:openPath', (_e, p) => {
+const EDITOR_CANDIDATES = [
+  { id: 'default', name: '系统默认', cmd: null, terminal: false },
+  { id: 'code', name: 'VS Code', cmd: 'code', terminal: false },
+  { id: 'gedit', name: '文本编辑器 (gedit)', cmd: 'gedit', terminal: false },
+  { id: 'kate', name: 'Kate', cmd: 'kate', terminal: false },
+  { id: 'vim', name: 'vim (终端)', cmd: 'vim', terminal: true },
+  { id: 'nvim', name: 'nvim (终端)', cmd: 'nvim', terminal: true },
+  { id: 'nano', name: 'nano (终端)', cmd: 'nano', terminal: true },
+  { id: 'notepad', name: '记事本', cmd: 'notepad', terminal: false },
+]
+
+/** Open a command in a terminal window (cross-platform best effort). */
+function spawnTerminalCmd(cmd, keepOpen) {
+  const full = keepOpen ? cmd + '; echo; echo "[PRTS] done — close this window or press Enter"; read _' : cmd
+  if (process.platform === 'darwin') {
+    try {
+      const child = execFile('osascript', ['-e', 'tell app "Terminal" to do script ' + JSON.stringify(full)], () => {})
+      if (child) return true
+    } catch (e) { /* next */ }
+  } else if (process.platform === 'win32') {
+    try {
+      const child = execFile('cmd', ['/c', 'start', 'cmd', '/k', full], () => {})
+      if (child) return true
+    } catch (e) { /* next */ }
+  } else {
+    for (const [bin, argv] of [
+      ['x-terminal-emulator', ['-e', 'bash', '-lc', full]],
+      ['gnome-terminal', ['--', 'bash', '-c', full]],
+      ['konsole', ['-e', 'bash', '-lc', full]],
+      ['xterm', ['-e', 'bash', '-lc', full]],
+    ]) {
+      try {
+        const child = execFile(bin, argv, { detached: true }, () => {})
+        if (child) { child.unref(); return true }
+      } catch (e) { /* next */ }
+    }
+  }
+  return false
+}
+
+ipcMain.handle('prts:openPath', (_e, p, editorId) => {
+  const ed = EDITOR_CANDIDATES.find((e) => e.id === editorId) || EDITOR_CANDIDATES[0]
   try {
+    if (ed.cmd) {
+      if (ed.terminal) {
+        if (spawnTerminalCmd(ed.cmd + ' ' + JSON.stringify(String(p)), false)) return { ok: true }
+      } else {
+        const child = execFile(ed.cmd, [String(p)], () => {})
+        if (child) return { ok: true }
+      }
+    }
     shell.openPath(String(p))
     return { ok: true }
   } catch (err) {
     return { ok: false, error: String(err && err.message || err) }
   }
 })
+
+ipcMain.handle('prts:detectEditors', () => new Promise((resolve) => {
+  const out = []
+  let settled = false
+  const done = () => { if (!settled) { settled = true; resolve(out) } }
+  const probe = (cmd) => {
+    const bin = process.platform === 'win32' ? 'where' : 'which'
+    return new Promise((r) => execFile(bin, [cmd], (err) => r(!err)))
+  }
+  ;(async () => {
+    out.push(EDITOR_CANDIDATES[0])   // 系统默认 always present
+    for (const e of EDITOR_CANDIDATES.slice(1)) {
+      if (await probe(e.cmd)) out.push(e)
+    }
+    done()
+  })()
+  setTimeout(done, 4000)
+}))
 
 ipcMain.handle('prts:readFileB64', async (_e, p) => {
   const buf = await fs.promises.readFile(String(p))

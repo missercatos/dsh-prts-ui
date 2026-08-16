@@ -43,11 +43,49 @@
     if (A.introEngine) A.introEngine.refreshInk();
   }
   A.toggleTheme = async function () {
-    const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-    applyTheme(theme);
+    const cur = document.documentElement.dataset.theme;
+    const next = cur === 'dark' ? 'light' : cur === 'light' ? 'custom' : 'dark';
+    applyTheme(next);
     A.config.ui = A.config.ui || {};
-    A.config.ui.theme = theme;
+    A.config.ui.theme = next;
+    if (next === 'custom' && !A.config.ui.accent) {
+      A.config.ui.accent = { preset: 'tokyonight', primary: '#7aa2f7', diamond: '#7dcfff', square: '#bb9af7' };
+    }
+    applyAccent(A.config);
     await P.store.saveConfig(A.config);
+    if (A.applySidebarButtons) A.applySidebarButtons(A.config);
+  };
+
+  /** Left sidebar buttons are configurable (and extensible): the settings
+   *  page toggles them; every id in SIDEBAR_BUTTONS can show/hide. */
+  const SIDEBAR_BUTTONS = ['themeBtn', 'gitBtn', 'skillBtn', 'marketBtn', 'detailsBtn', 'settingsBtn'];
+  A.SIDEBAR_BUTTONS = SIDEBAR_BUTTONS;
+  function applySidebarButtons(cfg) {
+    const on = (cfg && cfg.ui && cfg.ui.sidebarButtons) || {};
+    for (const id of SIDEBAR_BUTTONS) {
+      const elt = document.getElementById(id);
+      if (!elt) continue;
+      const visible = on[id] !== false;   // default on
+      elt.style.display = visible ? '' : 'none';
+    }
+  }
+
+  /** One entry point for "open a file in the configured editor": Electron
+   *  bridge (editor-aware) or the /prts host route. */
+  A.openFile = async function (path, editorId) {
+    const b = (typeof window !== 'undefined' && window.prts && window.prts.bridge) || null;
+    const ed = editorId || (A.config && A.config.ui && A.config.ui.editor) || 'default';
+    if (b && b.openPath) {
+      try { await b.openPath(path, ed); return; } catch (e) { /* fall through */ }
+    }
+    try {
+      const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+      await fetch(origin + '/prts/api/open-path', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path, editor: ed }),
+      });
+    } catch (e) { /* noop */ }
   };
 
   /** Custom accent colors: primary (buttons/logo), diamond and square marks
@@ -64,6 +102,11 @@
       root.style.removeProperty('--prts-diamond');
       root.style.removeProperty('--prts-square');
     }
+  }
+
+  /** Liquid-glass master switch (default on). */
+  function applyGlass(cfg) {
+    document.body.dataset.glass = cfg && cfg.ui && cfg.ui.glass === false ? 'off' : 'on';
   }
 
   /** Custom wallpaper layer: image or video under everything except the
@@ -522,11 +565,22 @@
   }
 
   /** Keep every mode label in sync: header chip + hero chip. */
-  function setModeLabel(text) {
+  function modeIconFor(preset) {
+    const map = { standard: 'mode.standard', code: 'mode.code', minimal: 'mode.minimal', cordis: 'mode.cordis', prts: 'mode.cordis' };
+    return P.icons[map[preset]] || P.icons['mode.standard'] || '';
+  }
+  A.modeIconFor = modeIconFor;
+  function setModeLabel(text, presetId) {
     const h = $('headerMode');
     if (h) h.textContent = text;
     const hero = $('heroModeLabel');
     if (hero) hero.textContent = text;
+    // dedicated abstract mark per work mode (standard / PTC / 极简 / 创造)
+    const icon = modeIconFor(presetId || A.currentPreset);
+    for (const id of ['modeChipIcon', 'heroModeChipIcon']) {
+      const box = $(id);
+      if (box) box.innerHTML = icon;
+    }
   }
 
   /* ---------- model + reasoning chips ---------- */
@@ -581,6 +635,11 @@
   }
 
   /* ---------- permission chip (header + composer) ---------- */
+  function permissionIconFor(value) {
+    const map = { 'read-only': 'perm.readonly', 'workspace-write': 'perm.workspacewrite', 'danger-full-access': 'perm.danger' };
+    return P.icons[map[value]] || P.icons['perm.readonly'] || '';
+  }
+  A.permissionIconFor = permissionIconFor;
   function updatePermissionChip() {
     const st = P.dshState.permissions;
     const has = !!(st && st.options && st.options.length);
@@ -593,6 +652,14 @@
       chip.hidden = !has;
       el.textContent = label;
       chip.title = A.t('permission.title');
+      // shield mark per permission preset (abstract glyphs inside a shield)
+      let iconBox = chip.querySelector('.permIcon');
+      if (!iconBox) {
+        iconBox = document.createElement('span');
+        iconBox.className = 'permIcon';
+        chip.insertBefore(iconBox, chip.firstChild);
+      }
+      iconBox.innerHTML = permissionIconFor(cur ? cur.value : null);
     }
   }
 
@@ -1027,7 +1094,7 @@
     // The permission selector lives in two places — the header chip and the
     // composer chip under the input (dsh web shows it there too).
     const permissionPops = [];
-    for (const triggerId of ['permissionChip', 'composerPermissionChip']) {
+    for (const triggerId of ['composerPermissionChip']) {
       const trigger = $(triggerId);
       if (!trigger) continue;
       const pop = attachPop(trigger, buildPermissionPop(), async (item) => {
@@ -1066,13 +1133,16 @@
         await newSession();
       } catch (e) { A.toast(e.message); }
     }
+    // The header mode chip is a pure label (the hero chip keeps its picker).
     const modePops = [];
-    for (const id of ['modeChip', 'heroModeChip']) {
+    for (const id of ['heroModeChip']) {
       const trigger = $(id);
       if (!trigger) continue;
       modePops.push(attachPop(trigger, '<div class="popMeta">' + A.t('mode.loading') + '</div>', applyModePick));
       trigger.addEventListener('click', () => { A.refreshModePop(); });
     }
+    const modeChipEl = $('modeChip');
+    if (modeChipEl) modeChipEl.classList.add('static');
     A.refreshModePop = async () => {
       let html;
       try {
@@ -1531,6 +1601,8 @@
     applyTheme(A.config.ui && A.config.ui.theme === 'light' ? 'light' : A.config.ui && A.config.ui.theme === 'custom' ? 'custom' : 'dark');
     applyAccent(A.config);
     applyWallpaper(A.config).catch(() => { /* wallpaper is decorative */ });
+    applySidebarButtons(A.config);
+    applyGlass(A.config);
     applyI18n();
     A.heroVisible = true;
 
@@ -1554,6 +1626,43 @@
       updateBulkBar();
     });
     $('sessionBulkCancel').addEventListener('click', () => setSelecting(false));
+    // Background jobs: session/jobs mux frames + an expandable header chip.
+    P.dshState.liveJobs = P.dshState.liveJobs || {};
+    const jobsBtn = $('jobsBtn');
+    let jobsPop = null;
+    if (jobsBtn) {
+      jobsPop = document.createElement('div');
+      jobsPop.className = 'pop jobsPop';
+      jobsBtn.appendChild(jobsPop);
+      jobsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (openPop === jobsPop) { closePops(); return; }
+        closePops();
+        const jobs = P.dshState.liveJobs[P.dshState.currentSessionId] || [];
+        jobsPop.innerHTML = jobs.length
+          ? jobs.map((j) => '<div class="popItem" style="cursor:default"><span class="label">' + esc2(j.name || j.id || 'job') + '</span><span class="desc">' + esc2(j.status || '') + '</span></div>').join('')
+          : '<div class="popMeta">' + A.t('jobs.none') + '</div>';
+        jobsPop.classList.add('open');
+        openPop = jobsPop;
+      });
+    }
+    function esc2(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])); }
+    function updateJobsChip() {
+      const btn = $('jobsBtn');
+      if (!btn) return;
+      const jobs = P.dshState.liveJobs[P.dshState.currentSessionId] || [];
+      const label = btn.querySelector('.jobsCount');
+      if (label) label.textContent = String(jobs.length);
+      btn.hidden = jobs.length === 0;
+    }
+    A.updateJobsChip = updateJobsChip;
+    P.dsh.on('session/jobs', (frame) => {
+      const pl = frame.payload || {};
+      if (!pl.sessionId) return;
+      P.dshState.liveJobs[pl.sessionId] = Array.isArray(pl.jobs) ? pl.jobs : [];
+      updateJobsChip();
+    });
+
     $('clearHistoryBtn').addEventListener('click', async () => {
       const ok = await A.askConfirm(A.t('session.confirmArchive'));
       if (!ok) return;
@@ -1740,23 +1849,40 @@
         updateMeter();
       }).catch(() => { /* noop */ });
     }, 8000);
-    // Session data loads only after the intro finishes (or once dsh is up,
-    // whichever is later) so the particle intro never competes with big DOM
-    // renders — the backend boots in the background while the effect runs.
-    let postIntroStarted = false;
-    async function startSessionLoad() {
-      if (postIntroStarted) return;
-      postIntroStarted = true;
+    // Readiness gate: the intro stays "NOT READY" until the workspace +
+    // session data actually finished loading. The preload runs frame-yielded
+    // so the particle effect never stutters while dsh boots; only when it is
+    // done does A.ready flip and the intro offer "READY — click to enter".
+    let preloadStarted = false;
+    const rafYield = () => new Promise((r) => requestAnimationFrame(r));
+    async function preloadData() {
+      if (preloadStarted) return;
+      preloadStarted = true;
       try {
-        await refreshAll();
-        await A.ensureSession();
+        await P.dshState.listWorkspaces().catch(() => {});
+        await rafYield();
+        await P.dshState.listSessions().catch(() => {});
+        await rafYield();
+        await Promise.allSettled([P.dshState.listModels(), P.dshState.listProviders(), P.dshState.listPresets()]);
+        await rafYield();
+        renderWorkspaces();
+        renderSessions();
+        await rafYield();
+        A.ready = true;
+        if (A.introDone) {
+          await rafYield();
+          await A.ensureSession();
+        } else {
+          A._loadOnIntro = true;
+        }
       } catch (e) {
         A.toast(A.t('dsh.connectFail', { msg: e.message }));
       }
     }
     A.afterIntro = function () {
-      if (A._dshUp) startSessionLoad();
-      else A._loadOnIntro = true;
+      if (A.ready) {
+        A.ensureSession().catch(() => { /* session load is best-effort */ });
+      }
     };
     (async () => {
       // dsh may still be booting in the background (PRTS spawns it silently).
@@ -1771,13 +1897,10 @@
           delay = Math.min(4000, Math.round(delay * 1.25));
         }
         A._dshUp = true;
-        if (A.introDone) startSessionLoad();
+        preloadData();
       } catch (e) {
         A.toast(A.t('dsh.connectFail', { msg: e.message }));
       }
-      // Only now is the app "ready": the intro may end, and early clicks
-      // stop showing the not-loaded hint.
-      A.ready = true;
     })();
   }
 
@@ -1812,6 +1935,8 @@
   A.updateMeter = updateMeter;
   A.switchView = switchView;
   A.applyTheme = applyTheme;
+  A.applySidebarButtons = applySidebarButtons;
+  A.applyGlass = applyGlass;
   A.applyAccent = applyAccent;
   A.applyWallpaper = applyWallpaper;
   A.applyI18n = applyI18n;

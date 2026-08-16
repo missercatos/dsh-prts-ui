@@ -273,16 +273,50 @@ return {
       }
     }
 
-    // open a file in the system editor (browser form; xdg-open)
+    const EDITORS = [
+      { id: 'default', name: '系统默认', cmd: null, terminal: false },
+      { id: 'code', name: 'VS Code', cmd: 'code', terminal: false },
+      { id: 'gedit', name: '文本编辑器 (gedit)', cmd: 'gedit', terminal: false },
+      { id: 'kate', name: 'Kate', cmd: 'kate', terminal: false },
+      { id: 'vim', name: 'vim (终端)', cmd: 'vim', terminal: true },
+      { id: 'nvim', name: 'nvim (终端)', cmd: 'nvim', terminal: true },
+      { id: 'nano', name: 'nano (终端)', cmd: 'nano', terminal: true },
+      { id: 'notepad', name: '记事本', cmd: 'notepad', terminal: false },
+    ]
+
+    // open a file in the configured editor (browser form)
     const openPathHandler = async (req, res) => {
       try {
         const body = JSON.parse(await readBody(req) || '{}')
         const p = String(body.path || '')
         if (!p || p.indexOf('/') < 0) return json(res, 400, { ok: false, error: 'bad path' })
-        await runShell('xdg-open ' + JSON.stringify(p) + ' >/dev/null 2>&1 || open ' + JSON.stringify(p) + ' >/dev/null 2>&1 || true', 30000)
+        const ed = EDITORS.find((e) => e.id === body.editor) || EDITORS[0]
+        let cmd
+        if (ed.cmd && ed.terminal) {
+          cmd = 'nohup x-terminal-emulator -e ' + JSON.stringify(ed.cmd + ' ' + p) + ' >/dev/null 2>&1 &'
+        } else if (ed.cmd) {
+          cmd = 'nohup ' + ed.cmd + ' ' + JSON.stringify(p) + ' >/dev/null 2>&1 &'
+        } else {
+          cmd = 'xdg-open ' + JSON.stringify(p) + ' >/dev/null 2>&1 || open ' + JSON.stringify(p) + ' >/dev/null 2>&1 || true'
+        }
+        await runShell(cmd, 30000)
         json(res, 200, { ok: true })
       } catch (e) {
         json(res, 500, { ok: false, error: String(e && e.message ? e.message : e) })
+      }
+    }
+
+    // detect available editors (browser form)
+    const detectEditorsHandler = async (req, res) => {
+      try {
+        const out = [EDITORS[0]]
+        for (const e of EDITORS.slice(1)) {
+          const found = await runShell('command -v ' + JSON.stringify(e.cmd) + ' >/dev/null 2>&1 && echo yes || echo no', 10000)
+          if (found.trim() === 'yes') out.push(e)
+        }
+        json(res, 200, out)
+      } catch (e) {
+        json(res, 200, [EDITORS[0]])
       }
     }
 
@@ -371,6 +405,7 @@ return {
       webServer.register({ kind: 'exact', path: '/prts/api/skill-install', handler: skillInstallHandler }),
       webServer.register({ kind: 'prefix', path: '/prts/api/wallpaper', handler: wallpaperHandler }),
       webServer.register({ kind: 'exact', path: '/prts/api/open-path', handler: openPathHandler }),
+      webServer.register({ kind: 'exact', path: '/prts/api/detect-editors', handler: detectEditorsHandler }),
       webServer.register({ kind: 'exact', path: '/prts/api/logo', handler: logoHandler }),
       webServer.register({ kind: 'exact', path: '/prts/api/profiles', handler: profilesHandler }),
       webServer.register({ kind: 'exact', path: '/prts/api/http', handler: httpProxyHandler }),
@@ -378,6 +413,6 @@ return {
     )
     ctx.effect(() => () => { for (const d of disposers) d() })
 
-    harness.handle('prts-version', () => ({ version: '0.5.0', path: GUI_PATH }))
+    harness.handle('prts-version', () => ({ version: '0.6.0', path: GUI_PATH }))
   },
 }

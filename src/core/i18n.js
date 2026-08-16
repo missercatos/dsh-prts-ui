@@ -580,6 +580,21 @@
       'sys.back': 'Back',
       'sys.tokensIn': 'IN tokens',
       'sys.tokensOut': 'OUT tokens',
+      'header.jobs': 'jobs',
+      'jobs.none': '没有后台任务 / No background jobs',
+      'settings.general.glass': '液态玻璃 / Liquid glass',
+      'settings.general.glass.on': '开启 backdrop 模糊（关闭后界面完全实体）',
+      'settings.general.editor': '默认文本编辑器 / Text editor',
+      'settings.general.editor.hint': '打开文件时使用的编辑器。PRTS 自动检测本机可用软件（vscode、gedit、vim/nvim 等在终端打开）。',
+      'settings.general.sidebarButtons': '左侧侧边栏按钮 / Sidebar buttons',
+      'sidebar.btn.theme': '主题',
+      'sidebar.btn.git': 'Git',
+      'sidebar.btn.skill': 'Skill',
+      'sidebar.btn.market': '市场',
+      'sidebar.btn.details': '详情',
+      'sidebar.btn.settings': '设置',
+      'traj.tokenUpDown': 'TOKEN 上/下',
+
     },
 
     zh: {
@@ -1155,6 +1170,21 @@
       'sys.back': '返回',
       'sys.tokensIn': '输入 Token',
       'sys.tokensOut': '输出 Token',
+      'header.jobs': '任务',
+      'jobs.none': '没有后台任务',
+      'settings.general.glass': '液态玻璃',
+      'settings.general.glass.on': '开启背景模糊（关闭后界面完全实体）',
+      'settings.general.editor': '默认文本编辑器',
+      'settings.general.editor.hint': '打开文件时使用的编辑器。PRTS 自动检测本机可用软件（vscode、gedit、vim/nvim 等在终端打开）。',
+      'settings.general.sidebarButtons': '左侧侧边栏按钮',
+      'sidebar.btn.theme': '主题',
+      'sidebar.btn.git': 'Git',
+      'sidebar.btn.skill': 'Skill',
+      'sidebar.btn.market': '市场',
+      'sidebar.btn.details': '详情',
+      'sidebar.btn.settings': '设置',
+      'traj.tokenUpDown': 'TOKEN 上/下',
+
     },
   };
 
