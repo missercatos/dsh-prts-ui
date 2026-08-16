@@ -71,16 +71,17 @@
     if (!res.ok) throw new Error('HTTP ' + res.status);
   }
 
-  /** Clone a GitHub skill repo into the dsh skills root. */
-  async function install(repo) {
+  /** Clone a GitHub skill repo into the dsh skills root (subdir = one skill
+   *  inside a monorepo like anthropics/skills; monorepos lift every SKILL.md). */
+  async function install(repo, subdir) {
     const b = bridge();
     if (b && typeof b.skillInstall === 'function') {
-      return await b.skillInstall(repo);
+      return await b.skillInstall(repo, subdir);
     }
     const res = await fetch(origin() + '/prts/api/skill-install', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ repo }),
+      body: JSON.stringify({ repo, subdir: subdir || '' }),
     });
     return await res.json();
   }
@@ -169,36 +170,29 @@
     return n;
   }
 
-  let editing = null; // skill name currently opened in the editor
-
-  async function renderEditor(container, config, name) {
-    container.textContent = '';
-    editing = name;
-    const back = el('button', 'sBtn', '← ' + t('skills.back'));
-    back.type = 'button';
-    back.addEventListener('click', () => render(container, config));
-    container.appendChild(back);
-    const head = el('div', 'sSecRow');
-    head.appendChild(el('span', 'sSecTitle eyebrow', name));
-    const save = el('button', 'sBtn primary', t('common.save'));
-    save.type = 'button';
-    head.appendChild(save);
-    container.appendChild(head);
-    const ta = document.createElement('textarea');
-    ta.className = 'sTextarea';
-    ta.spellcheck = false;
-    ta.rows = 18;
-    container.appendChild(ta);
-    let content = '';
-    try { content = await SK.read(name); } catch (e) { content = '# ' + name + '\n\n' + e.message; }
-    ta.value = content;
-    save.addEventListener('click', async () => {
+  /** Open one SKILL.md in the system editor (Electron shell.openPath; the
+   *  browser form asks the host to xdg-open it). */
+  SK.openFile = async function (s) {
+    const p = s && s.path;
+    if (!p) { P.app.toast(t('skills.noPath')); return; }
+    const b = bridge();
+    if (b && typeof b.openPath === 'function') {
       try {
-        await SK.write(name, ta.value);
-        P.app.toast(t('skills.saved', { name }));
+        const r = await b.openPath(p);
+        if (r && r.ok === false) P.app.toast(String(r.error || t('skills.openFail')));
       } catch (e) { P.app.toast(e.message); }
-    });
-  }
+      return;
+    }
+    try {
+      const res = await fetch(origin() + '/prts/api/open-path', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: p }),
+      });
+      const data = await res.json();
+      if (!(data && data.ok)) P.app.toast(t('skills.openFail'));
+    } catch (e) { P.app.toast(t('skills.openFail')); }
+  };
 
   async function render(container, config) {
     container.textContent = '';
@@ -208,10 +202,9 @@
     const personaSkills = skills.filter((s) => s.persona);
     const normalSkills = skills.filter((s) => !s.persona);
 
-    // —— persona slot (single select) ——
+    // —— persona slot (single select, compact chips) ——
     const pSec = el('div', 'sSection');
     pSec.appendChild(el('div', 'sSecTitle eyebrow', t('skills.persona')));
-    pSec.appendChild(el('div', 'hint', t('skills.persona.hint')));
     const pRow = el('div', 'skPersona');
     const noneBtn = el('button', 'skChip' + (!config.skills.persona ? ' on' : ''), t('skills.persona.none'));
     noneBtn.type = 'button';
@@ -227,7 +220,7 @@
     pSec.appendChild(pRow);
     container.appendChild(pSec);
 
-    // —— groups ——
+    // —— groups (multi-select) ——
     const gSec = el('div', 'sSection');
     const gHead = el('div', 'sSecRow');
     gHead.appendChild(el('span', 'sSecTitle eyebrow', t('skills.groups')));
@@ -242,28 +235,23 @@
     gHead.appendChild(addBtn);
     gSec.appendChild(gHead);
     const groups = SK.groupsOf(config);
-    if (!groups.length) {
-      gSec.appendChild(el('div', 'hint', t('skills.groups.empty')));
-    }
+    if (!groups.length) gSec.appendChild(el('div', 'hint', t('skills.groups.empty')));
     for (const g of groups) {
       const row = el('div', 'skGroup' + (config.skills.activeGroup === g.id ? ' active' : ''));
       const nameBtn = el('button', 'skGroupName', g.name);
       nameBtn.type = 'button';
       nameBtn.addEventListener('click', async () => { await SK.setActiveGroup(config, g.id); render(container, config); });
       row.appendChild(nameBtn);
-      const count = el('span', 'skGroupCount', String(g.skills.length));
-      row.appendChild(count);
+      row.appendChild(el('span', 'skGroupCount', String(g.skills.length)));
       const del = el('button', 'rowBtn', P.icons['trash2'] || '×');
       del.type = 'button';
       del.addEventListener('click', async () => { await SK.removeGroup(config, g.id); render(container, config); });
       row.appendChild(del);
       gSec.appendChild(row);
-      // multi-select chips for the active group
       if (config.skills.activeGroup === g.id) {
         const chips = el('div', 'skChips');
-        const all = normalSkills;
-        if (!all.length) chips.appendChild(el('span', 'hint', t('skills.none')));
-        for (const s of all) {
+        if (!normalSkills.length) chips.appendChild(el('span', 'hint', t('skills.none')));
+        for (const s of normalSkills) {
           const on = g.skills.indexOf(s.name) >= 0;
           const c = el('button', 'skChip' + (on ? ' on' : ''), s.name);
           c.type = 'button';
@@ -281,25 +269,51 @@
     }
     container.appendChild(gSec);
 
-    // —— installed skills ——
+    // —— installed skills: official-style list, source hidden by default ——
     const lSec = el('div', 'sSection');
     lSec.appendChild(el('div', 'sSecTitle eyebrow', t('skills.installed')));
     if (!skills.length) lSec.appendChild(el('div', 'hint', t('skills.none')));
     for (const s of skills) {
-      const row = el('div', 'skItem');
+      const card = el('div', 'skCard');
+      const row = el('div', 'skRow');
+      const mark = el('span', 'skMark');
+      mark.innerHTML = P.icons.diamond || '';
+      row.appendChild(mark);
       const meta = el('div', 'skItemMeta');
-      meta.appendChild(el('span', 'skItemName', s.name));
+      const nameLine = el('div', 'skNameLine');
+      nameLine.appendChild(el('span', 'skItemName', s.name));
       if (s.persona) {
         const tag = el('span', 'pState', t('skills.personaTag'));
         tag.dataset.state = 'ok';
-        meta.appendChild(tag);
+        nameLine.appendChild(tag);
       }
-      meta.appendChild(el('div', 'pModels', s.description || ''));
+      meta.appendChild(nameLine);
+      const desc = el('div', 'skDesc', s.description || '');
+      desc.title = s.description || '';
+      meta.appendChild(desc);
       row.appendChild(meta);
-      const edit = el('button', 'sBtn', t('skills.edit'));
-      edit.type = 'button';
-      edit.addEventListener('click', () => renderEditor(container, config, s.name));
-      row.appendChild(edit);
+      const actions = el('div', 'skActions');
+      const openBtn = el('button', 'sBtn', t('skills.openFile'));
+      openBtn.type = 'button';
+      openBtn.addEventListener('click', () => SK.openFile(s));
+      actions.appendChild(openBtn);
+      const editBtn = el('button', 'sBtn', t('skills.edit'));
+      editBtn.type = 'button';
+      const editorBox = el('div', 'skEditor');
+      editorBox.style.display = 'none';
+      let loaded = false;
+      editBtn.addEventListener('click', async () => {
+        const open = editorBox.style.display !== 'none';
+        editorBox.style.display = open ? 'none' : '';
+        editBtn.textContent = open ? t('skills.edit') : t('skills.editClose');
+        if (!open && !loaded) {
+          loaded = true;
+          try {
+            ta.value = await SK.read(s.name);
+          } catch (e) { ta.value = '# ' + s.name + '\n\n' + e.message; }
+        }
+      });
+      actions.appendChild(editBtn);
       const rm = el('button', 'rowBtn', P.icons['trash2'] || '×');
       rm.type = 'button';
       rm.addEventListener('click', async () => {
@@ -309,8 +323,35 @@
         if (r && r.ok) { P.app.toast(t('skills.removed', { name: s.name })); render(container, config); }
         else P.app.toast(t('skills.removeFail', { msg: (r && r.error) || 'error' }));
       });
-      row.appendChild(rm);
-      lSec.appendChild(row);
+      actions.appendChild(rm);
+      row.appendChild(actions);
+      card.appendChild(row);
+      const ta = document.createElement('textarea');
+      ta.className = 'sTextarea';
+      ta.rows = 14;
+      ta.spellcheck = false;
+      editorBox.appendChild(ta);
+      const saveRow = el('div', 'sRow');
+      saveRow.style.marginTop = '6px';
+      const save = el('button', 'sBtn primary', t('common.save'));
+      save.type = 'button';
+      save.addEventListener('click', async () => {
+        try {
+          await SK.write(s.name, ta.value);
+          P.app.toast(t('skills.saved', { name: s.name }));
+        } catch (e) { P.app.toast(e.message); }
+      });
+      saveRow.appendChild(save);
+      const closeBtn = el('button', 'sBtn', t('skills.editClose'));
+      closeBtn.type = 'button';
+      closeBtn.addEventListener('click', () => {
+        editorBox.style.display = 'none';
+        editBtn.textContent = t('skills.edit');
+      });
+      saveRow.appendChild(closeBtn);
+      editorBox.appendChild(saveRow);
+      card.appendChild(editorBox);
+      lSec.appendChild(card);
     }
     // GitHub install row
     const gh = el('div', 'mGh');
@@ -339,5 +380,5 @@
   }
 
   SK.render = render;
-  SK.renderEditor = renderEditor;
+
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -1,5 +1,5 @@
 {
-  "//": "Curated skill catalog for the PRTS market's GitHub skill section. Add entries as { name, displayName, description, repo, category, builtin }. repo is cloned into ~/.dsh/skills/<name> on install. category: persona | tool | visual | other.",
+  "//": "Curated skill catalog for the PRTS market's GitHub skill section. Entries: { name, displayName, description, repo, subdir?, category, builtin? }. repo is cloned; subdir lifts one skill from a monorepo (e.g. anthropics/skills); a monorepo without subdir lifts every SKILL.md. category: persona | design | ui | fx | text | tool | other.",
   "skills": [
     {
       "name": "prts-persona",
@@ -8,6 +8,110 @@
       "repo": "local",
       "category": "persona",
       "builtin": true
+    },
+    {
+      "name": "canvas-design",
+      "displayName": "Canvas Design · 图形设计",
+      "description": "Anthropic 官方 canvas-design skill：海报、插画与图形设计——布局、配色、字体、构图一条龙。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/canvas-design",
+      "category": "design"
+    },
+    {
+      "name": "algorithmic-art",
+      "displayName": "Algorithmic Art · 生成艺术",
+      "description": "Anthropic 官方 algorithmic-art：用 p5.js 生成规则化、可参数化的算法图形艺术。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/algorithmic-art",
+      "category": "design"
+    },
+    {
+      "name": "frontend-design",
+      "displayName": "Frontend Design · UI 设计",
+      "description": "Anthropic 官方 frontend-design：高质量、有品味的前端界面与交互设计规范。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/frontend-design",
+      "category": "ui"
+    },
+    {
+      "name": "theme-factory",
+      "displayName": "Theme Factory · 主题设计",
+      "description": "Anthropic 官方 theme-factory：为幻灯片/文档/界面批量生成成套主题配色与字体方案。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/theme-factory",
+      "category": "ui"
+    },
+    {
+      "name": "web-artifacts-builder",
+      "displayName": "Web Artifacts · 网页作品",
+      "description": "Anthropic 官方 web-artifacts-builder：把 React/Tailwind 组件打包成可分享的单文件网页作品。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/web-artifacts-builder",
+      "category": "ui"
+    },
+    {
+      "name": "slack-gif-creator",
+      "displayName": "Slack GIF · 特效动图",
+      "description": "Anthropic 官方 slack-gif-creator：特效设计——程序化生成动画 GIF，适合表情与动效演示。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/slack-gif-creator",
+      "category": "fx"
+    },
+    {
+      "name": "docx",
+      "displayName": "DOCX · 文本设计",
+      "description": "Anthropic 官方 docx skill：Word 文档的创建、编辑与版式设计（修订、批注、排版）。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/docx",
+      "category": "text"
+    },
+    {
+      "name": "pptx",
+      "displayName": "PPTX · 演示设计",
+      "description": "Anthropic 官方 pptx skill：PowerPoint 演示文稿的创建、编辑与视觉设计。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/pptx",
+      "category": "text"
+    },
+    {
+      "name": "pdf",
+      "displayName": "PDF · 文档处理",
+      "description": "Anthropic 官方 pdf skill：PDF 的读取、填写、合并拆分与表单处理。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/pdf",
+      "category": "text"
+    },
+    {
+      "name": "doc-coauthoring",
+      "displayName": "Doc Coauthoring · 文本写作",
+      "description": "Anthropic 官方 doc-coauthoring：与 AI 协作起草长篇文档的结构化写作流程。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/doc-coauthoring",
+      "category": "text"
+    },
+    {
+      "name": "brand-guidelines",
+      "displayName": "Brand Guidelines · 品牌设计",
+      "description": "Anthropic 官方 brand-guidelines：把品牌规范固化为 skill，所有输出自动符合品牌视觉。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/brand-guidelines",
+      "category": "design"
+    },
+    {
+      "name": "skill-creator",
+      "displayName": "Skill Creator · 造 Skill",
+      "description": "Anthropic 官方 skill-creator：按最佳实践创建新的 agent skill（含触发描述与渐进式披露）。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/skill-creator",
+      "category": "tool"
+    },
+    {
+      "name": "mcp-builder",
+      "displayName": "MCP Builder · 工具开发",
+      "description": "Anthropic 官方 mcp-builder：为 MCP 服务器编写高质量 Python/Node 代码与文档。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/mcp-builder",
+      "category": "tool"
     }
   ]
 }

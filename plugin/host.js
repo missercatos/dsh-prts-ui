@@ -204,11 +204,69 @@ return {
       try {
         const body = JSON.parse(await readBody(req) || '{}')
         const repo = String(body.repo || '')
-        const name = repo.replace(/\/+$/, '').split('/').pop().replace(/\.git$/, '')
-        if (!/^[A-Za-z0-9._-]+$/.test(name) || !name) return json(res, 400, { ok: false, error: 'bad repo name' })
-        const dest = (await skillsRoot()) + '/' + name
-        const out = await runShell('git clone --depth 1 ' + JSON.stringify(repo) + ' ' + JSON.stringify(dest), 300000)
-        json(res, 200, { ok: true, stdout: out, name })
+        const subdir = body.subdir ? String(body.subdir) : ''
+        const baseName = repo.replace(/\/+$/, '').split('/').pop().replace(/\.git$/, '')
+        if (!/^[A-Za-z0-9._-]+$/.test(baseName) || !baseName) return json(res, 400, { ok: false, error: 'bad repo name' })
+        const root = await skillsRoot()
+        const tmp = '/tmp/prts-skill-' + Date.now().toString(36)
+        await runShell('git clone --depth 1 ' + JSON.stringify(repo) + ' ' + JSON.stringify(tmp), 300000)
+        const script = 'root=' + JSON.stringify(root) + '\ntmp=' + JSON.stringify(tmp) + '\n' +
+          (subdir
+            ? 'if [ ! -f "$tmp/' + subdir + '/SKILL.md" ]; then echo "ERROR: no SKILL.md at ' + subdir + '"; exit 1; fi\nn=$(basename ' + JSON.stringify(subdir) + ')\nrm -rf "$root/$n"\nmv "$tmp/' + subdir + '" "$root/$n"\necho "$n"'
+            : 'found=0\nfor d in "$tmp"/*/ "$tmp"/*/*/; do\n  [ -f "$d/SKILL.md" ] || continue\n  n=$(basename "$d")\n  rm -rf "$root/$n"\n  mv "$d" "$root/$n"\n  echo "$n"\n  found=1\ndone\nif [ -f "$tmp/SKILL.md" ]; then\n  n=$(basename "$tmp")\n  rm -rf "$root/$n"\n  mv "$tmp" "$root/$n"\n  echo "$n"\n  found=1\nfi\nif [ "$found" != "1" ]; then echo "ERROR: no SKILL.md found"; exit 1; fi')
+        const out = await runShell(script, 60000)
+        await runShell('rm -rf ' + JSON.stringify(tmp), 30000).catch(() => {})
+        if (out.indexOf('ERROR') >= 0) return json(res, 400, { ok: false, error: out.trim() })
+        json(res, 200, { ok: true, stdout: out })
+      } catch (e) {
+        json(res, 500, { ok: false, error: String(e && e.message ? e.message : e) })
+      }
+    }
+
+    // wallpaper store (browser form): POST base64 → file, GET → data URL, DELETE → clear
+    const wallpaperHandler = async (req, res) => {
+      try {
+        const dir = (await homeDir()) + '/.dsh/profiles/prts/wallpaper'
+        const url = String(req.url || '')
+        const qs = url.split('?')[1] || ''
+        const params = {}
+        for (const pair of qs.split('&')) {
+          const i = pair.indexOf('=')
+          if (i > 0) params[decodeURIComponent(pair.slice(0, i))] = decodeURIComponent(pair.slice(i + 1))
+        }
+        if (req.method === 'GET') {
+          const file = safeName(params.file)
+          if (!file) return json(res, 400, { ok: false, error: 'bad file name' })
+          const b64 = await runShell('base64 -w0 ' + JSON.stringify(dir + '/' + file), 60000)
+          const mime = /\.png$/.test(file) ? 'image/png' : /\.mp4$/.test(file) ? 'video/mp4' : 'image/jpeg'
+          return json(res, 200, { dataUrl: 'data:' + mime + ';base64,' + b64.trim() })
+        }
+        if (req.method === 'DELETE') {
+          await runShell('rm -f ' + JSON.stringify(dir) + '/*', 30000).catch(() => {})
+          return json(res, 200, { ok: true })
+        }
+        if (req.method === 'POST') {
+          const body = JSON.parse(await readBody(req) || '{}')
+          const file = safeName(body.file)
+          if (!file) return json(res, 400, { ok: false, error: 'bad file name' })
+          await runShell('mkdir -p ' + JSON.stringify(dir), 30000)
+          await runShell('echo ' + JSON.stringify(String(body.base64 || '')) + ' | base64 -d > ' + JSON.stringify(dir + '/' + file), 120000)
+          return json(res, 200, { ok: true })
+        }
+        json(res, 405, { ok: false, error: 'method' })
+      } catch (e) {
+        json(res, 500, { ok: false, error: String(e && e.message ? e.message : e) })
+      }
+    }
+
+    // open a file in the system editor (browser form; xdg-open)
+    const openPathHandler = async (req, res) => {
+      try {
+        const body = JSON.parse(await readBody(req) || '{}')
+        const p = String(body.path || '')
+        if (!p || p.indexOf('/') < 0) return json(res, 400, { ok: false, error: 'bad path' })
+        await runShell('xdg-open ' + JSON.stringify(p) + ' >/dev/null 2>&1 || open ' + JSON.stringify(p) + ' >/dev/null 2>&1 || true', 30000)
+        json(res, 200, { ok: true })
       } catch (e) {
         json(res, 500, { ok: false, error: String(e && e.message ? e.message : e) })
       }
@@ -297,12 +355,14 @@ return {
       webServer.register({ kind: 'prefix', path: '/prts/api/skills', handler: skillsHandler }),
       webServer.register({ kind: 'exact', path: '/prts/api/skill-delete', handler: skillDeleteHandler }),
       webServer.register({ kind: 'exact', path: '/prts/api/skill-install', handler: skillInstallHandler }),
+      webServer.register({ kind: 'prefix', path: '/prts/api/wallpaper', handler: wallpaperHandler }),
+      webServer.register({ kind: 'exact', path: '/prts/api/open-path', handler: openPathHandler }),
       webServer.register({ kind: 'exact', path: '/prts/api/profiles', handler: profilesHandler }),
       webServer.register({ kind: 'exact', path: '/prts/api/http', handler: httpProxyHandler }),
       webServer.register({ kind: 'exact', path: '/prts/api/run-cli', handler: runCliHandler }),
     )
     ctx.effect(() => () => { for (const d of disposers) d() })
 
-    harness.handle('prts-version', () => ({ version: '0.3.0', path: GUI_PATH }))
+    harness.handle('prts-version', () => ({ version: '0.4.0', path: GUI_PATH }))
   },
 }

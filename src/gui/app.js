@@ -50,6 +50,71 @@
     await P.store.saveConfig(A.config);
   };
 
+  /** Custom accent colors: primary (buttons/logo), diamond and square marks
+   *  (independent, neon). Only applied when the theme is 'custom'. */
+  function applyAccent(cfg) {
+    const root = document.documentElement;
+    const a = (cfg && cfg.ui && cfg.ui.accent) || {};
+    if ((cfg && cfg.ui && cfg.ui.theme) === 'custom') {
+      root.style.setProperty('--prts-accent', a.primary || '');
+      root.style.setProperty('--prts-diamond', a.diamond || '');
+      root.style.setProperty('--prts-square', a.square || '');
+    } else {
+      root.style.removeProperty('--prts-accent');
+      root.style.removeProperty('--prts-diamond');
+      root.style.removeProperty('--prts-square');
+    }
+  }
+
+  /** Custom wallpaper layer: image or video under everything except the
+   *  background diamond/square marks (they sit in their own layers above). */
+  async function applyWallpaper(cfg) {
+    const layer = $('wallpaperLayer');
+    if (!layer) return;
+    const w = (cfg && cfg.ui && cfg.ui.wallpaper) || null;
+    if (!w || !w.file) {
+      layer.innerHTML = '';
+      layer.style.display = 'none';
+      return;
+    }
+    let dataUrl = '';
+    try {
+      const b = (typeof window !== 'undefined' && window.prts && window.prts.bridge) || null;
+      if (b && b.readFileB64) {
+        const b64 = await b.readFileB64(P.platform.prtsProfileDir() + '/wallpaper/' + w.file);
+        dataUrl = 'data:' + (w.mime || 'image/jpeg') + ';base64,' + b64;
+      } else {
+        const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+        const res = await fetch(origin + '/prts/api/wallpaper?file=' + encodeURIComponent(w.file));
+        const data = await res.json();
+        if (data && data.dataUrl) dataUrl = data.dataUrl;
+      }
+    } catch (e) { dataUrl = ''; }
+    layer.innerHTML = '';
+    layer.style.display = '';
+    layer.style.opacity = String(w.opacity !== undefined ? w.opacity : 0.35);
+    if (!dataUrl) return;
+    let media;
+    if (w.type === 'video') {
+      const v = document.createElement('video');
+      v.src = dataUrl;
+      v.autoplay = true;
+      v.muted = true;
+      v.playsInline = true;
+      v.loop = w.loop !== false;
+      try { v.playbackRate = Number(w.speed) || 1; } catch (e) { /* noop */ }
+      media = v;
+    } else {
+      const im = document.createElement('img');
+      im.src = dataUrl;
+      media = im;
+    }
+    media.style.width = '100%';
+    media.style.height = '100%';
+    media.style.objectFit = w.fit || 'cover';
+    layer.appendChild(media);
+  }
+
   /* ---------- PRTS modal (replaces window.prompt / window.confirm, which
      Electron disables) ---------- */
   let modalResolve = null;
@@ -1457,7 +1522,9 @@
   async function boot() {
     A.config = await P.store.loadConfig();
     A.locale = A.config.locale === 'auto' ? P.platform.detectLocale() : A.config.locale;
-    applyTheme(A.config.ui && A.config.ui.theme === 'light' ? 'light' : 'dark');
+    applyTheme(A.config.ui && A.config.ui.theme === 'light' ? 'light' : A.config.ui && A.config.ui.theme === 'custom' ? 'custom' : 'dark');
+    applyAccent(A.config);
+    applyWallpaper(A.config).catch(() => { /* wallpaper is decorative */ });
     applyI18n();
     A.heroVisible = true;
 
@@ -1725,6 +1792,8 @@
   A.updateMeter = updateMeter;
   A.switchView = switchView;
   A.applyTheme = applyTheme;
+  A.applyAccent = applyAccent;
+  A.applyWallpaper = applyWallpaper;
   A.applyI18n = applyI18n;
   A.setModeLabel = setModeLabel;
   A.presetLabel = presetLabel;

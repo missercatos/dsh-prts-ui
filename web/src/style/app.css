@@ -2,16 +2,24 @@
 .rhombus, .rhombus-lg {
   display: inline-block; position: relative; flex: none;
   transform: rotate(45deg); background: transparent;
-  border: 1.5px solid var(--prts-ink);
+  border: 1.5px solid var(--prts-diamond);
 }
 .rhombus { width: 14px; height: 14px; }
 .rhombus-lg { width: 22px; height: 22px; }
 .rhombus::after, .rhombus-lg::after {
   content: ''; position: absolute; top: 50%; left: 50%;
-  transform: translate(-50%, -50%) rotate(45deg); background: var(--prts-ink);
+  transform: translate(-50%, -50%) rotate(45deg); background: var(--prts-diamond);
 }
 .rhombus::after { width: 5px; height: 5px; }
 .rhombus-lg::after { width: 8px; height: 8px; }
+/* custom theme: the diamond marks turn neon */
+[data-theme='custom'] .rhombus, [data-theme='custom'] .rhombus-lg {
+  filter: drop-shadow(0 0 6px var(--prts-diamond));
+  border-color: var(--prts-diamond);
+}
+[data-theme='custom'] .rhombus::after, [data-theme='custom'] .rhombus-lg::after {
+  background: var(--prts-diamond);
+}
 
 /* ===== Particle intro overlay ===== */
 .intro {

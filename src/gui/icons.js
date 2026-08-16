@@ -52,6 +52,15 @@
     'sun': S('<circle cx="7.5" cy="7.5" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M7.5 1.2v1.4M7.5 12.4v1.4M1.2 7.5h1.4M12.4 7.5h1.4M3 3l1 1M11 11l1 1M12 3l-1 1M4 11l-1 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>', 15),
     'moon': S('<path d="M12.6 9.6A5.4 5.4 0 0 1 5.4 2.4 5.6 5.6 0 1 0 12.6 9.6Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>', 15),
 
+    // —— settings nav (small marks, PRTS abstract) ——
+    'general': S('<path d="M3.2 6.4a4.2 4.2 0 0 1 7.6 0" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/><path d="M2.2 7.6h9.6M2.2 9.8h9.6" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+    'models': S('<path d="M2.8 4.2h2.4v5.6H2.8zM6 4.2h2.4v5.6H6zM9.2 4.2h2v5.6h-2z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M3.6 4.2V2.6M7.2 4.2V2.6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>'),
+    'plugins': S('<path d="M4.4 4.4h5.2v5.2H4.4zM7 4.4V2.4M7 9.6v2" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M2.4 7h2M9.6 7h2" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+    'presets': S('<path d="M7 2.2 12.2 7 7 11.8 1.8 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M7 5.2 8.8 7 7 8.8 5.2 7Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M3.6 9.8 1.8 7M10.4 9.8l1.8-2.8" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+    'skills': S('<path d="M7 1.6 12.4 7 7 12.4 1.6 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M4.9 4.9 7 7l2.1-2.1M7 7l2.1 2.1M4.9 9.1 7 7" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+    'wall': S('<rect x="2.2" y="2.2" width="9.6" height="9.6" stroke="currentColor" stroke-width="1.15"/><path d="M2.2 7.2 5.6 4.4l2.4 2.2 3.8-3.4M2.2 11 6.4 7.4l1.6 1.4" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><circle cx="9.6" cy="4.6" r="0.9" fill="currentColor"/>'),
+    'palette': S('<path d="M7 2.2a4.8 4.8 0 1 0 0 9.6h1.2a1.2 1.2 0 0 0 1.1-1.7 1.1 1.1 0 0 1 1-1.7H11a1.8 1.8 0 0 0 0-3.6 5.6 5.6 0 0 0-4-2.6Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M4.2 5.2h.6M5.8 3.8h.6M8.6 3.2h.6M9.8 5.4h.6" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+
     // —— deepseek / balance panel ——
     'login': S('<path d="M2.6 11.4V8.6a4.4 4.4 0 0 1 8.8 0v2.8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M4.6 10.6h4.8M5.2 8.2l1.8 2.4 1.8-2.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>'),
     'sync': S('<path d="M2.6 7A4.4 4.4 0 0 1 10 4l1.4 1.4M4 4l1.4 1.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.4 7A4.4 4.4 0 0 1 4 10L2.6 8.6M10 10 8.6 8.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>'),

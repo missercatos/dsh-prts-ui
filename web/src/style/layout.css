@@ -29,13 +29,21 @@ button:focus:not(:focus-visible) { outline: none; }
 
 .frame {
   position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: var(--dsh-sb, 272px) minmax(0, 1fr) var(--dsh-dt, 0px);
   height: 100%;
   overflow: hidden;
-  background: var(--prts-bg);
+  background: transparent;
   transition: grid-template-columns 0.3s var(--prts-ease);
 }
+/* Custom wallpaper layer: sits under the whole frame (z-index 0) so the
+   background diamond/square marks in the conversation column stay on top. */
+#wallpaperLayer {
+  position: fixed; inset: 0; z-index: 0; overflow: hidden;
+  background: var(--prts-bg); pointer-events: none;
+}
+#wallpaperLayer img, #wallpaperLayer video { display: block; }
 .frame[data-dragging] { transition: none; }
 
 .sbCol { min-width: 0; overflow: hidden; background: var(--prts-panel); border-right: 1px solid var(--prts-hairline); transition: border-color 0.3s var(--prts-ease); }

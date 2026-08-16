@@ -9,16 +9,24 @@
 .rhombus, .rhombus-lg {
   display: inline-block; position: relative; flex: none;
   transform: rotate(45deg); background: transparent;
-  border: 1.5px solid var(--prts-ink);
+  border: 1.5px solid var(--prts-diamond);
 }
 .rhombus { width: 14px; height: 14px; }
 .rhombus-lg { width: 22px; height: 22px; }
 .rhombus::after, .rhombus-lg::after {
   content: ''; position: absolute; top: 50%; left: 50%;
-  transform: translate(-50%, -50%) rotate(45deg); background: var(--prts-ink);
+  transform: translate(-50%, -50%) rotate(45deg); background: var(--prts-diamond);
 }
 .rhombus::after { width: 5px; height: 5px; }
 .rhombus-lg::after { width: 8px; height: 8px; }
+/* custom theme: the diamond marks turn neon */
+[data-theme='custom'] .rhombus, [data-theme='custom'] .rhombus-lg {
+  filter: drop-shadow(0 0 6px var(--prts-diamond));
+  border-color: var(--prts-diamond);
+}
+[data-theme='custom'] .rhombus::after, [data-theme='custom'] .rhombus-lg::after {
+  background: var(--prts-diamond);
+}
 
 /* ===== Particle intro overlay ===== */
 .intro {
@@ -270,8 +278,10 @@
   transition: border-color 0.15s var(--prts-ease), color 0.15s var(--prts-ease);
 }
 .sBtn:hover { border-color: var(--prts-hairline-strong); color: var(--prts-ink); }
-.sBtn.primary { background: var(--prts-ink); color: var(--prts-bg); border-color: var(--prts-ink); }
+.sBtn.primary { background: var(--prts-accent); color: var(--prts-bg); border-color: var(--prts-accent); }
 .sBtn.primary:hover { opacity: 0.85; }
+.sBtn.danger { color: #f7768e; border-color: rgba(247, 118, 142, 0.4); }
+.sBtn.danger:hover { border-color: #f7768e; color: #f7768e; background: rgba(247, 118, 142, 0.08); }
 .sBtn:disabled { opacity: 0.4; cursor: default; }
 .sStatus { font-size: 12px; line-height: 20px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
 .projectRow { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
@@ -337,6 +347,7 @@
 .brand { display: inline-flex; align-items: center; gap: 8px; padding: 0; border: none; background: transparent; cursor: pointer; color: var(--prts-ink); }
 .brand .word {
   font-size: 15px; font-weight: 600; letter-spacing: 0.22em; font-style: italic;
+  color: var(--prts-accent);
 }
 .sbActions { display: flex; align-items: center; gap: 2px; }
 .newButtons { display: flex; gap: 6px; padding: 2px 2px 10px; }
@@ -484,16 +495,28 @@
 .voiceDiamond.speaking { opacity: 0.72; }
 .voiceDiamond .diamondShape {
   display: block; width: 230px; height: 230px;
-  border: 1px solid var(--prts-ink);
+  border: 1px solid var(--prts-diamond);
   transform: rotate(45deg);
-  background: color-mix(in srgb, var(--prts-ink) 5%, transparent);
-  box-shadow: 0 0 60px color-mix(in srgb, var(--prts-ink) 8%, transparent);
+  background: color-mix(in srgb, var(--prts-diamond) 5%, transparent);
+  box-shadow: 0 0 60px color-mix(in srgb, var(--prts-diamond) 8%, transparent);
 }
 .voiceDiamond .squareShape {
   display: block; position: absolute; left: 50%; top: 50%; width: 110px; height: 110px;
   margin: -55px 0 0 -55px;
-  border: 1px solid var(--prts-ink);
-  background: color-mix(in srgb, var(--prts-ink) 5%, transparent);
+  border: 1px solid var(--prts-square);
+  background: color-mix(in srgb, var(--prts-square) 5%, transparent);
+}
+/* custom theme: the diamond/square marks go neon (fluorescent) */
+[data-theme='custom'] .voiceDiamond .diamondShape {
+  border-color: var(--prts-diamond);
+  background: color-mix(in srgb, var(--prts-diamond) 7%, transparent);
+  box-shadow: 0 0 110px color-mix(in srgb, var(--prts-diamond) 32%, transparent),
+    inset 0 0 40px color-mix(in srgb, var(--prts-diamond) 12%, transparent);
+}
+[data-theme='custom'] .voiceDiamond .squareShape {
+  border-color: var(--prts-square);
+  background: color-mix(in srgb, var(--prts-square) 7%, transparent);
+  box-shadow: 0 0 60px color-mix(in srgb, var(--prts-square) 28%, transparent);
 }
 .cvtHeader, .scrollBody { position: relative; z-index: 1; }
 .cvtHeader { flex: none; padding: 10px 20px 0 16px; border-bottom: 1px solid var(--prts-hairline); }
@@ -697,7 +720,7 @@
 }
 .rhombus-s {
   display: inline-block; width: 9px; height: 9px; transform: rotate(45deg);
-  border: 1.2px solid var(--prts-ink); flex: none;
+  border: 1.2px solid var(--prts-diamond); flex: none;
 }
 .sysSlash { color: var(--prts-ink-faint); letter-spacing: 0; }
 .sysBody {
@@ -797,13 +820,21 @@ button:focus:not(:focus-visible) { outline: none; }
 
 .frame {
   position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: var(--dsh-sb, 272px) minmax(0, 1fr) var(--dsh-dt, 0px);
   height: 100%;
   overflow: hidden;
-  background: var(--prts-bg);
+  background: transparent;
   transition: grid-template-columns 0.3s var(--prts-ease);
 }
+/* Custom wallpaper layer: sits under the whole frame (z-index 0) so the
+   background diamond/square marks in the conversation column stay on top. */
+#wallpaperLayer {
+  position: fixed; inset: 0; z-index: 0; overflow: hidden;
+  background: var(--prts-bg); pointer-events: none;
+}
+#wallpaperLayer img, #wallpaperLayer video { display: block; }
 .frame[data-dragging] { transition: none; }
 
 .sbCol { min-width: 0; overflow: hidden; background: var(--prts-panel); border-right: 1px solid var(--prts-hairline); transition: border-color 0.3s var(--prts-ease); }
@@ -1025,6 +1056,76 @@ button:focus:not(:focus-visible) { outline: none; }
 #gitOverlay .settingsCard, #skillOverlay .settingsCard { width: min(640px, calc(100vw - 48px)); }
 #gitBody, #skillBody { display: flex; flex-direction: column; gap: 18px; }
 
+/* ---------- 0.4.0: plugins two-column page (official layout) ---------- */
+.sPluginsGrid {
+  display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 18px; align-items: start;
+}
+@media (max-width: 720px) { .sPluginsGrid { grid-template-columns: 1fr; } }
+.sPluginsLeft, .sPluginsRight { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.sPluginList { display: flex; flex-direction: column; gap: 4px; }
+.sPluginRow {
+  display: flex; align-items: center; gap: 10px; padding: 7px 10px;
+  border: 1px solid var(--prts-hairline); border-radius: 8px;
+}
+.sPluginMeta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.sPluginMeta .pname { font-size: 13px; color: var(--prts-ink); word-break: break-all; }
+.sPluginMeta .pmeta { font-size: 11px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+.mSwitch {
+  flex: none; height: 24px; padding: 0 10px; border: 1px solid var(--prts-hairline);
+  border-radius: 12px; background: transparent; color: var(--prts-ink-faint);
+  font-size: 10px; letter-spacing: 0.12em; font-family: var(--prts-mono); cursor: pointer;
+  transition: all 0.12s var(--prts-ease);
+}
+.mSwitch.on { background: var(--prts-accent); border-color: var(--prts-accent); color: var(--prts-bg); }
+.cfgField { display: flex; align-items: center; gap: 8px; }
+.cfgField .fLabel { flex: 1; min-width: 90px; font-size: 12px; color: var(--prts-ink-dim); }
+.fLabel { font-size: 12px; color: var(--prts-ink-dim); flex: none; }
+.cfgField .sInput { flex: 2; min-width: 0; height: 30px; }
+
+/* ---------- 0.4.0: models page rows (official row-card shape) ---------- */
+.sRows { display: flex; flex-direction: column; gap: 8px; }
+.sRows .pCardHead { cursor: pointer; }
+.credDot {
+  flex: none; width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(247, 118, 142, 0.9);
+}
+.credDot.ok { background: #9ece6a; }
+.mCatalog { display: flex; flex-direction: column; gap: 6px; padding-top: 6px; border-top: 1px solid var(--prts-hairline); }
+.mCatalogTitle { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--prts-ink-faint); }
+.skChipX {
+  margin-left: 6px; padding: 0 4px; border: none; background: transparent; cursor: pointer;
+  color: inherit; opacity: 0.65; font-size: 12px; line-height: 1;
+}
+.skChipX:hover { opacity: 1; }
+.sCustomForm { display: flex; flex-direction: column; gap: 8px; }
+.sCollapse { display: flex; flex-direction: column; gap: 8px; }
+
+/* ---------- 0.4.0: accent colors + wallpaper controls ---------- */
+.accPickers { display: flex; flex-wrap: wrap; gap: 14px; }
+.accPick { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.accPick input[type='color'] {
+  width: 34px; height: 26px; padding: 0; border: 1px solid var(--prts-hairline);
+  border-radius: 6px; background: transparent; cursor: pointer;
+}
+.accRange { flex: 1; min-width: 140px; accent-color: var(--prts-accent); }
+.accNum { width: 90px; flex: none; }
+
+/* ---------- 0.4.0: skills page rework (official list style) ---------- */
+.skCard { border: 1px solid var(--prts-hairline); border-radius: 8px; overflow: hidden; }
+.skRow { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+.skMark { flex: none; color: var(--prts-diamond); opacity: 0.85; }
+.skMark svg { width: 10px; height: 10px; }
+.skNameLine { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.skDesc {
+  font-size: 11px; line-height: 17px; color: var(--prts-ink-faint);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
+.skActions { flex: none; display: flex; align-items: center; gap: 6px; }
+.skEditor { padding: 10px 12px 12px; border-top: 1px solid var(--prts-hairline); background: var(--prts-surface); }
+.skEditor .sTextarea { min-height: 200px; }
+.skEditor .sRow { justify-content: flex-end; }
+
 /* PRTS design tokens — pure black/white. Dark is the default surface; light
    inverts the pair. Every component derives from these tokens only. */
 :root {
@@ -1043,6 +1144,11 @@ button:focus:not(:focus-visible) { outline: none; }
   --prts-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(250, 250, 250, 0.04);
   --prts-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --prts-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  /* PRTS accent marks: overridden inline by the custom theme (custom colors);
+     default = ink so black/white themes stay monochrome. */
+  --prts-accent: var(--prts-ink);
+  --prts-diamond: var(--prts-ink);
+  --prts-square: var(--prts-ink);
   --prts-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --prts-mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas, Menlo,
@@ -1069,6 +1175,7 @@ button:focus:not(:focus-visible) { outline: none; }
 </style>
 </head>
 <body>
+<div id="wallpaperLayer" aria-hidden="true"></div>
 <div id="app" class="frame" data-details-collapsed>
   <!-- The single sidebar toggle: top-left, always visible. It collapses and
        re-expands the sidebar and never moves or hides. -->
@@ -1448,7 +1555,7 @@ button:focus:not(:focus-visible) { outline: none; }
 
 <script>
 window.PRTS_MARKET = {
-  "generatedAt": "2026-08-16T12:40:04.208223+00:00",
+  "generatedAt": "2026-08-16T13:12:58.095358+00:00",
   "plugins": [
     {
       "pkg": "@liustack/modlens",
@@ -1951,6 +2058,110 @@ window.PRTS_MARKET = {
       "repo": "local",
       "category": "persona",
       "builtin": true
+    },
+    {
+      "name": "canvas-design",
+      "displayName": "Canvas Design · 图形设计",
+      "description": "Anthropic 官方 canvas-design skill：海报、插画与图形设计——布局、配色、字体、构图一条龙。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/canvas-design",
+      "category": "design"
+    },
+    {
+      "name": "algorithmic-art",
+      "displayName": "Algorithmic Art · 生成艺术",
+      "description": "Anthropic 官方 algorithmic-art：用 p5.js 生成规则化、可参数化的算法图形艺术。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/algorithmic-art",
+      "category": "design"
+    },
+    {
+      "name": "frontend-design",
+      "displayName": "Frontend Design · UI 设计",
+      "description": "Anthropic 官方 frontend-design：高质量、有品味的前端界面与交互设计规范。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/frontend-design",
+      "category": "ui"
+    },
+    {
+      "name": "theme-factory",
+      "displayName": "Theme Factory · 主题设计",
+      "description": "Anthropic 官方 theme-factory：为幻灯片/文档/界面批量生成成套主题配色与字体方案。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/theme-factory",
+      "category": "ui"
+    },
+    {
+      "name": "web-artifacts-builder",
+      "displayName": "Web Artifacts · 网页作品",
+      "description": "Anthropic 官方 web-artifacts-builder：把 React/Tailwind 组件打包成可分享的单文件网页作品。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/web-artifacts-builder",
+      "category": "ui"
+    },
+    {
+      "name": "slack-gif-creator",
+      "displayName": "Slack GIF · 特效动图",
+      "description": "Anthropic 官方 slack-gif-creator：特效设计——程序化生成动画 GIF，适合表情与动效演示。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/slack-gif-creator",
+      "category": "fx"
+    },
+    {
+      "name": "docx",
+      "displayName": "DOCX · 文本设计",
+      "description": "Anthropic 官方 docx skill：Word 文档的创建、编辑与版式设计（修订、批注、排版）。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/docx",
+      "category": "text"
+    },
+    {
+      "name": "pptx",
+      "displayName": "PPTX · 演示设计",
+      "description": "Anthropic 官方 pptx skill：PowerPoint 演示文稿的创建、编辑与视觉设计。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/pptx",
+      "category": "text"
+    },
+    {
+      "name": "pdf",
+      "displayName": "PDF · 文档处理",
+      "description": "Anthropic 官方 pdf skill：PDF 的读取、填写、合并拆分与表单处理。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/pdf",
+      "category": "text"
+    },
+    {
+      "name": "doc-coauthoring",
+      "displayName": "Doc Coauthoring · 文本写作",
+      "description": "Anthropic 官方 doc-coauthoring：与 AI 协作起草长篇文档的结构化写作流程。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/doc-coauthoring",
+      "category": "text"
+    },
+    {
+      "name": "brand-guidelines",
+      "displayName": "Brand Guidelines · 品牌设计",
+      "description": "Anthropic 官方 brand-guidelines：把品牌规范固化为 skill，所有输出自动符合品牌视觉。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/brand-guidelines",
+      "category": "design"
+    },
+    {
+      "name": "skill-creator",
+      "displayName": "Skill Creator · 造 Skill",
+      "description": "Anthropic 官方 skill-creator：按最佳实践创建新的 agent skill（含触发描述与渐进式披露）。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/skill-creator",
+      "category": "tool"
+    },
+    {
+      "name": "mcp-builder",
+      "displayName": "MCP Builder · 工具开发",
+      "description": "Anthropic 官方 mcp-builder：为 MCP 服务器编写高质量 Python/Node 代码与文档。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/mcp-builder",
+      "category": "tool"
     }
   ]
 };
@@ -2528,6 +2739,86 @@ window.PRTS_MARKET = {
       'sidebar.git': 'Git',
       'sidebar.skills': 'Skill',
       'common.save': 'Save',
+      'common.saved': 'Saved',
+
+      // —— 0.4.0: official-style models page ——
+      'settings.models.providers': 'Providers',
+      'settings.models.deepseekBuiltin': 'DeepSeek is built in and always available; add more providers below.',
+      'settings.models.displayName': 'Display name',
+      'settings.models.catalog': 'MODEL CATALOG',
+      'settings.models.addModel': 'model id (e.g. gpt-4o-mini)',
+      'settings.models.addModelBtn': 'Add model',
+      'settings.models.addProvider': 'Add provider',
+      'settings.models.addProvider.none': 'No more built-in providers to add.',
+      'settings.models.add': 'Add',
+      'settings.models.added': 'Provider {name} added',
+      'settings.models.addCustom': 'Add custom provider',
+      'settings.models.addCustom.hint': 'An OpenAI-compatible route of your own: give it a route name, an API key, a base URL and at least one model.',
+      'settings.models.customRoute': 'route (id, letters/digits - _ .)',
+      'settings.models.customRouteInvalid': 'Route name may only contain letters, digits, -, _, .',
+      'settings.models.customRouteTaken': 'This route already exists',
+      'settings.models.customDisplayName': 'display name (optional)',
+      'settings.models.customBaseUrl': 'base URL (required)',
+      'settings.models.customModels': 'models (comma/space separated)',
+      'settings.models.customCreate': 'Create provider',
+      'settings.models.customNeedsBaseUrl': 'A base URL is required',
+      'settings.models.customNeedsModels': 'At least one model is required',
+      'settings.models.removeProvider': 'Remove',
+      'settings.models.removeProviderConfirm': 'Remove provider {name}?',
+
+      // —— 0.4.0: official-style plugins page ——
+      'settings.plugins.config': '插件配置 / Plugin config',
+      'settings.plugins.list': '插件列表 / Plugins',
+      'settings.plugins.listEmpty': 'Nothing here.',
+      'settings.plugins.core': '核心',
+      'settings.plugins.thirdParty': '第三方插件 / Third-party plugins',
+      'settings.plugins.thirdPartyShort': '第三方',
+      'settings.plugins.disable': 'Disable',
+      'settings.plugins.enable': 'Enable',
+      'settings.plugins.toggleHint': 'Toggles are written to the profile patch (cordis.patch.yml) and apply after a dsh restart.',
+      'settings.plugins.toggleSaved': 'Plugin toggles saved — restart dsh to apply.',
+      'settings.plugins.reset': 'Reset to defaults',
+      'settings.plugins.terminal': '终端 / Terminal',
+      'settings.plugins.terminal.hint': 'Shell execution timeout for the agent.',
+      'settings.plugins.terminalTimeout': 'timeoutMs',
+      'settings.plugins.agentLoop': 'Agent 循环 / Agent loop',
+      'settings.plugins.agentLoop.hint': 'Concurrency knobs of the agent loop.',
+      'settings.plugins.agentLoopMax': 'maxParallelToolCalls',
+      'settings.plugins.webSearch': '网页搜索 / Web search',
+      'settings.plugins.webSearch.hint': 'The DeepSeek official search provider used by the web tools.',
+      'settings.plugins.webSearchKey': 'API key',
+      'settings.plugins.webSearchUrl': 'baseURL',
+      'settings.plugins.webSearchModel': 'model',
+      'settings.plugins.webSearchVersion': 'apiVersion',
+      'settings.plugins.webSearchMaxTokens': 'maxTokens',
+      'settings.plugins.webSearchMaxUses': 'maxUses',
+
+      // —— 0.4.0: accent colors + wallpaper ——
+      'settings.general.accent': '自定义颜色 / Accent colors',
+      'settings.general.accentPrimary': '主色',
+      'settings.general.accentDiamond': '菱形',
+      'settings.general.accentSquare': '正方形',
+      'settings.general.wallpaper': '自定义壁纸 / Wallpaper',
+      'settings.general.wallpaper.pick': '上传图片 / 视频',
+      'settings.general.wallpaper.clear': '清除壁纸',
+      'settings.general.wallpaper.fail': '壁纸保存失败（需要 Electron 或 /prts 宿主路由）',
+      'settings.general.wallpaper.fit': '填充方式',
+      'settings.general.wallpaper.opacity': '透明度',
+      'settings.general.wallpaper.speed': '播放速度',
+      'settings.general.wallpaper.loop': '循环播放',
+
+      // —— 0.4.0: skills page rework ——
+      'skills.openFile': '打开配置文件',
+      'skills.noPath': '这个 skill 没有文件路径',
+      'skills.openFail': '无法打开配置文件',
+      'skills.editClose': '收起',
+
+      // —— 0.4.0: market categories ——
+      'market.cat.design': '图形设计',
+      'market.cat.ui': 'UI设计',
+      'market.cat.fx': '特效设计',
+      'market.cat.text': '文本设计',
+      'market.pluginGh': 'GitHub 插件：粘贴仓库地址直接安装',
     },
 
     zh: {
@@ -2992,6 +3283,86 @@ window.PRTS_MARKET = {
       'sidebar.git': 'Git',
       'sidebar.skills': 'Skill',
       'common.save': '保存',
+      'common.saved': '已保存',
+
+      // —— 0.4.0: 官方同构模型页 ——
+      'settings.models.providers': '提供方',
+      'settings.models.deepseekBuiltin': 'DeepSeek 为内置提供方，始终可用；可在下方添加更多。',
+      'settings.models.displayName': '显示名',
+      'settings.models.catalog': '模型目录',
+      'settings.models.addModel': '模型 id（如 gpt-4o-mini）',
+      'settings.models.addModelBtn': '添加模型',
+      'settings.models.addProvider': '添加提供方',
+      'settings.models.addProvider.none': '没有更多内置提供方可添加。',
+      'settings.models.add': '添加',
+      'settings.models.added': '提供方 {name} 已添加',
+      'settings.models.addCustom': '添加自定义提供方',
+      'settings.models.addCustom.hint': '自定义 OpenAI 兼容路由：需要路由名、API Key、base URL 和至少一个模型。',
+      'settings.models.customRoute': '路由名（字母数字 - _ .）',
+      'settings.models.customRouteInvalid': '路由名只能包含字母、数字、-、_、.',
+      'settings.models.customRouteTaken': '该路由已存在',
+      'settings.models.customDisplayName': '显示名（可选）',
+      'settings.models.customBaseUrl': 'base URL（必填）',
+      'settings.models.customModels': '模型（逗号/空格分隔）',
+      'settings.models.customCreate': '创建提供方',
+      'settings.models.customNeedsBaseUrl': '需要 base URL',
+      'settings.models.customNeedsModels': '至少需要一个模型',
+      'settings.models.removeProvider': '移除',
+      'settings.models.removeProviderConfirm': '移除提供方 {name}？',
+
+      // —— 0.4.0: 官方同构插件页 ——
+      'settings.plugins.config': '插件配置',
+      'settings.plugins.list': '插件列表',
+      'settings.plugins.listEmpty': '这里什么都没有。',
+      'settings.plugins.core': '核心',
+      'settings.plugins.thirdParty': '第三方插件',
+      'settings.plugins.thirdPartyShort': '第三方',
+      'settings.plugins.disable': '禁用',
+      'settings.plugins.enable': '启用',
+      'settings.plugins.toggleHint': '开关写入 profile patch（cordis.patch.yml），重启 dsh 后生效。',
+      'settings.plugins.toggleSaved': '插件开关已保存 — 重启 dsh 生效。',
+      'settings.plugins.reset': '恢复默认',
+      'settings.plugins.terminal': '终端',
+      'settings.plugins.terminal.hint': 'Agent 的 shell 执行超时。',
+      'settings.plugins.terminalTimeout': 'timeoutMs',
+      'settings.plugins.agentLoop': 'Agent 循环',
+      'settings.plugins.agentLoop.hint': 'Agent 循环的并发参数。',
+      'settings.plugins.agentLoopMax': 'maxParallelToolCalls',
+      'settings.plugins.webSearch': '网页搜索',
+      'settings.plugins.webSearch.hint': 'web 工具使用的 DeepSeek 官方搜索提供方。',
+      'settings.plugins.webSearchKey': 'API Key',
+      'settings.plugins.webSearchUrl': 'baseURL',
+      'settings.plugins.webSearchModel': 'model',
+      'settings.plugins.webSearchVersion': 'apiVersion',
+      'settings.plugins.webSearchMaxTokens': 'maxTokens',
+      'settings.plugins.webSearchMaxUses': 'maxUses',
+
+      // —— 0.4.0: 自定义颜色 + 壁纸 ——
+      'settings.general.accent': '自定义颜色',
+      'settings.general.accentPrimary': '主色',
+      'settings.general.accentDiamond': '菱形',
+      'settings.general.accentSquare': '正方形',
+      'settings.general.wallpaper': '自定义壁纸',
+      'settings.general.wallpaper.pick': '上传图片 / 视频',
+      'settings.general.wallpaper.clear': '清除壁纸',
+      'settings.general.wallpaper.fail': '壁纸保存失败（需要 Electron 或 /prts 宿主路由）',
+      'settings.general.wallpaper.fit': '填充方式',
+      'settings.general.wallpaper.opacity': '透明度',
+      'settings.general.wallpaper.speed': '播放速度',
+      'settings.general.wallpaper.loop': '循环播放',
+
+      // —— 0.4.0: skill 页重做 ——
+      'skills.openFile': '打开配置文件',
+      'skills.noPath': '这个 skill 没有文件路径',
+      'skills.openFail': '无法打开配置文件',
+      'skills.editClose': '收起',
+
+      // —— 0.4.0: 市场分类 ——
+      'market.cat.design': '图形设计',
+      'market.cat.ui': 'UI设计',
+      'market.cat.fx': '特效设计',
+      'market.cat.text': '文本设计',
+      'market.pluginGh': 'GitHub 插件：粘贴仓库地址直接安装',
     },
   };
 
@@ -4480,6 +4851,15 @@ window.PRTS_MARKET = {
     'folder': S('<path d="M5.2 2H2.2a.9.9 0 0 0-.9.9v7.3a.9.9 0 0 0 .9.9h9.6a.9.9 0 0 0 .9-.9V4.3a.9.9 0 0 0-.9-.9H6l-.8-1.4Z" fill="currentColor"/>', 12),
     'sun': S('<circle cx="7.5" cy="7.5" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M7.5 1.2v1.4M7.5 12.4v1.4M1.2 7.5h1.4M12.4 7.5h1.4M3 3l1 1M11 11l1 1M12 3l-1 1M4 11l-1 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>', 15),
     'moon': S('<path d="M12.6 9.6A5.4 5.4 0 0 1 5.4 2.4 5.6 5.6 0 1 0 12.6 9.6Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>', 15),
+
+    // —— settings nav (small marks, PRTS abstract) ——
+    'general': S('<path d="M3.2 6.4a4.2 4.2 0 0 1 7.6 0" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/><path d="M2.2 7.6h9.6M2.2 9.8h9.6" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+    'models': S('<path d="M2.8 4.2h2.4v5.6H2.8zM6 4.2h2.4v5.6H6zM9.2 4.2h2v5.6h-2z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M3.6 4.2V2.6M7.2 4.2V2.6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>'),
+    'plugins': S('<path d="M4.4 4.4h5.2v5.2H4.4zM7 4.4V2.4M7 9.6v2" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M2.4 7h2M9.6 7h2" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+    'presets': S('<path d="M7 2.2 12.2 7 7 11.8 1.8 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M7 5.2 8.8 7 7 8.8 5.2 7Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M3.6 9.8 1.8 7M10.4 9.8l1.8-2.8" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+    'skills': S('<path d="M7 1.6 12.4 7 7 12.4 1.6 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M4.9 4.9 7 7l2.1-2.1M7 7l2.1 2.1M4.9 9.1 7 7" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+    'wall': S('<rect x="2.2" y="2.2" width="9.6" height="9.6" stroke="currentColor" stroke-width="1.15"/><path d="M2.2 7.2 5.6 4.4l2.4 2.2 3.8-3.4M2.2 11 6.4 7.4l1.6 1.4" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><circle cx="9.6" cy="4.6" r="0.9" fill="currentColor"/>'),
+    'palette': S('<path d="M7 2.2a4.8 4.8 0 1 0 0 9.6h1.2a1.2 1.2 0 0 0 1.1-1.7 1.1 1.1 0 0 1 1-1.7H11a1.8 1.8 0 0 0 0-3.6 5.6 5.6 0 0 0-4-2.6Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M4.2 5.2h.6M5.8 3.8h.6M8.6 3.2h.6M9.8 5.4h.6" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
 
     // —— deepseek / balance panel ——
     'login': S('<path d="M2.6 11.4V8.6a4.4 4.4 0 0 1 8.8 0v2.8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M4.6 10.6h4.8M5.2 8.2l1.8 2.4 1.8-2.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>'),
@@ -6492,6 +6872,71 @@ window.PRTS_MARKET = {
     await P.store.saveConfig(A.config);
   };
 
+  /** Custom accent colors: primary (buttons/logo), diamond and square marks
+   *  (independent, neon). Only applied when the theme is 'custom'. */
+  function applyAccent(cfg) {
+    const root = document.documentElement;
+    const a = (cfg && cfg.ui && cfg.ui.accent) || {};
+    if ((cfg && cfg.ui && cfg.ui.theme) === 'custom') {
+      root.style.setProperty('--prts-accent', a.primary || '');
+      root.style.setProperty('--prts-diamond', a.diamond || '');
+      root.style.setProperty('--prts-square', a.square || '');
+    } else {
+      root.style.removeProperty('--prts-accent');
+      root.style.removeProperty('--prts-diamond');
+      root.style.removeProperty('--prts-square');
+    }
+  }
+
+  /** Custom wallpaper layer: image or video under everything except the
+   *  background diamond/square marks (they sit in their own layers above). */
+  async function applyWallpaper(cfg) {
+    const layer = $('wallpaperLayer');
+    if (!layer) return;
+    const w = (cfg && cfg.ui && cfg.ui.wallpaper) || null;
+    if (!w || !w.file) {
+      layer.innerHTML = '';
+      layer.style.display = 'none';
+      return;
+    }
+    let dataUrl = '';
+    try {
+      const b = (typeof window !== 'undefined' && window.prts && window.prts.bridge) || null;
+      if (b && b.readFileB64) {
+        const b64 = await b.readFileB64(P.platform.prtsProfileDir() + '/wallpaper/' + w.file);
+        dataUrl = 'data:' + (w.mime || 'image/jpeg') + ';base64,' + b64;
+      } else {
+        const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+        const res = await fetch(origin + '/prts/api/wallpaper?file=' + encodeURIComponent(w.file));
+        const data = await res.json();
+        if (data && data.dataUrl) dataUrl = data.dataUrl;
+      }
+    } catch (e) { dataUrl = ''; }
+    layer.innerHTML = '';
+    layer.style.display = '';
+    layer.style.opacity = String(w.opacity !== undefined ? w.opacity : 0.35);
+    if (!dataUrl) return;
+    let media;
+    if (w.type === 'video') {
+      const v = document.createElement('video');
+      v.src = dataUrl;
+      v.autoplay = true;
+      v.muted = true;
+      v.playsInline = true;
+      v.loop = w.loop !== false;
+      try { v.playbackRate = Number(w.speed) || 1; } catch (e) { /* noop */ }
+      media = v;
+    } else {
+      const im = document.createElement('img');
+      im.src = dataUrl;
+      media = im;
+    }
+    media.style.width = '100%';
+    media.style.height = '100%';
+    media.style.objectFit = w.fit || 'cover';
+    layer.appendChild(media);
+  }
+
   /* ---------- PRTS modal (replaces window.prompt / window.confirm, which
      Electron disables) ---------- */
   let modalResolve = null;
@@ -7899,7 +8344,9 @@ window.PRTS_MARKET = {
   async function boot() {
     A.config = await P.store.loadConfig();
     A.locale = A.config.locale === 'auto' ? P.platform.detectLocale() : A.config.locale;
-    applyTheme(A.config.ui && A.config.ui.theme === 'light' ? 'light' : 'dark');
+    applyTheme(A.config.ui && A.config.ui.theme === 'light' ? 'light' : A.config.ui && A.config.ui.theme === 'custom' ? 'custom' : 'dark');
+    applyAccent(A.config);
+    applyWallpaper(A.config).catch(() => { /* wallpaper is decorative */ });
     applyI18n();
     A.heroVisible = true;
 
@@ -8167,6 +8614,8 @@ window.PRTS_MARKET = {
   A.updateMeter = updateMeter;
   A.switchView = switchView;
   A.applyTheme = applyTheme;
+  A.applyAccent = applyAccent;
+  A.applyWallpaper = applyWallpaper;
   A.applyI18n = applyI18n;
   A.setModeLabel = setModeLabel;
   A.presetLabel = presetLabel;
@@ -8919,16 +9368,17 @@ window.PRTS_MARKET = {
     if (!res.ok) throw new Error('HTTP ' + res.status);
   }
 
-  /** Clone a GitHub skill repo into the dsh skills root. */
-  async function install(repo) {
+  /** Clone a GitHub skill repo into the dsh skills root (subdir = one skill
+   *  inside a monorepo like anthropics/skills; monorepos lift every SKILL.md). */
+  async function install(repo, subdir) {
     const b = bridge();
     if (b && typeof b.skillInstall === 'function') {
-      return await b.skillInstall(repo);
+      return await b.skillInstall(repo, subdir);
     }
     const res = await fetch(origin() + '/prts/api/skill-install', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ repo }),
+      body: JSON.stringify({ repo, subdir: subdir || '' }),
     });
     return await res.json();
   }
@@ -9017,36 +9467,29 @@ window.PRTS_MARKET = {
     return n;
   }
 
-  let editing = null; // skill name currently opened in the editor
-
-  async function renderEditor(container, config, name) {
-    container.textContent = '';
-    editing = name;
-    const back = el('button', 'sBtn', '← ' + t('skills.back'));
-    back.type = 'button';
-    back.addEventListener('click', () => render(container, config));
-    container.appendChild(back);
-    const head = el('div', 'sSecRow');
-    head.appendChild(el('span', 'sSecTitle eyebrow', name));
-    const save = el('button', 'sBtn primary', t('common.save'));
-    save.type = 'button';
-    head.appendChild(save);
-    container.appendChild(head);
-    const ta = document.createElement('textarea');
-    ta.className = 'sTextarea';
-    ta.spellcheck = false;
-    ta.rows = 18;
-    container.appendChild(ta);
-    let content = '';
-    try { content = await SK.read(name); } catch (e) { content = '# ' + name + '\n\n' + e.message; }
-    ta.value = content;
-    save.addEventListener('click', async () => {
+  /** Open one SKILL.md in the system editor (Electron shell.openPath; the
+   *  browser form asks the host to xdg-open it). */
+  SK.openFile = async function (s) {
+    const p = s && s.path;
+    if (!p) { P.app.toast(t('skills.noPath')); return; }
+    const b = bridge();
+    if (b && typeof b.openPath === 'function') {
       try {
-        await SK.write(name, ta.value);
-        P.app.toast(t('skills.saved', { name }));
+        const r = await b.openPath(p);
+        if (r && r.ok === false) P.app.toast(String(r.error || t('skills.openFail')));
       } catch (e) { P.app.toast(e.message); }
-    });
-  }
+      return;
+    }
+    try {
+      const res = await fetch(origin() + '/prts/api/open-path', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: p }),
+      });
+      const data = await res.json();
+      if (!(data && data.ok)) P.app.toast(t('skills.openFail'));
+    } catch (e) { P.app.toast(t('skills.openFail')); }
+  };
 
   async function render(container, config) {
     container.textContent = '';
@@ -9056,10 +9499,9 @@ window.PRTS_MARKET = {
     const personaSkills = skills.filter((s) => s.persona);
     const normalSkills = skills.filter((s) => !s.persona);
 
-    // —— persona slot (single select) ——
+    // —— persona slot (single select, compact chips) ——
     const pSec = el('div', 'sSection');
     pSec.appendChild(el('div', 'sSecTitle eyebrow', t('skills.persona')));
-    pSec.appendChild(el('div', 'hint', t('skills.persona.hint')));
     const pRow = el('div', 'skPersona');
     const noneBtn = el('button', 'skChip' + (!config.skills.persona ? ' on' : ''), t('skills.persona.none'));
     noneBtn.type = 'button';
@@ -9075,7 +9517,7 @@ window.PRTS_MARKET = {
     pSec.appendChild(pRow);
     container.appendChild(pSec);
 
-    // —— groups ——
+    // —— groups (multi-select) ——
     const gSec = el('div', 'sSection');
     const gHead = el('div', 'sSecRow');
     gHead.appendChild(el('span', 'sSecTitle eyebrow', t('skills.groups')));
@@ -9090,28 +9532,23 @@ window.PRTS_MARKET = {
     gHead.appendChild(addBtn);
     gSec.appendChild(gHead);
     const groups = SK.groupsOf(config);
-    if (!groups.length) {
-      gSec.appendChild(el('div', 'hint', t('skills.groups.empty')));
-    }
+    if (!groups.length) gSec.appendChild(el('div', 'hint', t('skills.groups.empty')));
     for (const g of groups) {
       const row = el('div', 'skGroup' + (config.skills.activeGroup === g.id ? ' active' : ''));
       const nameBtn = el('button', 'skGroupName', g.name);
       nameBtn.type = 'button';
       nameBtn.addEventListener('click', async () => { await SK.setActiveGroup(config, g.id); render(container, config); });
       row.appendChild(nameBtn);
-      const count = el('span', 'skGroupCount', String(g.skills.length));
-      row.appendChild(count);
+      row.appendChild(el('span', 'skGroupCount', String(g.skills.length)));
       const del = el('button', 'rowBtn', P.icons['trash2'] || '×');
       del.type = 'button';
       del.addEventListener('click', async () => { await SK.removeGroup(config, g.id); render(container, config); });
       row.appendChild(del);
       gSec.appendChild(row);
-      // multi-select chips for the active group
       if (config.skills.activeGroup === g.id) {
         const chips = el('div', 'skChips');
-        const all = normalSkills;
-        if (!all.length) chips.appendChild(el('span', 'hint', t('skills.none')));
-        for (const s of all) {
+        if (!normalSkills.length) chips.appendChild(el('span', 'hint', t('skills.none')));
+        for (const s of normalSkills) {
           const on = g.skills.indexOf(s.name) >= 0;
           const c = el('button', 'skChip' + (on ? ' on' : ''), s.name);
           c.type = 'button';
@@ -9129,25 +9566,51 @@ window.PRTS_MARKET = {
     }
     container.appendChild(gSec);
 
-    // —— installed skills ——
+    // —— installed skills: official-style list, source hidden by default ——
     const lSec = el('div', 'sSection');
     lSec.appendChild(el('div', 'sSecTitle eyebrow', t('skills.installed')));
     if (!skills.length) lSec.appendChild(el('div', 'hint', t('skills.none')));
     for (const s of skills) {
-      const row = el('div', 'skItem');
+      const card = el('div', 'skCard');
+      const row = el('div', 'skRow');
+      const mark = el('span', 'skMark');
+      mark.innerHTML = P.icons.diamond || '';
+      row.appendChild(mark);
       const meta = el('div', 'skItemMeta');
-      meta.appendChild(el('span', 'skItemName', s.name));
+      const nameLine = el('div', 'skNameLine');
+      nameLine.appendChild(el('span', 'skItemName', s.name));
       if (s.persona) {
         const tag = el('span', 'pState', t('skills.personaTag'));
         tag.dataset.state = 'ok';
-        meta.appendChild(tag);
+        nameLine.appendChild(tag);
       }
-      meta.appendChild(el('div', 'pModels', s.description || ''));
+      meta.appendChild(nameLine);
+      const desc = el('div', 'skDesc', s.description || '');
+      desc.title = s.description || '';
+      meta.appendChild(desc);
       row.appendChild(meta);
-      const edit = el('button', 'sBtn', t('skills.edit'));
-      edit.type = 'button';
-      edit.addEventListener('click', () => renderEditor(container, config, s.name));
-      row.appendChild(edit);
+      const actions = el('div', 'skActions');
+      const openBtn = el('button', 'sBtn', t('skills.openFile'));
+      openBtn.type = 'button';
+      openBtn.addEventListener('click', () => SK.openFile(s));
+      actions.appendChild(openBtn);
+      const editBtn = el('button', 'sBtn', t('skills.edit'));
+      editBtn.type = 'button';
+      const editorBox = el('div', 'skEditor');
+      editorBox.style.display = 'none';
+      let loaded = false;
+      editBtn.addEventListener('click', async () => {
+        const open = editorBox.style.display !== 'none';
+        editorBox.style.display = open ? 'none' : '';
+        editBtn.textContent = open ? t('skills.edit') : t('skills.editClose');
+        if (!open && !loaded) {
+          loaded = true;
+          try {
+            ta.value = await SK.read(s.name);
+          } catch (e) { ta.value = '# ' + s.name + '\n\n' + e.message; }
+        }
+      });
+      actions.appendChild(editBtn);
       const rm = el('button', 'rowBtn', P.icons['trash2'] || '×');
       rm.type = 'button';
       rm.addEventListener('click', async () => {
@@ -9157,8 +9620,35 @@ window.PRTS_MARKET = {
         if (r && r.ok) { P.app.toast(t('skills.removed', { name: s.name })); render(container, config); }
         else P.app.toast(t('skills.removeFail', { msg: (r && r.error) || 'error' }));
       });
-      row.appendChild(rm);
-      lSec.appendChild(row);
+      actions.appendChild(rm);
+      row.appendChild(actions);
+      card.appendChild(row);
+      const ta = document.createElement('textarea');
+      ta.className = 'sTextarea';
+      ta.rows = 14;
+      ta.spellcheck = false;
+      editorBox.appendChild(ta);
+      const saveRow = el('div', 'sRow');
+      saveRow.style.marginTop = '6px';
+      const save = el('button', 'sBtn primary', t('common.save'));
+      save.type = 'button';
+      save.addEventListener('click', async () => {
+        try {
+          await SK.write(s.name, ta.value);
+          P.app.toast(t('skills.saved', { name: s.name }));
+        } catch (e) { P.app.toast(e.message); }
+      });
+      saveRow.appendChild(save);
+      const closeBtn = el('button', 'sBtn', t('skills.editClose'));
+      closeBtn.type = 'button';
+      closeBtn.addEventListener('click', () => {
+        editorBox.style.display = 'none';
+        editBtn.textContent = t('skills.edit');
+      });
+      saveRow.appendChild(closeBtn);
+      editorBox.appendChild(saveRow);
+      card.appendChild(editorBox);
+      lSec.appendChild(card);
     }
     // GitHub install row
     const gh = el('div', 'mGh');
@@ -9187,7 +9677,7 @@ window.PRTS_MARKET = {
   }
 
   SK.render = render;
-  SK.renderEditor = renderEditor;
+
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
 
@@ -9298,7 +9788,7 @@ window.PRTS_MARKET = {
     action.disabled = true;
     action.textContent = t('market.installing');
     try {
-      const r = await P.skills.install(item.repo);
+      const r = await P.skills.install(item.repo, item.subdir);
       if (r && r.ok) {
         P.app.toast(t('market.skillInstalled', { name: item.displayName || item.name }));
         await refresh();
@@ -9352,7 +9842,19 @@ window.PRTS_MARKET = {
     return card;
   }
 
-  const CATS = { all: 'market.cat.all', visual: 'market.cat.visual', tool: 'market.cat.tool', other: 'market.cat.other', persona: 'market.cat.persona' };
+  const CATS = {
+    all: 'market.cat.all',
+    visual: 'market.cat.visual',
+    tool: 'market.cat.tool',
+    other: 'market.cat.other',
+    persona: 'market.cat.persona',
+    design: 'market.cat.design',
+    ui: 'market.cat.ui',
+    fx: 'market.cat.fx',
+    text: 'market.cat.text',
+  };
+  const SKILL_CATS = ['all', 'design', 'ui', 'fx', 'text', 'tool', 'persona', 'other'];
+  const PLUGIN_CATS = ['all', 'visual', 'tool', 'other'];
 
   function render() {
     const box = document.getElementById('marketList');
@@ -9384,8 +9886,8 @@ window.PRTS_MARKET = {
     box.appendChild(controls);
 
     const chips = el('div', 'mCats');
-    for (const key of Object.keys(CATS)) {
-      if (state.tab === 'skills' && key === 'all') continue;
+    const catKeys = state.tab === 'skills' ? SKILL_CATS : PLUGIN_CATS;
+    for (const key of catKeys) {
       const c = el('button', 'mCat' + (state.category === key ? ' on' : ''), t(CATS[key]));
       c.type = 'button';
       c.dataset.cat = key;
@@ -9394,7 +9896,7 @@ window.PRTS_MARKET = {
     }
     box.appendChild(chips);
 
-    // —— GitHub skill install row (the GitHub skill section) ——
+    // —— GitHub install rows (plugins and skills both accept a repo URL) ——
     if (state.tab === 'skills') {
       const gh = el('div', 'mGh');
       const hint = el('span', 'mGhLabel', t('market.skillGh'));
@@ -9413,6 +9915,30 @@ window.PRTS_MARKET = {
           const r = await P.skills.install(repo);
           if (r && r.ok) { P.app.toast(t('market.skillInstalled', { name: repo })); url.value = ''; await refresh(); render(); }
           else P.app.toast(t('market.failed', { msg: (r && (r.error || r.stderr)) || 'error' }));
+        } catch (e) { P.app.toast(e.message); }
+        go.disabled = false;
+      });
+      gh.appendChild(hint); gh.appendChild(url); gh.appendChild(go);
+      box.appendChild(gh);
+    } else {
+      const gh = el('div', 'mGh');
+      const hint = el('span', 'mGhLabel', t('market.pluginGh'));
+      const url = document.createElement('input');
+      url.type = 'text';
+      url.className = 'sInput';
+      url.placeholder = 'https://github.com/owner/plugin-repo';
+      url.spellcheck = false;
+      const go = el('button', 'sBtn primary', t('market.install'));
+      go.type = 'button';
+      go.addEventListener('click', async () => {
+        const repo = url.value.trim();
+        if (!/^https?:\/\/github\.com\/[\w.-]+\/[\w.-]+/.test(repo)) { P.app.toast(t('market.skillRepoBad')); return; }
+        go.disabled = true;
+        try {
+          const b = (typeof window !== 'undefined' && window.prts && window.prts.bridge) || null;
+          const r = b && b.pluginClone ? await b.pluginClone(repo) : { ok: false, stderr: 'no bridge' };
+          if (r && r.ok) { P.app.toast(t('market.installed', { pkg: repo })); url.value = ''; await refresh(); render(); }
+          else P.app.toast(t('market.failed', { msg: (r && (r.stderr || r.stdout || r.error)) || 'error' }));
         } catch (e) { P.app.toast(e.message); }
         go.disabled = false;
       });
@@ -9469,6 +9995,19 @@ window.PRTS_MARKET = {
     { id: 'balance', label: 'settings.nav.balance' },
     { id: 'git', label: 'settings.nav.git' },
     { id: 'skills', label: 'settings.nav.skills' },
+  ];
+
+  /** Neon-leaning accent presets (Tokyo Night & friends). diamond/square may
+   *  differ; primary drives buttons and the logo. */
+  const ACCENT_PRESETS = [
+    { id: 'tokyonight', name: 'Tokyo Night', primary: '#7aa2f7', diamond: '#7dcfff', square: '#bb9af7' },
+    { id: 'tokyonight-storm', name: 'Tokyo Night Storm', primary: '#7aa2f7', diamond: '#2ac3de', square: '#bb9af7' },
+    { id: 'nord', name: 'Nord', primary: '#88c0d0', diamond: '#8fbcbb', square: '#b48ead' },
+    { id: 'dracula', name: 'Dracula', primary: '#bd93f9', diamond: '#8be9fd', square: '#ff79c6' },
+    { id: 'rose-pine', name: 'Rosé Pine', primary: '#ebbcba', diamond: '#9ccfd8', square: '#c4a7e7' },
+    { id: 'catppuccin', name: 'Catppuccin', primary: '#89b4fa', diamond: '#89dceb', square: '#cba6f7' },
+    { id: 'gruvbox', name: 'Gruvbox', primary: '#83a598', diamond: '#8ec07c', square: '#d3869b' },
+    { id: 'mono', name: 'PRTS Mono', primary: '', diamond: '', square: '' },
   ];
 
   let current = 'general';
@@ -9569,6 +10108,63 @@ window.PRTS_MARKET = {
 
   /* ---------- section renderers ---------- */
 
+  /* ---------- accent colors + wallpaper helpers ---------- */
+
+  function bridge() {
+    try { return (typeof window !== 'undefined' && window.prts && window.prts.bridge) || null; } catch (e) { return null; }
+  }
+  function currentAccent() {
+    config.ui = config.ui || {};
+    if (!config.ui.accent) config.ui.accent = { preset: 'tokyonight', primary: '#7aa2f7', diamond: '#7dcfff', square: '#bb9af7' };
+    return config.ui.accent;
+  }
+  async function saveAccent() {
+    await P.store.saveConfig(config);
+    P.app.applyTheme((config.ui && config.ui.theme) || 'dark');
+    if (P.app.applyAccent) P.app.applyAccent(config);
+  }
+  function currentWallpaper() {
+    config.ui = config.ui || {};
+    if (!config.ui.wallpaper) config.ui.wallpaper = { file: '', type: 'image', fit: 'cover', opacity: 0.35, speed: 1, loop: true };
+    return config.ui.wallpaper;
+  }
+  async function saveWallpaperBase64(fileName, mime, b64) {
+    const b = bridge();
+    const dir = P.platform.prtsProfileDir() + '/wallpaper';
+    if (b && b.writeFileB64) {
+      try {
+        await b.mkdir(dir);
+        await b.writeFileB64(dir + '/' + fileName, b64);
+        return true;
+      } catch (e) { /* fall through */ }
+    }
+    try {
+      const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+      const res = await fetch(origin + '/prts/api/wallpaper', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file: fileName, mime, base64: b64 }),
+      });
+      return res.ok;
+    } catch (e) { return false; }
+  }
+  async function clearWallpaper() {
+    const w = currentWallpaper();
+    const b = bridge();
+    const file = P.platform.prtsProfileDir() + '/wallpaper/' + w.file;
+    if (b && b.deleteFile) {
+      try { await b.deleteFile(file); } catch (e) { /* noop */ }
+    } else {
+      try {
+        const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+        await fetch(origin + '/prts/api/wallpaper', { method: 'DELETE' });
+      } catch (e) { /* noop */ }
+    }
+    w.file = '';
+    await P.store.saveConfig(config);
+    if (P.app.applyWallpaper) P.app.applyWallpaper(config);
+  }
+
   async function renderGeneral(box) {
     box.textContent = '';
 
@@ -9601,7 +10197,7 @@ window.PRTS_MARKET = {
     themeSec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.general.appearance')));
     const theme = el('select', 'sInput sSelect');
     const themeNs = (await nsValue('ui-theme')) || {};
-    [['system', 'SYSTEM'], ['dark', 'DARK'], ['light', 'LIGHT']].forEach(([v, label]) => {
+    [['system', 'SYSTEM'], ['dark', 'DARK'], ['light', 'LIGHT'], ['custom', 'CUSTOM']].forEach(([v, label]) => {
       const o = document.createElement('option');
       o.value = v;
       o.textContent = label;
@@ -9615,6 +10211,8 @@ window.PRTS_MARKET = {
         config.ui.theme = theme.value === 'system' ? 'dark' : theme.value;
         await P.store.saveConfig(config);
         P.app.applyTheme(config.ui.theme);
+        if (P.app.applyAccent) P.app.applyAccent(config);
+        renderGeneral(box);
       }
     });
     themeSec.appendChild(theme);
@@ -9635,6 +10233,142 @@ window.PRTS_MARKET = {
     enter.addEventListener('change', () => { nsUpdate('ui-conversation', { busyEnter: enter.value }); });
     enterSec.appendChild(enter);
     box.appendChild(enterSec);
+
+    // —— 外观自定义颜色 (PRTS accent presets) ——
+    const accSec = el('div', 'sSection');
+    accSec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.general.accent')));
+    const a = currentAccent();
+    const chips = el('div', 'skChips');
+    for (const pr of ACCENT_PRESETS) {
+      const c = el('button', 'skChip' + (a.preset === pr.id ? ' on' : ''), pr.name);
+      c.type = 'button';
+      c.addEventListener('click', async () => {
+        a.preset = pr.id; a.primary = pr.primary; a.diamond = pr.diamond; a.square = pr.square;
+        await saveAccent(); renderGeneral(box);
+      });
+      chips.appendChild(c);
+    }
+    accSec.appendChild(chips);
+    const pickers = el('div', 'accPickers');
+    [['primary', 'settings.general.accentPrimary'], ['diamond', 'settings.general.accentDiamond'], ['square', 'settings.general.accentSquare']].forEach(([k, labelKey]) => {
+      const row = el('label', 'accPick');
+      row.appendChild(el('span', 'fLabel', t(labelKey)));
+      const c = document.createElement('input');
+      c.type = 'color';
+      c.value = a[k] || '#7aa2f7';
+      c.addEventListener('input', async () => {
+        a[k] = c.value; a.preset = 'custom';
+        await saveAccent(); renderGeneral(box);
+      });
+      row.appendChild(c);
+      pickers.appendChild(row);
+    });
+    accSec.appendChild(pickers);
+    box.appendChild(accSec);
+
+    // —— 自定义壁纸 (image / video, one-shot persistent) ——
+    const wpSec = el('div', 'sSection');
+    wpSec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.general.wallpaper')));
+    const w = currentWallpaper();
+    const upRow = el('div', 'inlineForm');
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*,video/*';
+    fileInput.style.display = 'none';
+    const pick = el('button', 'sBtn', t('settings.general.wallpaper.pick'));
+    pick.type = 'button';
+    pick.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => {
+      const f = fileInput.files && fileInput.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const m = /^data:([^;]+);base64,(.*)$/.exec(String(reader.result || ''));
+        if (!m) return;
+        const mime = m[1];
+        const ext = mime.indexOf('video') === 0 ? 'mp4' : (mime === 'image/png' ? 'png' : 'jpg');
+        const fileName = 'wall-' + Date.now().toString(36) + '.' + ext;
+        const ok = await saveWallpaperBase64(fileName, mime, m[2]);
+        if (!ok) { P.app.toast(t('settings.general.wallpaper.fail')); return; }
+        w.file = fileName;
+        w.type = mime.indexOf('video') === 0 ? 'video' : 'image';
+        w.mime = mime;
+        await P.store.saveConfig(config);
+        if (P.app.applyWallpaper) P.app.applyWallpaper(config);
+        renderGeneral(box);
+      };
+      reader.readAsDataURL(f);
+    });
+    upRow.appendChild(pick);
+    const clearWp = el('button', 'sBtn', t('settings.general.wallpaper.clear'));
+    clearWp.type = 'button';
+    clearWp.disabled = !w.file;
+    clearWp.addEventListener('click', async () => { await clearWallpaper(); renderGeneral(box); });
+    upRow.appendChild(clearWp);
+    wpSec.appendChild(upRow);
+    if (w.file) {
+      const nameRow = el('div', 'projectRow');
+      nameRow.appendChild(el('span', 'pname', w.file));
+      nameRow.appendChild(el('span', 'pmeta', String(w.type || 'image').toUpperCase()));
+      wpSec.appendChild(nameRow);
+      const fitRow = el('div', 'inlineForm');
+      fitRow.appendChild(el('span', 'fLabel', t('settings.general.wallpaper.fit')));
+      const fit = el('select', 'sInput sSelect');
+      [['cover', 'COVER'], ['contain', 'CENTER'], ['fill', 'FILL']].forEach(([v, l]) => {
+        const o = document.createElement('option');
+        o.value = v; o.textContent = l;
+        if (w.fit === v) o.selected = true;
+        fit.appendChild(o);
+      });
+      fit.addEventListener('change', async () => {
+        w.fit = fit.value;
+        await P.store.saveConfig(config);
+        if (P.app.applyWallpaper) P.app.applyWallpaper(config);
+      });
+      fitRow.appendChild(fit);
+      wpSec.appendChild(fitRow);
+      const opRow = el('div', 'inlineForm');
+      opRow.appendChild(el('span', 'fLabel', t('settings.general.wallpaper.opacity')));
+      const op = document.createElement('input');
+      op.type = 'range'; op.min = '0.05'; op.max = '1'; op.step = '0.05';
+      op.value = String(w.opacity !== undefined ? w.opacity : 0.35);
+      op.className = 'accRange';
+      op.addEventListener('input', async () => {
+        w.opacity = Number(op.value);
+        await P.store.saveConfig(config);
+        if (P.app.applyWallpaper) P.app.applyWallpaper(config);
+      });
+      opRow.appendChild(op);
+      wpSec.appendChild(opRow);
+      if (w.type === 'video') {
+        const vRow = el('div', 'inlineForm');
+        vRow.appendChild(el('span', 'fLabel', t('settings.general.wallpaper.speed')));
+        const sp = document.createElement('input');
+        sp.type = 'number'; sp.min = '0.25'; sp.max = '4'; sp.step = '0.25';
+        sp.value = String(w.speed !== undefined ? w.speed : 1);
+        sp.className = 'sInput accNum';
+        sp.addEventListener('change', async () => {
+          w.speed = Number(sp.value) || 1;
+          await P.store.saveConfig(config);
+          if (P.app.applyWallpaper) P.app.applyWallpaper(config);
+        });
+        vRow.appendChild(sp);
+        const loopLabel = el('label', 'mCheck');
+        const loopBox = document.createElement('input');
+        loopBox.type = 'checkbox';
+        loopBox.checked = w.loop !== false;
+        loopBox.addEventListener('change', async () => {
+          w.loop = loopBox.checked;
+          await P.store.saveConfig(config);
+          if (P.app.applyWallpaper) P.app.applyWallpaper(config);
+        });
+        loopLabel.appendChild(loopBox);
+        loopLabel.appendChild(el('span', '', t('settings.general.wallpaper.loop')));
+        vRow.appendChild(loopLabel);
+        wpSec.appendChild(vRow);
+      }
+    }
+    box.appendChild(wpSec);
 
     // Doctor name (PRTS persona)
     const nameSec = el('div', 'sSection');
@@ -9693,14 +10427,339 @@ window.PRTS_MARKET = {
     box.appendChild(vSec);
   }
 
+  // pi-ai provider registry helpers (settings llm-pi-ai.providers)
+  async function piAiValue() {
+    const v = await nsValue('llm-pi-ai');
+    return (v && v.providers) || {};
+  }
+  async function savePiAi(providers) {
+    return nsUpdate('llm-pi-ai', { providers });
+  }
+  function isPiAi(p) { return p && p.settingsNs === 'llm-pi-ai'; }
+
+  /** Official-style Models page: one provider row per configured route, plus
+   *  "添加提供方" (built-in configurable providers) and "添加自定义提供方". */
   async function renderModels(box) {
     box.textContent = '';
+    await P.dshState.listProviders();
+    await P.dshState.listModels();
+    const creds = await loadCredentialState();
+    const pi = await piAiValue();
+    const providers = P.dshState.providers || [];
+    const groups = P.dshState.models || [];
+    const configuredRoutes = providers.filter((p) => p.active || p.declared || pi[p.provider] !== undefined);
+    const candidates = providers.filter((p) => isPiAi(p) && !p.active && !p.declared && pi[p.provider] === undefined);
+    // deepseek-official always shows even when the wire omits it
+    const hasDs = configuredRoutes.some((p) => p.provider === 'deepseek-official');
 
-    // Default model for new sessions (agent-default-model in ~/.dsh/settings.yaml)
+    const sec = el('div', 'sSection');
+    sec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.models.providers')));
+    if (!hasDs) {
+      const ds = el('div', 'hint', t('settings.models.deepseekBuiltin'));
+      sec.appendChild(ds);
+    }
+
+    /** credential state dot for one provider */
+    function stateOf(p) {
+      if (!isPiAi(p)) {
+        const ref = providerRef(p.provider);
+        return !!(creds[p.provider] && creds[p.provider].configured) || !!(creds[ref] && creds[ref].configured);
+      }
+      const cfg = pi[p.provider] || {};
+      return !!(cfg.apiKey && String(cfg.apiKey).length > 0);
+    }
+
+    /** one provider row card (collapsible editor) */
+    function providerCard(p) {
+      const card = el('div', 'pCard');
+      const head = el('button', 'pCardHead');
+      head.type = 'button';
+      const identity = el('span', 'pName', p.displayName || p.provider);
+      head.appendChild(identity);
+      const routeTag = el('span', 'pState', p.provider);
+      routeTag.dataset.state = isPiAi(p) ? 'none' : 'ok';
+      head.appendChild(routeTag);
+      const dot = el('span', 'credDot' + (stateOf(p) ? ' ok' : ''));
+      head.appendChild(dot);
+      const chev = el('span', 'chev');
+      chev.innerHTML = P.icons.chev || '';
+      head.appendChild(chev);
+      card.appendChild(head);
+
+      const body = el('div', 'pCardBody');
+      body.style.display = 'none';
+
+      if (isPiAi(p)) {
+        const cfg = pi[p.provider] || {};
+        // display name
+        const dnForm = el('div', 'inlineForm');
+        const dnLabel = el('span', 'fLabel', t('settings.models.displayName'));
+        const dn = document.createElement('input');
+        dn.type = 'text';
+        dn.className = 'sInput';
+        dn.value = cfg.displayName || '';
+        dn.placeholder = p.provider;
+        dn.spellcheck = false;
+        const dnSave = el('button', 'sBtn', t('common.save'));
+        dnSave.type = 'button';
+        dnSave.addEventListener('click', async () => {
+          const next = { ...pi, [p.provider]: { ...cfg, displayName: dn.value.trim() } };
+          if (await savePiAi(next)) renderModels(box);
+        });
+        dnForm.appendChild(dnLabel); dnForm.appendChild(dn); dnForm.appendChild(dnSave);
+        body.appendChild(dnForm);
+
+        // API key (settings secret) + baseURL
+        const keyForm = el('div', 'inlineForm');
+        const keyLabel = el('span', 'fLabel', t('settings.provider.save'));
+        const keyInput = document.createElement('input');
+        keyInput.type = 'password';
+        keyInput.className = 'sInput';
+        keyInput.placeholder = 'API Key';
+        keyInput.autocomplete = 'off';
+        keyInput.spellcheck = false;
+        const keySave = el('button', 'sBtn', t('common.save'));
+        keySave.type = 'button';
+        keySave.addEventListener('click', async () => {
+          const v = keyInput.value.trim();
+          if (!v) return;
+          const next = { ...pi, [p.provider]: { ...cfg, apiKey: v } };
+          if (await savePiAi(next)) { keyInput.value = ''; renderModels(box); }
+        });
+        keyForm.appendChild(keyLabel); keyForm.appendChild(keyInput); keyForm.appendChild(keySave);
+        body.appendChild(keyForm);
+
+        const urlForm = el('div', 'inlineForm');
+        const urlLabel = el('span', 'fLabel', 'baseURL');
+        const urlInput = document.createElement('input');
+        urlInput.type = 'text';
+        urlInput.className = 'sInput';
+        urlInput.value = cfg.baseURL || '';
+        urlInput.placeholder = 'https://…';
+        urlInput.spellcheck = false;
+        const urlSave = el('button', 'sBtn', t('common.save'));
+        urlSave.type = 'button';
+        urlSave.addEventListener('click', async () => {
+          const next = { ...pi, [p.provider]: { ...cfg, baseURL: urlInput.value.trim() } };
+          if (await savePiAi(next)) renderModels(box);
+        });
+        urlForm.appendChild(urlLabel); urlForm.appendChild(urlInput); urlForm.appendChild(urlSave);
+        body.appendChild(urlForm);
+
+        // model catalog (editable)
+        body.appendChild(modelCatalog(p, cfg.models || [], async (models) => {
+          const next = { ...pi, [p.provider]: { ...cfg, models } };
+          if (await savePiAi(next)) renderModels(box);
+        }));
+
+        // delete route
+        const del = el('button', 'sBtn danger', t('settings.models.removeProvider'));
+        del.type = 'button';
+        del.addEventListener('click', async () => {
+          const ok = await P.app.askConfirm(t('settings.models.removeProviderConfirm', { name: p.displayName || p.provider }));
+          if (!ok) return;
+          const next = { ...pi };
+          delete next[p.provider];
+          if (await savePiAi(next)) renderModels(box);
+        });
+        body.appendChild(del);
+      } else {
+        // deepseek-official: credential ref + read-only catalog
+        const ref = providerRef(p.provider);
+        const configured = !!(creds[p.provider] && creds[p.provider].configured) || !!(creds[ref] && creds[ref].configured);
+        const keyForm = el('div', 'inlineForm');
+        const keyLabel = el('span', 'fLabel', t('settings.provider.save'));
+        const keyInput = document.createElement('input');
+        keyInput.type = 'password';
+        keyInput.className = 'sInput';
+        keyInput.placeholder = ref;
+        keyInput.autocomplete = 'off';
+        keyInput.spellcheck = false;
+        const keySave = el('button', 'sBtn', t('common.save'));
+        keySave.type = 'button';
+        keySave.addEventListener('click', async () => {
+          const v = keyInput.value.trim();
+          if (!v) return;
+          try {
+            await P.dshState.credentialsSet(ref, v);
+            keyInput.value = '';
+            P.app.toast(t('settings.provider.saved', { ref }));
+            renderModels(box);
+          } catch (e) { P.app.toast(e.message); }
+        });
+        keyForm.appendChild(keyLabel); keyForm.appendChild(keyInput); keyForm.appendChild(keySave);
+        const keyUnset = el('button', 'sBtn', t('settings.provider.unsetBtn'));
+        keyUnset.type = 'button';
+        keyUnset.disabled = !configured;
+        keyUnset.addEventListener('click', async () => {
+          try { await P.dshState.credentialsUnset(ref); renderModels(box); } catch (e) { P.app.toast(e.message); }
+        });
+        keyForm.appendChild(keyUnset);
+        body.appendChild(keyForm);
+        const grp = groups.find((g) => g.id === p.provider) || {};
+        const models = grp.models || [];
+        body.appendChild(modelCatalog(p, models, null));
+      }
+
+      head.addEventListener('click', () => {
+        const open = body.style.display !== 'none';
+        body.style.display = open ? 'none' : '';
+      });
+      card.appendChild(body);
+      return card;
+    }
+
+    /** model catalog block: chips + add-model input for pi-ai, read-only list otherwise */
+    function modelCatalog(p, models, onSave) {
+      const cat = el('div', 'mCatalog');
+      const title = el('div', 'mCatalogTitle', t('settings.models.catalog'));
+      cat.appendChild(title);
+      const list = el('div', 'skChips');
+      if (!models || !models.length) list.appendChild(el('span', 'hint', t('model.none')));
+      for (const m of models) {
+        const chip = el('span', 'skChip on', (m && m.name) || (m && m.id) || m);
+        if (onSave) {
+          const rm = el('button', 'skChipX', '×');
+          rm.type = 'button';
+          rm.addEventListener('click', async () => {
+            const next = models.filter((x) => x !== m);
+            await onSave(next);
+          });
+          chip.appendChild(rm);
+        }
+        list.appendChild(chip);
+      }
+      cat.appendChild(list);
+      if (onSave) {
+        const form = el('div', 'inlineForm');
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'sInput';
+        input.placeholder = t('settings.models.addModel');
+        input.spellcheck = false;
+        const add = el('button', 'sBtn', '+ ' + t('settings.models.addModelBtn'));
+        add.type = 'button';
+        add.addEventListener('click', async () => {
+          const id = input.value.trim();
+          if (!id) return;
+          const next = (models || []).concat([{ id, name: id }]);
+          await onSave(next);
+        });
+        form.appendChild(input); form.appendChild(add);
+        cat.appendChild(form);
+      }
+      return cat;
+    }
+
+    // rows
+    const rows = el('div', 'sRows');
+    for (const p of configuredRoutes) rows.appendChild(providerCard(p));
+    sec.appendChild(rows);
+
+    // 添加提供方 (built-in candidates)
+    const addSec = el('div', 'sSection');
+    const addBtn = el('button', 'sBtn', '+ ' + t('settings.models.addProvider'));
+    addBtn.type = 'button';
+    const candBox = el('div', 'sCollapse');
+    candBox.style.display = 'none';
+    addBtn.addEventListener('click', () => {
+      const open = candBox.style.display !== 'none';
+      candBox.style.display = open ? 'none' : '';
+      if (!open && !candBox.hasChildNodes()) renderCandidates();
+    });
+    function renderCandidates() {
+      candBox.textContent = '';
+      if (!candidates.length) {
+        candBox.appendChild(el('div', 'hint', t('settings.models.addProvider.none')));
+        return;
+      }
+      for (const c of candidates) {
+        const row = el('div', 'projectRow');
+        row.appendChild(el('span', 'pname', c.displayName || c.provider));
+        row.appendChild(el('span', 'pmeta', c.provider));
+        const go = el('button', 'sBtn', t('settings.models.add'));
+        go.type = 'button';
+        go.addEventListener('click', async () => {
+          const next = { ...pi, [c.provider]: {} };
+          if (await savePiAi(next)) { P.app.toast(t('settings.models.added', { name: c.displayName || c.provider })); renderModels(box); }
+        });
+        row.appendChild(go);
+        candBox.appendChild(row);
+      }
+    }
+    addSec.appendChild(addBtn);
+    addSec.appendChild(candBox);
+
+    // 添加自定义提供方 (custom route)
+    const customBtn = el('button', 'sBtn', '+ ' + t('settings.models.addCustom'));
+    customBtn.type = 'button';
+    const customBox = el('div', 'sCollapse');
+    customBox.style.display = 'none';
+    customBtn.addEventListener('click', () => {
+      const open = customBox.style.display !== 'none';
+      customBox.style.display = open ? 'none' : '';
+      if (!open && !customBox.hasChildNodes()) renderCustom();
+    });
+    function renderCustom() {
+      customBox.textContent = '';
+      customBox.appendChild(el('div', 'hint', t('settings.models.addCustom.hint')));
+      const f = el('div', 'sCustomForm');
+      const route = document.createElement('input');
+      route.type = 'text';
+      route.className = 'sInput';
+      route.placeholder = t('settings.models.customRoute');
+      route.spellcheck = false;
+      const name = document.createElement('input');
+      name.type = 'text';
+      name.className = 'sInput';
+      name.placeholder = t('settings.models.customDisplayName');
+      name.spellcheck = false;
+      const key = document.createElement('input');
+      key.type = 'password';
+      key.className = 'sInput';
+      key.placeholder = 'API Key';
+      key.autocomplete = 'off';
+      key.spellcheck = false;
+      const base = document.createElement('input');
+      base.type = 'text';
+      base.className = 'sInput';
+      base.placeholder = t('settings.models.customBaseUrl');
+      base.spellcheck = false;
+      const modelsInput = document.createElement('input');
+      modelsInput.type = 'text';
+      modelsInput.className = 'sInput';
+      modelsInput.placeholder = t('settings.models.customModels');
+      modelsInput.spellcheck = false;
+      const err = el('div', 'hint');
+      const create = el('button', 'sBtn primary', t('settings.models.customCreate'));
+      create.type = 'button';
+      create.addEventListener('click', async () => {
+        const routeV = route.value.trim().replace(/[^A-Za-z0-9._-]/g, '');
+        const baseV = base.value.trim();
+        const modelList = modelsInput.value.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean).map((id) => ({ id, name: id }));
+        if (!routeV) { err.textContent = t('settings.models.customRouteInvalid'); return; }
+        if (pi[routeV] !== undefined) { err.textContent = t('settings.models.customRouteTaken'); return; }
+        if (!baseV) { err.textContent = t('settings.models.customNeedsBaseUrl'); return; }
+        if (!modelList.length) { err.textContent = t('settings.models.customNeedsModels'); return; }
+        const next = { ...pi, [routeV]: { displayName: name.value.trim(), apiKey: key.value.trim(), baseURL: baseV, models: modelList } };
+        if (await savePiAi(next)) {
+          P.app.toast(t('settings.models.added', { name: name.value.trim() || routeV }));
+          renderModels(box);
+        }
+      });
+      f.appendChild(route); f.appendChild(name); f.appendChild(key); f.appendChild(base); f.appendChild(modelsInput);
+      f.appendChild(create);
+      customBox.appendChild(f);
+      customBox.appendChild(err);
+    }
+    addSec.appendChild(customBtn);
+    addSec.appendChild(customBox);
+    sec.appendChild(addSec);
+
+    // 默认模型 (kept at the bottom, official Models page has no default row — PRTS extra)
     const defSec = el('div', 'sSection');
     defSec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.models.default')));
     defSec.appendChild(el('div', 'hint', t('settings.models.default.hint')));
-    const groups = P.dshState.models || [];
     const current = await readAgentDefaultModel();
     const form = el('div', 'inlineForm');
     const provSel = el('select', 'sInput sSelect');
@@ -9747,118 +10806,227 @@ window.PRTS_MARKET = {
     const saveDef = el('button', 'sBtn primary', t('common.save'));
     saveDef.type = 'button';
     saveDef.addEventListener('click', async () => {
-      const ok = await writeAgentDefaultModel({
-        provider: provSel.value,
-        model: modelSel.value,
-        reasoningEffort: effortSel.value,
-      });
+      const ok = await writeAgentDefaultModel({ provider: provSel.value, model: modelSel.value, reasoningEffort: effortSel.value });
       if (ok) P.app.toast(t('settings.models.default.saved'));
     });
     form.appendChild(provSel); form.appendChild(modelSel); form.appendChild(effortSel); form.appendChild(saveDef);
     defSec.appendChild(form);
-    box.appendChild(defSec);
+    sec.appendChild(defSec);
 
-    // Provider API keys (credentials) + catalog
-    await P.dshState.listProviders();
-    await P.dshState.listModels();
-    const creds = await loadCredentialState();
-    const providers = P.dshState.providers || [];
-    const keySec = el('div', 'sSection');
-    keySec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.providers')));
-    keySec.appendChild(el('div', 'hint', t('settings.providers.hint')));
-    if (!providers.length) keySec.appendChild(el('div', 'hint', t('settings.providers.empty')));
-    for (const p of providers) {
-      const ref = providerRef(p.provider);
-      const configured = creds[p.provider] && creds[p.provider].configured;
-      const card = el('div', 'pCard');
-      const head = el('div', 'pCardHead');
-      head.appendChild(el('span', 'pName', p.displayName || p.provider));
-      const state = el('span', 'pState', configured ? t('settings.provider.set') : t('settings.provider.unset'));
-      state.dataset.state = configured ? 'ok' : 'none';
-      head.appendChild(state);
-      card.appendChild(head);
-      const body = el('div', 'pCardBody');
-      const row = el('div', 'inlineForm');
-      const input = document.createElement('input');
-      input.type = 'password';
-      input.className = 'sInput';
-      input.placeholder = ref;
-      input.autocomplete = 'off';
-      input.spellcheck = false;
-      const save = el('button', 'sBtn', t('settings.provider.save'));
-      save.type = 'button';
-      save.addEventListener('click', async () => {
-        const value = input.value.trim();
-        if (!value) return;
-        try {
-          await P.dshState.credentialsSet(ref, value);
-          input.value = '';
-          P.app.toast(t('settings.provider.saved', { ref }));
-          renderModels(box);
-        } catch (e) { P.app.toast(e.message); }
-      });
-      const unset = el('button', 'sBtn', t('settings.provider.unsetBtn'));
-      unset.type = 'button';
-      unset.disabled = !configured;
-      unset.addEventListener('click', async () => {
-        try { await P.dshState.credentialsUnset(ref); renderModels(box); } catch (e) { P.app.toast(e.message); }
-      });
-      row.appendChild(input); row.appendChild(save); row.appendChild(unset);
-      body.appendChild(row);
-      const grp = (P.dshState.models || []).find((g) => g.id === p.provider);
-      const models = (grp && grp.models) || [];
-      body.appendChild(el('div', 'pModels', models.length ? models.map((m) => m.id).join(' · ') : t('model.none')));
-      card.appendChild(body);
-      keySec.appendChild(card);
-    }
-    box.appendChild(keySec);
+    box.appendChild(sec);
   }
 
+  /* ---------- third-party plugin toggles (profile patch) ---------- */
+
+  const PATCH_MARK = '# --- PRTS managed: third-party plugin toggles ---'
+  const patchPath = () => P.platform.prtsProfileDir() + '/cordis.patch.yml'
+
+  async function readPatchText() {
+    try { return await P.io.readFile(patchPath()); } catch (e) { return '[]\n'; }
+  }
+  function patchApply(text, disabledList) {
+    const idx = text.indexOf(PATCH_MARK)
+    let base = idx >= 0 ? text.slice(0, idx) : text
+    let block = PATCH_MARK + '\n# Written by PRTS settings — disabled rows apply after a dsh restart.\n'
+    for (const id of disabledList) block += '  - id: ' + id + '\n    disabled: true\n'
+    if (/\]\s*$/.test(base)) {
+      base = base.replace(/\]\s*$/, '')
+      return base + block + ']'
+    }
+    return base + block
+  }
+  async function writePluginToggles(disabledList) {
+    const text = await readPatchText()
+    const next = patchApply(text, disabledList)
+    if (next !== text) {
+      await P.io.writeFile(patchPath(), next)
+      P.app.toast(t('settings.plugins.toggleSaved'))
+    }
+  }
+
+  /** Official-style Plugins page: 插件配置 column (终端 / Agent循环 / 网页搜索)
+   *  with the 第三方插件 button, and the searchable plugin inventory column
+   *  on the right. */
   async function renderPlugins(box) {
     box.textContent = '';
-    const sec = el('div', 'sSection');
-    sec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.plugins')));
-    sec.appendChild(el('div', 'hint', t('settings.plugins.hint')));
-    let profiles = [];
-    try { profiles = await P.dshState.profilesList(); } catch (e) { profiles = []; }
-    const any = (profiles || []).some((p) => (p.packages || []).length);
-    if (!any) sec.appendChild(el('div', 'hint', t('settings.plugins.empty')));
-    for (const p of profiles || []) {
-      const group = el('div', 'pGroup');
-      const head = el('div', 'pGroupHead');
-      head.appendChild(el('span', 'pname', 'PROFILE/' + p.profile));
-      if (p.cli !== false && p.profile !== 'prts' && p.profile !== 'web') {
-        const tag = el('span', 'pState', 'CLI');
-        tag.dataset.state = 'ok';
-        head.appendChild(tag);
-        const run = el('button', 'sBtn', t('settings.plugins.runCli'));
-        run.type = 'button';
-        run.addEventListener('click', async () => {
-          const args = await P.app.askPrompt(t('settings.plugins.runCliPrompt', { profile: p.profile }), (p.usage || '').split(' ')[0] || '');
-          if (args === null) return;
-          const r = await P.dshState.runCliPlugin(p.profile, args.trim() ? args.trim().split(/\s+/) : []);
-          if (r && r.ok) P.app.toast(t('settings.plugins.runCliStarted', { profile: p.profile }));
-          else P.app.toast(t('settings.plugins.runCliFail', { msg: (r && (r.error || r.stderr)) || 'error' }));
+    config.ui = config.ui || {};
+    if (!Array.isArray(config.ui.pluginDisabled)) config.ui.pluginDisabled = [];
+    const disabled = new Set(config.ui.pluginDisabled);
+
+    const grid = el('div', 'sPluginsGrid');
+    const left = el('div', 'sPluginsLeft');
+    const right = el('div', 'sPluginsRight');
+    grid.appendChild(left); grid.appendChild(right);
+
+    /* —— 插件配置 column —— */
+    left.appendChild(el('div', 'sSecTitle eyebrow', t('settings.plugins.config')));
+
+    // generic settings-form card with reset
+    async function cfgCard(titleKey, hintKey, ns, fields, schemaDefaults) {
+      const card = el('div', 'pCard');
+      const head = el('div', 'pCardHead');
+      head.style.cursor = 'default';
+      head.appendChild(el('span', 'pName', t(titleKey)));
+      card.appendChild(head);
+      const body = el('div', 'pCardBody');
+      body.style.display = '';
+      if (hintKey) body.appendChild(el('div', 'hint', t(hintKey)));
+      const value = (await nsValue(ns)) || {};
+      for (const f of fields) {
+        const row = el('div', 'cfgField');
+        row.appendChild(el('div', 'fLabel', t(f.labelKey)));
+        const input = document.createElement('input');
+        input.type = f.type || 'text';
+        input.className = 'sInput';
+        input.value = value[f.key] !== undefined ? String(value[f.key]) : '';
+        if (f.type === 'password') input.autocomplete = 'off';
+        if (f.type === 'number') input.step = '1';
+        input.spellcheck = false;
+        row.appendChild(input);
+        const save = el('button', 'sBtn', t('common.save'));
+        save.type = 'button';
+        save.addEventListener('click', async () => {
+          const patch = {};
+          if (f.type === 'number') patch[f.key] = Number(input.value);
+          else patch[f.key] = input.value;
+          if (await nsUpdate(ns, patch)) P.app.toast(t('common.saved'));
         });
-        head.appendChild(run);
+        row.appendChild(save);
+        body.appendChild(row);
       }
-      group.appendChild(head);
-      for (const pkg of p.packages || []) {
-        const row = el('div', 'projectRow');
-        row.appendChild(el('span', 'pname', pkg.name));
-        row.appendChild(el('span', 'pmeta', pkg.version || ''));
-        group.appendChild(row);
-      }
-      sec.appendChild(group);
+      const reset = el('button', 'sBtn', t('settings.plugins.reset'));
+      reset.type = 'button';
+      reset.addEventListener('click', async () => {
+        const patch = {};
+        for (const f of fields) patch[f.key] = schemaDefaults && schemaDefaults[f.key] !== undefined ? schemaDefaults[f.key] : null;
+        if (await nsUpdate(ns, patch)) renderPlugins(box);
+      });
+      body.appendChild(reset);
+      card.appendChild(body);
+      return card;
     }
-    const mRow = el('div', 'sRow');
-    mRow.style.marginTop = '10px';
-    const openMarket = el('button', 'sBtn primary', t('settings.plugins.openMarket'));
-    openMarket.type = 'button';
-    openMarket.addEventListener('click', () => { if (P.market) P.market.open(); });
-    mRow.appendChild(openMarket);
-    sec.appendChild(mRow);
-    box.appendChild(sec);
+
+    // schema defaults from the live describe (reset targets)
+    const nsSchemaDefaults = {};
+    try {
+      const all = await describeAll();
+      for (const n of all) {
+        const d = {};
+        const refs = (n.schema && n.schema.refs) || {};
+        const rootT = refs[(n.schema && n.schema.uid)] || refs[String(n.schema && n.schema.uid)];
+        if (rootT && rootT.dict) {
+          for (const k of Object.keys(rootT.dict)) {
+            const subUid = rootT.dict[k];
+            const sub = refs[subUid] || refs[String(subUid)];
+            if (sub && sub.meta && sub.meta.default !== undefined) d[k] = sub.meta.default;
+          }
+        }
+        nsSchemaDefaults[n.ns] = d;
+      }
+    } catch (e) { /* defaults unavailable */ }
+
+    left.appendChild(await cfgCard('settings.plugins.terminal', 'settings.plugins.terminal.hint', 'shell', [
+      { key: 'timeoutMs', labelKey: 'settings.plugins.terminalTimeout', type: 'number' },
+    ], nsSchemaDefaults.shell));
+    left.appendChild(await cfgCard('settings.plugins.agentLoop', 'settings.plugins.agentLoop.hint', 'agent-loop', [
+      { key: 'maxParallelToolCalls', labelKey: 'settings.plugins.agentLoopMax', type: 'number' },
+    ], nsSchemaDefaults['agent-loop']));
+    left.appendChild(await cfgCard('settings.plugins.webSearch', 'settings.plugins.webSearch.hint', 'web-search-deepseek', [
+      { key: 'apiKey', labelKey: 'settings.plugins.webSearchKey', type: 'password' },
+      { key: 'baseURL', labelKey: 'settings.plugins.webSearchUrl', type: 'text' },
+      { key: 'model', labelKey: 'settings.plugins.webSearchModel', type: 'text' },
+      { key: 'apiVersion', labelKey: 'settings.plugins.webSearchVersion', type: 'text' },
+      { key: 'maxTokens', labelKey: 'settings.plugins.webSearchMaxTokens', type: 'number' },
+      { key: 'maxUses', labelKey: 'settings.plugins.webSearchMaxUses', type: 'number' },
+    ], nsSchemaDefaults['web-search-deepseek']));
+
+    // 第三方插件 button (below the config cards)
+    const thirdBtn = el('button', 'sBtn primary', t('settings.plugins.thirdParty'));
+    thirdBtn.type = 'button';
+    thirdBtn.addEventListener('click', () => { rightTab = 'third'; renderRight(); });
+    left.appendChild(thirdBtn);
+    const marketBtn = el('button', 'sBtn', t('settings.plugins.openMarket'));
+    marketBtn.type = 'button';
+    marketBtn.addEventListener('click', () => { if (P.market) P.market.open(); });
+    left.appendChild(marketBtn);
+
+    /* —— 插件列表 column (searchable, core / third-party) —— */
+    right.appendChild(el('div', 'sSecTitle eyebrow', t('settings.plugins.list')));
+    const tabs = el('div', 'mTabs');
+    const coreTab = el('button', 'mTab', t('settings.plugins.core'));
+    coreTab.type = 'button';
+    const thirdTab = el('button', 'mTab', t('settings.plugins.thirdPartyShort'));
+    thirdTab.type = 'button';
+    let rightTab = 'core';
+    coreTab.addEventListener('click', () => { rightTab = 'core'; renderRight(); });
+    thirdTab.addEventListener('click', () => { rightTab = 'third'; renderRight(); });
+    tabs.appendChild(coreTab); tabs.appendChild(thirdTab);
+    right.appendChild(tabs);
+
+    const search = el('div', 'mSearch');
+    search.innerHTML = P.icons.search || '';
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.placeholder = t('market.searchPlaceholder');
+    searchInput.spellcheck = false;
+    let query = '';
+    searchInput.addEventListener('input', () => { query = searchInput.value; renderList(); });
+    search.appendChild(searchInput);
+    right.appendChild(search);
+
+    let packages = [];
+    try { packages = await P.dshState.pluginsList(); } catch (e) { packages = []; }
+    const isThird = (name) => !String(name).startsWith('@deepseek-ai/') && name !== 'dsh-prts-ui';
+    const listBox = el('div', 'sPluginList');
+    right.appendChild(listBox);
+
+    function renderRight() {
+      coreTab.classList.toggle('on', rightTab === 'core');
+      thirdTab.classList.toggle('on', rightTab === 'third');
+      renderList();
+    }
+    async function togglePlugin(name) {
+      if (disabled.has(name)) disabled.delete(name);
+      else disabled.add(name);
+      config.ui.pluginDisabled = [...disabled];
+      await P.store.saveConfig(config);
+      await writePluginToggles([...disabled]);
+      renderList();
+    }
+    function renderList() {
+      listBox.textContent = '';
+      const q = query.trim().toLowerCase();
+      const items = packages.filter((p) => {
+        if (q && String(p.name || '').toLowerCase().indexOf(q) < 0) return false;
+        return rightTab === 'third' ? isThird(p.name) : !isThird(p.name);
+      });
+      if (!items.length) {
+        listBox.appendChild(el('div', 'hint', t('settings.plugins.listEmpty')));
+        return;
+      }
+      for (const p of items) {
+        const row = el('div', 'sPluginRow');
+        const meta = el('div', 'sPluginMeta');
+        meta.appendChild(el('span', 'pname', p.name));
+        meta.appendChild(el('span', 'pmeta', (p.version || '') + (p.profile && p.profile !== 'prts' ? ' · ' + p.profile : '')));
+        row.appendChild(meta);
+        if (rightTab === 'third') {
+          const on = !disabled.has(p.name);
+          const sw = el('button', 'mSwitch' + (on ? ' on' : ''), on ? 'ON' : 'OFF');
+          sw.type = 'button';
+          sw.title = t(on ? 'settings.plugins.disable' : 'settings.plugins.enable');
+          sw.addEventListener('click', () => togglePlugin(p.name));
+          row.appendChild(sw);
+        }
+        listBox.appendChild(row);
+      }
+      if (rightTab === 'third') {
+        const note = el('div', 'hint', t('settings.plugins.toggleHint'));
+        listBox.appendChild(note);
+      }
+    }
+    renderRight();
+    box.appendChild(grid);
   }
 
   async function renderPresets(box) {

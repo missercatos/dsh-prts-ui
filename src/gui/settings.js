@@ -27,6 +27,19 @@
     { id: 'skills', label: 'settings.nav.skills' },
   ];
 
+  /** Neon-leaning accent presets (Tokyo Night & friends). diamond/square may
+   *  differ; primary drives buttons and the logo. */
+  const ACCENT_PRESETS = [
+    { id: 'tokyonight', name: 'Tokyo Night', primary: '#7aa2f7', diamond: '#7dcfff', square: '#bb9af7' },
+    { id: 'tokyonight-storm', name: 'Tokyo Night Storm', primary: '#7aa2f7', diamond: '#2ac3de', square: '#bb9af7' },
+    { id: 'nord', name: 'Nord', primary: '#88c0d0', diamond: '#8fbcbb', square: '#b48ead' },
+    { id: 'dracula', name: 'Dracula', primary: '#bd93f9', diamond: '#8be9fd', square: '#ff79c6' },
+    { id: 'rose-pine', name: 'Rosé Pine', primary: '#ebbcba', diamond: '#9ccfd8', square: '#c4a7e7' },
+    { id: 'catppuccin', name: 'Catppuccin', primary: '#89b4fa', diamond: '#89dceb', square: '#cba6f7' },
+    { id: 'gruvbox', name: 'Gruvbox', primary: '#83a598', diamond: '#8ec07c', square: '#d3869b' },
+    { id: 'mono', name: 'PRTS Mono', primary: '', diamond: '', square: '' },
+  ];
+
   let current = 'general';
   let config = null;
 
@@ -125,6 +138,63 @@
 
   /* ---------- section renderers ---------- */
 
+  /* ---------- accent colors + wallpaper helpers ---------- */
+
+  function bridge() {
+    try { return (typeof window !== 'undefined' && window.prts && window.prts.bridge) || null; } catch (e) { return null; }
+  }
+  function currentAccent() {
+    config.ui = config.ui || {};
+    if (!config.ui.accent) config.ui.accent = { preset: 'tokyonight', primary: '#7aa2f7', diamond: '#7dcfff', square: '#bb9af7' };
+    return config.ui.accent;
+  }
+  async function saveAccent() {
+    await P.store.saveConfig(config);
+    P.app.applyTheme((config.ui && config.ui.theme) || 'dark');
+    if (P.app.applyAccent) P.app.applyAccent(config);
+  }
+  function currentWallpaper() {
+    config.ui = config.ui || {};
+    if (!config.ui.wallpaper) config.ui.wallpaper = { file: '', type: 'image', fit: 'cover', opacity: 0.35, speed: 1, loop: true };
+    return config.ui.wallpaper;
+  }
+  async function saveWallpaperBase64(fileName, mime, b64) {
+    const b = bridge();
+    const dir = P.platform.prtsProfileDir() + '/wallpaper';
+    if (b && b.writeFileB64) {
+      try {
+        await b.mkdir(dir);
+        await b.writeFileB64(dir + '/' + fileName, b64);
+        return true;
+      } catch (e) { /* fall through */ }
+    }
+    try {
+      const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+      const res = await fetch(origin + '/prts/api/wallpaper', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file: fileName, mime, base64: b64 }),
+      });
+      return res.ok;
+    } catch (e) { return false; }
+  }
+  async function clearWallpaper() {
+    const w = currentWallpaper();
+    const b = bridge();
+    const file = P.platform.prtsProfileDir() + '/wallpaper/' + w.file;
+    if (b && b.deleteFile) {
+      try { await b.deleteFile(file); } catch (e) { /* noop */ }
+    } else {
+      try {
+        const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+        await fetch(origin + '/prts/api/wallpaper', { method: 'DELETE' });
+      } catch (e) { /* noop */ }
+    }
+    w.file = '';
+    await P.store.saveConfig(config);
+    if (P.app.applyWallpaper) P.app.applyWallpaper(config);
+  }
+
   async function renderGeneral(box) {
     box.textContent = '';
 
@@ -157,7 +227,7 @@
     themeSec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.general.appearance')));
     const theme = el('select', 'sInput sSelect');
     const themeNs = (await nsValue('ui-theme')) || {};
-    [['system', 'SYSTEM'], ['dark', 'DARK'], ['light', 'LIGHT']].forEach(([v, label]) => {
+    [['system', 'SYSTEM'], ['dark', 'DARK'], ['light', 'LIGHT'], ['custom', 'CUSTOM']].forEach(([v, label]) => {
       const o = document.createElement('option');
       o.value = v;
       o.textContent = label;
@@ -171,6 +241,8 @@
         config.ui.theme = theme.value === 'system' ? 'dark' : theme.value;
         await P.store.saveConfig(config);
         P.app.applyTheme(config.ui.theme);
+        if (P.app.applyAccent) P.app.applyAccent(config);
+        renderGeneral(box);
       }
     });
     themeSec.appendChild(theme);
@@ -191,6 +263,142 @@
     enter.addEventListener('change', () => { nsUpdate('ui-conversation', { busyEnter: enter.value }); });
     enterSec.appendChild(enter);
     box.appendChild(enterSec);
+
+    // —— 外观自定义颜色 (PRTS accent presets) ——
+    const accSec = el('div', 'sSection');
+    accSec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.general.accent')));
+    const a = currentAccent();
+    const chips = el('div', 'skChips');
+    for (const pr of ACCENT_PRESETS) {
+      const c = el('button', 'skChip' + (a.preset === pr.id ? ' on' : ''), pr.name);
+      c.type = 'button';
+      c.addEventListener('click', async () => {
+        a.preset = pr.id; a.primary = pr.primary; a.diamond = pr.diamond; a.square = pr.square;
+        await saveAccent(); renderGeneral(box);
+      });
+      chips.appendChild(c);
+    }
+    accSec.appendChild(chips);
+    const pickers = el('div', 'accPickers');
+    [['primary', 'settings.general.accentPrimary'], ['diamond', 'settings.general.accentDiamond'], ['square', 'settings.general.accentSquare']].forEach(([k, labelKey]) => {
+      const row = el('label', 'accPick');
+      row.appendChild(el('span', 'fLabel', t(labelKey)));
+      const c = document.createElement('input');
+      c.type = 'color';
+      c.value = a[k] || '#7aa2f7';
+      c.addEventListener('input', async () => {
+        a[k] = c.value; a.preset = 'custom';
+        await saveAccent(); renderGeneral(box);
+      });
+      row.appendChild(c);
+      pickers.appendChild(row);
+    });
+    accSec.appendChild(pickers);
+    box.appendChild(accSec);
+
+    // —— 自定义壁纸 (image / video, one-shot persistent) ——
+    const wpSec = el('div', 'sSection');
+    wpSec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.general.wallpaper')));
+    const w = currentWallpaper();
+    const upRow = el('div', 'inlineForm');
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*,video/*';
+    fileInput.style.display = 'none';
+    const pick = el('button', 'sBtn', t('settings.general.wallpaper.pick'));
+    pick.type = 'button';
+    pick.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => {
+      const f = fileInput.files && fileInput.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const m = /^data:([^;]+);base64,(.*)$/.exec(String(reader.result || ''));
+        if (!m) return;
+        const mime = m[1];
+        const ext = mime.indexOf('video') === 0 ? 'mp4' : (mime === 'image/png' ? 'png' : 'jpg');
+        const fileName = 'wall-' + Date.now().toString(36) + '.' + ext;
+        const ok = await saveWallpaperBase64(fileName, mime, m[2]);
+        if (!ok) { P.app.toast(t('settings.general.wallpaper.fail')); return; }
+        w.file = fileName;
+        w.type = mime.indexOf('video') === 0 ? 'video' : 'image';
+        w.mime = mime;
+        await P.store.saveConfig(config);
+        if (P.app.applyWallpaper) P.app.applyWallpaper(config);
+        renderGeneral(box);
+      };
+      reader.readAsDataURL(f);
+    });
+    upRow.appendChild(pick);
+    const clearWp = el('button', 'sBtn', t('settings.general.wallpaper.clear'));
+    clearWp.type = 'button';
+    clearWp.disabled = !w.file;
+    clearWp.addEventListener('click', async () => { await clearWallpaper(); renderGeneral(box); });
+    upRow.appendChild(clearWp);
+    wpSec.appendChild(upRow);
+    if (w.file) {
+      const nameRow = el('div', 'projectRow');
+      nameRow.appendChild(el('span', 'pname', w.file));
+      nameRow.appendChild(el('span', 'pmeta', String(w.type || 'image').toUpperCase()));
+      wpSec.appendChild(nameRow);
+      const fitRow = el('div', 'inlineForm');
+      fitRow.appendChild(el('span', 'fLabel', t('settings.general.wallpaper.fit')));
+      const fit = el('select', 'sInput sSelect');
+      [['cover', 'COVER'], ['contain', 'CENTER'], ['fill', 'FILL']].forEach(([v, l]) => {
+        const o = document.createElement('option');
+        o.value = v; o.textContent = l;
+        if (w.fit === v) o.selected = true;
+        fit.appendChild(o);
+      });
+      fit.addEventListener('change', async () => {
+        w.fit = fit.value;
+        await P.store.saveConfig(config);
+        if (P.app.applyWallpaper) P.app.applyWallpaper(config);
+      });
+      fitRow.appendChild(fit);
+      wpSec.appendChild(fitRow);
+      const opRow = el('div', 'inlineForm');
+      opRow.appendChild(el('span', 'fLabel', t('settings.general.wallpaper.opacity')));
+      const op = document.createElement('input');
+      op.type = 'range'; op.min = '0.05'; op.max = '1'; op.step = '0.05';
+      op.value = String(w.opacity !== undefined ? w.opacity : 0.35);
+      op.className = 'accRange';
+      op.addEventListener('input', async () => {
+        w.opacity = Number(op.value);
+        await P.store.saveConfig(config);
+        if (P.app.applyWallpaper) P.app.applyWallpaper(config);
+      });
+      opRow.appendChild(op);
+      wpSec.appendChild(opRow);
+      if (w.type === 'video') {
+        const vRow = el('div', 'inlineForm');
+        vRow.appendChild(el('span', 'fLabel', t('settings.general.wallpaper.speed')));
+        const sp = document.createElement('input');
+        sp.type = 'number'; sp.min = '0.25'; sp.max = '4'; sp.step = '0.25';
+        sp.value = String(w.speed !== undefined ? w.speed : 1);
+        sp.className = 'sInput accNum';
+        sp.addEventListener('change', async () => {
+          w.speed = Number(sp.value) || 1;
+          await P.store.saveConfig(config);
+          if (P.app.applyWallpaper) P.app.applyWallpaper(config);
+        });
+        vRow.appendChild(sp);
+        const loopLabel = el('label', 'mCheck');
+        const loopBox = document.createElement('input');
+        loopBox.type = 'checkbox';
+        loopBox.checked = w.loop !== false;
+        loopBox.addEventListener('change', async () => {
+          w.loop = loopBox.checked;
+          await P.store.saveConfig(config);
+          if (P.app.applyWallpaper) P.app.applyWallpaper(config);
+        });
+        loopLabel.appendChild(loopBox);
+        loopLabel.appendChild(el('span', '', t('settings.general.wallpaper.loop')));
+        vRow.appendChild(loopLabel);
+        wpSec.appendChild(vRow);
+      }
+    }
+    box.appendChild(wpSec);
 
     // Doctor name (PRTS persona)
     const nameSec = el('div', 'sSection');
@@ -249,14 +457,339 @@
     box.appendChild(vSec);
   }
 
+  // pi-ai provider registry helpers (settings llm-pi-ai.providers)
+  async function piAiValue() {
+    const v = await nsValue('llm-pi-ai');
+    return (v && v.providers) || {};
+  }
+  async function savePiAi(providers) {
+    return nsUpdate('llm-pi-ai', { providers });
+  }
+  function isPiAi(p) { return p && p.settingsNs === 'llm-pi-ai'; }
+
+  /** Official-style Models page: one provider row per configured route, plus
+   *  "添加提供方" (built-in configurable providers) and "添加自定义提供方". */
   async function renderModels(box) {
     box.textContent = '';
+    await P.dshState.listProviders();
+    await P.dshState.listModels();
+    const creds = await loadCredentialState();
+    const pi = await piAiValue();
+    const providers = P.dshState.providers || [];
+    const groups = P.dshState.models || [];
+    const configuredRoutes = providers.filter((p) => p.active || p.declared || pi[p.provider] !== undefined);
+    const candidates = providers.filter((p) => isPiAi(p) && !p.active && !p.declared && pi[p.provider] === undefined);
+    // deepseek-official always shows even when the wire omits it
+    const hasDs = configuredRoutes.some((p) => p.provider === 'deepseek-official');
 
-    // Default model for new sessions (agent-default-model in ~/.dsh/settings.yaml)
+    const sec = el('div', 'sSection');
+    sec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.models.providers')));
+    if (!hasDs) {
+      const ds = el('div', 'hint', t('settings.models.deepseekBuiltin'));
+      sec.appendChild(ds);
+    }
+
+    /** credential state dot for one provider */
+    function stateOf(p) {
+      if (!isPiAi(p)) {
+        const ref = providerRef(p.provider);
+        return !!(creds[p.provider] && creds[p.provider].configured) || !!(creds[ref] && creds[ref].configured);
+      }
+      const cfg = pi[p.provider] || {};
+      return !!(cfg.apiKey && String(cfg.apiKey).length > 0);
+    }
+
+    /** one provider row card (collapsible editor) */
+    function providerCard(p) {
+      const card = el('div', 'pCard');
+      const head = el('button', 'pCardHead');
+      head.type = 'button';
+      const identity = el('span', 'pName', p.displayName || p.provider);
+      head.appendChild(identity);
+      const routeTag = el('span', 'pState', p.provider);
+      routeTag.dataset.state = isPiAi(p) ? 'none' : 'ok';
+      head.appendChild(routeTag);
+      const dot = el('span', 'credDot' + (stateOf(p) ? ' ok' : ''));
+      head.appendChild(dot);
+      const chev = el('span', 'chev');
+      chev.innerHTML = P.icons.chev || '';
+      head.appendChild(chev);
+      card.appendChild(head);
+
+      const body = el('div', 'pCardBody');
+      body.style.display = 'none';
+
+      if (isPiAi(p)) {
+        const cfg = pi[p.provider] || {};
+        // display name
+        const dnForm = el('div', 'inlineForm');
+        const dnLabel = el('span', 'fLabel', t('settings.models.displayName'));
+        const dn = document.createElement('input');
+        dn.type = 'text';
+        dn.className = 'sInput';
+        dn.value = cfg.displayName || '';
+        dn.placeholder = p.provider;
+        dn.spellcheck = false;
+        const dnSave = el('button', 'sBtn', t('common.save'));
+        dnSave.type = 'button';
+        dnSave.addEventListener('click', async () => {
+          const next = { ...pi, [p.provider]: { ...cfg, displayName: dn.value.trim() } };
+          if (await savePiAi(next)) renderModels(box);
+        });
+        dnForm.appendChild(dnLabel); dnForm.appendChild(dn); dnForm.appendChild(dnSave);
+        body.appendChild(dnForm);
+
+        // API key (settings secret) + baseURL
+        const keyForm = el('div', 'inlineForm');
+        const keyLabel = el('span', 'fLabel', t('settings.provider.save'));
+        const keyInput = document.createElement('input');
+        keyInput.type = 'password';
+        keyInput.className = 'sInput';
+        keyInput.placeholder = 'API Key';
+        keyInput.autocomplete = 'off';
+        keyInput.spellcheck = false;
+        const keySave = el('button', 'sBtn', t('common.save'));
+        keySave.type = 'button';
+        keySave.addEventListener('click', async () => {
+          const v = keyInput.value.trim();
+          if (!v) return;
+          const next = { ...pi, [p.provider]: { ...cfg, apiKey: v } };
+          if (await savePiAi(next)) { keyInput.value = ''; renderModels(box); }
+        });
+        keyForm.appendChild(keyLabel); keyForm.appendChild(keyInput); keyForm.appendChild(keySave);
+        body.appendChild(keyForm);
+
+        const urlForm = el('div', 'inlineForm');
+        const urlLabel = el('span', 'fLabel', 'baseURL');
+        const urlInput = document.createElement('input');
+        urlInput.type = 'text';
+        urlInput.className = 'sInput';
+        urlInput.value = cfg.baseURL || '';
+        urlInput.placeholder = 'https://…';
+        urlInput.spellcheck = false;
+        const urlSave = el('button', 'sBtn', t('common.save'));
+        urlSave.type = 'button';
+        urlSave.addEventListener('click', async () => {
+          const next = { ...pi, [p.provider]: { ...cfg, baseURL: urlInput.value.trim() } };
+          if (await savePiAi(next)) renderModels(box);
+        });
+        urlForm.appendChild(urlLabel); urlForm.appendChild(urlInput); urlForm.appendChild(urlSave);
+        body.appendChild(urlForm);
+
+        // model catalog (editable)
+        body.appendChild(modelCatalog(p, cfg.models || [], async (models) => {
+          const next = { ...pi, [p.provider]: { ...cfg, models } };
+          if (await savePiAi(next)) renderModels(box);
+        }));
+
+        // delete route
+        const del = el('button', 'sBtn danger', t('settings.models.removeProvider'));
+        del.type = 'button';
+        del.addEventListener('click', async () => {
+          const ok = await P.app.askConfirm(t('settings.models.removeProviderConfirm', { name: p.displayName || p.provider }));
+          if (!ok) return;
+          const next = { ...pi };
+          delete next[p.provider];
+          if (await savePiAi(next)) renderModels(box);
+        });
+        body.appendChild(del);
+      } else {
+        // deepseek-official: credential ref + read-only catalog
+        const ref = providerRef(p.provider);
+        const configured = !!(creds[p.provider] && creds[p.provider].configured) || !!(creds[ref] && creds[ref].configured);
+        const keyForm = el('div', 'inlineForm');
+        const keyLabel = el('span', 'fLabel', t('settings.provider.save'));
+        const keyInput = document.createElement('input');
+        keyInput.type = 'password';
+        keyInput.className = 'sInput';
+        keyInput.placeholder = ref;
+        keyInput.autocomplete = 'off';
+        keyInput.spellcheck = false;
+        const keySave = el('button', 'sBtn', t('common.save'));
+        keySave.type = 'button';
+        keySave.addEventListener('click', async () => {
+          const v = keyInput.value.trim();
+          if (!v) return;
+          try {
+            await P.dshState.credentialsSet(ref, v);
+            keyInput.value = '';
+            P.app.toast(t('settings.provider.saved', { ref }));
+            renderModels(box);
+          } catch (e) { P.app.toast(e.message); }
+        });
+        keyForm.appendChild(keyLabel); keyForm.appendChild(keyInput); keyForm.appendChild(keySave);
+        const keyUnset = el('button', 'sBtn', t('settings.provider.unsetBtn'));
+        keyUnset.type = 'button';
+        keyUnset.disabled = !configured;
+        keyUnset.addEventListener('click', async () => {
+          try { await P.dshState.credentialsUnset(ref); renderModels(box); } catch (e) { P.app.toast(e.message); }
+        });
+        keyForm.appendChild(keyUnset);
+        body.appendChild(keyForm);
+        const grp = groups.find((g) => g.id === p.provider) || {};
+        const models = grp.models || [];
+        body.appendChild(modelCatalog(p, models, null));
+      }
+
+      head.addEventListener('click', () => {
+        const open = body.style.display !== 'none';
+        body.style.display = open ? 'none' : '';
+      });
+      card.appendChild(body);
+      return card;
+    }
+
+    /** model catalog block: chips + add-model input for pi-ai, read-only list otherwise */
+    function modelCatalog(p, models, onSave) {
+      const cat = el('div', 'mCatalog');
+      const title = el('div', 'mCatalogTitle', t('settings.models.catalog'));
+      cat.appendChild(title);
+      const list = el('div', 'skChips');
+      if (!models || !models.length) list.appendChild(el('span', 'hint', t('model.none')));
+      for (const m of models) {
+        const chip = el('span', 'skChip on', (m && m.name) || (m && m.id) || m);
+        if (onSave) {
+          const rm = el('button', 'skChipX', '×');
+          rm.type = 'button';
+          rm.addEventListener('click', async () => {
+            const next = models.filter((x) => x !== m);
+            await onSave(next);
+          });
+          chip.appendChild(rm);
+        }
+        list.appendChild(chip);
+      }
+      cat.appendChild(list);
+      if (onSave) {
+        const form = el('div', 'inlineForm');
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'sInput';
+        input.placeholder = t('settings.models.addModel');
+        input.spellcheck = false;
+        const add = el('button', 'sBtn', '+ ' + t('settings.models.addModelBtn'));
+        add.type = 'button';
+        add.addEventListener('click', async () => {
+          const id = input.value.trim();
+          if (!id) return;
+          const next = (models || []).concat([{ id, name: id }]);
+          await onSave(next);
+        });
+        form.appendChild(input); form.appendChild(add);
+        cat.appendChild(form);
+      }
+      return cat;
+    }
+
+    // rows
+    const rows = el('div', 'sRows');
+    for (const p of configuredRoutes) rows.appendChild(providerCard(p));
+    sec.appendChild(rows);
+
+    // 添加提供方 (built-in candidates)
+    const addSec = el('div', 'sSection');
+    const addBtn = el('button', 'sBtn', '+ ' + t('settings.models.addProvider'));
+    addBtn.type = 'button';
+    const candBox = el('div', 'sCollapse');
+    candBox.style.display = 'none';
+    addBtn.addEventListener('click', () => {
+      const open = candBox.style.display !== 'none';
+      candBox.style.display = open ? 'none' : '';
+      if (!open && !candBox.hasChildNodes()) renderCandidates();
+    });
+    function renderCandidates() {
+      candBox.textContent = '';
+      if (!candidates.length) {
+        candBox.appendChild(el('div', 'hint', t('settings.models.addProvider.none')));
+        return;
+      }
+      for (const c of candidates) {
+        const row = el('div', 'projectRow');
+        row.appendChild(el('span', 'pname', c.displayName || c.provider));
+        row.appendChild(el('span', 'pmeta', c.provider));
+        const go = el('button', 'sBtn', t('settings.models.add'));
+        go.type = 'button';
+        go.addEventListener('click', async () => {
+          const next = { ...pi, [c.provider]: {} };
+          if (await savePiAi(next)) { P.app.toast(t('settings.models.added', { name: c.displayName || c.provider })); renderModels(box); }
+        });
+        row.appendChild(go);
+        candBox.appendChild(row);
+      }
+    }
+    addSec.appendChild(addBtn);
+    addSec.appendChild(candBox);
+
+    // 添加自定义提供方 (custom route)
+    const customBtn = el('button', 'sBtn', '+ ' + t('settings.models.addCustom'));
+    customBtn.type = 'button';
+    const customBox = el('div', 'sCollapse');
+    customBox.style.display = 'none';
+    customBtn.addEventListener('click', () => {
+      const open = customBox.style.display !== 'none';
+      customBox.style.display = open ? 'none' : '';
+      if (!open && !customBox.hasChildNodes()) renderCustom();
+    });
+    function renderCustom() {
+      customBox.textContent = '';
+      customBox.appendChild(el('div', 'hint', t('settings.models.addCustom.hint')));
+      const f = el('div', 'sCustomForm');
+      const route = document.createElement('input');
+      route.type = 'text';
+      route.className = 'sInput';
+      route.placeholder = t('settings.models.customRoute');
+      route.spellcheck = false;
+      const name = document.createElement('input');
+      name.type = 'text';
+      name.className = 'sInput';
+      name.placeholder = t('settings.models.customDisplayName');
+      name.spellcheck = false;
+      const key = document.createElement('input');
+      key.type = 'password';
+      key.className = 'sInput';
+      key.placeholder = 'API Key';
+      key.autocomplete = 'off';
+      key.spellcheck = false;
+      const base = document.createElement('input');
+      base.type = 'text';
+      base.className = 'sInput';
+      base.placeholder = t('settings.models.customBaseUrl');
+      base.spellcheck = false;
+      const modelsInput = document.createElement('input');
+      modelsInput.type = 'text';
+      modelsInput.className = 'sInput';
+      modelsInput.placeholder = t('settings.models.customModels');
+      modelsInput.spellcheck = false;
+      const err = el('div', 'hint');
+      const create = el('button', 'sBtn primary', t('settings.models.customCreate'));
+      create.type = 'button';
+      create.addEventListener('click', async () => {
+        const routeV = route.value.trim().replace(/[^A-Za-z0-9._-]/g, '');
+        const baseV = base.value.trim();
+        const modelList = modelsInput.value.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean).map((id) => ({ id, name: id }));
+        if (!routeV) { err.textContent = t('settings.models.customRouteInvalid'); return; }
+        if (pi[routeV] !== undefined) { err.textContent = t('settings.models.customRouteTaken'); return; }
+        if (!baseV) { err.textContent = t('settings.models.customNeedsBaseUrl'); return; }
+        if (!modelList.length) { err.textContent = t('settings.models.customNeedsModels'); return; }
+        const next = { ...pi, [routeV]: { displayName: name.value.trim(), apiKey: key.value.trim(), baseURL: baseV, models: modelList } };
+        if (await savePiAi(next)) {
+          P.app.toast(t('settings.models.added', { name: name.value.trim() || routeV }));
+          renderModels(box);
+        }
+      });
+      f.appendChild(route); f.appendChild(name); f.appendChild(key); f.appendChild(base); f.appendChild(modelsInput);
+      f.appendChild(create);
+      customBox.appendChild(f);
+      customBox.appendChild(err);
+    }
+    addSec.appendChild(customBtn);
+    addSec.appendChild(customBox);
+    sec.appendChild(addSec);
+
+    // 默认模型 (kept at the bottom, official Models page has no default row — PRTS extra)
     const defSec = el('div', 'sSection');
     defSec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.models.default')));
     defSec.appendChild(el('div', 'hint', t('settings.models.default.hint')));
-    const groups = P.dshState.models || [];
     const current = await readAgentDefaultModel();
     const form = el('div', 'inlineForm');
     const provSel = el('select', 'sInput sSelect');
@@ -303,118 +836,227 @@
     const saveDef = el('button', 'sBtn primary', t('common.save'));
     saveDef.type = 'button';
     saveDef.addEventListener('click', async () => {
-      const ok = await writeAgentDefaultModel({
-        provider: provSel.value,
-        model: modelSel.value,
-        reasoningEffort: effortSel.value,
-      });
+      const ok = await writeAgentDefaultModel({ provider: provSel.value, model: modelSel.value, reasoningEffort: effortSel.value });
       if (ok) P.app.toast(t('settings.models.default.saved'));
     });
     form.appendChild(provSel); form.appendChild(modelSel); form.appendChild(effortSel); form.appendChild(saveDef);
     defSec.appendChild(form);
-    box.appendChild(defSec);
+    sec.appendChild(defSec);
 
-    // Provider API keys (credentials) + catalog
-    await P.dshState.listProviders();
-    await P.dshState.listModels();
-    const creds = await loadCredentialState();
-    const providers = P.dshState.providers || [];
-    const keySec = el('div', 'sSection');
-    keySec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.providers')));
-    keySec.appendChild(el('div', 'hint', t('settings.providers.hint')));
-    if (!providers.length) keySec.appendChild(el('div', 'hint', t('settings.providers.empty')));
-    for (const p of providers) {
-      const ref = providerRef(p.provider);
-      const configured = creds[p.provider] && creds[p.provider].configured;
-      const card = el('div', 'pCard');
-      const head = el('div', 'pCardHead');
-      head.appendChild(el('span', 'pName', p.displayName || p.provider));
-      const state = el('span', 'pState', configured ? t('settings.provider.set') : t('settings.provider.unset'));
-      state.dataset.state = configured ? 'ok' : 'none';
-      head.appendChild(state);
-      card.appendChild(head);
-      const body = el('div', 'pCardBody');
-      const row = el('div', 'inlineForm');
-      const input = document.createElement('input');
-      input.type = 'password';
-      input.className = 'sInput';
-      input.placeholder = ref;
-      input.autocomplete = 'off';
-      input.spellcheck = false;
-      const save = el('button', 'sBtn', t('settings.provider.save'));
-      save.type = 'button';
-      save.addEventListener('click', async () => {
-        const value = input.value.trim();
-        if (!value) return;
-        try {
-          await P.dshState.credentialsSet(ref, value);
-          input.value = '';
-          P.app.toast(t('settings.provider.saved', { ref }));
-          renderModels(box);
-        } catch (e) { P.app.toast(e.message); }
-      });
-      const unset = el('button', 'sBtn', t('settings.provider.unsetBtn'));
-      unset.type = 'button';
-      unset.disabled = !configured;
-      unset.addEventListener('click', async () => {
-        try { await P.dshState.credentialsUnset(ref); renderModels(box); } catch (e) { P.app.toast(e.message); }
-      });
-      row.appendChild(input); row.appendChild(save); row.appendChild(unset);
-      body.appendChild(row);
-      const grp = (P.dshState.models || []).find((g) => g.id === p.provider);
-      const models = (grp && grp.models) || [];
-      body.appendChild(el('div', 'pModels', models.length ? models.map((m) => m.id).join(' · ') : t('model.none')));
-      card.appendChild(body);
-      keySec.appendChild(card);
-    }
-    box.appendChild(keySec);
+    box.appendChild(sec);
   }
 
+  /* ---------- third-party plugin toggles (profile patch) ---------- */
+
+  const PATCH_MARK = '# --- PRTS managed: third-party plugin toggles ---'
+  const patchPath = () => P.platform.prtsProfileDir() + '/cordis.patch.yml'
+
+  async function readPatchText() {
+    try { return await P.io.readFile(patchPath()); } catch (e) { return '[]\n'; }
+  }
+  function patchApply(text, disabledList) {
+    const idx = text.indexOf(PATCH_MARK)
+    let base = idx >= 0 ? text.slice(0, idx) : text
+    let block = PATCH_MARK + '\n# Written by PRTS settings — disabled rows apply after a dsh restart.\n'
+    for (const id of disabledList) block += '  - id: ' + id + '\n    disabled: true\n'
+    if (/\]\s*$/.test(base)) {
+      base = base.replace(/\]\s*$/, '')
+      return base + block + ']'
+    }
+    return base + block
+  }
+  async function writePluginToggles(disabledList) {
+    const text = await readPatchText()
+    const next = patchApply(text, disabledList)
+    if (next !== text) {
+      await P.io.writeFile(patchPath(), next)
+      P.app.toast(t('settings.plugins.toggleSaved'))
+    }
+  }
+
+  /** Official-style Plugins page: 插件配置 column (终端 / Agent循环 / 网页搜索)
+   *  with the 第三方插件 button, and the searchable plugin inventory column
+   *  on the right. */
   async function renderPlugins(box) {
     box.textContent = '';
-    const sec = el('div', 'sSection');
-    sec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.plugins')));
-    sec.appendChild(el('div', 'hint', t('settings.plugins.hint')));
-    let profiles = [];
-    try { profiles = await P.dshState.profilesList(); } catch (e) { profiles = []; }
-    const any = (profiles || []).some((p) => (p.packages || []).length);
-    if (!any) sec.appendChild(el('div', 'hint', t('settings.plugins.empty')));
-    for (const p of profiles || []) {
-      const group = el('div', 'pGroup');
-      const head = el('div', 'pGroupHead');
-      head.appendChild(el('span', 'pname', 'PROFILE/' + p.profile));
-      if (p.cli !== false && p.profile !== 'prts' && p.profile !== 'web') {
-        const tag = el('span', 'pState', 'CLI');
-        tag.dataset.state = 'ok';
-        head.appendChild(tag);
-        const run = el('button', 'sBtn', t('settings.plugins.runCli'));
-        run.type = 'button';
-        run.addEventListener('click', async () => {
-          const args = await P.app.askPrompt(t('settings.plugins.runCliPrompt', { profile: p.profile }), (p.usage || '').split(' ')[0] || '');
-          if (args === null) return;
-          const r = await P.dshState.runCliPlugin(p.profile, args.trim() ? args.trim().split(/\s+/) : []);
-          if (r && r.ok) P.app.toast(t('settings.plugins.runCliStarted', { profile: p.profile }));
-          else P.app.toast(t('settings.plugins.runCliFail', { msg: (r && (r.error || r.stderr)) || 'error' }));
+    config.ui = config.ui || {};
+    if (!Array.isArray(config.ui.pluginDisabled)) config.ui.pluginDisabled = [];
+    const disabled = new Set(config.ui.pluginDisabled);
+
+    const grid = el('div', 'sPluginsGrid');
+    const left = el('div', 'sPluginsLeft');
+    const right = el('div', 'sPluginsRight');
+    grid.appendChild(left); grid.appendChild(right);
+
+    /* —— 插件配置 column —— */
+    left.appendChild(el('div', 'sSecTitle eyebrow', t('settings.plugins.config')));
+
+    // generic settings-form card with reset
+    async function cfgCard(titleKey, hintKey, ns, fields, schemaDefaults) {
+      const card = el('div', 'pCard');
+      const head = el('div', 'pCardHead');
+      head.style.cursor = 'default';
+      head.appendChild(el('span', 'pName', t(titleKey)));
+      card.appendChild(head);
+      const body = el('div', 'pCardBody');
+      body.style.display = '';
+      if (hintKey) body.appendChild(el('div', 'hint', t(hintKey)));
+      const value = (await nsValue(ns)) || {};
+      for (const f of fields) {
+        const row = el('div', 'cfgField');
+        row.appendChild(el('div', 'fLabel', t(f.labelKey)));
+        const input = document.createElement('input');
+        input.type = f.type || 'text';
+        input.className = 'sInput';
+        input.value = value[f.key] !== undefined ? String(value[f.key]) : '';
+        if (f.type === 'password') input.autocomplete = 'off';
+        if (f.type === 'number') input.step = '1';
+        input.spellcheck = false;
+        row.appendChild(input);
+        const save = el('button', 'sBtn', t('common.save'));
+        save.type = 'button';
+        save.addEventListener('click', async () => {
+          const patch = {};
+          if (f.type === 'number') patch[f.key] = Number(input.value);
+          else patch[f.key] = input.value;
+          if (await nsUpdate(ns, patch)) P.app.toast(t('common.saved'));
         });
-        head.appendChild(run);
+        row.appendChild(save);
+        body.appendChild(row);
       }
-      group.appendChild(head);
-      for (const pkg of p.packages || []) {
-        const row = el('div', 'projectRow');
-        row.appendChild(el('span', 'pname', pkg.name));
-        row.appendChild(el('span', 'pmeta', pkg.version || ''));
-        group.appendChild(row);
-      }
-      sec.appendChild(group);
+      const reset = el('button', 'sBtn', t('settings.plugins.reset'));
+      reset.type = 'button';
+      reset.addEventListener('click', async () => {
+        const patch = {};
+        for (const f of fields) patch[f.key] = schemaDefaults && schemaDefaults[f.key] !== undefined ? schemaDefaults[f.key] : null;
+        if (await nsUpdate(ns, patch)) renderPlugins(box);
+      });
+      body.appendChild(reset);
+      card.appendChild(body);
+      return card;
     }
-    const mRow = el('div', 'sRow');
-    mRow.style.marginTop = '10px';
-    const openMarket = el('button', 'sBtn primary', t('settings.plugins.openMarket'));
-    openMarket.type = 'button';
-    openMarket.addEventListener('click', () => { if (P.market) P.market.open(); });
-    mRow.appendChild(openMarket);
-    sec.appendChild(mRow);
-    box.appendChild(sec);
+
+    // schema defaults from the live describe (reset targets)
+    const nsSchemaDefaults = {};
+    try {
+      const all = await describeAll();
+      for (const n of all) {
+        const d = {};
+        const refs = (n.schema && n.schema.refs) || {};
+        const rootT = refs[(n.schema && n.schema.uid)] || refs[String(n.schema && n.schema.uid)];
+        if (rootT && rootT.dict) {
+          for (const k of Object.keys(rootT.dict)) {
+            const subUid = rootT.dict[k];
+            const sub = refs[subUid] || refs[String(subUid)];
+            if (sub && sub.meta && sub.meta.default !== undefined) d[k] = sub.meta.default;
+          }
+        }
+        nsSchemaDefaults[n.ns] = d;
+      }
+    } catch (e) { /* defaults unavailable */ }
+
+    left.appendChild(await cfgCard('settings.plugins.terminal', 'settings.plugins.terminal.hint', 'shell', [
+      { key: 'timeoutMs', labelKey: 'settings.plugins.terminalTimeout', type: 'number' },
+    ], nsSchemaDefaults.shell));
+    left.appendChild(await cfgCard('settings.plugins.agentLoop', 'settings.plugins.agentLoop.hint', 'agent-loop', [
+      { key: 'maxParallelToolCalls', labelKey: 'settings.plugins.agentLoopMax', type: 'number' },
+    ], nsSchemaDefaults['agent-loop']));
+    left.appendChild(await cfgCard('settings.plugins.webSearch', 'settings.plugins.webSearch.hint', 'web-search-deepseek', [
+      { key: 'apiKey', labelKey: 'settings.plugins.webSearchKey', type: 'password' },
+      { key: 'baseURL', labelKey: 'settings.plugins.webSearchUrl', type: 'text' },
+      { key: 'model', labelKey: 'settings.plugins.webSearchModel', type: 'text' },
+      { key: 'apiVersion', labelKey: 'settings.plugins.webSearchVersion', type: 'text' },
+      { key: 'maxTokens', labelKey: 'settings.plugins.webSearchMaxTokens', type: 'number' },
+      { key: 'maxUses', labelKey: 'settings.plugins.webSearchMaxUses', type: 'number' },
+    ], nsSchemaDefaults['web-search-deepseek']));
+
+    // 第三方插件 button (below the config cards)
+    const thirdBtn = el('button', 'sBtn primary', t('settings.plugins.thirdParty'));
+    thirdBtn.type = 'button';
+    thirdBtn.addEventListener('click', () => { rightTab = 'third'; renderRight(); });
+    left.appendChild(thirdBtn);
+    const marketBtn = el('button', 'sBtn', t('settings.plugins.openMarket'));
+    marketBtn.type = 'button';
+    marketBtn.addEventListener('click', () => { if (P.market) P.market.open(); });
+    left.appendChild(marketBtn);
+
+    /* —— 插件列表 column (searchable, core / third-party) —— */
+    right.appendChild(el('div', 'sSecTitle eyebrow', t('settings.plugins.list')));
+    const tabs = el('div', 'mTabs');
+    const coreTab = el('button', 'mTab', t('settings.plugins.core'));
+    coreTab.type = 'button';
+    const thirdTab = el('button', 'mTab', t('settings.plugins.thirdPartyShort'));
+    thirdTab.type = 'button';
+    let rightTab = 'core';
+    coreTab.addEventListener('click', () => { rightTab = 'core'; renderRight(); });
+    thirdTab.addEventListener('click', () => { rightTab = 'third'; renderRight(); });
+    tabs.appendChild(coreTab); tabs.appendChild(thirdTab);
+    right.appendChild(tabs);
+
+    const search = el('div', 'mSearch');
+    search.innerHTML = P.icons.search || '';
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.placeholder = t('market.searchPlaceholder');
+    searchInput.spellcheck = false;
+    let query = '';
+    searchInput.addEventListener('input', () => { query = searchInput.value; renderList(); });
+    search.appendChild(searchInput);
+    right.appendChild(search);
+
+    let packages = [];
+    try { packages = await P.dshState.pluginsList(); } catch (e) { packages = []; }
+    const isThird = (name) => !String(name).startsWith('@deepseek-ai/') && name !== 'dsh-prts-ui';
+    const listBox = el('div', 'sPluginList');
+    right.appendChild(listBox);
+
+    function renderRight() {
+      coreTab.classList.toggle('on', rightTab === 'core');
+      thirdTab.classList.toggle('on', rightTab === 'third');
+      renderList();
+    }
+    async function togglePlugin(name) {
+      if (disabled.has(name)) disabled.delete(name);
+      else disabled.add(name);
+      config.ui.pluginDisabled = [...disabled];
+      await P.store.saveConfig(config);
+      await writePluginToggles([...disabled]);
+      renderList();
+    }
+    function renderList() {
+      listBox.textContent = '';
+      const q = query.trim().toLowerCase();
+      const items = packages.filter((p) => {
+        if (q && String(p.name || '').toLowerCase().indexOf(q) < 0) return false;
+        return rightTab === 'third' ? isThird(p.name) : !isThird(p.name);
+      });
+      if (!items.length) {
+        listBox.appendChild(el('div', 'hint', t('settings.plugins.listEmpty')));
+        return;
+      }
+      for (const p of items) {
+        const row = el('div', 'sPluginRow');
+        const meta = el('div', 'sPluginMeta');
+        meta.appendChild(el('span', 'pname', p.name));
+        meta.appendChild(el('span', 'pmeta', (p.version || '') + (p.profile && p.profile !== 'prts' ? ' · ' + p.profile : '')));
+        row.appendChild(meta);
+        if (rightTab === 'third') {
+          const on = !disabled.has(p.name);
+          const sw = el('button', 'mSwitch' + (on ? ' on' : ''), on ? 'ON' : 'OFF');
+          sw.type = 'button';
+          sw.title = t(on ? 'settings.plugins.disable' : 'settings.plugins.enable');
+          sw.addEventListener('click', () => togglePlugin(p.name));
+          row.appendChild(sw);
+        }
+        listBox.appendChild(row);
+      }
+      if (rightTab === 'third') {
+        const note = el('div', 'hint', t('settings.plugins.toggleHint'));
+        listBox.appendChild(note);
+      }
+    }
+    renderRight();
+    box.appendChild(grid);
   }
 
   async function renderPresets(box) {

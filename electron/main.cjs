@@ -501,17 +501,84 @@ ipcMain.handle('prts:deleteSkill', async (_e, name) => {
   return { ok: true }
 })
 
-ipcMain.handle('prts:skillInstall', (_e, repo) => new Promise((resolve) => {
-  const name = String(repo || '').replace(/\/+$/, '').split('/').pop().replace(/\.git$/, '')
-  if (!/^[A-Za-z0-9._-]+$/.test(name) || !name) return resolve({ ok: false, error: 'bad repo name' })
-  const dest = path.join(skillsDir(), name)
-  if (fs.existsSync(dest)) return resolve({ ok: false, error: 'skill already installed: ' + name })
-  try { fs.mkdirSync(skillsDir(), { recursive: true }) } catch (e) { /* exists */ }
-  const child = execFile('git', ['clone', '--depth', '1', String(repo), dest], { timeout: 300000 }, (err, stdout, stderr) => {
-    resolve({ ok: !err, stdout: String(stdout || ''), stderr: String(stderr || ''), name })
+/** Lift one skill directory into the skills root (rename, replacing old). */
+function liftSkill(srcDir, destRoot, name) {
+  const safe = String(name).replace(/[^A-Za-z0-9._-]/g, '')
+  if (!safe) return null
+  const dest = path.join(destRoot, safe)
+  try { fs.rmSync(dest, { recursive: true, force: true }) } catch (e) { /* noop */ }
+  fs.renameSync(srcDir, dest)
+  return safe
+}
+
+/** Clone a GitHub skill repo and normalize it into ~/.dsh/skills:
+ *  - subdir given → lift that one skill (e.g. anthropics/skills skills/canvas-design)
+ *  - root SKILL.md → single-skill repo
+ *  - monorepo → lift every directory that contains a SKILL.md. */
+ipcMain.handle('prts:skillInstall', (_e, repo, subdir) => new Promise((resolve) => {
+  const baseName = String(repo || '').replace(/\/+$/, '').split('/').pop().replace(/\.git$/, '')
+  if (!/^[A-Za-z0-9._-]+$/.test(baseName) || !baseName) return resolve({ ok: false, error: 'bad repo name' })
+  const tmp = path.join(os.tmpdir(), 'prts-skill-' + Date.now().toString(36))
+  const root = skillsDir()
+  try { fs.mkdirSync(root, { recursive: true }) } catch (e) { /* exists */ }
+  const hasSkillMd = (dir) => { try { return fs.existsSync(path.join(dir, 'SKILL.md')) } catch (e) { return false } }
+  const child = execFile('git', ['clone', '--depth', '1', String(repo), tmp], { timeout: 300000 }, (err, stdout, stderr) => {
+    if (err) {
+      try { fs.rmSync(tmp, { recursive: true, force: true }) } catch (e) { /* noop */ }
+      return resolve({ ok: false, stdout: String(stdout || ''), stderr: String(stderr || '') })
+    }
+    try {
+      const names = []
+      if (subdir) {
+        const src = path.join(tmp, String(subdir))
+        if (!hasSkillMd(src)) throw new Error('no SKILL.md at ' + subdir)
+        const n = liftSkill(src, root, path.basename(String(subdir)))
+        if (n) names.push(n)
+      } else if (hasSkillMd(tmp)) {
+        const n = liftSkill(tmp, root, path.basename(tmp))
+        if (n) names.push(n)
+      } else {
+        for (const l1 of fs.readdirSync(tmp, { withFileTypes: true })) {
+          if (!l1.isDirectory()) continue
+          const d1 = path.join(tmp, l1.name)
+          if (hasSkillMd(d1)) { const n = liftSkill(d1, root, l1.name); if (n) names.push(n); continue }
+          for (const l2 of fs.readdirSync(d1, { withFileTypes: true })) {
+            if (!l2.isDirectory()) continue
+            const d2 = path.join(d1, l2.name)
+            if (hasSkillMd(d2)) { const n = liftSkill(d2, root, l2.name); if (n) names.push(n) }
+          }
+        }
+        if (!names.length) throw new Error('no SKILL.md found in the repository')
+      }
+      try { fs.rmSync(tmp, { recursive: true, force: true }) } catch (e) { /* noop */ }
+      resolve({ ok: true, names })
+    } catch (e) {
+      try { fs.rmSync(tmp, { recursive: true, force: true }) } catch (e2) { /* noop */ }
+      resolve({ ok: false, error: String(e && e.message || e) })
+    }
   })
   if (!child) resolve({ ok: false, error: 'git unavailable' })
 }))
+
+ipcMain.handle('prts:openPath', (_e, p) => {
+  try {
+    shell.openPath(String(p))
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: String(err && err.message || err) }
+  }
+})
+
+ipcMain.handle('prts:readFileB64', async (_e, p) => {
+  const buf = await fs.promises.readFile(String(p))
+  return buf.toString('base64')
+})
+
+ipcMain.handle('prts:writeFileB64', async (_e, p, b64) => {
+  const buf = Buffer.from(String(b64 || ''), 'base64')
+  await fs.promises.writeFile(String(p), buf)
+  return { ok: true }
+})
 
 /* ---------- site logins (in-app windows, session reuse, key capture) ---------- */
 

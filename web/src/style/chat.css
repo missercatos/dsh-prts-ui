@@ -170,8 +170,10 @@
   transition: border-color 0.15s var(--prts-ease), color 0.15s var(--prts-ease);
 }
 .sBtn:hover { border-color: var(--prts-hairline-strong); color: var(--prts-ink); }
-.sBtn.primary { background: var(--prts-ink); color: var(--prts-bg); border-color: var(--prts-ink); }
+.sBtn.primary { background: var(--prts-accent); color: var(--prts-bg); border-color: var(--prts-accent); }
 .sBtn.primary:hover { opacity: 0.85; }
+.sBtn.danger { color: #f7768e; border-color: rgba(247, 118, 142, 0.4); }
+.sBtn.danger:hover { border-color: #f7768e; color: #f7768e; background: rgba(247, 118, 142, 0.08); }
 .sBtn:disabled { opacity: 0.4; cursor: default; }
 .sStatus { font-size: 12px; line-height: 20px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
 .projectRow { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }

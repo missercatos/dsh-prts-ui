@@ -16,6 +16,11 @@
   --prts-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(250, 250, 250, 0.04);
   --prts-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --prts-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  /* PRTS accent marks: overridden inline by the custom theme (custom colors);
+     default = ink so black/white themes stay monochrome. */
+  --prts-accent: var(--prts-ink);
+  --prts-diamond: var(--prts-ink);
+  --prts-square: var(--prts-ink);
   --prts-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --prts-mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas, Menlo,

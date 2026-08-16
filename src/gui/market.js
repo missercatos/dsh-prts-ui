@@ -105,7 +105,7 @@
     action.disabled = true;
     action.textContent = t('market.installing');
     try {
-      const r = await P.skills.install(item.repo);
+      const r = await P.skills.install(item.repo, item.subdir);
       if (r && r.ok) {
         P.app.toast(t('market.skillInstalled', { name: item.displayName || item.name }));
         await refresh();
@@ -159,7 +159,19 @@
     return card;
   }
 
-  const CATS = { all: 'market.cat.all', visual: 'market.cat.visual', tool: 'market.cat.tool', other: 'market.cat.other', persona: 'market.cat.persona' };
+  const CATS = {
+    all: 'market.cat.all',
+    visual: 'market.cat.visual',
+    tool: 'market.cat.tool',
+    other: 'market.cat.other',
+    persona: 'market.cat.persona',
+    design: 'market.cat.design',
+    ui: 'market.cat.ui',
+    fx: 'market.cat.fx',
+    text: 'market.cat.text',
+  };
+  const SKILL_CATS = ['all', 'design', 'ui', 'fx', 'text', 'tool', 'persona', 'other'];
+  const PLUGIN_CATS = ['all', 'visual', 'tool', 'other'];
 
   function render() {
     const box = document.getElementById('marketList');
@@ -191,8 +203,8 @@
     box.appendChild(controls);
 
     const chips = el('div', 'mCats');
-    for (const key of Object.keys(CATS)) {
-      if (state.tab === 'skills' && key === 'all') continue;
+    const catKeys = state.tab === 'skills' ? SKILL_CATS : PLUGIN_CATS;
+    for (const key of catKeys) {
       const c = el('button', 'mCat' + (state.category === key ? ' on' : ''), t(CATS[key]));
       c.type = 'button';
       c.dataset.cat = key;
@@ -201,7 +213,7 @@
     }
     box.appendChild(chips);
 
-    // —— GitHub skill install row (the GitHub skill section) ——
+    // —— GitHub install rows (plugins and skills both accept a repo URL) ——
     if (state.tab === 'skills') {
       const gh = el('div', 'mGh');
       const hint = el('span', 'mGhLabel', t('market.skillGh'));
@@ -220,6 +232,30 @@
           const r = await P.skills.install(repo);
           if (r && r.ok) { P.app.toast(t('market.skillInstalled', { name: repo })); url.value = ''; await refresh(); render(); }
           else P.app.toast(t('market.failed', { msg: (r && (r.error || r.stderr)) || 'error' }));
+        } catch (e) { P.app.toast(e.message); }
+        go.disabled = false;
+      });
+      gh.appendChild(hint); gh.appendChild(url); gh.appendChild(go);
+      box.appendChild(gh);
+    } else {
+      const gh = el('div', 'mGh');
+      const hint = el('span', 'mGhLabel', t('market.pluginGh'));
+      const url = document.createElement('input');
+      url.type = 'text';
+      url.className = 'sInput';
+      url.placeholder = 'https://github.com/owner/plugin-repo';
+      url.spellcheck = false;
+      const go = el('button', 'sBtn primary', t('market.install'));
+      go.type = 'button';
+      go.addEventListener('click', async () => {
+        const repo = url.value.trim();
+        if (!/^https?:\/\/github\.com\/[\w.-]+\/[\w.-]+/.test(repo)) { P.app.toast(t('market.skillRepoBad')); return; }
+        go.disabled = true;
+        try {
+          const b = (typeof window !== 'undefined' && window.prts && window.prts.bridge) || null;
+          const r = b && b.pluginClone ? await b.pluginClone(repo) : { ok: false, stderr: 'no bridge' };
+          if (r && r.ok) { P.app.toast(t('market.installed', { pkg: repo })); url.value = ''; await refresh(); render(); }
+          else P.app.toast(t('market.failed', { msg: (r && (r.stderr || r.stdout || r.error)) || 'error' }));
         } catch (e) { P.app.toast(e.message); }
         go.disabled = false;
       });
