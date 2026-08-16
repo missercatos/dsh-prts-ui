@@ -38,8 +38,9 @@ const evaluate = async (expr) => {
 }
 
 const audit = await evaluate(`(() => {
+  try { window.PRTS.app.enterChat(); } catch (e) {}
   const ids = ['brandBtn','themeBtn','sbToggleBtn','newProjectBtn','newSessionBtn',
-    'sessionSearch','sessionSearchClear','costBtn','marketBtn','detailsBtn','settingsBtn',
+    'sidebarWsBtn','sessionSearch','sessionSearchClear','costBtn','marketBtn','detailsBtn','settingsBtn',
     'crumbProject','modeChip','permissionChip','clearHistoryBtn','logBtn',
     'modelChip','reasoningChip','commandsChip','attachBtn','voiceBtn','meterBtn','sendBtn',
     'composerExpand','composerInput','flow','sessionList','projectList'];
@@ -61,11 +62,11 @@ const audit = await evaluate(`(() => {
   };
   for (const id of ids) {
     const el = document.getElementById(id);
-    if (!el) { out.push({ id, status: 'MISSING' }); continue; }
+    if (!el) { out.push({ id, status: 'MISSING', expect: 'visible' }); continue; }
     const visible = vis(el);
     const r = el.getBoundingClientRect();
     out.push({
-      id, status: visible ? 'visible' : 'HIDDEN',
+      id, expect: id === 'sessionSearchClear' ? 'any' : 'visible', status: visible ? 'visible' : 'HIDDEN',
       size: Math.round(r.width) + 'x' + Math.round(r.height),
       hit: visible ? hit(el) : null,
     });
@@ -76,14 +77,58 @@ const audit = await evaluate(`(() => {
     const el = document.getElementById(id);
     if (!el) continue;
     const st = getComputedStyle(el);
-    out.push({ id: id + '(overlay)', status: st.display === 'none' ? 'display:none' : (st.pointerEvents === 'none' || !el.classList.contains('open') ? 'closed(pe:' + st.pointerEvents + ')' : 'OPEN'), size: '', hit: null });
+    out.push({ id: id + '(overlay)', expect: 'any', status: st.display === 'none' ? 'display:none' : (st.pointerEvents === 'none' || !el.classList.contains('open') ? 'closed(pe:' + st.pointerEvents + ')' : 'OPEN'), size: '', hit: null });
   }
   return out;
 })()`)
 
+// Welcome screen audit: switch to the hero and check the dsh-web style bar
+// above the initial input area (workspace folder + mode + model + reasoning).
+const heroAudit = await evaluate(`(() => {
+  try { window.PRTS.app.enterHero(); } catch (e) {}
+  const ids = ['heroWsBtn','heroModeChip','heroModelChip','heroReasoningChip','heroStack','heroBar','sidebarWsBtn'];
+  const out = [];
+  const vis = (el) => {
+    if (!el) return false;
+    const st = getComputedStyle(el);
+    if (st.display === 'none' || st.visibility === 'hidden' || el.hidden) return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 1 && r.height > 1;
+  };
+  const hit = (el) => {
+    const r = el.getBoundingClientRect();
+    const x = r.left + r.width / 2, y = r.top + r.height / 2;
+    const top = document.elementFromPoint(x, y);
+    if (!top) return null;
+    if (top === el || el.contains(top)) return 'hit';
+    return 'COVERED by ' + top.tagName + '.' + (top.id || (top.className && String(top.className).split(' ')[0]));
+  };
+  for (const id of ids) {
+    const el = document.getElementById(id);
+    if (!el) { out.push({ id, status: 'MISSING', expect: 'any' }); continue; }
+    const visible = vis(el);
+    const r = el.getBoundingClientRect();
+    out.push({
+      id, expect: id === 'heroReasoningChip' ? 'any' : 'visible', status: visible ? 'visible' : 'HIDDEN',
+      size: Math.round(r.width) + 'x' + Math.round(r.height),
+      hit: visible ? hit(el) : null,
+    });
+  }
+  // The composer-toolbar model/reasoning chips must yield to the hero bar.
+  for (const id of ['modelChip','reasoningChip']) {
+    const el = document.getElementById(id);
+    out.push({ id: id + '(toolbar)', expect: 'hidden', status: (!el || vis(el)) ? 'visible' : 'HIDDEN', size: '', hit: null });
+  }
+  return out;
+})()`)
+
+const all = audit.concat(heroAudit)
 let pass = 0, fail = 0
-for (const row of audit) {
-  const bad = row.status !== 'visible' || (row.hit && String(row.hit).indexOf('COVERED') === 0)
+for (const row of all) {
+  const covered = row.hit && String(row.hit).indexOf('COVERED') === 0
+  let bad = covered
+  if (row.expect === 'visible') bad = bad || row.status !== 'visible'
+  if (row.expect === 'hidden') bad = bad || row.status !== 'HIDDEN'
   if (bad) { fail++; console.log('BAD ', JSON.stringify(row)) }
   else { pass++; console.log('OK  ', row.id, row.status, row.size, row.hit || '') }
 }

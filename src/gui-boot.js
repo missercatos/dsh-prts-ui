@@ -1,13 +1,17 @@
 /**
- * PRTS GUI boot: starts the dsh web backend, waits for its local URL, then
- * opens the PRTS Electron window pointed at that URL. PRTS is only the shell —
- * the agent, sessions, tools, models and plugins all live in dsh, so PRTS
- * keeps working across dsh upgrades as long as `dsh web` still prints its URL.
+ * PRTS GUI boot: opens the PRTS Electron window IMMEDIATELY and starts (or
+ * reuses) the `dsh web` backend in the background. The particle intro doubles
+ * as the loading animation: it keeps looping until the renderer's own ping
+ * reaches dsh, a click before that shows the "not loaded" hint, and when the
+ * window closes the dsh web backend PRTS spawned is torn down so it never
+ * lingers on port 3080. PRTS is only the shell — the agent, sessions, tools,
+ * models and plugins all live in dsh, so PRTS keeps working across dsh
+ * upgrades as long as `dsh web` still serves /api.
  */
 import { spawn } from 'node:child_process'
-import { createWriteStream, existsSync, mkdirSync, rmSync } from 'node:fs'
+import { createWriteStream, existsSync, mkdirSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { platform } from 'node:os'
+import { tmpdir } from 'node:os'
 import { get as httpGet } from 'node:http'
 import { get as httpsGet } from 'node:https'
 import { pkgRoot, readPkg } from './root.js'
@@ -33,30 +37,100 @@ async function dshUp(url) {
   } catch (e) { return false; }
 }
 
-/** Start (or reuse) `dsh web` and resolve with its local URL once /api answers. */
-async function bootDshWeb() {
-  const defaultUrl = process.env.PRTS_DSH_URL || 'http://127.0.0.1:3080';
-  // 1. An instance may already be running (previous launch, a separate
-  //    `dsh web`, etc.) — reuse it instead of failing on the port.
-  if (await dshUp(defaultUrl)) return { url: defaultUrl, child: null };
-  // 2. Spawn one, detached, and poll /api until it answers. stdout is
-  //    ignored — the endpoint is the real readiness signal, not the log text.
+/** Kill a backend child across platforms (Windows .cmd shims need taskkill). */
+function killChild(child) {
+  if (!child) return;
+  if (process.platform === 'win32') {
+    try {
+      spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' })
+    } catch (e) { /* already gone */ }
+    return;
+  }
+  try { child.kill('SIGKILL'); } catch (e) { /* already gone */ }
+}
+
+/** Spawn one detached `dsh web`. On Windows `dsh` is a .cmd shim, which plain
+ *  spawn() cannot execute — shell mode fixes that (the launcher itself lives
+ *  in the same situation). */
+function spawnDshWeb() {
+  const opts = { stdio: 'ignore', detached: true };
+  if (process.platform === 'win32') opts.shell = true;
   let child;
   try {
-    child = spawn('dsh', ['web'], { stdio: 'ignore', detached: true });
+    child = spawn('dsh', ['web'], opts);
   } catch (e) {
-    throw new Error('dsh is not installed — run `npm i -g @deepseek-ai/dsh` first');
+    return null;
   }
-  child.unref();
-  const deadline = Date.now() + 30000;
-  while (Date.now() < deadline) {
-    if (await dshUp(defaultUrl)) return { url: defaultUrl, child };
-    await new Promise((r) => setTimeout(r, 500));
+  try { child.unref(); } catch (e) { /* noop */ }
+  child.on('error', () => { /* handled via exit/retry below */ });
+  return child;
+}
+
+/**
+ * Start the dsh web backend without blocking on readiness: spawn immediately,
+ * retry spawns silently while the window lives (dsh may still be installing
+ * or the first boot may be slow), and keep the pid written to a pidfile so
+ * Electron can tear the backend down on quit even if the runner dies first.
+ * Reuses a dsh web that is already answering (child = null — never killed).
+ */
+async function startBackend(url) {
+  const state = {
+    child: null,
+    spawnTimer: null,
+    attempts: 0,
+    stopped: false,
+    pidFile: join(tmpdir(), 'prts-dsh-' + process.pid + '.pid'),
+  };
+  const writePid = () => {
+    try { if (state.child && state.child.pid) writeFileSync(state.pidFile, String(state.child.pid), 'utf8'); } catch (e) { /* noop */ }
+  };
+  const clearPid = () => { try { unlinkSync(state.pidFile); } catch (e) { /* noop */ } };
+  const stop = () => {
+    state.stopped = true;
+    clearTimeout(state.spawnTimer);
+    killChild(state.child);
+    state.child = null;
+    clearPid();
+  };
+
+  if (await dshUp(url)) {
+    // An instance is already serving — reuse it and never touch it.
+    clearPid();
+    return { child: null, pidFile: state.pidFile, stop };
   }
-  // The backend we spawned never came up — kill it so it cannot squat on the
-  // port and block the official `dsh web` later.
-  try { child.kill('SIGKILL') } catch (e) { /* already gone */ }
-  throw new Error('dsh web did not start in time — check that `dsh web` boots (its agent tree may be unhealthy)');
+
+  const trySpawn = () => {
+    if (state.stopped) return;
+    state.attempts++;
+    // After a while, stop respawning: a backend that keeps dying instantly
+    // (port squatted by a non-dsh service, broken install) should not burn
+    // CPU forever. The renderer keeps pinging and the intro keeps looping.
+    if (state.attempts > 12) return;
+    const child = spawnDshWeb();
+    if (!child) {
+      // dsh is not on PATH yet — retry quietly.
+      state.spawnTimer = setTimeout(trySpawn, Math.min(3000, 600 + state.attempts * 400));
+      return;
+    }
+    state.child = child;
+    writePid();
+    child.on('exit', () => {
+      if (state.child === child) state.child = null;
+      if (!state.stopped) state.spawnTimer = setTimeout(trySpawn, 2000);
+    });
+  };
+  trySpawn();
+
+  // Readiness probe — informational only; the renderer drives the UX with
+  // its own ping loop. Stops probing once the window closes.
+  (async () => {
+    while (!state.stopped) {
+      if (await dshUp(url)) return;
+      await new Promise((r) => setTimeout(r, 700));
+    }
+  })().catch(() => {});
+
+  return { child: state.child, pidFile: state.pidFile, stop };
 }
 
 /* ---------- Electron ---------- */
@@ -141,22 +215,32 @@ export async function ensureElectron() {
   throw new Error('failed to fetch electron ' + VERSION + ' (' + p + '/' + a + '): ' + (lastErr && lastErr.message))
 }
 
-/** Boot dsh web and open the PRTS window over it. The returned handle keeps
- *  the runner alive until the window closes, then tears the backend down — so
- *  a PRTS-spawned `dsh web` can never outlive its window and squat on port
- *  3080 (which would break the official `dsh web`). */
+/** Open the PRTS window immediately and boot dsh web in the background.
+ *  The window is the priority surface: it appears at once, its particle intro
+ *  loops as the loading animation while dsh (and the profile's plugins) come
+ *  up, and a click before readiness shows the "not loaded" hint. The returned
+ *  handle keeps the runner alive until the window closes, then tears the
+ *  backend down — so a PRTS-spawned `dsh web` can never outlive its window
+ *  and squat on port 3080 (which would break the official `dsh web`). */
 export async function launchGui(opts) {
-  const { url, child: dshChild } = await bootDshWeb()
+  const url = process.env.PRTS_DSH_URL || 'http://127.0.0.1:3080'
+  // 1. Kick the backend spawn off right away — it boots in parallel with the
+  //    Electron download (first run) and the window itself. No readiness wait:
+  //    the renderer drives the "loaded" state with its own ping loop.
+  const backend = await startBackend(url)
+  // 2. Electron binary (downloads to ~/.cache/prts/electron on first run).
   const bin = await ensureElectron()
   const main = join(pkgRoot, 'electron', 'main.cjs')
-  const child = spawn(bin, ['--no-sandbox', main, url], {
+  const cdpArgs = process.env.PRTS_CDP ? ['--remote-debugging-port=' + process.env.PRTS_CDP] : []
+  const child = spawn(bin, ['--no-sandbox'].concat(cdpArgs, [main, url]), {
     stdio: 'ignore',
     env: Object.assign({}, process.env, {
       PRTS_GUI: '1',
       DSH_WEB_URL: url,
-      // Pass the spawned backend's PID so Electron can clean it up on quit
-      // even if this runner dies abnormally first.
-      DSH_WEB_PID: dshChild ? String(dshChild.pid) : '',
+      // Fallback PID + the live pidfile: Electron cleans the spawned backend
+      // up on quit even if this runner dies abnormally first.
+      DSH_WEB_PID: backend.child ? String(backend.child.pid) : '',
+      DSH_WEB_PIDFILE: backend.pidFile,
     }),
   })
   // Not detached: the Electron child keeps the runner's event loop alive, so
@@ -171,7 +255,7 @@ export async function launchGui(opts) {
     cleanup() {
       // Kill only the dsh web WE spawned — a reused (already-running) backend
       // is left alone.
-      if (dshChild) { try { dshChild.kill('SIGKILL') } catch (e) { /* already gone */ } }
+      backend.stop()
     },
   }
 }

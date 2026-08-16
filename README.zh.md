@@ -6,7 +6,7 @@ PRTS 是 **dsh（DeepSeek Harness）的 GUI 外壳**，不是独立软件。它�
 
 ## 功能（全部照搬 dsh 的能力）
 
-- **工作区**：侧栏列表、新建/删除、头部面包屑随时切换
+- **工作区**：侧栏列表、新建/删除、头部面包屑随时切换；侧栏顶部与初始页输入框上方都有工作区选择芯片（切换/添加），新建工作区优先打开系统默认文件管理器选目录（Electron 原生对话框，Windows/Linux/macOS 通用），也保留手写路径兜底
 - **会话**：新建会话、归档、**搜索会话**（本地过滤 + dsh 的 session.search）、**多选批量归档**（选择模式 + 全选，配合搜索可一键清掉一批）
 - **轨迹与日志拆分**：“轨迹”页签是**分步时间线**（按轮/步分组：每一步的模型/工具事件与耗时）；“会话日志”按钮是独立的**原始事件日志**浮层（可导出 JSON）
 - **模式选择**：dsh 自己的 agent preset（标准 / PTC / 极简 / 创造…）。空白会话直接切换；**已开始的会话模式锁定**（dsh 约束），改模式会提示并以所选模式新建会话
@@ -18,7 +18,8 @@ PRTS 是 **dsh（DeepSeek Harness）的 GUI 外壳**，不是独立软件。它�
 - **上下文仪表**：输入框旁的百分比环显示上下文窗口占用（projection `contextPressure`）
 - **底部统计条**：与会话页同款实时统计 —— `6 轮 · 311 步 · LLM 51m15s · 工具调用 7m00s · 首 token 平均 2.6s · 113 tok/s · 缓存命中 99% · 输入 86M tok · 输出 255K`（projection `sessionStats`/`tokenUsage`，mux `session/projection` 帧实时刷新 + 8s 轮询兜底）
 - **语音输入**：完整可用的麦克风语音转文字 —— 首次开启弹窗询问麦克风权限；VAD 检测说话/静音自动开始与结束；识别引擎为本地 whisper-tiny ONNX（首次使用从 npmmirror / hf-mirror 下载引擎与模型到 `~/.cache/prts/stt/`，之后完全离线），浏览器里有 `webkitSpeechRecognition` 时自动优先
-- 其余：三幕粒子开场（welcome → PRTS·DEEPSEEK 横幅 → 菱形标志，每幕 3.2s，点击跳过）、系统面板（硬件遥测）、费用面板、插件市场、中英文界面、明暗主题
+- **初始页选择器**：初始输入区上方参照 dsh web 的设计有一排选择芯片 —— 文件夹（工作区切换/添加）、模式（标准 / PTC / 极简 / 创造…）、模型与推理等级，未选会话也能直接切换
+- 其余：三幕粒子开场（welcome → PRTS·DEEPSEEK 横幅 → 菱形标志，每幕 3.2s）兼作加载动画 —— dsh 未就绪时循环播放、点击弹出“未就绪”提示，就绪后三幕播完自动进入或点击直接进入；系统面板（硬件遥测）、费用面板、插件市场、中英文界面、明暗主题
 
 ## 与当前 dsh 内核的兼容性修正（0.2.0）
 
@@ -37,6 +38,7 @@ PRTS 是 **dsh（DeepSeek Harness）的 GUI 外壳**，不是独立软件。它�
 | 设置里“模型配置”折叠钮无效（CSS `display` 压过 `hidden` 属性） | 全局 `[hidden]{display:none!important}`，同时修好附件条/状态行等同类隐患 |
 | 发送后卡在“停止”状态（mux 断流导致 streaming 永久为 true） | 流结束/断线都会复位 |
 | 流式期间每条 chunk 全量重渲染（大 session 卡顿） | 渲染按帧批处理 + 90ms 节流（实测一轮 9 秒只重写 DOM 16 次）；粒子 willReadFrequently；历史重载 30 秒冷却 |
+| 不先开 dsh web 直接启动 PRTS 会报错/卡死 | 启动顺序改为**窗口优先**：PRTS 窗口立即出现，粒子开场作为加载动画，后台静默探测并拉起 `dsh web`（Windows .cmd 垫片可用），就绪后三幕播完自动进入；关闭 PRTS 自动关掉它拉起的 dsh web（pidfile + 兜底 PID，跨平台强杀） |
 | 设置“模型配置”折叠瞬间跳变 | 改为网格行高动画（0fr→1fr），文字平滑收起、下方内容平滑上移 |
 | Electron 内 GUI 从 file:// 改为仅回环 HTTP 服务（127.0.0.1 随机端口） | 语音引擎的 wasm 模块导入/Worker 需要真实 http 源；API 仍走 preload 桥，无窗口、不外露 |
 
@@ -55,7 +57,9 @@ PRTS 是 **dsh（DeepSeek Harness）的 GUI 外壳**，不是独立软件。它�
 
 ```sh
 # 通用：启动
-prts                       # 打开 PRTS 窗口（底层自动启动/复用 dsh web:3080）
+prts                       # 打开 PRTS 窗口（窗口立即出现，粒子开场兼作加载动画；
+                           # 底层静默启动/复用 dsh web:3080，不会唤出网页；
+                           # 关闭 PRTS 窗口时自动关闭它自己拉起的 dsh web）
 dsh --profile prts         # 等价写法
 dsh --profile prts --lang zh
 dsh --profile prts --shortcut   # 刷新桌面快捷方式

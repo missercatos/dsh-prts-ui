@@ -4,7 +4,7 @@
  * API traffic go through the IPC bridge to avoid CORS and enable real file
  * storage. Single instance, auto-hide menu, quit on last window closed.
  */
-const { app, BrowserWindow, ipcMain, session, protocol } = require('electron')
+const { app, BrowserWindow, ipcMain, session, protocol, dialog } = require('electron')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
@@ -59,6 +59,23 @@ ipcMain.handle('prts:exists', async (_e, p) => {
 })
 ipcMain.handle('prts:mkdir', (_e, p) => fs.promises.mkdir(p, { recursive: true }))
 ipcMain.handle('prts:listDir', (_e, p) => fs.promises.readdir(p))
+
+/* Native directory picker — the OS's own file manager, exactly the dialog
+   dsh web's workspace flow opens. Works on Windows/Linux/macOS without any
+   extra desktop tooling (zenity/kdialog), so "add workspace" always has a
+   browse button. */
+ipcMain.handle('prts:pickDirectory', async (_e, title) => {
+  try {
+    const r = await dialog.showOpenDialog(win, {
+      title: typeof title === 'string' && title ? title : 'Choose a workspace directory',
+      properties: ['openDirectory', 'createDirectory'],
+    })
+    if (r.canceled || !r.filePaths || !r.filePaths.length) return null
+    return r.filePaths[0]
+  } catch (err) {
+    return { error: String(err && err.message || err) }
+  }
+})
 
 /* Native download (Session log ZIP): Electron's download manager shows the
    save dialog and writes the file — no binary corruption through the text
@@ -118,14 +135,53 @@ ipcMain.handle('prts:abort', (_e, token) => {
 // Current dsh builds serve `/api/events.mux` as a **WebSocket** (a plain GET
 // answers "upgrade required"); older builds served it as an SSE stream.
 // This relays either carrier to the renderer over IPC and reconnects on drop.
+// IMPORTANT: the WebSocket carrier must never be opened against an unreachable
+// host — a failed connect inside the Electron main process wedges its message
+// loop (HTTP servers stop answering). A plain-HTTP probe therefore gates
+// every connect: PRTS boots dsh in the background, so the relay keeps probing
+// until dsh answers and only then opens the carrier.
 let dshMuxAbort = null
 let dshMuxWs = null
 let dshMuxTimer = null
+let dshMuxWatchTimer = null
+let dshMuxReady = false
 
 function dshMuxPush(data) {
   try {
     if (win && !win.isDestroyed()) win.webContents.send('prts:dshFrame', data)
   } catch (e) { /* window gone */ }
+}
+
+/** Plain-HTTP readiness probe — safe against unreachable hosts. */
+async function dshProbe() {
+  try {
+    const res = await fetch(DSH_WEB_URL.replace(/\/+$/, '') + '/api/workspace.list', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'client-request', rpcId: 'prts-probe-' + Date.now(), method: 'workspace.list', payload: {} }),
+    })
+    if (res.status !== 200) return false
+    const body = await res.json().catch(() => null)
+    return !!(body && body.type === 'server-response' && body.result && body.result.ok === true)
+  } catch (e) { return false }
+}
+
+/** Probe until dsh answers, then open the mux carrier once. */
+function dshMuxWatchdog() {
+  clearTimeout(dshMuxWatchTimer)
+  if (dshMuxReady) return
+  dshProbe().then((up) => {
+    if (!up) { dshMuxWatchTimer = setTimeout(dshMuxWatchdog, 1500); return }
+    dshMuxReady = true
+    dshMuxConnect()
+  }).catch(() => { dshMuxWatchTimer = setTimeout(dshMuxWatchdog, 1500) })
+}
+
+/** The stream dropped — re-probe before reconnecting so the carrier is never
+ *  aimed at a host that may have gone unreachable. */
+function dshMuxLost() {
+  dshMuxReady = false
+  dshMuxWatchdog()
 }
 
 function dshMuxParseLines(buf) {
@@ -154,13 +210,16 @@ function dshMuxConnect() {
     try { ws = new WebSocket(wsUrl) } catch (e) { ws = null }
     if (ws) {
       let opened = false
+      let settled = false
       dshMuxWs = ws
       ws.onopen = () => { opened = true }
       ws.onmessage = (e) => dshMuxPush(String(e.data))
       const teardown = () => {
+        if (settled) return
+        settled = true
         if (dshMuxWs === ws) dshMuxWs = null
-        if (!opened) { dshMuxSse() ; return }   // refused upgrade -> SSE build
-        dshMuxTimer = setTimeout(dshMuxConnect, 1000)
+        if (!opened) { dshMuxLost(); return }   // refused upgrade / failed connect
+        dshMuxLost()                            // stream dropped — re-probe first
       }
       ws.onclose = teardown
       ws.onerror = teardown
@@ -173,7 +232,7 @@ function dshMuxConnect() {
 function dshMuxSse() {
   const ac = new AbortController()
   dshMuxAbort = ac
-  fetch(base || DSH_WEB_URL.replace(/\/+$/, '') + '/api/events.mux', { signal: ac.signal })
+  fetch(DSH_WEB_URL.replace(/\/+$/, '') + '/api/events.mux', { signal: ac.signal })
     .then((res) => {
       if (!res.ok || !res.body) throw new Error('mux ' + res.status)
       const reader = res.body.getReader()
@@ -190,7 +249,7 @@ function dshMuxSse() {
     .catch(() => {})
     .finally(() => {
       if (dshMuxAbort === ac) dshMuxAbort = null
-      dshMuxTimer = setTimeout(dshMuxConnect, 1000)
+      dshMuxTimer = setTimeout(dshMuxLost, 1000)
     })
 }
 ipcMain.handle('prts:dshRequest', async (_e, method, payload) => {
@@ -357,9 +416,10 @@ function resolveProfile() {
 }
 
 // Install/update a plugin by npm package name, the same command dsh uses.
+// (`dsh` is a .cmd shim on Windows — execFile needs shell mode there.)
 ipcMain.handle('prts:pluginAdd', (_e, pkg) => new Promise((resolve) => {
   const profile = resolveProfile()
-  const child = execFile('dsh', ['plugin', '--profile', profile, 'add', String(pkg)], { timeout: 300000 }, (err, stdout, stderr) => {
+  const child = execFile('dsh', ['plugin', '--profile', profile, 'add', String(pkg)], { timeout: 300000, shell: process.platform === 'win32' }, (err, stdout, stderr) => {
     resolve({ ok: !err, profile, stdout: String(stdout || ''), stderr: String(stderr || '') })
   })
   if (!child) resolve({ ok: false, profile, stderr: 'could not spawn dsh' })
@@ -371,7 +431,7 @@ ipcMain.handle('prts:pluginClone', (_e, repo) => new Promise((resolve) => {
   execFile('git', ['clone', '--depth', '1', String(repo), tmp], { timeout: 180000 }, (err) => {
     if (err) return resolve({ ok: false, stderr: 'git clone failed: ' + String(err.message || err) })
     const profile = resolveProfile()
-    execFile('dsh', ['plugin', '--profile', profile, 'add', tmp], { timeout: 300000 }, (e2, stdout, stderr) => {
+    execFile('dsh', ['plugin', '--profile', profile, 'add', tmp], { timeout: 300000, shell: process.platform === 'win32' }, (e2, stdout, stderr) => {
       resolve({ ok: !e2, profile, stdout: String(stdout || ''), stderr: String(stderr || '') })
     })
   })
@@ -491,7 +551,7 @@ app.whenReady().then(async () => {
   }
   ensureModelFile('config.json').catch(() => {})
   createWindow()
-  dshMuxConnect()
+  dshMuxWatchdog()
 })
 app.on('window-all-closed', () => app.quit())
 app.on('activate', () => {
@@ -500,9 +560,27 @@ app.on('activate', () => {
 
 // If PRTS spawned its own `dsh web` backend, tear it down when the window
 // closes so it never lingers on port 3080 and blocks the official `dsh web`.
-app.on('before-quit', () => {
-  const pid = Number(process.env.DSH_WEB_PID || 0)
-  if (pid > 1) {
-    try { process.kill(pid, 'SIGKILL') } catch (e) { /* already gone */ }
+// The runner keeps the pidfile up to date (spawn retries may change the pid);
+// DSH_WEB_PID is the fallback for older runners.
+function killPid(pid) {
+  if (!pid || pid <= 1) return
+  if (process.platform === 'win32') {
+    try {
+      require('node:child_process').spawnSync('taskkill', ['/pid', String(pid), '/T', '/F'], { stdio: 'ignore' })
+    } catch (e) { /* already gone */ }
+    return
   }
+  try { process.kill(pid, 'SIGKILL') } catch (e) { /* already gone */ }
+}
+app.on('before-quit', () => {
+  let pid = Number(process.env.DSH_WEB_PID || 0)
+  const pidFile = process.env.DSH_WEB_PIDFILE
+  if (pidFile) {
+    try {
+      const txt = fs.readFileSync(pidFile, 'utf8').trim()
+      if (/^\d+$/.test(txt)) pid = Number(txt)
+      fs.unlinkSync(pidFile)
+    } catch (e) { /* pidfile unreadable */ }
+  }
+  killPid(pid)
 })

@@ -52,6 +52,11 @@
           <span class="eyebrow" data-i18n="sidebar.workspaces">Workspaces</span>
           <span class="count" id="projectCount"></span>
         </div>
+        <button class="sbWsBtn" id="sidebarWsBtn" type="button" data-i18n-title="workspace.switch">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M5.3 2H2.2a.9.9 0 0 0-.9.9v6.2a.9.9 0 0 0 .9.9h7.6a.9.9 0 0 0 .9-.9V4.4a.9.9 0 0 0-.9-.9H6L5.3 2Z" fill="currentColor"/></svg>
+          <span class="name" id="sidebarWsLabel">dsh</span>
+          <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
+        </button>
         <div class="sbList" id="projectList"></div>
       </div>
       <div class="sbSection" style="flex:1;min-height:0;display:flex;flex-direction:column;">
@@ -135,23 +140,12 @@
       <div class="scrollBody">
         <div class="heroView" id="heroView">
           <canvas class="heroCanvas" id="heroCanvas"></canvas>
-          <div class="heroStack">
+          <div class="heroStack" id="heroStack">
             <div class="heroLogo">
               <span class="rhombus-lg"></span>
               <span class="heroWord">PRTS</span>
             </div>
             <div class="heroTagline" id="heroTagline" data-i18n="hero.tagline">欢迎回归，博士</div>
-            <div class="heroSub">
-              <span class="rule"></span>
-              <span class="heroReady" id="heroReady" data-i18n="hero.online">SYSTEM ONLINE</span>
-              <span class="rule"></span>
-            </div>
-            <div class="heroProjectRow">
-              <button class="workspaceBtn" id="workspaceBtn" type="button">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M5.3 2H2.2a.9.9 0 0 0-.9.9v6.2a.9.9 0 0 0 .9.9h7.6a.9.9 0 0 0 .9-.9V4.4a.9.9 0 0 0-.9-.9H6L5.3 2Z" fill="currentColor"/></svg>
-                <span id="workspaceLabel">default</span>
-              </button>
-            </div>
           </div>
         </div>
         <div class="chatScroll" id="chatScroll" hidden>
@@ -173,6 +167,29 @@
             </button>
           </div>
           <div class="composerCard" id="composerCard">
+            <!-- dsh-web style bar above the initial input area: workspace
+                 folder (select + add), mode (agent preset), model and
+                 reasoning. Visible on the welcome screen. -->
+            <div class="heroBar" id="heroBar">
+              <button class="chip heroBarWs" id="heroWsBtn" type="button" data-i18n-title="workspace.switch">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M5.3 2H2.2a.9.9 0 0 0-.9.9v6.2a.9.9 0 0 0 .9.9h7.6a.9.9 0 0 0 .9-.9V4.4a.9.9 0 0 0-.9-.9H6L5.3 2Z" fill="currentColor"/></svg>
+                <span class="label" id="heroWsLabel">dsh</span>
+                <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
+              </button>
+              <button class="chip" id="heroModeChip" type="button" data-i18n-title="mode.title">
+                <span class="label" id="heroModeLabel">STANDARD</span>
+                <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
+              </button>
+              <button class="chip" id="heroModelChip" type="button" data-i18n-title="model.title">
+                <span class="dot"></span>
+                <span class="label" id="heroModelLabel">dsh</span>
+                <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
+              </button>
+              <button class="chip" id="heroReasoningChip" type="button" hidden data-i18n-title="reasoning.title">
+                <span class="label" id="heroReasoningLabel">—</span>
+                <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
+              </button>
+            </div>
             <div class="attachStrip" id="attachStrip" hidden></div>
             <textarea class="composerInput" id="composerInput" rows="1" spellcheck="false" data-i18n-placeholder="composer.placeholder"></textarea>
             <div class="composerToolbar">
@@ -377,6 +394,7 @@
 <div class="intro" id="intro">
   <canvas id="introCanvas"></canvas>
   <div class="introTag" id="introTag"></div>
+  <div class="introStatus" id="introStatus"></div>
 </div>
 <div class="toast" id="toast" role="status"></div>
 

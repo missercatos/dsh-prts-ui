@@ -8,7 +8,7 @@ Version 0.2.0 has been fixed and tested against the **current dsh core (v4-gener
 
 ## Features (mirroring dsh's capabilities)
 
-- **Workspaces**: sidebar list, create/delete, header crumb switcher
+- **Workspaces**: sidebar list, create/delete, header crumb switcher; workspace selector chips in the sidebar and above the welcome-screen composer (switch/add) — adding a workspace opens the OS file manager first (Electron-native dialog on Windows/Linux/macOS), with a typed-path fallback
 - **Sessions**: new, archive, **session search** (local filter + dsh `session.search`), **bulk archive** (select mode + select-all, combines with search)
 - **Mode**: dsh's own agent presets. Blank sessions switch directly; **started sessions are preset-locked** (dsh constraint) — switching offers a new session with that preset
 - **Model**: provider → model picker (live `session.models`)
@@ -20,7 +20,8 @@ Version 0.2.0 has been fixed and tested against the **current dsh core (v4-gener
 - **Bottom stats dock**: the same live stats line as the session UI — turns · steps | LLM · tool time | avg TTFT · tok/s | cache hit % | in/out tokens (projection frames + 8 s poll)
 - **Voice input**: real microphone speech-to-text — first-use consent modal, VAD auto start/stop, local whisper-tiny ONNX engine (engine + model cached from npmmirror / hf-mirror on first use, fully offline after; webkitSpeechRecognition preferred when present)
 - **Trajectory & log split**: the Trajectory tab is a step timeline (grouped by turn/step with durations); the Session log button downloads the dsh-web-style ZIP archive (`/api/session.export`) and falls back to a raw-event overlay with JSON export
-- Plus: three-phase particle intro (welcome → PRTS·DEEPSEEK banner → diamond mark, 3.2 s each, click to skip), system panel (hardware telemetry), cost panel, plugin market, zh/en UI, light/dark theme
+- **Welcome-screen selectors**: above the initial input area, dsh-web style — a folder chip (workspace switch/add), mode (standard / PTC / minimal / creative…), model and reasoning chips; selectable before any session is open
+- Plus: three-phase particle intro (welcome → PRTS·DEEPSEEK banner → diamond mark, 3.2 s each) that doubles as the loading animation — it loops while dsh is still booting, a click before readiness shows the "not ready" hint, and once ready the three scenes play out and auto-enter (or click to enter); system panel (hardware telemetry), cost panel, plugin market, zh/en UI, light/dark theme
 
 ## Compatibility fixes in 0.2.0
 
@@ -36,6 +37,8 @@ Version 0.2.0 has been fixed and tested against the **current dsh core (v4-gener
 - Dead controls wired: sidebar collapse (a floating expand chip reappears when collapsed), chat/trajectory tabs, session log, context meter
 - Settings "Model configuration" collapse fixed (`[hidden]{display:none!important}` — CSS display was overriding the attribute; same fix for the attach strip and status row)
 - Streaming renders are batched per animation frame + throttled to 90 ms (a 9 s live turn rewrites the DOM ~16 times instead of once per chunk); history reloads cooldown 30 s
+- **Window-first boot**: launching PRTS without dsh web running no longer errors/hangs — the window opens immediately, the particle intro is the loading screen, and dsh web boots silently in the background (Windows `.cmd` shims supported); when PRTS closes, the dsh web it spawned is killed (pidfile + fallback pid, cross-platform)
+- The Electron mux relay probes with plain HTTP before ever opening its WebSocket against the backend (a failed WS connect inside the Electron main process wedges its message loop) — probes keep running until dsh answers, then the relay connects and re-probes after drops
 - Settings collapse animates (grid-row 0fr→1fr) instead of jumping
 - The Electron renderer is served over a loopback-only HTTP server (random 127.0.0.1 port) so the speech engine's wasm import()/worker loading works; the dsh API still rides the preload bridge — no window, no exposure
 - Streaming state no longer sticks on "stop" after a mux drop
@@ -54,7 +57,9 @@ Every network step falls back to npmmirror (npm registry + Electron mirror); Git
 The installer: checks Node → installs dsh (if missing) → installs the plugins listed in `prts.config.json` → builds/reuses the `dsh-prts-ui` tarball → installs it into the `prts` profile → pins the bundle → creates desktop/menu shortcuts → puts `prts` on PATH.
 
 ```sh
-prts                        # open the PRTS window (boots/reuses dsh web:3080)
+prts                        # open the PRTS window immediately (particle intro = loading;
+                            # dsh web:3080 boots/reuses silently in the background;
+                            # closing the window kills the dsh web it spawned)
 dsh --profile prts          # equivalent
 dsh --profile prts --lang zh
 dsh --profile prts --shortcut   # refresh desktop shortcuts

@@ -261,7 +261,7 @@
     const summary = P.dshState.sessionSummary(id);
     if (summary && summary.agentPreset) {
       P.dshState.currentPreset = summary.agentPreset;
-      $('headerMode').textContent = presetLabel(summary.agentPreset);
+      setModeLabel(presetLabel(summary.agentPreset));
     }
     P.dshState.permissions = P.dshState.permissionState(id);
     updatePermissionChip();
@@ -285,7 +285,7 @@
         // dsh web behaviour: a fresh session lands on the welcome screen
         // (logo + tagline), with the composer ready to take the first line.
         P.dshState.currentSessionId = id;
-        if (A.currentPreset) $('headerMode').textContent = presetLabel(A.currentPreset);
+        if (A.currentPreset) setModeLabel(presetLabel(A.currentPreset));
         await refreshSessions();
         P.dshState.permissions = P.dshState.permissionState(id);
         updatePermissionChip();
@@ -337,43 +337,60 @@
     }
   }
 
+  /** Pick a workspace directory through the best available native path:
+   *  1. Electron's own OS file manager (the `prts:pickDirectory` bridge) —
+   *     this is the system dialog dsh web opens, and it works on every OS.
+   *  2. dsh's host.pickDirectory RPC (the same native path dsh web uses).
+   *  3. Chromium's showDirectoryPicker (browser mode; reports name only).
+   *  Resolves { path } | { nameOnly } | null (cancelled) | undefined (no picker). */
+  async function pickWorkspacePath() {
+    let bridge = null;
+    try { bridge = window.prts && window.prts.bridge; } catch (e) { /* no bridge */ }
+    if (bridge && typeof bridge.pickDirectory === 'function') {
+      try {
+        const r = await bridge.pickDirectory(A.t('workspace.pickTitle'));
+        if (r === null || r === undefined) return null;
+        if (typeof r === 'string') return { path: r };
+        // { error } — fall through to the dsh/browser pickers.
+      } catch (e) { /* dialog failed — fall through */ }
+    }
+    try {
+      const path = await P.dshState.pickDirectory();
+      if (typeof path === 'string' && path) return { path };
+      return null;
+    } catch (e) { /* picker-less host — fall through */ }
+    if (typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function') {
+      try {
+        const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+        return handle ? { nameOnly: handle.name } : null;
+      } catch (e2) { return null; }
+    }
+    return undefined;
+  }
+
   async function browseWorkspacePath() {
     const input = $('modalInput');
     if (!input) return;
-    try {
-      const path = await P.dshState.pickDirectory();
-      if (path) { input.value = path; input.focus(); }
-    } catch (e) {
-      // Non-Electron / picker-less hosts: fall back to the browser-native
-      // directory picker where it exists (Chromium).
-      try {
-        if (typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function') {
-          const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
-          if (handle) {
-            input.value = handle.name;
-            input.focus();
-            A.toast(A.t('workspace.browseNameOnly'));
-            return;
-          }
-        }
-      } catch (e2) { /* user cancelled — stay silent */ return; }
-      A.toast(A.t('workspace.browseUnavailable'));
+    const picked = await pickWorkspacePath();
+    if (picked && picked.path) { input.value = picked.path; input.focus(); return; }
+    if (picked && picked.nameOnly) {
+      input.value = picked.nameOnly;
+      input.focus();
+      A.toast(A.t('workspace.browseNameOnly'));
+      return;
     }
+    if (picked === null) return;   // user cancelled the OS dialog — stay silent
+    A.toast(A.t('workspace.browseUnavailable'));
   }
 
-  async function newWorkspace() {
-    const path = await A.askPrompt(A.t('workspace.pathPrompt'), '/path/to/project', {
-      browseLabel: A.t('workspace.browse'),
-      onBrowse: browseWorkspacePath,
-    });
-    if (!path || !path.trim()) return;
+  async function createWorkspaceAt(path) {
     try {
-      const r = await P.dshState.createWorkspace(path.trim());
+      const r = await P.dshState.createWorkspace(path);
       await refreshAll();
       const createdId = r && r.workspace && r.workspace.workspaceId;
       if (createdId) P.dshState.currentWorkspaceId = createdId;
       else {
-        const ws = P.dshState.workspaces.find((w) => w.path === path.trim());
+        const ws = P.dshState.workspaces.find((w) => w.path === path);
         if (ws) P.dshState.currentWorkspaceId = ws.workspaceId;
       }
       renderWorkspaces();
@@ -384,6 +401,27 @@
     } catch (e) {
       A.toast(e.message);
     }
+  }
+
+  async function newWorkspace() {
+    // dsh web parity: the OS file manager is the primary path (open it first);
+    // typing a path stays available in the fallback modal below.
+    const picked = await pickWorkspacePath();
+    if (picked && picked.path) { await createWorkspaceAt(picked.path); return; }
+    if (picked && picked.nameOnly) {
+      const path = await A.askPrompt(A.t('workspace.pathPrompt'), '/path/to/project');
+      if (!path || !path.trim()) return;
+      await createWorkspaceAt(path.trim());
+      return;
+    }
+    if (picked === null) return;   // cancelled the OS dialog
+    // No native picker anywhere: the classic prompt (with browse) is the fallback.
+    const path = await A.askPrompt(A.t('workspace.pathPrompt'), '/path/to/project', {
+      browseLabel: A.t('workspace.browse'),
+      onBrowse: browseWorkspacePath,
+    });
+    if (!path || !path.trim()) return;
+    await createWorkspaceAt(path.trim());
   }
 
   async function refreshAll() {
@@ -401,6 +439,8 @@
     if (A.refreshReasoningPop) A.refreshReasoningPop();
     if (A.refreshPermissionPop) A.refreshPermissionPop();
     if (A.refreshModePop) A.refreshModePop();
+    const presetId = A.currentPreset || (P.dshState.currentSessionId ? (P.dshState.sessionSummary(P.dshState.currentSessionId) || {}).agentPreset : null);
+    if (presetId) setModeLabel(presetLabel(presetId));
     if (A.refreshWorkspacePop) A.refreshWorkspacePop();
     updateMeter();
     renderStatsDock();
@@ -411,6 +451,14 @@
   function presetLabel(id) {
     const p = P.dshState.presets.find((x) => (x.id || x.agentPreset) === id);
     return p ? (p.name || id) : id;
+  }
+
+  /** Keep every mode label in sync: header chip + hero chip. */
+  function setModeLabel(text) {
+    const h = $('headerMode');
+    if (h) h.textContent = text;
+    const hero = $('heroModeLabel');
+    if (hero) hero.textContent = text;
   }
 
   /* ---------- model + reasoning chips ---------- */
@@ -434,28 +482,34 @@
   }
 
   function updateModelChip() {
-    const label = $('modelChipLabel');
-    if (!label) return;
     const e = currentModelEntry();
-    label.textContent = e ? e.model.id : '—';
-    label.title = e ? (e.provider || '') + ' / ' + e.model.id : '';
+    const text = e ? e.model.id : '—';
+    const title = e ? (e.provider || '') + ' / ' + e.model.id : '';
+    for (const id of ['modelChipLabel', 'heroModelLabel']) {
+      const label = $(id);
+      if (!label) continue;
+      label.textContent = text;
+      label.title = title;
+    }
   }
 
   function updateReasoningChip() {
-    const chip = $('reasoningChip');
-    const label = $('reasoningChipLabel');
-    if (!chip || !label) return;
     const e = currentModelEntry();
     const reasoning = e && e.model.reasoning;
-    if (!reasoning || !reasoning.efforts || !reasoning.efforts.length) {
-      chip.hidden = true;
-      return;
+    for (const [chipId, labelId] of [['reasoningChip', 'reasoningChipLabel'], ['heroReasoningChip', 'heroReasoningLabel']]) {
+      const chip = $(chipId);
+      const label = $(labelId);
+      if (!chip || !label) continue;
+      if (!reasoning || !reasoning.efforts || !reasoning.efforts.length) {
+        chip.hidden = true;
+        continue;
+      }
+      chip.hidden = false;
+      const cur = (P.dshState.currentModel && P.dshState.currentModel.reasoningEffort) || reasoning.defaultEffort;
+      const eff = reasoning.efforts.find((x) => x.id === cur) || reasoning.efforts[0];
+      label.textContent = eff.name || eff.id;
+      chip.title = A.t('reasoning.title');
     }
-    chip.hidden = false;
-    const cur = (P.dshState.currentModel && P.dshState.currentModel.reasoningEffort) || reasoning.defaultEffort;
-    const eff = reasoning.efforts.find((x) => x.id === cur) || reasoning.efforts[0];
-    label.textContent = eff.name || eff.id;
-    chip.title = A.t('reasoning.title');
   }
 
   /* ---------- permission chip (header + composer) ---------- */
@@ -844,7 +898,10 @@
     const label = ws ? (ws.title || ws.workspaceId) : 'dsh';
     const crumb = $('crumbProjectLabel');
     if (crumb) crumb.textContent = label;
-    $('workspaceLabel').textContent = label;
+    for (const id of ['heroWsLabel', 'sidebarWsLabel']) {
+      const el = $(id);
+      if (el) el.textContent = label;
+    }
   }
 
   /* ---------- phase / tabs ---------- */
@@ -878,8 +935,18 @@
     const composer = $('composerArea');
     if (composer) composer.style.display = '';
     document.querySelectorAll('.tab').forEach((b) => b.classList.toggle('active', b.dataset.view === 'chat'));
+    syncHeroOffset();
     startHeroAmbient();
   };
+  // The logo stack must centre on the background diamond/square behind it.
+  // That square sits at the .cvt centre, while the hero area stops above the
+  // composer — so the stack is pushed down by half the composer's height.
+  function syncHeroOffset() {
+    const stack = $('heroStack');
+    const area = $('composerArea');
+    if (!stack || !area) return;
+    stack.style.setProperty('--hero-shift', Math.round(area.offsetHeight / 2) + 'px');
+  }
   function switchView(view) {
     const chat = $('chatScroll');
     const traj = $('trajView');
@@ -989,7 +1056,6 @@
   function attachPop(trigger, itemsHtml, onPick, alignRight) {
     const pop = document.createElement('div');
     pop.className = 'pop';
-    if (trigger.id === 'workspaceBtn') pop.id = 'wsPop';
     if (alignRight) { pop.style.left = 'auto'; pop.style.right = '0'; }
     pop.innerHTML = itemsHtml;
     trigger.appendChild(pop);
@@ -1058,7 +1124,11 @@
   }
 
   function bindPopovers() {
-    const modelPop = attachPop($('modelChip'), buildModelPop(), async (item) => {
+    // Model + reasoning + mode + workspace popovers are duplicated between the
+    // header/composer chips (chat phase) and the hero bar chips (welcome
+    // screen), because the hero must offer the same selectors dsh web's
+    // initial page offers. Each handler is written once and shared.
+    async function applyModelPick(item) {
       if (item.dataset.back === '1') { currentModelProvider = null; A.refreshModelPop(); return; }
       if (item.dataset.provider) { currentModelProvider = item.dataset.provider; A.refreshModelPop(); return; }
       if (item.dataset.model) {
@@ -1072,11 +1142,16 @@
           closePops();
         } catch (e) { A.toast(e.message); }
       }
-    });
-    A.modelPop = modelPop;
-    A.refreshModelPop = () => { modelPop.innerHTML = buildModelPop(); };
+    }
+    const modelPops = [];
+    for (const id of ['modelChip', 'heroModelChip']) {
+      const trigger = $(id);
+      if (!trigger) continue;
+      modelPops.push(attachPop(trigger, buildModelPop(), applyModelPick));
+    }
+    A.refreshModelPop = () => { for (const pop of modelPops) pop.innerHTML = buildModelPop(); };
 
-    const reasoningPop = attachPop($('reasoningChip'), buildReasoningPop(), async (item) => {
+    async function applyReasoningPick(item) {
       if (!item.dataset.effort) return;
       if (!P.dshState.currentSessionId) { A.toast(A.t('session.selectFirst')); return; }
       const e = currentModelEntry();
@@ -1088,9 +1163,14 @@
         updateReasoningChip();
         closePops();
       } catch (err) { A.toast(err.message); }
-    });
-    A.reasoningPop = reasoningPop;
-    A.refreshReasoningPop = () => { reasoningPop.innerHTML = buildReasoningPop(); };
+    }
+    const reasoningPops = [];
+    for (const id of ['reasoningChip', 'heroReasoningChip']) {
+      const trigger = $(id);
+      if (!trigger) continue;
+      reasoningPops.push(attachPop(trigger, buildReasoningPop(), applyReasoningPick));
+    }
+    A.refreshReasoningPop = () => { for (const pop of reasoningPops) pop.innerHTML = buildReasoningPop(); };
 
     async function applyPermissionPreset(value) {
       if (!P.dshState.currentSessionId) { A.toast(A.t('session.selectFirst')); return; }
@@ -1127,17 +1207,17 @@
     // Work modes = dsh's own agent presets (the same set dsh web offers).
     // dsh locks the preset once a session has started (`agent-preset-locked`),
     // so switching on a non-blank session offers a fresh session instead.
-    const modePop = attachPop($('modeChip'), '<div class="popMeta">' + A.t('mode.loading') + '</div>', async (item) => {
+    async function applyModePick(item) {
       if (!item.dataset.preset) return;
       try {
         if (!P.dshState.currentSessionId || P.dshState.isSessionBlank(P.dshState.currentSessionId)) {
           if (P.dshState.currentSessionId) {
             await P.dshState.agentPresetSelect(P.dshState.currentSessionId, item.dataset.preset);
             A.currentPreset = item.dataset.preset;
-            $('headerMode').textContent = presetLabel(item.dataset.preset);
+            setModeLabel(presetLabel(item.dataset.preset));
           } else {
             A.currentPreset = item.dataset.preset;
-            $('headerMode').textContent = presetLabel(item.dataset.preset);
+            setModeLabel(presetLabel(item.dataset.preset));
           }
           closePops();
           return;
@@ -1149,13 +1229,20 @@
         A.currentPreset = item.dataset.preset;
         await newSession();
       } catch (e) { A.toast(e.message); }
-    });
-    A.modePop = modePop;
+    }
+    const modePops = [];
+    for (const id of ['modeChip', 'heroModeChip']) {
+      const trigger = $(id);
+      if (!trigger) continue;
+      modePops.push(attachPop(trigger, '<div class="popMeta">' + A.t('mode.loading') + '</div>', applyModePick));
+      trigger.addEventListener('click', () => { A.refreshModePop(); });
+    }
     A.refreshModePop = async () => {
+      let html;
       try {
         const presets = await P.dshState.listPresets();
         const cur = A.currentPreset || (P.dshState.currentSessionId ? (P.dshState.sessionSummary(P.dshState.currentSessionId) || {}).agentPreset : null);
-        modePop.innerHTML = presets.length
+        html = presets.length
           ? presets.map((p) => {
             const id = p.id || p.agentPreset;
             const label = p.name || id;
@@ -1163,23 +1250,31 @@
           }).join('')
           : '<div class="popMeta">' + A.t('mode.none') + '</div>';
       } catch (e) {
-        modePop.innerHTML = '<div class="popMeta">' + A.t('mode.none') + '</div>';
+        html = '<div class="popMeta">' + A.t('mode.none') + '</div>';
       }
+      for (const pop of modePops) pop.innerHTML = html;
     };
-    $('modeChip').addEventListener('click', () => { A.refreshModePop(); });
 
-    // Workspace selector — lives on the header crumb (always visible) so it is
-    // reachable from the chat view, not just the hero.
-    const wsPop = attachPop($('crumbProject'), '', async (item) => {
+    // Workspace selector — three copies: the header crumb (chat view), the
+    // hero bar folder chip (welcome screen, dsh web style) and the sidebar
+    // chip (left toolbar). All list the workspaces plus "add workspace".
+    const escHtml = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+    function buildWsPop() {
+      return '<div class="popItem" data-value="__add"><span class="label">' + A.t('workspace.add') + '</span></div>' +
+        P.dshState.workspaces.map((w) => '<div class="popItem" data-value="' + escHtml(w.workspaceId) + '"><span class="label">' + escHtml(w.title || w.workspaceId) + '</span><span class="tick">&#10003;</span></div>').join('');
+    }
+    async function applyWsPick(item) {
       if (item.dataset.value === '__add') { await newWorkspace(); closePops(); return; }
       await selectWorkspace(item.dataset.value);
       closePops();
-    });
-    A.refreshWorkspacePop = () => {
-      wsPop.innerHTML =
-        '<div class="popItem" data-value="__add"><span class="label">' + A.t('workspace.add') + '</span></div>' +
-        P.dshState.workspaces.map((w) => '<div class="popItem" data-value="' + w.workspaceId + '"><span class="label">' + (w.title || w.workspaceId) + '</span><span class="tick">&#10003;</span></div>').join('');
-    };
+    }
+    const wsPops = [];
+    for (const id of ['crumbProject', 'heroWsBtn', 'sidebarWsBtn']) {
+      const trigger = $(id);
+      if (!trigger) continue;
+      wsPops.push(attachPop(trigger, '', applyWsPick));
+    }
+    A.refreshWorkspacePop = () => { for (const pop of wsPops) pop.innerHTML = buildWsPop(); };
     A.refreshWorkspacePop();
 
     // Commands chip — lists the session's known commands (from its own
@@ -1347,10 +1442,24 @@
     A.introDone = false;
     A.ready = false;
 
+    // Loading status: the particle effect is the loading animation while dsh
+    // boots in the background. It flips to "ready — click to enter" the moment
+    // the connection settles, and nags after a while if dsh stays silent.
+    const status = $('introStatus');
+    const introStartAt = Date.now();
+    const statusTimer = setInterval(() => {
+      if (A.introDone || !status) { clearInterval(statusTimer); return; }
+      if (A.ready) status.textContent = A.t('intro.ready');
+      else if (Date.now() - introStartAt > 45000) status.textContent = A.t('intro.slow');
+      else status.textContent = A.t('intro.loading');
+    }, 400);
+
     const finish = () => {
       if (A.introDone) return;
       A.introDone = true;
       clearTimeout(A.introTimer);
+      clearInterval(statusTimer);
+      if (status) status.textContent = '';
       removeIntroSkip();
       $('intro').classList.add('done');
       setTimeout(() => { $('intro').style.display = 'none'; A.introEngine.stop(); }, 800);
@@ -1358,7 +1467,8 @@
     };
     A.finishIntro = finish;
 
-    // Early click: if ready, enter at once; otherwise show a particle "WAIT".
+    // Early click: if ready, enter at once; otherwise show the "not loaded"
+    // particle hint — the intro keeps looping until dsh is actually up.
     const skip = (e) => {
       if (A.ready) finish();
       else showWaitHint(e);
@@ -1376,6 +1486,8 @@
       if (A.introDone) return;
       // Play the full three-wordmark cycle at least once (welcome → banner →
       // diamond mark); a click skips at any moment. Each phase lingers 3.2 s.
+      // Until the connection is ready the cycle loops forever — the effect
+      // doubles as the loading animation.
       if (A.ready && A.phaseCount >= 3) { finish(); return; }
       if (phase === 0) { A.introEngine.showIntro(9000); tag.classList.add('show'); }
       else if (phase === 1) { A.introEngine.showPp(10000); tag.classList.remove('show'); }
@@ -1398,7 +1510,7 @@
     document.body.appendChild(hint);
     const eng = P.particles.create(hint, { count: 520, speedRange: [0.04, 0.10], drift: false });
     eng.start();
-    eng.showText('WAIT', 22, 900);
+    eng.showText(A.t('intro.notReady'), 20, 900);
     setTimeout(() => {
       eng.scatter();
       hint.classList.add('fade');
@@ -1722,7 +1834,7 @@
     });
 
     document.addEventListener('click', (e) => {
-      if (!e.target.closest('.chip') && !e.target.closest('.meterBtn') && !e.target.closest('.workspaceBtn') && !e.target.closest('.crumb')) closePops();
+      if (!e.target.closest('.chip') && !e.target.closest('.meterBtn') && !e.target.closest('.sbWsBtn') && !e.target.closest('.crumb')) closePops();
       if (e.target === $('settingsOverlay')) closeSettings();
       if (e.target === $('marketOverlay')) closeMarket();
     });
@@ -1761,6 +1873,14 @@
     updateCrumb();
     placeHandles();
     runIntro();
+    // Keep the hero logo centred on the background square even as the
+    // composer grows/shrinks (status row, stats dock, expand toggle).
+    if (typeof ResizeObserver !== 'undefined') {
+      try {
+        const ro = new ResizeObserver(() => syncHeroOffset());
+        ro.observe($('composerArea'));
+      } catch (e) { /* observer unavailable */ }
+    }
 
     P.dsh.on('connect', () => { refreshAll().catch(() => { /* dsh may still be warming up */ }); });
     // The host command directory changed (plugin added/removed a command) —
@@ -1792,22 +1912,28 @@
       }).catch(() => { /* noop */ });
     }, 8000);
     (async () => {
+      // dsh may still be booting in the background (PRTS spawns it silently).
+      // Keep polling until it answers — the particle intro keeps looping the
+      // whole time, and a click before that shows the "not loaded" hint.
       try {
         await P.dshState.connect();
-        let up = false;
-        for (let i = 0; i < 40; i++) {
-          if (await P.dshState.ping()) { up = true; break; }
-          await new Promise((r) => setTimeout(r, 750));
+        let delay = 500;
+        for (;;) {
+          if (await P.dshState.ping()) break;
+          await new Promise((r) => setTimeout(r, delay));
+          delay = Math.min(4000, Math.round(delay * 1.25));
         }
-        if (up) {
+        try {
           await refreshAll();
           await A.ensureSession();
-        } else {
-          A.toast(A.t('dsh.connectFail', { msg: A.t('dsh.noResponse') }));
+        } catch (e) {
+          A.toast(A.t('dsh.connectFail', { msg: e.message }));
         }
       } catch (e) {
         A.toast(A.t('dsh.connectFail', { msg: e.message }));
       }
+      // Only now is the app "ready": the intro may end, and early clicks
+      // stop showing the not-loaded hint.
       A.ready = true;
     })();
   }

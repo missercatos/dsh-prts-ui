@@ -31,6 +31,7 @@ contextBridge.exposeInMainWorld('prts', {
     mkdir: (p) => ipcRenderer.invoke('prts:mkdir', p),
     listDir: (p) => ipcRenderer.invoke('prts:listDir', p),
     systemInfo: () => ipcRenderer.invoke('prts:systemInfo'),
+    pickDirectory: (title) => ipcRenderer.invoke('prts:pickDirectory', title),
     pluginsList: () => ipcRenderer.invoke('prts:listPlugins'),
     pluginAdd: (pkg) => ipcRenderer.invoke('prts:pluginAdd', pkg),
     pluginClone: (repo) => ipcRenderer.invoke('prts:pluginClone', repo),
