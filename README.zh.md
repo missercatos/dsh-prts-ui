@@ -19,7 +19,26 @@ PRTS 是 **dsh（DeepSeek Harness）的 GUI 外壳**，不是独立软件。它�
 - **底部统计条**：与会话页同款实时统计 —— `6 轮 · 311 步 · LLM 51m15s · 工具调用 7m00s · 首 token 平均 2.6s · 113 tok/s · 缓存命中 99% · 输入 86M tok · 输出 255K`（projection `sessionStats`/`tokenUsage`，mux `session/projection` 帧实时刷新 + 8s 轮询兜底）
 - **语音输入**：完整可用的麦克风语音转文字 —— 首次开启弹窗询问麦克风权限；VAD 检测说话/静音自动开始与结束；识别引擎为本地 whisper-tiny ONNX（首次使用从 npmmirror / hf-mirror 下载引擎与模型到 `~/.cache/prts/stt/`，之后完全离线），浏览器里有 `webkitSpeechRecognition` 时自动优先
 - **初始页选择器**：初始输入区上方参照 dsh web 的设计有一排选择芯片 —— 文件夹（工作区切换/添加）、模式（标准 / PTC / 极简 / 创造…）、模型与推理等级，未选会话也能直接切换
-- 其余：三幕粒子开场（welcome → PRTS·DEEPSEEK 横幅 → 菱形标志，每幕 3.2s）兼作加载动画 —— dsh 未就绪时循环播放、点击弹出“未就绪”提示，就绪后三幕播完自动进入或点击直接进入；系统面板（硬件遥测）、费用面板、插件市场、中英文界面、明暗主题
+- 其余：三幕粒子开场（welcome → PRTS·DEEPSEEK 横幅 → 菱形标志，每幕 3.2s）兼作加载动画 —— dsh 未就绪时循环播放、点击弹出“未就绪”提示，就绪后三幕播完自动进入或点击直接进入；系统面板（硬件遥测）、设置、插件市场、Git 面板、Skill 坞、中英文界面、明暗主题
+
+## 设置（0.3.0 重做）
+
+设置面板与 dsh web 官方设置同构：**通用设置 / 模型 / 插件 / Agent预设** 四个官方分区（数据源为 settings.describe、llm.providers、agentPreset.list 等官方 RPC），外加 PRTS 扩展分区：
+
+- **余额**：登录跳转 DeepSeek 创作者 API 官网（platform.deepseek.com）；官网已登录则直接返回并显示已登录。API Key 自动写入 dsh 凭证（DEEPSEEK_OFFICIAL_API_KEY）供会话使用；余额走官方接口以人民币显示；充值按钮直达官方充值页。首次登录后无需再登录。
+- **Git**：连接 GitHub（跳转官网登录、会话复用、令牌自动捕获/手动粘贴兜底）；支持创建仓库、选择目录直接上传项目（git init/commit/push）；面板内渲染 GitHub 贡献热力图（PRTS 单色菱形配色）。
+- **Skill**：侧栏 Skill 坞——skill 多选组成 skill 组；人格类 skill（AI 人格记忆）单选；设置内可编辑 SKILL.md 源文件；支持从 GitHub 仓库安装 skill 到 ~/.dsh/skills。
+
+## 侧栏与市场
+
+- 左侧扩展栏：Git / Skill / 市场 / 详情 / 设置（原费用按钮已移除，费用信息并入设置·余额）。
+- 插件市场重做：**DSH 插件**与 **SKILL** 两个分区、分类筛选（视觉 / 工具 / 其他 / 人格）、搜索、GitHub skill 直达安装；界面沿用 dsh web 设置面板风格做 PRTS 化。
+- 指令目录会列出其他 profile 安装的 CLI 插件（如 `givemyflag`）并可一键在终端中运行——已安装插件不再“不可见”。
+
+## PRTS 人格
+
+- 随包内置 `prts-persona` 人格 skill（~/.dsh/skills/prts-persona/SKILL.md，可在线编辑）：自称 PRTS，称呼用户「博士」（可在设置中自定义为 博士.xxx / Dr.xxx）。
+- 提供 **PRTS 模式** agent 预设（~/.dsh/.agent-presets/prts）：标准模式全能力 + PRTS 人格，模式选择器里直接可选。
 
 ## 与当前 dsh 内核的兼容性修正（0.2.0）
 

@@ -4,7 +4,7 @@
  * API traffic go through the IPC bridge to avoid CORS and enable real file
  * storage. Single instance, auto-hide menu, quit on last window closed.
  */
-const { app, BrowserWindow, ipcMain, session, protocol, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, session, protocol, dialog, shell } = require('electron')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
@@ -351,6 +351,232 @@ function sttContentType(rel) {
   if (rel.endsWith('.json')) return 'application/json; charset=utf-8'
   return 'text/javascript; charset=utf-8'
 }
+
+/* ---------- PRTS panel bridge: profiles / skills / shell / auth ---------- */
+
+function dshHomeDir() { return process.env.DSH_HOME || path.join(os.homedir(), '.dsh') }
+function skillsDir() { return path.join(dshHomeDir(), 'skills') }
+
+/** Every dsh profile and its packages, with a CLI flag for one-shot apps
+ *  (packages exposing a bin), so the GUI's command directory can offer
+ *  givemyflag-style plugins as commands. */
+function readProfiles() {
+  const home = dshHomeDir()
+  const out = []
+  let dirs = []
+  try { dirs = fs.readdirSync(path.join(home, 'profiles')) } catch (e) { return out }
+  for (const p of dirs) {
+    const pkgPath = path.join(home, 'profiles', p, 'package.json')
+    let m
+    try { m = JSON.parse(fs.readFileSync(pkgPath, 'utf8')) } catch (e) { continue }
+    const deps = Object.assign({}, m.dependencies, m.devDependencies)
+    const packages = []
+    let cli = false
+    let description = ''
+    let usage = ''
+    for (const name of Object.keys(deps)) {
+      packages.push({ name, version: String(deps[name]).replace(/^file:/, '') })
+      if (name.startsWith('@deepseek-ai/')) continue
+      let pm = null
+      try { pm = JSON.parse(fs.readFileSync(path.join(home, 'profiles', p, 'node_modules', name, 'package.json'), 'utf8')) } catch (e) { pm = null }
+      if (pm && pm.bin) {
+        cli = true
+        description = pm.description || description
+        if (/URL/i.test(String(pm.description || ''))) usage = '<URL>'
+      }
+    }
+    out.push({ profile: p, packages, cli, description, usage })
+  }
+  return out
+}
+ipcMain.handle('prts:listProfiles', () => readProfiles())
+
+/** Run a CLI profile plugin (e.g. dsh --profile givemyflag <url>) in a
+ *  terminal window; falls back to a detached headless run. */
+ipcMain.handle('prts:runCli', (_e, profile, args) => {
+  const quoted = (a) => JSON.stringify(String(a))
+  const cmd = 'dsh --profile ' + profile + (Array.isArray(args) && args.length ? ' ' + args.map(quoted).join(' ') : '')
+  if (process.platform === 'darwin') {
+    try {
+      const child = execFile('osascript', ['-e', 'tell app "Terminal" to do script ' + JSON.stringify(cmd)], () => {})
+      if (child) return { ok: true, via: 'terminal' }
+    } catch (e) { /* fall through */ }
+  } else if (process.platform === 'win32') {
+    try {
+      const child = execFile('cmd', ['/c', 'start', 'cmd', '/k', cmd], () => {})
+      if (child) return { ok: true, via: 'terminal' }
+    } catch (e) { /* fall through */ }
+  } else {
+    const keep = '; echo; echo "[PRTS] done — close this window or press Enter"; read _'
+    const terminals = [
+      ['x-terminal-emulator', ['-e', 'bash', '-lc', cmd + keep]],
+      ['gnome-terminal', ['--', 'bash', '-c', cmd + keep]],
+      ['konsole', ['-e', 'bash', '-lc', cmd + keep]],
+      ['xterm', ['-e', 'bash', '-lc', cmd + keep]],
+    ]
+    for (const [bin, argv] of terminals) {
+      try {
+        const child = execFile(bin, argv, { detached: true }, () => {})
+        if (child) { child.unref(); return { ok: true, via: bin } }
+      } catch (e) { /* next */ }
+    }
+  }
+  try {
+    const child = execFile('dsh', ['--profile', profile, ...(Array.isArray(args) ? args : [])], { detached: true, stdio: 'ignore' }, () => {})
+    if (child) { child.unref(); return { ok: true, via: 'background' } }
+  } catch (e) { /* fall through */ }
+  return { ok: false, error: 'no terminal available' }
+})
+
+ipcMain.handle('prts:shell', (_e, cmd, args) => new Promise((resolve) => {
+  const argv = Array.isArray(args) ? args : []
+  const child = execFile(String(cmd), argv, { timeout: 600000, maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
+    resolve({ ok: !err, stdout: String(stdout || ''), stderr: String(stderr || '') })
+  })
+  if (!child) resolve({ ok: false, stderr: 'could not spawn ' + cmd })
+}))
+
+ipcMain.handle('prts:openExternal', (_e, url) => {
+  try {
+    shell.openExternal(String(url))
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: String(err && err.message || err) }
+  }
+})
+
+/* ---------- skills (the dsh user root) ---------- */
+
+function parseSkillFrontmatter(text) {
+  const m = /^---\n([\s\S]*?)\n---/.exec(String(text || ''))
+  if (!m) return {}
+  const out = {}
+  for (const line of m[1].split('\n')) {
+    const kv = /^([A-Za-z][\w-]*):\s*(.*)$/.exec(line)
+    if (kv) out[kv[1]] = kv[2].trim().replace(/^['"]|['"]$/g, '')
+  }
+  return out
+}
+
+ipcMain.handle('prts:listSkills', () => {
+  const dir = skillsDir()
+  let entries = []
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }) } catch (e) { return [] }
+  const out = []
+  for (const e of entries) {
+    if (!e.isDirectory()) continue
+    const md = path.join(dir, e.name, 'SKILL.md')
+    let text = ''
+    try { text = fs.readFileSync(md, 'utf8') } catch (err) { continue }
+    const fm = parseSkillFrontmatter(text)
+    const name = fm.name || e.name
+    out.push({
+      name,
+      description: fm.description || '',
+      path: path.join(dir, e.name),
+      persona: /(^|[-_.])persona($|[-_.])/.test(name) || fm.category === 'persona' || fm.persona === 'true',
+    })
+  }
+  return out
+})
+
+ipcMain.handle('prts:readSkill', async (_e, name) => {
+  const safe = String(name || '').replace(/[^A-Za-z0-9._-]/g, '')
+  if (!safe) throw new Error('bad skill name')
+  return fs.promises.readFile(path.join(skillsDir(), safe, 'SKILL.md'), 'utf8')
+})
+
+ipcMain.handle('prts:writeSkill', async (_e, name, content) => {
+  const safe = String(name || '').replace(/[^A-Za-z0-9._-]/g, '')
+  if (!safe) throw new Error('bad skill name')
+  await fs.promises.mkdir(path.join(skillsDir(), safe), { recursive: true })
+  await fs.promises.writeFile(path.join(skillsDir(), safe, 'SKILL.md'), String(content || ''), 'utf8')
+  return { ok: true }
+})
+
+ipcMain.handle('prts:deleteSkill', async (_e, name) => {
+  const safe = String(name || '').replace(/[^A-Za-z0-9._-]/g, '')
+  if (!safe) throw new Error('bad skill name')
+  await fs.promises.rm(path.join(skillsDir(), safe), { recursive: true, force: true })
+  return { ok: true }
+})
+
+ipcMain.handle('prts:skillInstall', (_e, repo) => new Promise((resolve) => {
+  const name = String(repo || '').replace(/\/+$/, '').split('/').pop().replace(/\.git$/, '')
+  if (!/^[A-Za-z0-9._-]+$/.test(name) || !name) return resolve({ ok: false, error: 'bad repo name' })
+  const dest = path.join(skillsDir(), name)
+  if (fs.existsSync(dest)) return resolve({ ok: false, error: 'skill already installed: ' + name })
+  try { fs.mkdirSync(skillsDir(), { recursive: true }) } catch (e) { /* exists */ }
+  const child = execFile('git', ['clone', '--depth', '1', String(repo), dest], { timeout: 300000 }, (err, stdout, stderr) => {
+    resolve({ ok: !err, stdout: String(stdout || ''), stderr: String(stderr || ''), name })
+  })
+  if (!child) resolve({ ok: false, error: 'git unavailable' })
+}))
+
+/* ---------- site logins (in-app windows, session reuse, key capture) ---------- */
+
+function authPoll(authWin, isLoggedInUrl, redirectTo, tokenRe, tokenField, timeoutMs) {
+  return new Promise((resolve) => {
+    let settled = false
+    const deadline = setTimeout(() => finish({ ok: false, reason: 'timeout' }), timeoutMs)
+    function finish(v) {
+      if (settled) return
+      settled = true
+      clearTimeout(deadline)
+      try { authWin.close() } catch (e) { /* already gone */ }
+      resolve(v)
+    }
+    const poll = async () => {
+      if (settled) return
+      let url = ''
+      try { url = authWin.webContents.getURL() } catch (e) { return finish({ ok: false, reason: 'window closed' }) }
+      if (isLoggedInUrl(url)) {
+        if (redirectTo && url.indexOf(redirectTo) < 0) {
+          try { authWin.loadURL(redirectTo).catch(() => {}) } catch (e) { /* keep polling */ }
+        }
+        const html = await authWin.webContents.executeJavaScript('document.body ? document.body.innerText : ""').catch(() => '')
+        const m = tokenRe.exec(html || '')
+        if (m) return finish({ ok: true, [tokenField]: m[0] })
+      }
+      setTimeout(poll, 2500)
+    }
+    setTimeout(poll, 6000)
+  })
+}
+
+ipcMain.handle('prts:loginDeepseek', () => {
+  const partition = 'persist:prts-auth-ds'
+  const authWin = new BrowserWindow({
+    width: 1100, height: 760, title: 'DeepSeek 官方平台登录',
+    autoHideMenuBar: true,
+    webPreferences: { partition, nodeIntegration: false, contextIsolation: true, sandbox: true },
+  })
+  authWin.loadURL('https://platform.deepseek.com/sign_in').catch(() => {})
+  // The official session cookie lives on this partition; an already-logged-in
+  // user lands past /sign_in immediately → returns as 已登录 without a password.
+  return authPoll(
+    authWin,
+    (url) => url.indexOf('platform.deepseek.com') >= 0 && url.indexOf('/sign_in') < 0,
+    'https://platform.deepseek.com/api_keys',
+    /sk-[A-Za-z0-9]{20,}/, 'apiKey', 240000,
+  )
+})
+
+ipcMain.handle('prts:loginGithub', () => {
+  const partition = 'persist:prts-auth-gh'
+  const authWin = new BrowserWindow({
+    width: 1100, height: 760, title: 'GitHub 登录',
+    autoHideMenuBar: true,
+    webPreferences: { partition, nodeIntegration: false, contextIsolation: true, sandbox: true },
+  })
+  authWin.loadURL('https://github.com/login').catch(() => {})
+  return authPoll(
+    authWin,
+    (url) => url.indexOf('github.com') >= 0 && url.indexOf('/login') < 0,
+    'https://github.com/settings/tokens/new?scopes=repo,workflow&description=PRTS+Agent',
+    /ghp_[A-Za-z0-9]{20,}/, 'token', 300000,
+  )
+})
 
 /* Loopback-only HTTP server: serves the single-file GUI plus the speech
  * engine files and the whisper model from the shared cache. Everything stays

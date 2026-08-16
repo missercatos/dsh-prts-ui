@@ -36,6 +36,7 @@ const js = [
   ].map((f) => readFileSync(join(SRC_DIR, f), 'utf8')))
   .concat([
     'particles.js', 'icons.js', 'plugins.js', 'stt.js', 'asr.js', 'system.js', 'cost.js', 'chat.js', 'app.js',
+    'balance.js', 'git.js', 'skills.js', 'market.js', 'settings.js',
   ].map((f) => readFileSync(join(GUI_DIR, f), 'utf8')))
   .join('\n\n')
 

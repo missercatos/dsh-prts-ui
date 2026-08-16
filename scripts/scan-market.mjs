@@ -8,7 +8,7 @@
  *
  * Best-effort: rate limits and missing repos are skipped, never fatal.
  */
-import { writeFileSync } from 'node:fs'
+import { writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { pkgRoot } from '../src/root.js'
 
@@ -21,6 +21,14 @@ const GITHUB_QUERIES = [
   'topic:dsh-plugin',
 ]
 const NPM_QUERIES = ['keywords:dsh-plugin', 'keywords:deepseek-harness', 'scope:deepseek-ai dsh']
+
+/** Market categories: 视觉 (visual) / 工具 (tool) / 其他 (other). */
+function classify(text) {
+  const s = String(text || '').toLowerCase()
+  if (/visual|vision|sidebar|theme|\bui\b|layout|dashboard|panel|界面|视觉|侧栏|侧边栏|主题|布局/.test(s)) return 'visual'
+  if (/memory|memo|pocket|同步|sync|telemetry|monitor|钱包|钱包/.test(s)) return 'other'
+  return 'tool'
+}
 
 const timeout = (ms) => new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))
 const get = async (url, headers = {}) => {
@@ -121,11 +129,17 @@ const map = new Map()
 for (const p of [...KNOWN, ...gh, ...npm]) {
   const key = p.pkg || p.repo
   if (!key || map.has(key)) continue
-  map.set(key, p)
+  map.set(key, Object.assign({}, p, { category: classify(p.description || p.displayName || p.name || '') }))
 }
 const plugins = [...map.values()]
 
-const out = { generatedAt: new Date().toISOString(), plugins }
+// Curated GitHub skill section (web/skills-catalog.json).
+const skillsCatalogPath = join(pkgRoot, 'web', 'skills-catalog.json')
+const skills = existsSync(skillsCatalogPath)
+  ? JSON.parse(readFileSync(skillsCatalogPath, 'utf8')).skills || []
+  : []
+
+const out = { generatedAt: new Date().toISOString(), plugins, skills }
 writeFileSync(join(pkgRoot, 'web', 'market.json'), JSON.stringify(out, null, 2))
-console.log(`market.json: ${plugins.length} plugins`)
-for (const p of plugins) console.log(' -', p.source, p.pkg || p.repo, '::', (p.description || '').slice(0, 70))
+console.log(`market.json: ${plugins.length} plugins, ${skills.length} skills`)
+for (const p of plugins) console.log(' -', p.source, p.pkg || p.repo, '[' + (p.category || 'other') + ']', (p.description || '').slice(0, 64))

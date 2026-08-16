@@ -629,268 +629,36 @@
     return rows.map(([k, v]) => '<div class="meterRow"><span class="label">' + k + '</span><span class="value">' + v + '</span></div>').join('');
   }
 
-  /* ---------- settings overlay (Language / Model config / Plugins / Version) ---------- */
-  async function openSettings() {
-    $('cfgLocale').value = A.config.locale || 'auto';
-    $('settingsOverlay').classList.add('open');
-    renderModelConfig();
-    renderPlugins();
-    renderVersion();
-  }
-  function closeSettings() { $('settingsOverlay').classList.remove('open'); }
+  /* ---------- settings overlay (delegated to src/gui/settings.js) ---------- */
+  A.openSettings = function () { if (P.settingsPanel) P.settingsPanel.open(A.config); };
+  A.closeSettings = function () { if (P.settingsPanel) P.settingsPanel.close(); };
 
-  async function renderModelConfig() {
-    const box = $('cfgProviders');
-    box.textContent = '';
-    await P.dshState.listProviders();
-    await P.dshState.listModels();
-    await loadCredentialState();
-    const providers = P.dshState.providers;
-    if (!providers || !providers.length) {
-      box.appendChild(Object.assign(document.createElement('div'), { className: 'hint', textContent: A.t('settings.providers.empty') }));
-      return;
-    }
-    for (const p of providers) {
-      const ref = providerRef(p.provider);
-      const configured = A.credentialState[p.provider] && A.credentialState[p.provider].configured;
-
-      const card = document.createElement('div');
-      card.className = 'pCard';
-
-      const head = document.createElement('button');
-      head.type = 'button';
-      head.className = 'pCardHead';
-      head.innerHTML =
-        '<span class="pName">' + (p.displayName || p.provider) + '</span>' +
-        '<span class="pState" data-state="' + (configured ? 'ok' : 'none') + '">' + (configured ? A.t('settings.provider.set') : A.t('settings.provider.unset')) + '</span>' +
-        '<svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>';
-
-      const body = document.createElement('div');
-      body.className = 'pCardBody';
-
-      const keyRow = document.createElement('div');
-      keyRow.className = 'inlineForm';
-      const input = document.createElement('input');
-      input.type = 'password';
-      input.className = 'sInput';
-      input.placeholder = ref;
-      input.autocomplete = 'off';
-      input.spellcheck = false;
-      const save = document.createElement('button');
-      save.type = 'button';
-      save.className = 'sBtn';
-      save.textContent = A.t('settings.provider.save');
-      save.addEventListener('click', async () => {
-        const value = input.value.trim();
-        if (!value) return;
-        try {
-          await P.dshState.credentialsSet(ref, value);
-          await loadCredentialState();
-          input.value = '';
-          A.toast(A.t('settings.provider.saved', { ref }));
-          renderModelConfig();
-          if (A.refreshModelPop) A.refreshModelPop();
-        } catch (e) { A.toast(e.message); }
-      });
-      keyRow.appendChild(input); keyRow.appendChild(save);
-      body.appendChild(keyRow);
-
-      const grp = P.dshState.models.find((g) => g.id === p.provider);
-      const models = (grp && grp.models) || [];
-      const modelsLine = document.createElement('div');
-      modelsLine.className = 'pModels';
-      modelsLine.textContent = models.length
-        ? models.map((m) => m.id).join(' · ')
-        : A.t('model.none');
-      body.appendChild(modelsLine);
-
-      head.addEventListener('click', () => {
-        const open = card.classList.toggle('open');
-        body.style.display = open ? '' : 'none';
-        if (open) input.focus();
-      });
-      body.style.display = 'none';
-      card.appendChild(head); card.appendChild(body);
-      box.appendChild(card);
-    }
-  }
-
-  async function renderPlugins() {
-    const box = $('cfgPlugins');
-    box.textContent = '';
-    let plugins = [];
-    try { plugins = await P.dshState.pluginsList(); } catch (e) { /* noop */ }
-    if (!plugins.length) {
-      box.appendChild(Object.assign(document.createElement('div'), { className: 'hint', textContent: A.t('settings.plugins.empty') }));
-      return;
-    }
-    for (const pl of plugins) {
-      const row = document.createElement('div');
-      row.className = 'projectRow';
-      const name = document.createElement('span');
-      name.className = 'pname';
-      name.textContent = pl.name;
-      const meta = document.createElement('span');
-      meta.className = 'pmeta';
-      meta.textContent = (pl.version || '') + (pl.profile ? ' · ' + pl.profile : '');
-      row.appendChild(name); row.appendChild(meta);
-      box.appendChild(row);
-    }
-  }
-
-  async function renderVersion() {
-    const box = $('cfgVersion');
-    box.textContent = '';
-    let prtsVer = '?';
-    try { prtsVer = (window.prts && window.prts.env && window.prts.env.prtsVersion) || '?'; } catch (e) { /* noop */ }
-    let dshVer = '—';
-    try {
-      const h = await P.dshState.hostDescribe();
-      dshVer = (h && h.version) || '—';
-    } catch (e) { /* noop */ }
-    const row = document.createElement('div');
-    row.className = 'projectRow';
-    const n = document.createElement('span');
-    n.className = 'pname';
-    n.textContent = 'PRTS';
-    const v = document.createElement('span');
-    v.className = 'pmeta';
-    v.textContent = prtsVer;
-    row.appendChild(n); row.appendChild(v);
-    box.appendChild(row);
-    const row2 = document.createElement('div');
-    row2.className = 'projectRow';
-    const n2 = document.createElement('span');
-    n2.className = 'pname';
-    n2.textContent = 'dsh';
-    const v2 = document.createElement('span');
-    v2.className = 'pmeta';
-    v2.textContent = dshVer;
-    row2.appendChild(n2); row2.appendChild(v2);
-    box.appendChild(row2);
-  }
-
-  /* ---------- cost meter (right sidebar) ---------- */
-  function renderCost(container) {
-    container.textContent = '';
-    const c = P.cost ? P.cost.session : null;
-    const rows = [
-      [A.t('cost.sessionCost'), c ? P.cost.formatMoney(c.usd) : '—'],
-      [A.t('cost.inputTokens'), c ? P.cost.fmtTokens(c.input) : '—'],
-      [A.t('cost.outputTokens'), c ? P.cost.fmtTokens(c.output) : '—'],
-      [A.t('cost.cacheTokens'), c ? P.cost.fmtTokens(c.cacheRead + c.cacheWrite) : '—'],
-      [A.t('cost.calls'), c ? String(c.calls) : '—'],
-    ];
-    for (const [k, v] of rows) {
-      const f = document.createElement('div');
-      f.className = 'dtField';
-      const kk = document.createElement('div');
-      kk.className = 'k';
-      kk.textContent = k;
-      const vv = document.createElement('div');
-      vv.className = 'v';
-      vv.textContent = v;
-      f.appendChild(kk); f.appendChild(vv);
-      container.appendChild(f);
-    }
-    const note = document.createElement('div');
-    note.className = 'hint';
-    note.style.marginTop = '8px';
-    note.textContent = A.t('cost.hint');
-    container.appendChild(note);
-  }
-  A.showCost = function () {
-    openDetails();
-    $('dtTitle').textContent = A.t('cost.title');
-    renderCost($('dtBody'));
-  };
+  /* ---------- details panel ---------- */
   function showDetailsDefault() {
     $('dtTitle').textContent = A.t('details.title');
     $('dtBody').innerHTML = '<div class="dtEmpty">' + A.t('details.empty') + '</div>';
   }
 
-  /* ---------- plugin market ---------- */
-  const MARKET_FALLBACK = [
-    { pkg: '@liustack/modlens', displayName: 'ModLens', description: () => A.t('market.modlens'), source: 'npm' },
-    { pkg: 'dsh-cost-meter', displayName: 'Cost Meter', description: () => A.t('market.costMeter'), source: 'npm' },
-    { pkg: 'dsh-better-sidebar', displayName: 'Better Sidebar', description: () => A.t('market.betterSidebar'), source: 'npm' },
-  ];
-  function marketCatalog() {
-    let scanned = [];
-    try { scanned = (window.PRTS_MARKET && window.PRTS_MARKET.plugins) || []; } catch (e) { scanned = []; }
-    const map = new Map();
-    for (const p of MARKET_FALLBACK.concat(scanned)) {
-      const key = p.pkg || p.repo;
-      if (!key || map.has(key)) continue;
-      map.set(key, p);
-    }
-    return [...map.values()];
-  }
-  async function renderMarket() {
-    const box = $('marketList');
-    box.textContent = '';
-    let installed = [];
-    try { installed = (await P.dshState.pluginsList()).map((p) => p.name); } catch (e) { installed = []; }
-    const items = marketCatalog();
-    if (!items.length) {
-      box.appendChild(Object.assign(document.createElement('div'), { className: 'hint', textContent: A.t('market.empty') }));
-      return;
-    }
-    for (const item of items) {
-      const isInstalled = installed.includes(item.pkg) || (item.pkg && installed.includes(item.pkg.replace(/^@[^/]+\//, '')));
-      const card = document.createElement('div');
-      card.className = 'pCard';
-      const head = document.createElement('div');
-      head.className = 'pCardHead';
-      head.style.cursor = 'default';
-      const name = document.createElement('span');
-      name.className = 'pName';
-      name.textContent = item.displayName || item.name || item.pkg || item.repo;
-      const badge = document.createElement('span');
-      badge.className = 'pState';
-      badge.textContent = item.source === 'github' ? 'github' : 'npm';
-      head.appendChild(name); head.appendChild(badge);
-      const body = document.createElement('div');
-      body.className = 'pCardBody';
-      body.style.display = '';
-      const desc = document.createElement('div');
-      desc.className = 'pModels';
-      desc.textContent = typeof item.description === 'function' ? item.description() : (item.description || '');
-      body.appendChild(desc);
-      const action = document.createElement('button');
-      action.type = 'button';
-      action.className = 'sBtn' + (isInstalled ? '' : ' primary');
-      action.textContent = isInstalled ? A.t('market.installed') : A.t('market.install');
-      action.disabled = isInstalled;
-      action.addEventListener('click', async () => {
-        action.disabled = true;
-        action.textContent = A.t('market.installing');
-        try {
-          const bridge = window.prts && window.prts.bridge;
-          let r;
-          if (item.source === 'github' && item.repo) r = bridge && bridge.pluginClone ? await bridge.pluginClone(item.repo) : { ok: false, stderr: 'no bridge' };
-          else r = bridge && bridge.pluginAdd ? await bridge.pluginAdd(item.pkg || item.repo) : { ok: false, stderr: 'no bridge' };
-          if (r && r.ok) {
-            A.toast(A.t('market.installed', { pkg: item.pkg || item.repo }));
-            renderMarket();
-          } else {
-            A.toast(A.t('market.failed', { msg: (r && (r.stderr || r.stdout)) || 'error' }));
-            action.disabled = false;
-            action.textContent = A.t('market.install');
-          }
-        } catch (e) {
-          A.toast(e.message);
-          action.disabled = false;
-          action.textContent = A.t('market.install');
-        }
-      });
-      body.appendChild(action);
-      card.appendChild(head); card.appendChild(body);
-      box.appendChild(card);
-    }
-  }
-  function openMarket() { $('marketOverlay').classList.add('open'); renderMarket(); }
-  function closeMarket() { $('marketOverlay').classList.remove('open'); }
+  /* ---------- plugin market (delegated to src/gui/market.js) ---------- */
+  A.openMarket = function () {
+    $('marketOverlay').classList.add('open');
+    if (P.market) P.market.open();
+  };
+  A.closeMarket = function () { $('marketOverlay').classList.remove('open'); };
+
+  /* ---------- git panel (sidebar) ---------- */
+  A.openGit = function () {
+    $('gitOverlay').classList.add('open');
+    if (P.git) P.git.render($('gitBody'), A.config);
+  };
+  A.closeGit = function () { $('gitOverlay').classList.remove('open'); };
+
+  /* ---------- skill dock (sidebar) ---------- */
+  A.openSkills = function () {
+    $('skillOverlay').classList.add('open');
+    if (P.skills) P.skills.render($('skillBody'), A.config);
+  };
+  A.closeSkills = function () { $('skillOverlay').classList.remove('open'); };
 
   /* ---------- header / crumbs ---------- */
   function updateCrumb() {
@@ -1277,10 +1045,23 @@
     A.refreshWorkspacePop = () => { for (const pop of wsPops) pop.innerHTML = buildWsPop(); };
     A.refreshWorkspacePop();
 
-    // Commands chip — lists the session's known commands (from its own
-    // command/run history plus well-known built-ins; dsh exposes no
-    // command-directory RPC on the /api wire).
+    // Commands chip — lists the session's known commands (the real dsh
+    // command directory over commands/list) plus the CLI apps of other
+    // installed dsh profiles (one-shot plugins like givemyflag), which run
+    // as commands too.
     const cmdPop = attachPop($('commandsChip'), '<div class="popMeta">' + A.t('commands.loading') + '</div>', async (item) => {
+      if (item.dataset.cli === '1') {
+        closePops();
+        const usage = item.dataset.usage || '';
+        const args = await A.askPrompt(A.t('commands.runCliPrompt', { name: item.dataset.name }), usage);
+        if (args === null) return;
+        try {
+          const r = await P.dshState.runCliPlugin(item.dataset.profile, args.trim() ? args.trim().split(/\s+/) : []);
+          if (r && r.ok) A.toast(A.t('commands.runCliStarted', { name: item.dataset.name }));
+          else A.toast(A.t('commands.runCliFail', { msg: (r && (r.error || r.stderr)) || 'error' }));
+        } catch (e) { A.toast(e.message); }
+        return;
+      }
       const input = $('composerInput');
       if (input) {
         input.value = '/' + (item.dataset.name || '') + ' ';
@@ -1296,7 +1077,9 @@
       try {
         const cmds = await P.dshState.commandsList(P.dshState.currentSessionId);
         cmdPop.innerHTML = cmds.length
-          ? cmds.map((c) => '<div class="popItem" data-name="' + esc(c.name) + '"><span class="label">/' + esc(c.name) + '</span><span class="desc">' + esc(c.description || '') + '</span></div>').join('')
+          ? cmds.map((c) => c.cli
+            ? '<div class="popItem" data-name="' + esc(c.name) + '" data-cli="1" data-profile="' + esc(c.profile || '') + '" data-usage="' + esc(c.usage || '') + '"><span class="label">⌘ ' + esc(c.name) + '</span><span class="desc">' + esc(c.description || '') + '</span><span class="tick">RUN</span></div>'
+            : '<div class="popItem" data-name="' + esc(c.name) + '"><span class="label">/' + esc(c.name) + '</span><span class="desc">' + esc(c.description || '') + '</span></div>').join('')
           : '<div class="popMeta">' + A.t('commands.none') + '</div>';
       } catch (e) {
         cmdPop.innerHTML = '<div class="popMeta">' + A.t('commands.none') + '</div>';
@@ -1710,44 +1493,15 @@
       if (appEl().hasAttribute('data-details-collapsed')) { showDetailsDefault(); openDetails(); }
       else closeDetails();
     });
-    $('costBtn').addEventListener('click', () => {
-      if (appEl().hasAttribute('data-details-collapsed')) { A.showCost(); }
-      else closeDetails();
-    });
-    $('marketBtn').addEventListener('click', openMarket);
-    $('marketClose').addEventListener('click', closeMarket);
+    $('marketBtn').addEventListener('click', A.openMarket);
+    $('marketClose').addEventListener('click', A.closeMarket);
+    $('gitBtn').addEventListener('click', A.openGit);
+    $('gitClose').addEventListener('click', A.closeGit);
+    $('skillBtn').addEventListener('click', A.openSkills);
+    $('skillClose').addEventListener('click', A.closeSkills);
     $('dtClose').addEventListener('click', closeDetails);
-    $('settingsBtn').addEventListener('click', openSettings);
-    $('settingsClose').addEventListener('click', closeSettings);
-    $('cfgSave').addEventListener('click', async () => {
-      A.config.locale = $('cfgLocale').value;
-      await P.store.saveConfig(A.config);
-      A.locale = A.config.locale === 'auto' ? P.platform.detectLocale() : A.config.locale;
-      applyI18n();
-      closeSettings();
-      A.toast(A.t('settings.saved'));
-    });
-    $('modelCfgToggle').addEventListener('click', () => {
-      const btn = $('modelCfgToggle');
-      const body = $('modelCfgBody');
-      const open = body.classList.toggle('open');
-      btn.setAttribute('aria-expanded', String(open));
-      btn.classList.toggle('open', open);
-    });
-    $('updateBtn').addEventListener('click', async () => {
-      const status = $('updateStatus');
-      status.textContent = A.t('settings.updating');
-      try {
-        const bridge = window.prts && window.prts.bridge;
-        const r = bridge && bridge.update ? await bridge.update() : { ok: false, stderr: 'no bridge' };
-        if (r && r.ok) {
-          status.textContent = A.t('settings.updated');
-          A.toast(A.t('settings.updated'));
-        } else {
-          status.textContent = A.t('settings.updateFail', { msg: (r && (r.stderr || r.error)) || 'error' });
-        }
-      } catch (e) { status.textContent = A.t('settings.updateFail', { msg: e.message }); }
-    });
+    $('settingsBtn').addEventListener('click', A.openSettings);
+    $('settingsClose').addEventListener('click', A.closeSettings);
     // Search sessions: client-side filter (instant) — the wire session.search
     // stays a best-effort supplement for deployments where the index is on.
     const searchInput = $('sessionSearch');
@@ -1835,14 +1589,16 @@
 
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.chip') && !e.target.closest('.meterBtn') && !e.target.closest('.sbWsBtn') && !e.target.closest('.crumb')) closePops();
-      if (e.target === $('settingsOverlay')) closeSettings();
-      if (e.target === $('marketOverlay')) closeMarket();
+      if (e.target === $('settingsOverlay')) A.closeSettings();
+      if (e.target === $('marketOverlay')) A.closeMarket();
+      if (e.target === $('gitOverlay')) A.closeGit();
+      if (e.target === $('skillOverlay')) A.closeSkills();
     });
     let lastEscAt = 0;
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
       const now = Date.now();
-      closePops(); closeSettings(); closeMarket();
+      closePops(); A.closeSettings(); A.closeMarket(); A.closeGit(); A.closeSkills();
       if (P.system && P.system.open) P.system.close();
       if (now - lastEscAt < 500) {
         lastEscAt = 0;
@@ -1968,6 +1724,14 @@
   A.updatePermissionChip = updatePermissionChip;
   A.updateMeter = updateMeter;
   A.switchView = switchView;
+  A.applyTheme = applyTheme;
+  A.applyI18n = applyI18n;
+  A.setModeLabel = setModeLabel;
+  A.presetLabel = presetLabel;
+  A.newSession = newSession;
+  A.loadCredentialState = loadCredentialState;
+  A.currentPreset = A.currentPreset || null;
+  A.showDetailsDefault = showDetailsDefault;
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();

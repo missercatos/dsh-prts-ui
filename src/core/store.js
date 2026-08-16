@@ -7,10 +7,34 @@
   'use strict';
   const P = G.PRTS = G.PRTS || {};
 
-  const DEFAULTS = { locale: 'auto', ui: { theme: 'dark' } };
+  const DEFAULTS = {
+    locale: 'auto',
+    ui: { theme: 'dark' },
+    // 博士称呼: empty = 默认「博士」; set = 「博士.<name>」/「Dr.<name>」
+    persona: { userName: '' },
+    // DeepSeek 官方平台账户: 首次登录后 loggedIn=true, apiKey 同时写入 dsh 凭证
+    deepseek: { loggedIn: false, apiKey: '' },
+    // GitHub 账户: token 只存本机 PRTS 配置
+    github: { loggedIn: false, token: '', login: '' },
+    // skill 组: groups = [{ id, name, skills: [skillName], persona? }]; 人格 skill 全局单选
+    skills: { activeGroup: '', persona: 'prts-persona', groups: [] },
+  };
 
   function uiConfigPath() { return P.platform.prtsUiConfigPath(); }
   function legacyPath() { return P.platform.configDir() + '/config.json'; }
+
+  function deepMerge(base, extra) {
+    const out = { ...base };
+    for (const k of Object.keys(extra || {})) {
+      const v = extra[k];
+      if (v !== null && typeof v === 'object' && !Array.isArray(v) && base[k] !== null && typeof base[k] === 'object' && !Array.isArray(base[k])) {
+        out[k] = deepMerge(base[k], v);
+      } else {
+        out[k] = v;
+      }
+    }
+    return out;
+  }
 
   const store = {
     async loadConfig() {
@@ -19,7 +43,7 @@
       try {
         const raw = await P.io.readFile(path);
         const parsed = JSON.parse(raw);
-        cfg = { ...cfg, ...parsed, ui: { ...cfg.ui, ...(parsed.ui || {}) } };
+        cfg = deepMerge(cfg, parsed);
       } catch (e) {
         // First run in the new location: migrate theme/locale from the legacy
         // config (pre ~/.dsh move) if present.

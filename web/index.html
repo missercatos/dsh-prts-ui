@@ -873,6 +873,158 @@ button:focus:not(:focus-visible) { outline: none; }
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* ===== PRTS panels: settings nav, balance, git, skill dock, market =====
+   Built on the chat.css settings primitives; Hypergryph-style chrome:
+   hairline section titles, diamond glyphs, mono uppercase micro-labels. */
+
+/* ---------- settings overlay: official-style section nav ---------- */
+#settingsOverlay .settingsCard {
+  width: min(860px, calc(100vw - 48px));
+  height: min(620px, calc(100vh - 80px));
+  display: flex; flex-direction: column; overflow: hidden;
+  padding: 18px 0 0;
+}
+#settingsOverlay .settingsHead { padding: 0 20px; margin-bottom: 12px; }
+#settingsOverlay .settingsBody {
+  flex: 1; min-height: 0; display: flex; flex-direction: row; gap: 0;
+  border-top: 1px solid var(--prts-hairline);
+}
+.sNav {
+  width: 172px; flex: none; padding: 10px 8px; display: flex; flex-direction: column; gap: 2px;
+  border-right: 1px solid var(--prts-hairline); background: var(--prts-surface);
+  overflow-y: auto;
+}
+.sNavItem {
+  display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px;
+  border: none; border-radius: 8px; background: transparent; cursor: pointer;
+  color: var(--prts-ink-dim); font-size: 13px; text-align: left;
+  transition: background 0.12s var(--prts-ease), color 0.12s var(--prts-ease);
+}
+.sNavItem svg { flex: none; opacity: 0.8; }
+.sNavItem:hover { background: var(--prts-surface-2); color: var(--prts-ink); }
+.sNavItem.on {
+  background: var(--prts-surface-2); color: var(--prts-ink);
+  box-shadow: inset 2px 0 0 var(--prts-ink);
+}
+.sNavItem .pState { margin-left: auto; }
+.sContent {
+  flex: 1; min-width: 0; overflow-y: auto; padding: 16px 20px 24px;
+  display: flex; flex-direction: column;
+}
+.sSectionHost { display: flex; flex-direction: column; gap: 18px; }
+.sContent .sSection { display: flex; flex-direction: column; gap: 8px; }
+.sTextarea {
+  width: 100%; min-height: 320px; padding: 10px 12px; border: 1px solid var(--prts-hairline);
+  border-radius: 8px; background: var(--prts-surface); color: var(--prts-ink);
+  font-family: var(--prts-mono); font-size: 12px; line-height: 1.6; resize: vertical; outline: none;
+}
+.sTextarea:focus { border-color: var(--prts-hairline-strong); }
+.inlineForm { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.inlineForm .sInput { flex: 1; min-width: 140px; }
+
+/* ---------- balance card ---------- */
+.balCard {
+  display: flex; align-items: center; gap: 16px; padding: 14px 16px;
+  border: 1px solid var(--prts-hairline); border-radius: 10px; background: var(--prts-surface);
+}
+.balBig {
+  font-family: var(--prts-mono); font-size: 26px; letter-spacing: 0.02em; color: var(--prts-ink);
+}
+.balSub { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.balSub .projectRow { margin-bottom: 0; }
+
+/* ---------- git panel ---------- */
+.ghUser { display: flex; align-items: center; gap: 8px; }
+.ghUser svg { color: var(--prts-ink-dim); }
+.ghLogin { font-family: var(--prts-mono); font-size: 13px; color: var(--prts-ink); }
+.ghHeat {
+  margin-top: 4px; padding: 10px 12px; border: 1px solid var(--prts-hairline); border-radius: 10px;
+  background: var(--prts-surface); overflow-x: auto;
+}
+.ghHeat svg { display: block; min-width: 560px; }
+.mCheck { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--prts-ink-dim); cursor: pointer; }
+.mCheck input { accent-color: var(--prts-ink); }
+
+/* ---------- skill dock ---------- */
+.skPersona, .skChips { display: flex; flex-wrap: wrap; gap: 6px; }
+.skChip {
+  height: 26px; padding: 0 12px; border: 1px solid var(--prts-hairline); border-radius: 13px;
+  background: transparent; color: var(--prts-ink-dim); font-size: 12px; cursor: pointer;
+  transition: border-color 0.12s var(--prts-ease), color 0.12s var(--prts-ease), background 0.12s var(--prts-ease);
+}
+.skChip:hover { border-color: var(--prts-hairline-strong); color: var(--prts-ink); }
+.skChip.on { background: var(--prts-ink); color: var(--prts-bg); border-color: var(--prts-ink); }
+.skGroup {
+  display: flex; align-items: center; gap: 8px; padding: 7px 10px; margin-top: 4px;
+  border: 1px solid var(--prts-hairline); border-radius: 8px; background: transparent;
+  transition: border-color 0.12s var(--prts-ease);
+}
+.skGroup.active { border-color: var(--prts-hairline-strong); background: var(--prts-surface); }
+.skGroupName {
+  flex: 1; text-align: left; border: none; background: transparent; cursor: pointer;
+  color: var(--prts-ink); font-size: 13px; font-family: var(--prts-mono); letter-spacing: 0.06em;
+}
+.skGroupCount { font-size: 11px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+.skGroup .rowBtn { color: var(--prts-ink-faint); }
+.skItem {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  border: 1px solid var(--prts-hairline); border-radius: 8px;
+}
+.skItemMeta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.skItemName { font-size: 13px; color: var(--prts-ink); font-family: var(--prts-mono); }
+.skItemMeta .pModels { font-family: inherit; }
+.skItem .rowBtn {
+  display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px;
+  border: 1px solid var(--prts-hairline); border-radius: 6px; background: transparent;
+  color: var(--prts-ink-faint); cursor: pointer;
+}
+.skItem .rowBtn:hover { color: var(--prts-ink); border-color: var(--prts-hairline-strong); }
+
+/* ---------- market ---------- */
+.marketCard { width: min(760px, calc(100vw - 48px)); max-height: calc(100vh - 80px); display: flex; flex-direction: column; overflow: hidden; }
+.marketCard .settingsHead { flex: none; }
+#marketList { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.mControls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.mSearch {
+  flex: 1; min-width: 200px; display: flex; align-items: center; gap: 8px; height: 34px;
+  padding: 0 10px; border: 1px solid var(--prts-hairline); border-radius: 6px; color: var(--prts-ink-faint);
+}
+.mSearch:focus-within { border-color: var(--prts-hairline-strong); color: var(--prts-ink-dim); }
+.mSearch input { flex: 1; min-width: 0; border: none; background: transparent; color: var(--prts-ink); font-size: 13px; outline: none; }
+.mTabs { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--prts-hairline); border-radius: 8px; background: var(--prts-surface); }
+.mTab {
+  height: 26px; padding: 0 14px; border: none; border-radius: 6px; background: transparent;
+  color: var(--prts-ink-dim); font-size: 12px; letter-spacing: 0.08em; cursor: pointer;
+  transition: background 0.12s var(--prts-ease), color 0.12s var(--prts-ease);
+}
+.mTab.on { background: var(--prts-ink); color: var(--prts-bg); }
+.mCats { display: flex; gap: 6px; flex-wrap: wrap; }
+.mCat {
+  height: 24px; padding: 0 12px; border: 1px solid var(--prts-hairline); border-radius: 12px;
+  background: transparent; color: var(--prts-ink-faint); font-size: 11px; letter-spacing: 0.08em; cursor: pointer;
+  transition: border-color 0.12s var(--prts-ease), color 0.12s var(--prts-ease);
+}
+.mCat.on { border-color: var(--prts-ink); color: var(--prts-ink); }
+.mGh { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px; border: 1px dashed var(--prts-hairline-strong); border-radius: 8px; }
+.mGhLabel { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--prts-ink-faint); flex: 1; min-width: 120px; }
+.mGh .sInput { flex: 2; min-width: 220px; }
+.mGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.mGrid .pCard { margin-bottom: 0; }
+.mLink { font-size: 11px; font-family: var(--prts-mono); color: var(--prts-ink-faint); text-decoration: none; word-break: break-all; }
+.mLink:hover { color: var(--prts-ink); }
+.marketCard .pCardHead { cursor: default; }
+
+/* ---------- plugin inventory groups ---------- */
+.pGroup { border: 1px solid var(--prts-hairline); border-radius: 8px; padding: 8px 12px 2px; }
+.pGroupHead { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.pGroupHead .pname { flex: 1; font-size: 11px; letter-spacing: 0.16em; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+.pGroup .projectRow { margin-bottom: 6px; }
+
+/* ---------- shared hint / rows ---------- */
+.hint { font-size: 11px; line-height: 18px; color: var(--prts-ink-faint); }
+#gitOverlay .settingsCard, #skillOverlay .settingsCard { width: min(640px, calc(100vw - 48px)); }
+#gitBody, #skillBody { display: flex; flex-direction: column; gap: 18px; }
+
 /* PRTS design tokens — pure black/white. Dark is the default surface; light
    inverts the pair. Every component derives from these tokens only. */
 :root {
@@ -990,12 +1142,16 @@ button:focus:not(:focus-visible) { outline: none; }
         </div>
       </div>
       <div class="sbFoot">
-        <button class="sbFootItem" id="costBtn" type="button">
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5v12M3.5 3.5h7a2 2 0 0 1 0 4h-5a2 2 0 0 0 0 4h7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
-          <span data-i18n="sidebar.cost">Cost</span>
+        <button class="sbFootItem" id="gitBtn" type="button">
+          <svg width="15" height="15" viewBox="0 0 14 14" fill="none"><circle cx="3" cy="3.4" r="1.15" stroke="currentColor" stroke-width="1.15"/><circle cx="11" cy="3.4" r="1.15" stroke="currentColor" stroke-width="1.15"/><circle cx="7" cy="10.8" r="1.15" stroke="currentColor" stroke-width="1.15"/><path d="M4 3.9a3 3 0 0 0 2.5 6M10 3.9a3 3 0 0 1-2.5 6" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/></svg>
+          <span data-i18n="sidebar.git">Git</span>
+        </button>
+        <button class="sbFootItem" id="skillBtn" type="button">
+          <svg width="15" height="15" viewBox="0 0 14 14" fill="none"><path d="M7 1.6 12.4 7 7 12.4 1.6 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M4.9 4.9 7 7l2.1-2.1M7 7l2.1 2.1M4.9 9.1 7 7" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/></svg>
+          <span data-i18n="sidebar.skills">Skill</span>
         </button>
         <button class="sbFootItem" id="marketBtn" type="button">
-          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"><path d="M4.5 2.5 6.5 4.5 4.5 6.5 2.5 4.5Z"/><path d="M11.5 2.5 13.5 4.5 11.5 6.5 9.5 4.5Z"/><path d="M4.5 9.5 6.5 11.5 4.5 13.5 2.5 11.5Z"/><path d="M11.5 9.5 13.5 11.5 11.5 13.5 9.5 11.5Z" fill="currentColor" stroke="none"/></svg>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"><path d="M4.5 2.5 6.5 4.5 4.5 6.5 2.5 4.5Z"/><path d="M11.5 2.5 13.5 4.5 11.5 6.5 9.5 4.5Z"/><path d="M4.5 9.5 6.5 11.5 4.5 13.5 2.5 11.5Z" fill="currentColor" stroke="none"/><path d="M11.5 9.5 13.5 11.5 11.5 13.5 9.5 11.5Z"/></svg>
           <span data-i18n="sidebar.market">Market</span>
         </button>
         <button class="sbFootItem" id="detailsBtn" type="button">
@@ -1003,7 +1159,7 @@ button:focus:not(:focus-visible) { outline: none; }
           <span data-i18n="sidebar.details">Details</span>
         </button>
         <button class="sbFootItem" id="settingsBtn" type="button">
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 9.4a1.9 1.9 0 1 0 0-3.8 1.9 1.9 0 0 0 0 3.8Z" stroke="currentColor" stroke-width="1.1"/><path d="M12.8 8.2c.1-.4.1-.7 0-1l1.2-1a.3.3 0 0 0 0-.4l-1.2-2a.3.3 0 0 0-.4-.2l-1.4.6a4.8 4.8 0 0 0-1.8-1L9 1.5a.3.3 0 0 0-.3-.3h-2.4a.3.3 0 0 0-.3.3l-.2 1.7a4.8 4.8 0 0 0-1.8 1l-1.4-.6a.3.3 0 0 0-.4.2l-1.2 2a.3.3 0 0 0 0 .4l1.2 1a3 3 0 0 0 0 1l-1.2 1a.3.3 0 0 0 0 .4l1.2 2a.3.3 0 0 0 .4.2l1.4-.6a4.8 4.8 0 0 0 1.8 1l.2 1.7c0 .2.1.3.3.3h2.4c.2 0 .3-.1.3-.3l.2-1.7a4.8 4.8 0 0 0 1.8-1l1.4.6c.2 0 .4 0 .4-.2l1.2-2a.3.3 0 0 0 0-.4l-1.2-1Z" stroke="currentColor" stroke-width="1.1"/></svg>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 9.6a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2Z" stroke="currentColor" stroke-width="1.15"/><path d="M13.2 7v.9l-1.7.3a4 4 0 0 1-.5 1.2l1 1.4-.9.9-1.4-1a4 4 0 0 1-1.2.5L8 12.9h-.9L6.8 11.2a4 4 0 0 1-1.2-.5l-1.4 1-.9-.9 1-1.4a4 4 0 0 1-.5-1.2L2.1 6.9V6l1.7-.3a4 4 0 0 1 .5-1.2l-1-1.4.9-.9 1.4 1a4 4 0 0 1 1.2-.5L7.1 1.1H8l.3 1.7a4 4 0 0 1 1.2.5l1.4-1 .9.9-1 1.4a4 4 0 0 1 .5 1.2l1.7.3Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>
           <span data-i18n="sidebar.settings">Settings</span>
         </button>
       </div>
@@ -1175,47 +1331,8 @@ button:focus:not(:focus-visible) { outline: none; }
       </button>
     </div>
     <div class="settingsBody">
-      <div class="sSection">
-        <div class="sSecTitle eyebrow" data-i18n="settings.language">Language</div>
-        <select class="sInput sSelect" id="cfgLocale">
-          <option value="auto">AUTO</option>
-          <option value="zh">中文</option>
-          <option value="en">ENGLISH</option>
-        </select>
-      </div>
-
-      <div class="sSection">
-        <div class="sSecRow">
-          <span class="sSecTitle eyebrow" data-i18n="settings.modelConfig">Model configuration</span>
-          <button class="toggleBtn" id="modelCfgToggle" type="button" aria-expanded="false" data-i18n-title="settings.modelConfig.toggle"><span class="tgDiamond"></span></button>
-        </div>
-        <div class="sCollapse collapseAnim" id="modelCfgBody">
-          <div class="collapseInner">
-            <div class="hint" data-i18n="settings.modelConfig.hint">API keys are written to the dsh harness home (~/.dsh) — exactly where dsh keeps them. Only models whose provider has a key can be picked.</div>
-            <div id="cfgProviders"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="sSection">
-        <div class="sSecTitle eyebrow" data-i18n="settings.plugins">Plugins</div>
-        <div class="hint" data-i18n="settings.plugins.hint">Installed into the dsh profile. Add more with `dsh plugin --profile prts add &lt;package&gt;`.</div>
-        <div id="cfgPlugins"></div>
-      </div>
-
-      <div class="sSection">
-        <div class="sSecTitle eyebrow" data-i18n="settings.version">Version</div>
-        <div id="cfgVersion"></div>
-        <div class="sRow" style="margin-top: 8px;">
-          <button class="sBtn" id="updateBtn" type="button" data-i18n="settings.update">Update</button>
-          <span class="sStatus" id="updateStatus"></span>
-        </div>
-      </div>
-
-      <div class="sRow" style="margin-top: 18px;">
-        <button class="sBtn primary" id="cfgSave" type="button" data-i18n="settings.done">Done</button>
-        <span class="sStatus" id="cfgStatus"></span>
-      </div>
+      <nav class="sNav" id="settingsNav"></nav>
+      <div class="sContent" id="settingsContent"></div>
     </div>
   </div>
 </div>
@@ -1254,13 +1371,36 @@ button:focus:not(:focus-visible) { outline: none; }
 <div class="overlay" id="marketOverlay">
   <div class="settingsCard marketCard">
     <div class="settingsHead">
-      <span class="title" data-i18n="market.title">Plugins</span>
+      <span class="title" data-i18n="market.title">Market</span>
       <button class="iconBtn" id="marketClose" type="button" title="Close">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
       </button>
     </div>
-    <div class="hint" data-i18n="market.hint" style="margin-bottom:14px;">Install dsh plugins from npm into the profile. Installed plugins are marked.</div>
     <div id="marketList"></div>
+  </div>
+</div>
+
+<div class="overlay" id="gitOverlay">
+  <div class="settingsCard gitCard">
+    <div class="settingsHead">
+      <span class="title" data-i18n="git.title">Git</span>
+      <button class="iconBtn" id="gitClose" type="button" title="Close">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="settingsBody" id="gitBody"></div>
+  </div>
+</div>
+
+<div class="overlay" id="skillOverlay">
+  <div class="settingsCard skillCard">
+    <div class="settingsHead">
+      <span class="title" data-i18n="skills.title">Skill</span>
+      <button class="iconBtn" id="skillClose" type="button" title="Close">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="settingsBody" id="skillBody"></div>
   </div>
 </div>
 
@@ -1308,28 +1448,31 @@ button:focus:not(:focus-visible) { outline: none; }
 
 <script>
 window.PRTS_MARKET = {
-  "generatedAt": "2026-08-16T07:44:24.592Z",
+  "generatedAt": "2026-08-16T12:40:04.208223+00:00",
   "plugins": [
     {
       "pkg": "@liustack/modlens",
       "name": "ModLens",
       "displayName": "ModLens",
       "source": "npm",
-      "description": "Vision for text-only LLMs via Antigravity CLI."
+      "description": "Vision for text-only LLMs via Antigravity CLI.",
+      "category": "visual"
     },
     {
       "pkg": "dsh-cost-meter",
       "name": "dsh-cost-meter",
       "displayName": "Cost Meter",
       "source": "npm",
-      "description": "Per-session cost, daily totals and official price sync."
+      "description": "Per-session cost, daily totals and official price sync.",
+      "category": "other"
     },
     {
       "pkg": "dsh-better-sidebar",
       "name": "dsh-better-sidebar",
       "displayName": "Better Sidebar",
       "source": "npm",
-      "description": "VSCode-like sidebar (explorer / editor / terminal / git)."
+      "description": "VSCode-like sidebar (explorer / editor / terminal / git).",
+      "category": "visual"
     },
     {
       "name": "dshmarket",
@@ -1337,7 +1480,8 @@ window.PRTS_MARKET = {
       "description": "Visual plugin market inside DeepSeek Harness — browse, search, and one-click install community plugins. · DSH 可视化插件市场：逛一逛，点一下，装好。",
       "source": "npm",
       "pkg": "dshmarket",
-      "repo": "git+https://github.com/dsh-market/dsh-market.git"
+      "repo": "git+https://github.com/dsh-market/dsh-market.git",
+      "category": "visual"
     },
     {
       "name": "@memtensor/memos-local-plugin",
@@ -1345,7 +1489,8 @@ window.PRTS_MARKET = {
       "description": "Reflect2Evolve memory plugin: layered L1/L2/L3 memory, reflection-weighted value backprop, cross-task policy induction, skill crystallization, and three-tier retrieval for OpenClaw, Hermes Agent, and DeepSeek Harness.",
       "source": "npm",
       "pkg": "@memtensor/memos-local-plugin",
-      "repo": null
+      "repo": null,
+      "category": "other"
     },
     {
       "name": "@liustack/modsearch",
@@ -1353,7 +1498,8 @@ window.PRTS_MARKET = {
       "description": "Plug-in web search, X search, and page fetch for models without native web access, powered by the free Antigravity CLI",
       "source": "npm",
       "pkg": "@liustack/modsearch",
-      "repo": "git+https://github.com/liustack/modsearch.git"
+      "repo": "git+https://github.com/liustack/modsearch.git",
+      "category": "tool"
     },
     {
       "name": "dsh-pocket",
@@ -1361,7 +1507,8 @@ window.PRTS_MARKET = {
       "description": "把 DeepSeek Harness 装进你的口袋：一个包、一个设置页，手机扫码即同步访问电脑上的 DSH（局域网 + 公网，实时同屏）。",
       "source": "npm",
       "pkg": "dsh-pocket",
-      "repo": "git+https://github.com/shaobeichen/dsh-pocket.git"
+      "repo": "git+https://github.com/shaobeichen/dsh-pocket.git",
+      "category": "other"
     },
     {
       "name": "opencode-engram-learning",
@@ -1369,7 +1516,8 @@ window.PRTS_MARKET = {
       "description": "Evidence-based learning engine for OpenCode — learn anything, verify by free recall, schedule with FSRS, adapt from your own data.",
       "source": "npm",
       "pkg": "opencode-engram-learning",
-      "repo": "git+https://github.com/nagisanzenin/engram.git"
+      "repo": "git+https://github.com/nagisanzenin/engram.git",
+      "category": "tool"
     },
     {
       "name": "@liustack/pptfast",
@@ -1377,7 +1525,8 @@ window.PRTS_MARKET = {
       "description": "Stable, editable PPTX generation for AI agents — semantic IR in, native DrawingML out",
       "source": "npm",
       "pkg": "@liustack/pptfast",
-      "repo": "git+https://github.com/liustack/pptfast.git"
+      "repo": "git+https://github.com/liustack/pptfast.git",
+      "category": "tool"
     },
     {
       "name": "dsh-web-open",
@@ -1385,15 +1534,8 @@ window.PRTS_MARKET = {
       "description": "Auto-open the browser, whale tray icon, desktop shortcut and one-shot installer for `dsh web` (DeepSeek Harness plugin)",
       "source": "npm",
       "pkg": "dsh-web-open",
-      "repo": null
-    },
-    {
-      "name": "dsh-builtin-browser",
-      "displayName": "dsh-builtin-browser",
-      "description": "Shared real browser plugin for DeepSeek Harness: install-and-use — a visible native browser the human can take over, driven by the agent over CDP. DOM-level interaction (React/Vue safe), per-task session isolation, cookie persistence (browser_auth), CAPTC",
-      "source": "npm",
-      "pkg": "dsh-builtin-browser",
-      "repo": "git+https://github.com/wqty123/dsh-browser.git"
+      "repo": null,
+      "category": "tool"
     },
     {
       "name": "@microi.net/cli",
@@ -1401,7 +1543,17 @@ window.PRTS_MARKET = {
       "description": "Microi吾码 AI 开发 CLI 与多宿主 Plugin：服务器连接、Skills、MCP、V8 同步和低代码交付",
       "source": "npm",
       "pkg": "@microi.net/cli",
-      "repo": "https://git.itdos.net:88/anderson/microi.vscode.git"
+      "repo": "https://git.itdos.net:88/anderson/microi.vscode.git",
+      "category": "other"
+    },
+    {
+      "name": "dsh-builtin-browser",
+      "displayName": "dsh-builtin-browser",
+      "description": "Shared real browser plugin for DeepSeek Harness: install-and-use — a visible native browser the human can take over, driven by the agent over CDP. DOM-level interaction (React/Vue safe), per-task session isolation, cookie persistence (browser_auth), CAPTC",
+      "source": "npm",
+      "pkg": "dsh-builtin-browser",
+      "repo": "git+https://github.com/wqty123/dsh-browser.git",
+      "category": "tool"
     },
     {
       "name": "plaindeck",
@@ -1409,7 +1561,8 @@ window.PRTS_MARKET = {
       "description": "Git-native slide format, Agent API, CLI, MCP server, and renderer",
       "source": "npm",
       "pkg": "plaindeck",
-      "repo": "git+https://github.com/Mappedinfo/PlainDeck.git"
+      "repo": "git+https://github.com/Mappedinfo/PlainDeck.git",
+      "category": "tool"
     },
     {
       "name": "dsh-better-edit",
@@ -1417,7 +1570,8 @@ window.PRTS_MARKET = {
       "description": "Hash-anchored read/edit/batch_edit/undo_last_edit tools for DeepSeek Harness (dsh). Every line gets a unique 3-char hash (A-Za-z0-9) that stays stable across edits; stale or ambiguous anchors are rejected, never fuzzy-matched. Undo persists across restart",
       "source": "npm",
       "pkg": "dsh-better-edit",
-      "repo": "git+https://github.com/Rianico/dsh-better-edit.git"
+      "repo": "git+https://github.com/Rianico/dsh-better-edit.git",
+      "category": "tool"
     },
     {
       "name": "dsh-win32",
@@ -1425,7 +1579,8 @@ window.PRTS_MARKET = {
       "description": "DeepSeek Harness 的 Windows 插件：沙箱内唯一能跑的持久 shell、可用的极简模式、前台命令识别、旧编码读取与安装体检 | First-class Windows for DSH",
       "source": "npm",
       "pkg": "dsh-win32",
-      "repo": "git+https://github.com/sjh9714/dsh-win32.git"
+      "repo": "git+https://github.com/sjh9714/dsh-win32.git",
+      "category": "tool"
     },
     {
       "name": "pi2dsh",
@@ -1433,7 +1588,8 @@ window.PRTS_MARKET = {
       "description": "Bridge the Pi and DeepSeek Harness ecosystems: a general Pi Host ABI that runs unmodified Pi extensions as native DSH plugins, plus per-package conversion and MCP config translation.",
       "source": "npm",
       "pkg": "pi2dsh",
-      "repo": "git+https://github.com/weijiafu14/pi2dsh.git"
+      "repo": "git+https://github.com/weijiafu14/pi2dsh.git",
+      "category": "tool"
     },
     {
       "name": "dsh-desktop-windows",
@@ -1441,7 +1597,8 @@ window.PRTS_MARKET = {
       "description": "DeepSeek Harness 桌面版（Windows）· Electron desktop shell for DeepSeek Harness — 双击即用 / double-click to run · 支持选区截图提问、系统托盘、会话管理 / region screenshot, system tray, session manager",
       "source": "npm",
       "pkg": "dsh-desktop-windows",
-      "repo": "git+https://github.com/ReachGa0/dsh-desktop.git"
+      "repo": "git+https://github.com/ReachGa0/dsh-desktop.git",
+      "category": "tool"
     },
     {
       "name": "dsh-find-plugin",
@@ -1449,7 +1606,17 @@ window.PRTS_MARKET = {
       "description": "Find DeepSeek Harness plugins inside the agent — live GitHub dsh-plugin topic search, ranked by stars.",
       "source": "npm",
       "pkg": "dsh-find-plugin",
-      "repo": "git+https://github.com/awesome-dsh-plugin/dsh-find-plugin.git"
+      "repo": "git+https://github.com/awesome-dsh-plugin/dsh-find-plugin.git",
+      "category": "tool"
+    },
+    {
+      "name": "dsh-mnemon",
+      "displayName": "dsh-mnemon",
+      "description": "Cross-agent, local-first persistent memory plugin for DeepSeek Harness (DSH), powered by Mnemon. It shares long-term memory across Mnemon-enabled agents and adds runtime memory, searchable project documents, semantic recall, knowledge graph, and a Sidebar",
+      "source": "npm",
+      "pkg": "dsh-mnemon",
+      "repo": "git+https://github.com/omdsh-dev/dsh-mnemon.git",
+      "category": "visual"
     },
     {
       "name": "design-playbook",
@@ -1457,7 +1624,8 @@ window.PRTS_MARKET = {
       "description": "Design I/O for coding agents: controllable UI generation via declarations (spec/domain/craft/design/components/template) and contracts (skill/evaluator). Use for product UI—console, dashboard, agent-ops, CJK-first apps.",
       "source": "npm",
       "pkg": "design-playbook",
-      "repo": "git+https://github.com/Bandersnatch0x/design-playbook.git"
+      "repo": "git+https://github.com/Bandersnatch0x/design-playbook.git",
+      "category": "visual"
     },
     {
       "name": "dsh-testkit",
@@ -1465,7 +1633,8 @@ window.PRTS_MARKET = {
       "description": "Real-host lifecycle testing for DeepSeek Harness plugins.",
       "source": "npm",
       "pkg": "dsh-testkit",
-      "repo": "git+https://github.com/iiwish/dsh-testkit.git"
+      "repo": "git+https://github.com/iiwish/dsh-testkit.git",
+      "category": "tool"
     },
     {
       "name": "@crazy_th/dsh-computer-use",
@@ -1473,23 +1642,17 @@ window.PRTS_MARKET = {
       "description": "Native Windows Computer Use tools for DeepSeek Harness.",
       "source": "npm",
       "pkg": "@crazy_th/dsh-computer-use",
-      "repo": "git+https://github.com/ThreeBody6666/dsh-computer-use.git"
+      "repo": "git+https://github.com/ThreeBody6666/dsh-computer-use.git",
+      "category": "tool"
     },
     {
-      "name": "dsh-codex-oauth",
-      "displayName": "dsh-codex-oauth",
-      "description": "Use a ChatGPT Codex subscription in DeepSeek Harness through standalone OAuth",
+      "name": "dsh-deepread",
+      "displayName": "dsh-deepread",
+      "description": "AI deep-reading assistant: extract core claims, argument structure, and key evidence from books and articles. Five modes (quick, deep, knowledge map, Feynman, full book); knowledge-map reports include confidence levels, data facts, relation labels, Mermai",
       "source": "npm",
-      "pkg": "dsh-codex-oauth",
-      "repo": "git+https://github.com/eons2long/dsh-codex-oauth.git"
-    },
-    {
-      "name": "@michengai/dsh-skills-manager",
-      "displayName": "@michengai/dsh-skills-manager",
-      "description": "NPM-installable DSH Web plugin for managing local skills and viewing shared Agent skills safely.",
-      "source": "npm",
-      "pkg": "@michengai/dsh-skills-manager",
-      "repo": "git+https://github.com/MichengAI/dsh-skills-manager.git"
+      "pkg": "dsh-deepread",
+      "repo": "git+https://github.com/xiehuan123/dsh-deepread.git",
+      "category": "tool"
     },
     {
       "name": "dsh-vision-router",
@@ -1497,7 +1660,8 @@ window.PRTS_MARKET = {
       "description": "Eyes for text-only DeepSeek Harness agents: built-in free vision chain (no key) + pixel-level vision tools (Q&A, grounding, crop, pixel diff, colors, OCR, SVG trace, cutout, screenshots). One-command install, no Python, image turns work like ordinary tool",
       "source": "npm",
       "pkg": "dsh-vision-router",
-      "repo": "git+https://github.com/ysr666/dsh-vision-router.git"
+      "repo": "git+https://github.com/ysr666/dsh-vision-router.git",
+      "category": "visual"
     },
     {
       "name": "dsh-web-plugin-manager",
@@ -1505,7 +1669,8 @@ window.PRTS_MARKET = {
       "description": "Manage DeepSeek Harness (DSH) plugins from the Web UI: list, enable/disable, install/remove, environments, and a GitHub-awesome-driven marketplace.",
       "source": "npm",
       "pkg": "dsh-web-plugin-manager",
-      "repo": "git+https://github.com/LX2000WASD/dsh-web-plugin-manager.git"
+      "repo": "git+https://github.com/LX2000WASD/dsh-web-plugin-manager.git",
+      "category": "visual"
     },
     {
       "name": "visionpower",
@@ -1513,7 +1678,8 @@ window.PRTS_MARKET = {
       "description": "VisionPower: a portable image understanding MCP server for Codex, Claude Desktop, Cursor, and other agents.",
       "source": "npm",
       "pkg": "visionpower",
-      "repo": null
+      "repo": null,
+      "category": "visual"
     },
     {
       "name": "@yun520-1/deepseek-heartflow",
@@ -1521,7 +1687,17 @@ window.PRTS_MARKET = {
       "description": "心虫 HeartFlow — AGI 第1层辨别门禁作为 DSH 插件: 47维纯规则判别 (heartflow_check/analyze/verdict/dimensions) + 工具调用后自动输出监督, fail-closed, 零LLM依赖",
       "source": "npm",
       "pkg": "@yun520-1/deepseek-heartflow",
-      "repo": "git+https://github.com/yun520-1/deepseek-heartflow.git"
+      "repo": "git+https://github.com/yun520-1/deepseek-heartflow.git",
+      "category": "tool"
+    },
+    {
+      "name": "@anionex/dsh-vision-toolkit",
+      "displayName": "@anionex/dsh-vision-toolkit",
+      "description": "DeepSeek Harness-native integration for agent-vision-toolkit: image Q&A, OCR, grounding, UI restoration, pixel diff, Artifacts, and Web UI.",
+      "source": "npm",
+      "pkg": "@anionex/dsh-vision-toolkit",
+      "repo": "git+https://github.com/Anionex/dsh-vision-toolkit.git",
+      "category": "visual"
     },
     {
       "name": "kixparadigm-en",
@@ -1529,7 +1705,8 @@ window.PRTS_MARKET = {
       "description": "kixparadigm-en — English edition of the kix paradigm preset for DeepSeek Harness: resident cognition layer (EN) + kixpower multi-agent orchestration, one-command import (preset + vision-bridge + guard plugins)",
       "source": "npm",
       "pkg": "kixparadigm-en",
-      "repo": "git+https://github.com/olicesx/kixparadigm.git"
+      "repo": "git+https://github.com/olicesx/kixparadigm.git",
+      "category": "visual"
     },
     {
       "name": "kixparadigm",
@@ -1537,7 +1714,8 @@ window.PRTS_MARKET = {
       "description": "kixparadigm — AI 自编排最小范式（认知层常驻）+ kixpower 多智能体编排 + DSH 一键导入（preset + vision-bridge + 门禁插件）",
       "source": "npm",
       "pkg": "kixparadigm",
-      "repo": "git+https://github.com/olicesx/kixparadigm.git"
+      "repo": "git+https://github.com/olicesx/kixparadigm.git",
+      "category": "visual"
     },
     {
       "name": "dsh-taskswarm",
@@ -1545,7 +1723,8 @@ window.PRTS_MARKET = {
       "description": "TaskSwarm (蜂群) — multi-agent task orchestration for DeepSeek Harness. Native port of TaskPlane (github.com/HenryLach/taskplane, MIT): waves/lanes parallel execution, git worktree isolation, PROMPT.md/STATUS.md task packets, file mailbox, cross-model revie",
       "source": "npm",
       "pkg": "dsh-taskswarm",
-      "repo": "git+https://github.com/february2015/dsh-taskswarm.git"
+      "repo": "git+https://github.com/february2015/dsh-taskswarm.git",
+      "category": "tool"
     },
     {
       "name": "@open-agfs/dsh-agfs",
@@ -1553,7 +1732,8 @@ window.PRTS_MARKET = {
       "description": "Host file-browser web app over the dsh webserver with a /dsh-agfs command",
       "source": "npm",
       "pkg": "@open-agfs/dsh-agfs",
-      "repo": "git+https://github.com/openAGFS/dsh-agfs.git"
+      "repo": "git+https://github.com/openAGFS/dsh-agfs.git",
+      "category": "tool"
     },
     {
       "name": "@luzhengyangtx/dsh-telegram-duty",
@@ -1561,7 +1741,17 @@ window.PRTS_MARKET = {
       "description": "Telegram duty gateway for DeepSeek Harness: long-poll Telegram into a dedicated duty session, global approval forwarding while on duty, and a local/duty watch toggle.",
       "source": "npm",
       "pkg": "@luzhengyangtx/dsh-telegram-duty",
-      "repo": "git+https://github.com/luzhengyangtx/dsh-telegram-duty.git"
+      "repo": "git+https://github.com/luzhengyangtx/dsh-telegram-duty.git",
+      "category": "tool"
+    },
+    {
+      "name": "dsh-extension-hub",
+      "displayName": "dsh-extension-hub",
+      "description": "Extension Hub for DeepSeek Harness (DSH): manage skills, MCP servers and plugins from the DSH Web settings page — list / create / edit / delete / enable-disable, import from Claude and Codex, manage official & third-party plugins, a Plugin Market with a c",
+      "source": "npm",
+      "pkg": "dsh-extension-hub",
+      "repo": "git+https://github.com/Relistencode/dsh-extension-hub.git",
+      "category": "tool"
     },
     {
       "name": "@mars-sea/dsh-commandcode-provider",
@@ -1569,15 +1759,8 @@ window.PRTS_MARKET = {
       "description": "Unofficial DeepSeek Harness LLM provider plugin for Command Code, ported from pi-commandcode-provider (MIT). Registers the 'commandcode' provider route with a Models-page card and live model catalog.",
       "source": "npm",
       "pkg": "@mars-sea/dsh-commandcode-provider",
-      "repo": "git+https://github.com/Mars-Sea/dsh-commandcode-provider.git"
-    },
-    {
-      "name": "easy-cr",
-      "displayName": "easy-cr",
-      "description": "Generate business-sequenced HTML code reviews with comments and optional GoLand, IntelliJ IDEA, or VS Code semantic navigation.",
-      "source": "npm",
-      "pkg": "easy-cr",
-      "repo": null
+      "repo": "git+https://github.com/Mars-Sea/dsh-commandcode-provider.git",
+      "category": "tool"
     },
     {
       "name": "@deepseek-ai/dsh-skill-badge",
@@ -1585,7 +1768,8 @@ window.PRTS_MARKET = {
       "description": "Bundled dsh badge skill provider for DeepSeek Harness",
       "source": "npm",
       "pkg": "@deepseek-ai/dsh-skill-badge",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "category": "tool"
     },
     {
       "name": "@deepseek-ai/dsh-headless",
@@ -1593,7 +1777,8 @@ window.PRTS_MARKET = {
       "description": "The dsh one-shot bundle: a direct core Agent/Session runner over dsh-base with no Host, HTTP, or browser layer",
       "source": "npm",
       "pkg": "@deepseek-ai/dsh-headless",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "category": "tool"
     },
     {
       "name": "@deepseek-ai/dsh-web-app",
@@ -1601,7 +1786,8 @@ window.PRTS_MARKET = {
       "description": "The dsh browser-surface bundle: the web patch layer over dsh-base plus the runtime glue plugin (frontend dist serving, web-surface prompt, bash runtime variables, URL line)",
       "source": "npm",
       "pkg": "@deepseek-ai/dsh-web-app",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "category": "tool"
     },
     {
       "name": "@deepseek-ai/dsh-compaction",
@@ -1609,7 +1795,8 @@ window.PRTS_MARKET = {
       "description": "Abstract compaction service seam (ctx.compaction) for the DeepSeek Harness",
       "source": "npm",
       "pkg": "@deepseek-ai/dsh-compaction",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "category": "tool"
     },
     {
       "name": "@deepseek-ai/dsh-fs-local",
@@ -1617,7 +1804,8 @@ window.PRTS_MARKET = {
       "description": "Local-filesystem implementation of the DeepSeek Harness filesystem seam (ctx.fs)",
       "source": "npm",
       "pkg": "@deepseek-ai/dsh-fs-local",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "category": "tool"
     },
     {
       "name": "@deepseek-ai/dsh-sandbox",
@@ -1625,7 +1813,8 @@ window.PRTS_MARKET = {
       "description": "Abstract process-sandbox seam (ctx.sandbox) for the DeepSeek Harness: same-world confinement vocabulary and the SandboxProvider contract",
       "source": "npm",
       "pkg": "@deepseek-ai/dsh-sandbox",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "category": "tool"
     },
     {
       "name": "@deepseek-ai/dsh-fs-sandbox",
@@ -1633,15 +1822,8 @@ window.PRTS_MARKET = {
       "description": "Sandbox-enforcing implementation of the DeepSeek Harness filesystem seam: fences write/edit by the per-call sandbox mode (read-only denies mutation, workspace-write contains it to the workspace + temp roots) while reads pass through",
       "source": "npm",
       "pkg": "@deepseek-ai/dsh-fs-sandbox",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
-    },
-    {
-      "name": "@deepseek-ai/dsh-fs",
-      "displayName": "@deepseek-ai/dsh-fs",
-      "description": "Abstract filesystem capability seam (ctx.fs) for the DeepSeek Harness — vocabulary types, the FileSystem service (text IO + optional version-guarded atomic mutations), and the fs/* policy event vocabulary",
-      "source": "npm",
-      "pkg": "@deepseek-ai/dsh-fs",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "category": "tool"
     },
     {
       "name": "@deepseek-ai/dsh-command-goal",
@@ -1649,7 +1831,17 @@ window.PRTS_MARKET = {
       "description": "Human-facing slash command for persisted same-session goals",
       "source": "npm",
       "pkg": "@deepseek-ai/dsh-command-goal",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "category": "tool"
+    },
+    {
+      "name": "@deepseek-ai/dsh-fs",
+      "displayName": "@deepseek-ai/dsh-fs",
+      "description": "Abstract filesystem capability seam (ctx.fs) for the DeepSeek Harness — vocabulary types, the FileSystem service (text IO + optional version-guarded atomic mutations), and the fs/* policy event vocabulary",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-fs",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "category": "tool"
     },
     {
       "name": "@deepseek-ai/dsh-brand",
@@ -1657,7 +1849,8 @@ window.PRTS_MARKET = {
       "description": "Type-only Branded<B> nominal-typing primitive for the DeepSeek Harness",
       "source": "npm",
       "pkg": "@deepseek-ai/dsh-brand",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "category": "tool"
     },
     {
       "name": "@deepseek-ai/dsh-bash-sandbox",
@@ -1665,15 +1858,8 @@ window.PRTS_MARKET = {
       "description": "Sandbox-consuming implementation of the DeepSeek Harness bash executor seam (confines every command via ctx.sandbox, reports denial/enforcement result facts)",
       "source": "npm",
       "pkg": "@deepseek-ai/dsh-bash-sandbox",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
-    },
-    {
-      "name": "@deepseek-ai/dsh-subprocess-local",
-      "displayName": "@deepseek-ai/dsh-subprocess-local",
-      "description": "Local-subprocess implementation of the DeepSeek Harness subprocess seam",
-      "source": "npm",
-      "pkg": "@deepseek-ai/dsh-subprocess-local",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "category": "tool"
     },
     {
       "name": "@deepseek-ai/dsh-session-telemetry-otel",
@@ -1681,7 +1867,17 @@ window.PRTS_MARKET = {
       "description": "OpenTelemetry backend for the DeepSeek Harness telemetry seam: hands captured session records to the OTel JS SDK's log pipeline",
       "source": "npm",
       "pkg": "@deepseek-ai/dsh-session-telemetry-otel",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "category": "other"
+    },
+    {
+      "name": "@deepseek-ai/dsh-subprocess-local",
+      "displayName": "@deepseek-ai/dsh-subprocess-local",
+      "description": "Local-subprocess implementation of the DeepSeek Harness subprocess seam",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-subprocess-local",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "category": "tool"
     },
     {
       "name": "@deepseek-ai/dsh-attachment-local",
@@ -1689,7 +1885,8 @@ window.PRTS_MARKET = {
       "description": "Private content-addressed DSH_HOME attachment storage",
       "source": "npm",
       "pkg": "@deepseek-ai/dsh-attachment-local",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "category": "tool"
     },
     {
       "name": "@deepseek-ai/dsh-pwsh-local",
@@ -1697,7 +1894,8 @@ window.PRTS_MARKET = {
       "description": "Local PowerShell implementation of the DeepSeek Harness bash executor seam",
       "source": "npm",
       "pkg": "@deepseek-ai/dsh-pwsh-local",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "category": "tool"
     },
     {
       "name": "@deepseek-ai/dsh-home-paths",
@@ -1705,7 +1903,8 @@ window.PRTS_MARKET = {
       "description": "Shared filesystem path helpers for the DeepSeek Harness",
       "source": "npm",
       "pkg": "@deepseek-ai/dsh-home-paths",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "category": "tool"
     },
     {
       "name": "@deepseek-ai/dsh-command-feedback",
@@ -1713,7 +1912,8 @@ window.PRTS_MARKET = {
       "description": "Log-only session feedback producer and human-facing slash command",
       "source": "npm",
       "pkg": "@deepseek-ai/dsh-command-feedback",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "category": "tool"
     },
     {
       "name": "@deepseek-ai/dsh-tool-bash",
@@ -1721,7 +1921,8 @@ window.PRTS_MARKET = {
       "description": "Model-facing bash tool with optional generic background-task and sandbox-escalation support",
       "source": "npm",
       "pkg": "@deepseek-ai/dsh-tool-bash",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "category": "tool"
     },
     {
       "name": "@deepseek-ai/dsh-output-retention",
@@ -1729,15 +1930,27 @@ window.PRTS_MARKET = {
       "description": "Zero-dependency bounded-retention primitive: ItemRetainer/TextRetainer + neutral notice helpers (what did we keep, what did we omit)",
       "source": "npm",
       "pkg": "@deepseek-ai/dsh-output-retention",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "category": "tool"
     },
     {
-      "name": "@deepseek-ai/dsh-session",
-      "displayName": "@deepseek-ai/dsh-session",
-      "description": "Event-sourced session store for the DeepSeek Harness",
+      "name": "@deepseek-ai/dsh-host-frontend-static",
+      "displayName": "@deepseek-ai/dsh-host-frontend-static",
+      "description": "SPA dist server for the Web shell: owns the webserver fallback seat, serving the built frontend with index-tap injection, traversal rejection, and SPA index fallback",
       "source": "npm",
-      "pkg": "@deepseek-ai/dsh-session",
-      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+      "pkg": "@deepseek-ai/dsh-host-frontend-static",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "category": "tool"
+    }
+  ],
+  "skills": [
+    {
+      "name": "prts-persona",
+      "displayName": "PRTS 人格记忆",
+      "description": "PRTS 人格记忆：自称 PRTS、称呼用户博士（Dr.名字 / 博士.名字）、冷静精确带仪式感。随 PRTS 内置安装。",
+      "repo": "local",
+      "category": "persona",
+      "builtin": true
     }
   ]
 };
@@ -2183,6 +2396,138 @@ window.PRTS_MARKET = {
       'voice.consent.deny': 'Deny',
       'voice.engineLoading': 'Loading the speech engine (first use)…',
       'voice.engineFailed': 'Speech engine could not be loaded: {msg}',
+
+      // —— settings panel (official sections + PRTS extensions) ——
+      'settings.nav.general': 'General',
+      'settings.nav.models': 'Models',
+      'settings.nav.plugins': 'Plugins',
+      'settings.nav.presets': 'Agent presets',
+      'settings.nav.balance': 'Balance',
+      'settings.nav.git': 'Git',
+      'settings.nav.skills': 'Skill',
+      'settings.loading': 'LOADING…',
+      'settings.general.language': 'Language',
+      'settings.general.appearance': 'Appearance',
+      'settings.general.enter': 'Composer enter',
+      'settings.general.doctorName': 'Doctor name',
+      'settings.general.doctorName.hint': 'PRTS calls you 博士 by default; with a name set it becomes 博士.<name> / Dr.<name>.',
+      'settings.general.doctorName.placeholder': 'empty = Doctor',
+      'settings.general.doctorName.saved': 'Doctor name updated',
+      'settings.models.default': 'Default model',
+      'settings.models.default.hint': 'The default model + reasoning effort for new sessions (written to agent-default-model in ~/.dsh/settings.yaml).',
+      'settings.models.default.saved': 'Default model saved',
+      'settings.models.defaultFail': 'Could not save the default model: {msg}',
+      'settings.provider.unsetBtn': 'Unset',
+      'settings.plugins.runCli': 'Run',
+      'settings.plugins.runCliPrompt': 'Run {profile} — arguments (e.g. a target URL)',
+      'settings.plugins.runCliStarted': '{profile} started in a terminal',
+      'settings.plugins.runCliFail': 'Start failed: {msg}',
+      'settings.plugins.openMarket': 'Open the plugin market',
+      'settings.presets': 'Agent presets',
+      'settings.presets.hint': 'dsh work modes. A started session locks its preset; switching creates a new session.',
+      'settings.presets.use': 'Use this preset',
+      'settings.presets.used': 'Switched to preset {name}',
+
+      // —— balance / deepseek ——
+      'balance.title': 'DeepSeek balance',
+      'balance.loggedIn': 'Logged in',
+      'balance.loggedOut': 'Not logged in',
+      'balance.login': 'Login',
+      'balance.relogin': 'Re-login',
+      'balance.login.hint': 'Login opens the official DeepSeek creator API site (platform.deepseek.com); an existing session there returns immediately and PRTS shows logged-in. The API key is written into dsh config (DEEPSEEK_OFFICIAL_API_KEY) and used by the agent.',
+      'balance.login.prompt': 'Enter your DeepSeek API key (sk-…)',
+      'balance.loggedInToast': 'Logged in to the DeepSeek platform',
+      'balance.loginFail': 'Login failed: {msg}',
+      'balance.total': 'Total balance',
+      'balance.toppedUp': 'Topped up',
+      'balance.granted': 'Granted',
+      'balance.none': 'Not logged in / no API key yet — use Login above.',
+      'balance.badKey': 'The API key is invalid or expired — log in again.',
+      'balance.fetchFail': 'Could not fetch the balance: {msg}',
+      'balance.refresh': 'Refresh',
+      'balance.recharge': 'Recharge',
+      'balance.openKeys': 'API keys',
+      'balance.key': 'Current API key',
+      'balance.forget': 'Log out & clear',
+
+      // —— git ——
+      'git.title': 'GitHub',
+      'git.connect': 'Connect GitHub',
+      'git.relogin': 'Re-login',
+      'git.loggedIn': 'Connected',
+      'git.tokenBad': 'Token invalid',
+      'git.connected': 'Connected to GitHub',
+      'git.disconnect': 'Disconnect',
+      'git.openSite': 'Open github.com',
+      'git.openToken': 'Manage token',
+      'git.login.hint': 'First connect opens github.com for login; an existing browser/system session is reused, so PRTS returns straight to logged-in. A token is captured automatically when possible; otherwise paste one.',
+      'git.login.prompt': 'Enter your GitHub Personal Access Token (ghp_…)',
+      'git.loginFail': 'GitHub login failed: {msg}',
+      'git.needLogin': 'Connect GitHub first',
+      'git.heatmap': 'Contribution heatmap',
+      'git.heatmap.empty': 'No contribution data (the profile may be private).',
+      'git.newRepo': 'New repository',
+      'git.repo.name': 'name (letters, digits, - _ .)',
+      'git.repo.nameBad': 'Repository name may only contain letters, digits, -, _, .',
+      'git.repo.private': 'Private',
+      'git.repo.create': 'Create',
+      'git.repo.created': 'Repository {name} created',
+      'git.repo.exists': 'A repository with this name already exists',
+      'git.upload': 'Upload project',
+      'git.upload.hint': 'Pick a local directory; PRTS inits git and pushes it to GitHub (an existing repo of the same name is pushed directly).',
+      'git.upload.go': 'Pick a directory & upload',
+      'git.upload.working': 'Uploading…',
+      'git.upload.done': 'Project pushed to GitHub',
+      'git.upload.fail': 'Upload failed',
+      'git.upload.repoName': 'Target repository name',
+      'git.upload.private': 'Make the repository private?',
+      'git.uploadUnavailable': 'Uploads need the Electron shell',
+      'git.repos': 'Repositories',
+      'git.repos.empty': 'No repositories yet',
+
+      // —— skills ——
+      'skills.title': 'Skill groups',
+      'skills.persona': 'Persona memory (single)',
+      'skills.persona.hint': 'Persona-type skills are the AI persona memory — exactly one may be active.',
+      'skills.persona.none': 'None (default)',
+      'skills.personaTag': 'PERSONA',
+      'skills.groups': 'Skill groups',
+      'skills.groups.empty': 'No groups yet — create one and tick skills into it.',
+      'skills.group.new': 'New group',
+      'skills.group.name': 'Group name',
+      'skills.installed': 'Installed skills',
+      'skills.none': 'No skills installed.',
+      'skills.edit': 'Edit',
+      'skills.back': 'Back',
+      'skills.saved': '{name} saved',
+      'skills.confirmRemove': 'Delete skill "{name}"?',
+      'skills.removed': '{name} removed',
+      'skills.removeFail': 'Remove failed: {msg}',
+      'skills.ghInstall': 'Install a skill from GitHub',
+      'skills.repoBad': 'Invalid repo URL (https://github.com/owner/repo)',
+
+      // —— market ——
+      'market.tab.plugins': 'DSH PLUGINS',
+      'market.tab.skills': 'SKILL',
+      'market.searchPlaceholder': 'Search…',
+      'market.cat.all': 'ALL',
+      'market.cat.visual': 'VISUAL',
+      'market.cat.tool': 'TOOL',
+      'market.cat.other': 'OTHER',
+      'market.cat.persona': 'PERSONA',
+      'market.skillGh': 'GitHub skill: paste a repo URL to install',
+      'market.skillRepoBad': 'Invalid repo URL (https://github.com/owner/repo)',
+      'market.skillInstalled': 'skill {name} installed into ~/.dsh/skills',
+
+      // —— CLI commands (givemyflag etc.) ——
+      'commands.runCliPrompt': 'Run {name} — arguments',
+      'commands.runCliStarted': '{name} started in a terminal',
+      'commands.runCliFail': 'Start failed: {msg}',
+
+      // —— sidebar ——
+      'sidebar.git': 'Git',
+      'sidebar.skills': 'Skill',
+      'common.save': 'Save',
     },
 
     zh: {
@@ -2515,6 +2860,138 @@ window.PRTS_MARKET = {
       'voice.consent.deny': '拒绝',
       'voice.engineLoading': '正在加载语音引擎（首次使用）…',
       'voice.engineFailed': '语音引擎加载失败：{msg}',
+
+      // —— 设置面板（官方分区 + PRTS 扩展）——
+      'settings.nav.general': '通用设置',
+      'settings.nav.models': '模型',
+      'settings.nav.plugins': '插件',
+      'settings.nav.presets': 'Agent预设',
+      'settings.nav.balance': '余额',
+      'settings.nav.git': 'Git',
+      'settings.nav.skills': 'Skill',
+      'settings.loading': '读取中…',
+      'settings.general.language': '语言',
+      'settings.general.appearance': '外观',
+      'settings.general.enter': '发送行为',
+      'settings.general.doctorName': '博士称呼',
+      'settings.general.doctorName.hint': 'PRTS 默认称呼你为「博士」；设置名字后为「博士.<名字>」/「Dr.<name>」。',
+      'settings.general.doctorName.placeholder': '留空 = 博士',
+      'settings.general.doctorName.saved': '博士称呼已更新',
+      'settings.models.default': '默认模型',
+      'settings.models.default.hint': '新会话的默认模型与推理等级（写入 ~/.dsh/settings.yaml 的 agent-default-model）。',
+      'settings.models.default.saved': '默认模型已保存',
+      'settings.models.defaultFail': '默认模型写入失败：{msg}',
+      'settings.provider.unsetBtn': '清除',
+      'settings.plugins.runCli': '运行',
+      'settings.plugins.runCliPrompt': '运行 {profile} — 输入参数（如目标 URL）',
+      'settings.plugins.runCliStarted': '{profile} 已在终端中启动',
+      'settings.plugins.runCliFail': '启动失败：{msg}',
+      'settings.plugins.openMarket': '打开插件市场',
+      'settings.presets': 'Agent 预设',
+      'settings.presets.hint': 'dsh 的工作模式；已开始的会话锁定预设，切换将新建会话。',
+      'settings.presets.use': '使用此预设',
+      'settings.presets.used': '已切换至预设 {name}',
+
+      // —— 余额 / DeepSeek ——
+      'balance.title': 'DeepSeek 余额',
+      'balance.loggedIn': '已登录',
+      'balance.loggedOut': '未登录',
+      'balance.login': '登录',
+      'balance.relogin': '重新登录',
+      'balance.login.hint': '登录将跳转 DeepSeek 创作者 API 官网（platform.deepseek.com）；若官网已登录则直接返回并显示已登录。API Key 会自动写入 dsh 配置（DEEPSEEK_OFFICIAL_API_KEY）供会话使用。',
+      'balance.login.prompt': '请输入 DeepSeek API Key（sk-…）',
+      'balance.loggedInToast': '已登录 DeepSeek 官方平台',
+      'balance.loginFail': '登录失败：{msg}',
+      'balance.total': '总余额',
+      'balance.toppedUp': '充值余额',
+      'balance.granted': '赠送余额',
+      'balance.none': '尚未登录或未配置 API Key — 点击上方「登录」。',
+      'balance.badKey': 'API Key 无效或已失效 — 请重新登录。',
+      'balance.fetchFail': '余额获取失败：{msg}',
+      'balance.refresh': '刷新',
+      'balance.recharge': '充值',
+      'balance.openKeys': 'API Keys',
+      'balance.key': '当前 API Key',
+      'balance.forget': '登出并清除',
+
+      // —— Git ——
+      'git.title': 'GitHub 连接',
+      'git.connect': '连接 GitHub',
+      'git.relogin': '重新登录',
+      'git.loggedIn': '已连接',
+      'git.tokenBad': '令牌无效',
+      'git.connected': '已连接 GitHub',
+      'git.disconnect': '断开连接',
+      'git.openSite': '打开 github.com',
+      'git.openToken': '管理令牌',
+      'git.login.hint': '首次连接将跳转 github.com 登录；若浏览器/系统已登录则直接复用会话返回。登录后自动获取访问令牌（Token），失败时可手动粘贴。',
+      'git.login.prompt': '请输入 GitHub Personal Access Token（ghp_…）',
+      'git.loginFail': 'GitHub 登录失败：{msg}',
+      'git.needLogin': '请先连接 GitHub',
+      'git.heatmap': '贡献热力图',
+      'git.heatmap.empty': '暂无贡献数据（主页或仓库可能未公开）。',
+      'git.newRepo': '创建仓库',
+      'git.repo.name': '仓库名（字母数字 - _ .）',
+      'git.repo.nameBad': '仓库名只能包含字母、数字、-、_、.',
+      'git.repo.private': '私有',
+      'git.repo.create': '创建',
+      'git.repo.created': '仓库 {name} 已创建',
+      'git.repo.exists': '同名仓库已存在',
+      'git.upload': '上传项目',
+      'git.upload.hint': '选择一个本地目录，PRTS 会初始化 git 并推送到 GitHub（同名仓库已存在则直接推送）。',
+      'git.upload.go': '选择目录并上传',
+      'git.upload.working': '正在上传…',
+      'git.upload.done': '项目已推送至 GitHub',
+      'git.upload.fail': '上传失败',
+      'git.upload.repoName': '目标仓库名',
+      'git.upload.private': '设为私有仓库？',
+      'git.uploadUnavailable': '当前模式不支持上传（需要 Electron 壳层）',
+      'git.repos': '我的仓库',
+      'git.repos.empty': '还没有仓库',
+
+      // —— Skill ——
+      'skills.title': 'Skill 组',
+      'skills.persona': '人格记忆（单选）',
+      'skills.persona.hint': '人格类 Skill 即 AI 人格记忆，同一时间只允许一个生效。',
+      'skills.persona.none': '无（默认）',
+      'skills.personaTag': '人格',
+      'skills.groups': 'Skill 组',
+      'skills.groups.empty': '还没有 Skill 组 — 点击「+ 新建组」创建一个，再把 skill 勾选进去。',
+      'skills.group.new': '新建组',
+      'skills.group.name': '组名',
+      'skills.installed': '已安装 Skill',
+      'skills.none': '没有已安装的 skill。',
+      'skills.edit': '编辑',
+      'skills.back': '返回',
+      'skills.saved': '{name} 已保存',
+      'skills.confirmRemove': '删除 skill「{name}」？',
+      'skills.removed': '{name} 已删除',
+      'skills.removeFail': '删除失败：{msg}',
+      'skills.ghInstall': '从 GitHub 安装 skill',
+      'skills.repoBad': '仓库地址无效（https://github.com/owner/repo）',
+
+      // —— 市场 ——
+      'market.tab.plugins': 'DSH 插件',
+      'market.tab.skills': 'SKILL',
+      'market.searchPlaceholder': '搜索…',
+      'market.cat.all': '全部',
+      'market.cat.visual': '视觉',
+      'market.cat.tool': '工具',
+      'market.cat.other': '其他',
+      'market.cat.persona': '人格',
+      'market.skillGh': 'GitHub Skill：粘贴仓库地址直接安装',
+      'market.skillRepoBad': '仓库地址无效（https://github.com/owner/repo）',
+      'market.skillInstalled': 'skill {name} 已安装到 ~/.dsh/skills',
+
+      // —— CLI 指令（givemyflag 等）——
+      'commands.runCliPrompt': '运行 {name} — 输入参数',
+      'commands.runCliStarted': '{name} 已在终端中启动',
+      'commands.runCliFail': '启动失败：{msg}',
+
+      // —— 侧栏 ——
+      'sidebar.git': 'Git',
+      'sidebar.skills': 'Skill',
+      'common.save': '保存',
     },
   };
 
@@ -2702,10 +3179,34 @@ window.PRTS_MARKET = {
   'use strict';
   const P = G.PRTS = G.PRTS || {};
 
-  const DEFAULTS = { locale: 'auto', ui: { theme: 'dark' } };
+  const DEFAULTS = {
+    locale: 'auto',
+    ui: { theme: 'dark' },
+    // 博士称呼: empty = 默认「博士」; set = 「博士.<name>」/「Dr.<name>」
+    persona: { userName: '' },
+    // DeepSeek 官方平台账户: 首次登录后 loggedIn=true, apiKey 同时写入 dsh 凭证
+    deepseek: { loggedIn: false, apiKey: '' },
+    // GitHub 账户: token 只存本机 PRTS 配置
+    github: { loggedIn: false, token: '', login: '' },
+    // skill 组: groups = [{ id, name, skills: [skillName], persona? }]; 人格 skill 全局单选
+    skills: { activeGroup: '', persona: 'prts-persona', groups: [] },
+  };
 
   function uiConfigPath() { return P.platform.prtsUiConfigPath(); }
   function legacyPath() { return P.platform.configDir() + '/config.json'; }
+
+  function deepMerge(base, extra) {
+    const out = { ...base };
+    for (const k of Object.keys(extra || {})) {
+      const v = extra[k];
+      if (v !== null && typeof v === 'object' && !Array.isArray(v) && base[k] !== null && typeof base[k] === 'object' && !Array.isArray(base[k])) {
+        out[k] = deepMerge(base[k], v);
+      } else {
+        out[k] = v;
+      }
+    }
+    return out;
+  }
 
   const store = {
     async loadConfig() {
@@ -2714,7 +3215,7 @@ window.PRTS_MARKET = {
       try {
         const raw = await P.io.readFile(path);
         const parsed = JSON.parse(raw);
-        cfg = { ...cfg, ...parsed, ui: { ...cfg.ui, ...(parsed.ui || {}) } };
+        cfg = deepMerge(cfg, parsed);
       } catch (e) {
         // First run in the new location: migrate theme/locale from the legacy
         // config (pre ~/.dsh move) if present.
@@ -3416,14 +3917,104 @@ window.PRTS_MARKET = {
   }
 
   // Installed plugins are the profile's own bundle dependencies — read them
-  // through the Electron bridge (the harness profile package.json).
-  async function pluginsList() {
+  // through the Electron bridge (the harness profile package.json). With no
+  // bridge (plain browser on the /prts route) the host plugin answers the
+  // same query over /prts/api/profiles.
+  const bridgeOr = () => {
     try {
-      if (typeof window !== 'undefined' && window.prts && window.prts.bridge && window.prts.bridge.pluginsList) {
-        return await window.prts.bridge.pluginsList();
-      }
+      if (typeof window !== 'undefined' && window.prts && window.prts.bridge) return window.prts.bridge;
     } catch (e) { /* no bridge */ }
+    return null;
+  };
+
+  /** HTTP helper for PRTS panel APIs (balance / github / skills). Uses the
+   *  Electron main-process bridge when present (no CORS); on the plain-browser
+   *  /prts route it goes through the host plugin's /prts/api/http proxy. */
+  async function panelHttp(method, url, headers, body) {
+    const bridge = bridgeOr();
+    if (bridge && typeof bridge.http === 'function') {
+      return new Promise((resolve, reject) => {
+        let text = '';
+        let status = 0;
+        bridge.http({
+          method, url, headers: headers || {}, body: body || '',
+          onChunk: (c) => { text += String(c); },
+          onEnd: (r) => {
+            status = r ? r.status : 0;
+            resolve({ status, text });
+          },
+        });
+        setTimeout(() => { if (status === 0) reject(new Error('PRTS: http timeout')); }, 45000);
+      });
+    }
+    const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+    const res = await fetch(origin + '/prts/api/http', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ method, url, headers: headers || {}, body: body || '' }),
+    });
+    return { status: res.status, text: await res.text() };
+  }
+
+  async function profilesList() {
+    const bridge = bridgeOr();
+    try {
+      if (bridge && bridge.listProfiles) return await bridge.listProfiles();
+    } catch (e) { /* no bridge */ }
+    try {
+      const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+      if (origin) {
+        const res = await fetch(origin + '/prts/api/profiles');
+        if (res.ok) return await res.json();
+      }
+    } catch (e) { /* no host route */ }
     return [];
+  }
+
+  /** CLI apps from OTHER dsh profiles (one-shot plugins like givemyflag).
+   *  Each becomes one visible command in the GUI command directory. */
+  async function cliPlugins() {
+    const profiles = await profilesList();
+    return (profiles || [])
+      .filter((p) => p && p.cli !== false && p.profile && p.profile !== 'prts' && p.profile !== 'web')
+      .map((p) => ({
+        name: p.profile,
+        description: (p.description || '') + (p.usage ? ' — ' + p.usage : ''),
+        usage: p.usage || '',
+        cli: true,
+        profile: p.profile,
+        packages: p.packages || [],
+      }));
+  }
+
+  /** Run a CLI profile plugin (e.g. `dsh --profile givemyflag <url>`). */
+  async function runCliPlugin(profile, args) {
+    const bridge = bridgeOr();
+    if (bridge && bridge.runCli) return await bridge.runCli(profile, args || []);
+    try {
+      const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+      if (origin) {
+        const res = await fetch(origin + '/prts/api/run-cli', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profile, args: args || [] }),
+        });
+        return await res.json();
+      }
+    } catch (e) { /* no host route */ }
+    return { ok: false, error: 'run-cli unavailable in this mode' };
+  }
+
+  async function pluginsList() {
+    const profiles = await profilesList();
+    // Keep the legacy flat shape for existing consumers: { name, version, profile }.
+    const out = [];
+    for (const p of profiles || []) {
+      for (const pkg of p.packages || []) {
+        out.push({ name: pkg.name, version: pkg.version || '', profile: p.profile, category: pkg.category || 'plugin' });
+      }
+    }
+    return out;
   }
 
   S.connect = connect;
@@ -3470,6 +4061,10 @@ window.PRTS_MARKET = {
   };
   S.hostDescribe = hostDescribe;
   S.pluginsList = pluginsList;
+  S.profilesList = profilesList;
+  S.cliPlugins = cliPlugins;
+  S.runCliPlugin = runCliPlugin;
+  S.panelHttp = panelHttp;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
 
@@ -3833,20 +4428,78 @@ window.PRTS_MARKET = {
 
 
 /**
- * PRTS inline icons (B/W, stroke-only, 1.2-1.4px hairlines).
+ * PRTS icon set — Hypergryph / Arknights design language, adapted to the
+ * monochrome PRTS frame: hairline strokes (1.15–1.3px), sharp vertices,
+ * the diamond (rotated square) as the recurring motif, segmented circles,
+ * chevrons and angular brackets. Every mark stays abstract and geometric.
  */
 (function (G) {
   'use strict';
   const P = G.PRTS = G.PRTS || {};
-  const S = (d) => '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">' + d + '</svg>';
+  const S = (inner, size) =>
+    '<svg width="' + (size || 14) + '" height="' + (size || 14) + '" viewBox="0 0 14 14" fill="none" aria-hidden="true">' + inner + '</svg>';
+  const D = 'M7 1.6 12.4 7 7 12.4 1.6 7Z'; // diamond (PRTS mark)
+
   P.icons = {
+    // —— identity / marks ——
+    'diamond': S('<path d="' + D + '" stroke="currentColor" stroke-width="1.2"/>'),
+    'diamond.fill': S('<path d="' + D + '" fill="currentColor"/>'),
+    'prts.mark': S('<path d="' + D + '" stroke="currentColor" stroke-width="1.3"/><path d="M5.2 5.2h3.6v3.6H5.2Z" fill="currentColor"/>'),
+
+    // —— composer ——
     'send': '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h11.2l-3.6-3.6a.8.8 0 1 1 1.1-1.1l4.8 4.8a.8.8 0 0 1 0 1.1l-4.8 4.8a.8.8 0 1 1-1.1-1.1l3.6-3.6H2a.8.8 0 0 1 0-1.5Z" fill="currentColor"/></svg>',
-    'ma.copy': S('<rect x="4.2" y="4.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.2"/><path d="M4.4 2.8h6.4v6.4" stroke="currentColor" stroke-width="1.2"/>'),
-    'ma.like': S('<path d="M7 12.2s-4.8-2.9-4.8-6.1A2.6 2.6 0 0 1 7 4.4a2.6 2.6 0 0 1 4.8 1.7c0 3.2-4.8 6.1-4.8 6.1Z" stroke="currentColor" stroke-width="1.2"/>'),
-    'ma.dislike': S('<path d="M7 1.8s4.8 2.9 4.8 6.1a2.6 2.6 0 0 1-4.8 1.7 2.6 2.6 0 0 1-4.8-1.7c0-3.2 4.8-6.1 4.8-6.1Z" stroke="currentColor" stroke-width="1.2"/>'),
-    'ma.branch': S('<path d="M4 2v7a2 2 0 0 0 2 2h4" stroke="currentColor" stroke-width="1.2"/><path d="M5.2 1.2 7 3 5.2 4.8M8.8 9.2 10 11l-1.2 1.8" stroke="currentColor" stroke-width="1.2" fill="none"/>'),
-    'ma.trash': S('<path d="M2.5 4h9M5 4V2.8h4V4M4 4l.6 7.2h4.8L10 4" stroke="currentColor" stroke-width="1.2"/>'),
-    'ma.clear': S('<path d="M2.5 4h9M5.5 4V2.8h3V4" stroke="currentColor" stroke-width="1.2"/><path d="M4 4l.6 7.2h4.8L10 4" stroke="currentColor" stroke-width="1.2"/>'),
+    'attach': S('<path d="M7 9.6V1.8M3.6 5.2 7 1.8l3.4 3.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.2 7.6v2.4a1 1 0 0 0 1 1h6.6a1 1 0 0 0 1-1V7.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>'),
+    'mic': S('<path d="M6.5 1.2a2 2 0 0 0-2 2v3.1a2 2 0 0 0 4 0V3.2a2 2 0 0 0-2-2Z" stroke="currentColor" stroke-width="1.2"/><path d="M2.6 6a3.9 3.9 0 0 0 7.8 0M6.5 9.9v1.9M4.6 11.8h3.8" stroke="currentColor" stroke-width="1.2"/>'),
+
+    // —— message actions ——
+    'ma.copy': S('<path d="M4.4 2.8h6.2v6.2" stroke="currentColor" stroke-width="1.2"/><path d="M3.4 4.8h6.2a1 1 0 0 1 1 1v5.2a1 1 0 0 1-1 1H3.4a1 1 0 0 1-1-1V5.8a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.2"/>'),
+    'ma.like': S('<path d="M7 12.4 2.2 7.6a3.4 3.4 0 0 1 4.8-4.8L7 2.6l.2-.2a3.4 3.4 0 0 1 4.8 4.8L7 12.4Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>'),
+    'ma.dislike': S('<path d="M7 1.6l4.8 4.8a3.4 3.4 0 0 1-4.8 4.8L7 11.4l-.2.2a3.4 3.4 0 0 1-4.8-4.8L7 1.6Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>'),
+    'ma.branch': S('<circle cx="3.2" cy="2.4" r="1" stroke="currentColor" stroke-width="1.1"/><circle cx="3.2" cy="11.6" r="1" stroke="currentColor" stroke-width="1.1"/><circle cx="10.8" cy="7" r="1" stroke="currentColor" stroke-width="1.1"/><path d="M3.2 3.4v4.2a2 2 0 0 0 2 2h3.6M3.2 10.6V8.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>'),
+    'ma.trash': S('<path d="M2.5 4h9M5 4V2.6h4V4M4 4l.6 7.4h4.8L10 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>'),
+    'ma.clear': S('<path d="M3 2.2 5.4 4 3 5.8M9.2 2.2 6.8 4l2.4 1.8M3 8.4 5.4 10.2 3 12M9.2 8.4 6.8 10.2l2.4 1.8" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>'),
+
+    // —— chrome ——
+    'settings': S('<path d="M7 9.6a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2Z" stroke="currentColor" stroke-width="1.15"/><path d="M13.2 7v.9l-1.7.3a4 4 0 0 1-.5 1.2l1 1.4-.9.9-1.4-1a4 4 0 0 1-1.2.5L8 12.9h-.9L6.8 11.2a4 4 0 0 1-1.2-.5l-1.4 1-.9-.9 1-1.4a4 4 0 0 1-.5-1.2L2.1 6.9V6l1.7-.3a4 4 0 0 1 .5-1.2l-1-1.4.9-.9 1.4 1a4 4 0 0 1 1.2-.5L7.1 1.1H8l.3 1.7a4 4 0 0 1 1.2.5l1.4-1 .9.9-1 1.4a4 4 0 0 1 .5 1.2l1.7.3Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>'),
+    'close': S('<path d="M2.5 2.5l9 9M11.5 2.5l-9 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>'),
+    'chev': S('<path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/>', 12),
+    'search': S('<circle cx="5.4" cy="5.4" r="3.8" stroke="currentColor" stroke-width="1.15"/><path d="m8.2 8.2 3.4 3.4M9.2 3.4 9.6 3M3.4 9.2 3 9.6" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>', 12),
+    'plus': S('<path d="M6.5 1.2v10.6M1.2 6.5h10.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>', 13),
+    'plus.diamond': S('<path d="' + D + '" stroke="currentColor" stroke-width="1.15"/><path d="M7 3.6v6.8M3.6 7h6.8" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+    'check': S('<path d="M1.8 7.2 5 10.4 12.2 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>', 13),
+    'arrow.left': S('<path d="M8.6 2.6 3.2 7l5.4 5.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>', 12),
+    'external': S('<path d="M5.6 2.8H2.8v8.4h8.4V8.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M8.6 2.2h3.2v3.2M11.4 2.6 6.8 7.2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>', 13),
+
+    // —— sidebar (PRTS-style abstract marks) ——
+    'git': S('<circle cx="3" cy="3.4" r="1.15" stroke="currentColor" stroke-width="1.15"/><circle cx="11" cy="3.4" r="1.15" stroke="currentColor" stroke-width="1.15"/><circle cx="7" cy="10.8" r="1.15" stroke="currentColor" stroke-width="1.15"/><path d="M4 3.9a3 3 0 0 0 2.5 6M10 3.9a3 3 0 0 1-2.5 6" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+    'skill': S('<path d="M7 1.6 12.4 7 7 12.4 1.6 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M4.9 4.9 7 7l2.1-2.1M7 7l2.1 2.1M4.9 9.1 7 7" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+    'balance': S('<path d="' + D + '" stroke="currentColor" stroke-width="1.15"/><path d="M4.6 5.4h4.8M7 4.4v5.2M4.4 8.4 5.7 9.6l2.6-2.4M7 4.4 5.4 4.8M7 4.4l1.6.4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>'),
+    'market': S('<path d="M4.5 2.5 6.5 4.5 4.5 6.5 2.5 4.5Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M11.5 2.5 13.5 4.5 11.5 6.5 9.5 4.5Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M4.5 9.5 6.5 11.5 4.5 13.5 2.5 11.5Z" fill="currentColor"/><path d="M11.5 9.5 13.5 11.5 11.5 13.5 9.5 11.5Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>', 15),
+    'details': S('<path d="M3 2.2h8a1 1 0 0 1 1 1v7.6a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.2a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.15"/><path d="M5.4 2.2v9.6M8.4 2.2v9.6" stroke="currentColor" stroke-width="1.15"/>'),
+    'user': S('<path d="M7 2.2a2.6 2.6 0 1 0 0 5.2 2.6 2.6 0 0 0 0-5.2Z" stroke="currentColor" stroke-width="1.15"/><path d="M2.4 11.6a4.6 4.6 0 0 1 9.2 0" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+    'folder': S('<path d="M5.2 2H2.2a.9.9 0 0 0-.9.9v7.3a.9.9 0 0 0 .9.9h9.6a.9.9 0 0 0 .9-.9V4.3a.9.9 0 0 0-.9-.9H6l-.8-1.4Z" fill="currentColor"/>', 12),
+    'sun': S('<circle cx="7.5" cy="7.5" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M7.5 1.2v1.4M7.5 12.4v1.4M1.2 7.5h1.4M12.4 7.5h1.4M3 3l1 1M11 11l1 1M12 3l-1 1M4 11l-1 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>', 15),
+    'moon': S('<path d="M12.6 9.6A5.4 5.4 0 0 1 5.4 2.4 5.6 5.6 0 1 0 12.6 9.6Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>', 15),
+
+    // —— deepseek / balance panel ——
+    'login': S('<path d="M2.6 11.4V8.6a4.4 4.4 0 0 1 8.8 0v2.8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M4.6 10.6h4.8M5.2 8.2l1.8 2.4 1.8-2.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>'),
+    'sync': S('<path d="M2.6 7A4.4 4.4 0 0 1 10 4l1.4 1.4M4 4l1.4 1.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.4 7A4.4 4.4 0 0 1 4 10L2.6 8.6M10 10 8.6 8.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>'),
+    'recharge': S('<path d="M7 12.2V6.6M3.4 8.6 7 4.4l3.6 4.2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.2 12.4h9.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>'),
+    'key': S('<circle cx="5.2" cy="8.8" r="2" stroke="currentColor" stroke-width="1.15"/><path d="M6.6 7.4 11 3M8.6 3h2.6v2.6M8.4 5.2l1.8 1.8" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+
+    // —— git panel ——
+    'repo': S('<path d="M2.8 3.6v6.8a1 1 0 0 0 1 1h6.4a1 1 0 0 0 1-1V4.6l-2.2-2.2H3.8a1 1 0 0 0-1 1.2Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M9 2.6v2.2h2.2M5 7.4h4M5 9.4h4" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+    'upload': S('<path d="M7 10.4V2.2M3.4 4.6 7 1l3.6 3.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.2 11.4h9.6M2.2 13h9.6" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+    'grid': S('<path d="M4.6 2.6 9.4 2.6 11.4 4.6 11.4 9.4 9.4 11.4 4.6 11.4 2.6 9.4 2.6 4.6Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M4.6 2.6 7 7l2.4-4.4M11.4 4.6 7 7l-2.4 4.4M4.6 11.4 7 7l2.4-4.4" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>'),
+    'terminal': S('<path d="M2.4 3.4h9.2a.8.8 0 0 1 .8.8v5.6a.8.8 0 0 1-.8.8H2.4a.8.8 0 0 1-.8-.8V4.2a.8.8 0 0 1 .8-.8Z" stroke="currentColor" stroke-width="1.15"/><path d="M4.2 5.6 6 7l-1.8 1.4M7 8.4h3" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>'),
+
+    // —— skill panel ——
+    'stack': S('<path d="M7 1.6 12.4 7 7 12.4 1.6 7Z" stroke="currentColor" stroke-width="1.1"/><path d="M7 4 9.8 7 7 10 4.2 7Z" stroke="currentColor" stroke-width="1.1"/><path d="M4.4 9.6 1.6 7M9.6 9.6l2.8-2.6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>'),
+    'pen': S('<path d="M8.4 2.2 11.8 5.6 5.2 12.2 1.8 12.2l.2-3.4Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M7.4 3.2 10.8 6.6" stroke="currentColor" stroke-width="1.15"/>'),
+    'trash2': S('<path d="M2.5 4h9M5 4V2.6h4V4M4 4l.6 7.4h4.8L10 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>'),
+    'download': S('<path d="M7 2.2v8.2M3.4 7.2 7 10.8l3.6-3.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.2 12.4h9.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>'),
+    'refresh': S('<path d="M11.4 4.6V1.8H8.6M2.6 9.4v2.8h2.8" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.2 7A4.2 4.2 0 0 0 3.2 4.6M2.8 7A4.2 4.2 0 0 0 10.8 9.4" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+    'link': S('<path d="M5.2 8.8 8.8 5.2M4 7.6 2.9 8.7a2.4 2.4 0 0 0 3.4 3.4l1.1-1.1M10 6.4l1.1-1.1a2.4 2.4 0 0 0-3.4-3.4L6.6 3" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
@@ -6418,268 +7071,36 @@ window.PRTS_MARKET = {
     return rows.map(([k, v]) => '<div class="meterRow"><span class="label">' + k + '</span><span class="value">' + v + '</span></div>').join('');
   }
 
-  /* ---------- settings overlay (Language / Model config / Plugins / Version) ---------- */
-  async function openSettings() {
-    $('cfgLocale').value = A.config.locale || 'auto';
-    $('settingsOverlay').classList.add('open');
-    renderModelConfig();
-    renderPlugins();
-    renderVersion();
-  }
-  function closeSettings() { $('settingsOverlay').classList.remove('open'); }
+  /* ---------- settings overlay (delegated to src/gui/settings.js) ---------- */
+  A.openSettings = function () { if (P.settingsPanel) P.settingsPanel.open(A.config); };
+  A.closeSettings = function () { if (P.settingsPanel) P.settingsPanel.close(); };
 
-  async function renderModelConfig() {
-    const box = $('cfgProviders');
-    box.textContent = '';
-    await P.dshState.listProviders();
-    await P.dshState.listModels();
-    await loadCredentialState();
-    const providers = P.dshState.providers;
-    if (!providers || !providers.length) {
-      box.appendChild(Object.assign(document.createElement('div'), { className: 'hint', textContent: A.t('settings.providers.empty') }));
-      return;
-    }
-    for (const p of providers) {
-      const ref = providerRef(p.provider);
-      const configured = A.credentialState[p.provider] && A.credentialState[p.provider].configured;
-
-      const card = document.createElement('div');
-      card.className = 'pCard';
-
-      const head = document.createElement('button');
-      head.type = 'button';
-      head.className = 'pCardHead';
-      head.innerHTML =
-        '<span class="pName">' + (p.displayName || p.provider) + '</span>' +
-        '<span class="pState" data-state="' + (configured ? 'ok' : 'none') + '">' + (configured ? A.t('settings.provider.set') : A.t('settings.provider.unset')) + '</span>' +
-        '<svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>';
-
-      const body = document.createElement('div');
-      body.className = 'pCardBody';
-
-      const keyRow = document.createElement('div');
-      keyRow.className = 'inlineForm';
-      const input = document.createElement('input');
-      input.type = 'password';
-      input.className = 'sInput';
-      input.placeholder = ref;
-      input.autocomplete = 'off';
-      input.spellcheck = false;
-      const save = document.createElement('button');
-      save.type = 'button';
-      save.className = 'sBtn';
-      save.textContent = A.t('settings.provider.save');
-      save.addEventListener('click', async () => {
-        const value = input.value.trim();
-        if (!value) return;
-        try {
-          await P.dshState.credentialsSet(ref, value);
-          await loadCredentialState();
-          input.value = '';
-          A.toast(A.t('settings.provider.saved', { ref }));
-          renderModelConfig();
-          if (A.refreshModelPop) A.refreshModelPop();
-        } catch (e) { A.toast(e.message); }
-      });
-      keyRow.appendChild(input); keyRow.appendChild(save);
-      body.appendChild(keyRow);
-
-      const grp = P.dshState.models.find((g) => g.id === p.provider);
-      const models = (grp && grp.models) || [];
-      const modelsLine = document.createElement('div');
-      modelsLine.className = 'pModels';
-      modelsLine.textContent = models.length
-        ? models.map((m) => m.id).join(' · ')
-        : A.t('model.none');
-      body.appendChild(modelsLine);
-
-      head.addEventListener('click', () => {
-        const open = card.classList.toggle('open');
-        body.style.display = open ? '' : 'none';
-        if (open) input.focus();
-      });
-      body.style.display = 'none';
-      card.appendChild(head); card.appendChild(body);
-      box.appendChild(card);
-    }
-  }
-
-  async function renderPlugins() {
-    const box = $('cfgPlugins');
-    box.textContent = '';
-    let plugins = [];
-    try { plugins = await P.dshState.pluginsList(); } catch (e) { /* noop */ }
-    if (!plugins.length) {
-      box.appendChild(Object.assign(document.createElement('div'), { className: 'hint', textContent: A.t('settings.plugins.empty') }));
-      return;
-    }
-    for (const pl of plugins) {
-      const row = document.createElement('div');
-      row.className = 'projectRow';
-      const name = document.createElement('span');
-      name.className = 'pname';
-      name.textContent = pl.name;
-      const meta = document.createElement('span');
-      meta.className = 'pmeta';
-      meta.textContent = (pl.version || '') + (pl.profile ? ' · ' + pl.profile : '');
-      row.appendChild(name); row.appendChild(meta);
-      box.appendChild(row);
-    }
-  }
-
-  async function renderVersion() {
-    const box = $('cfgVersion');
-    box.textContent = '';
-    let prtsVer = '?';
-    try { prtsVer = (window.prts && window.prts.env && window.prts.env.prtsVersion) || '?'; } catch (e) { /* noop */ }
-    let dshVer = '—';
-    try {
-      const h = await P.dshState.hostDescribe();
-      dshVer = (h && h.version) || '—';
-    } catch (e) { /* noop */ }
-    const row = document.createElement('div');
-    row.className = 'projectRow';
-    const n = document.createElement('span');
-    n.className = 'pname';
-    n.textContent = 'PRTS';
-    const v = document.createElement('span');
-    v.className = 'pmeta';
-    v.textContent = prtsVer;
-    row.appendChild(n); row.appendChild(v);
-    box.appendChild(row);
-    const row2 = document.createElement('div');
-    row2.className = 'projectRow';
-    const n2 = document.createElement('span');
-    n2.className = 'pname';
-    n2.textContent = 'dsh';
-    const v2 = document.createElement('span');
-    v2.className = 'pmeta';
-    v2.textContent = dshVer;
-    row2.appendChild(n2); row2.appendChild(v2);
-    box.appendChild(row2);
-  }
-
-  /* ---------- cost meter (right sidebar) ---------- */
-  function renderCost(container) {
-    container.textContent = '';
-    const c = P.cost ? P.cost.session : null;
-    const rows = [
-      [A.t('cost.sessionCost'), c ? P.cost.formatMoney(c.usd) : '—'],
-      [A.t('cost.inputTokens'), c ? P.cost.fmtTokens(c.input) : '—'],
-      [A.t('cost.outputTokens'), c ? P.cost.fmtTokens(c.output) : '—'],
-      [A.t('cost.cacheTokens'), c ? P.cost.fmtTokens(c.cacheRead + c.cacheWrite) : '—'],
-      [A.t('cost.calls'), c ? String(c.calls) : '—'],
-    ];
-    for (const [k, v] of rows) {
-      const f = document.createElement('div');
-      f.className = 'dtField';
-      const kk = document.createElement('div');
-      kk.className = 'k';
-      kk.textContent = k;
-      const vv = document.createElement('div');
-      vv.className = 'v';
-      vv.textContent = v;
-      f.appendChild(kk); f.appendChild(vv);
-      container.appendChild(f);
-    }
-    const note = document.createElement('div');
-    note.className = 'hint';
-    note.style.marginTop = '8px';
-    note.textContent = A.t('cost.hint');
-    container.appendChild(note);
-  }
-  A.showCost = function () {
-    openDetails();
-    $('dtTitle').textContent = A.t('cost.title');
-    renderCost($('dtBody'));
-  };
+  /* ---------- details panel ---------- */
   function showDetailsDefault() {
     $('dtTitle').textContent = A.t('details.title');
     $('dtBody').innerHTML = '<div class="dtEmpty">' + A.t('details.empty') + '</div>';
   }
 
-  /* ---------- plugin market ---------- */
-  const MARKET_FALLBACK = [
-    { pkg: '@liustack/modlens', displayName: 'ModLens', description: () => A.t('market.modlens'), source: 'npm' },
-    { pkg: 'dsh-cost-meter', displayName: 'Cost Meter', description: () => A.t('market.costMeter'), source: 'npm' },
-    { pkg: 'dsh-better-sidebar', displayName: 'Better Sidebar', description: () => A.t('market.betterSidebar'), source: 'npm' },
-  ];
-  function marketCatalog() {
-    let scanned = [];
-    try { scanned = (window.PRTS_MARKET && window.PRTS_MARKET.plugins) || []; } catch (e) { scanned = []; }
-    const map = new Map();
-    for (const p of MARKET_FALLBACK.concat(scanned)) {
-      const key = p.pkg || p.repo;
-      if (!key || map.has(key)) continue;
-      map.set(key, p);
-    }
-    return [...map.values()];
-  }
-  async function renderMarket() {
-    const box = $('marketList');
-    box.textContent = '';
-    let installed = [];
-    try { installed = (await P.dshState.pluginsList()).map((p) => p.name); } catch (e) { installed = []; }
-    const items = marketCatalog();
-    if (!items.length) {
-      box.appendChild(Object.assign(document.createElement('div'), { className: 'hint', textContent: A.t('market.empty') }));
-      return;
-    }
-    for (const item of items) {
-      const isInstalled = installed.includes(item.pkg) || (item.pkg && installed.includes(item.pkg.replace(/^@[^/]+\//, '')));
-      const card = document.createElement('div');
-      card.className = 'pCard';
-      const head = document.createElement('div');
-      head.className = 'pCardHead';
-      head.style.cursor = 'default';
-      const name = document.createElement('span');
-      name.className = 'pName';
-      name.textContent = item.displayName || item.name || item.pkg || item.repo;
-      const badge = document.createElement('span');
-      badge.className = 'pState';
-      badge.textContent = item.source === 'github' ? 'github' : 'npm';
-      head.appendChild(name); head.appendChild(badge);
-      const body = document.createElement('div');
-      body.className = 'pCardBody';
-      body.style.display = '';
-      const desc = document.createElement('div');
-      desc.className = 'pModels';
-      desc.textContent = typeof item.description === 'function' ? item.description() : (item.description || '');
-      body.appendChild(desc);
-      const action = document.createElement('button');
-      action.type = 'button';
-      action.className = 'sBtn' + (isInstalled ? '' : ' primary');
-      action.textContent = isInstalled ? A.t('market.installed') : A.t('market.install');
-      action.disabled = isInstalled;
-      action.addEventListener('click', async () => {
-        action.disabled = true;
-        action.textContent = A.t('market.installing');
-        try {
-          const bridge = window.prts && window.prts.bridge;
-          let r;
-          if (item.source === 'github' && item.repo) r = bridge && bridge.pluginClone ? await bridge.pluginClone(item.repo) : { ok: false, stderr: 'no bridge' };
-          else r = bridge && bridge.pluginAdd ? await bridge.pluginAdd(item.pkg || item.repo) : { ok: false, stderr: 'no bridge' };
-          if (r && r.ok) {
-            A.toast(A.t('market.installed', { pkg: item.pkg || item.repo }));
-            renderMarket();
-          } else {
-            A.toast(A.t('market.failed', { msg: (r && (r.stderr || r.stdout)) || 'error' }));
-            action.disabled = false;
-            action.textContent = A.t('market.install');
-          }
-        } catch (e) {
-          A.toast(e.message);
-          action.disabled = false;
-          action.textContent = A.t('market.install');
-        }
-      });
-      body.appendChild(action);
-      card.appendChild(head); card.appendChild(body);
-      box.appendChild(card);
-    }
-  }
-  function openMarket() { $('marketOverlay').classList.add('open'); renderMarket(); }
-  function closeMarket() { $('marketOverlay').classList.remove('open'); }
+  /* ---------- plugin market (delegated to src/gui/market.js) ---------- */
+  A.openMarket = function () {
+    $('marketOverlay').classList.add('open');
+    if (P.market) P.market.open();
+  };
+  A.closeMarket = function () { $('marketOverlay').classList.remove('open'); };
+
+  /* ---------- git panel (sidebar) ---------- */
+  A.openGit = function () {
+    $('gitOverlay').classList.add('open');
+    if (P.git) P.git.render($('gitBody'), A.config);
+  };
+  A.closeGit = function () { $('gitOverlay').classList.remove('open'); };
+
+  /* ---------- skill dock (sidebar) ---------- */
+  A.openSkills = function () {
+    $('skillOverlay').classList.add('open');
+    if (P.skills) P.skills.render($('skillBody'), A.config);
+  };
+  A.closeSkills = function () { $('skillOverlay').classList.remove('open'); };
 
   /* ---------- header / crumbs ---------- */
   function updateCrumb() {
@@ -7066,10 +7487,23 @@ window.PRTS_MARKET = {
     A.refreshWorkspacePop = () => { for (const pop of wsPops) pop.innerHTML = buildWsPop(); };
     A.refreshWorkspacePop();
 
-    // Commands chip — lists the session's known commands (from its own
-    // command/run history plus well-known built-ins; dsh exposes no
-    // command-directory RPC on the /api wire).
+    // Commands chip — lists the session's known commands (the real dsh
+    // command directory over commands/list) plus the CLI apps of other
+    // installed dsh profiles (one-shot plugins like givemyflag), which run
+    // as commands too.
     const cmdPop = attachPop($('commandsChip'), '<div class="popMeta">' + A.t('commands.loading') + '</div>', async (item) => {
+      if (item.dataset.cli === '1') {
+        closePops();
+        const usage = item.dataset.usage || '';
+        const args = await A.askPrompt(A.t('commands.runCliPrompt', { name: item.dataset.name }), usage);
+        if (args === null) return;
+        try {
+          const r = await P.dshState.runCliPlugin(item.dataset.profile, args.trim() ? args.trim().split(/\s+/) : []);
+          if (r && r.ok) A.toast(A.t('commands.runCliStarted', { name: item.dataset.name }));
+          else A.toast(A.t('commands.runCliFail', { msg: (r && (r.error || r.stderr)) || 'error' }));
+        } catch (e) { A.toast(e.message); }
+        return;
+      }
       const input = $('composerInput');
       if (input) {
         input.value = '/' + (item.dataset.name || '') + ' ';
@@ -7085,7 +7519,9 @@ window.PRTS_MARKET = {
       try {
         const cmds = await P.dshState.commandsList(P.dshState.currentSessionId);
         cmdPop.innerHTML = cmds.length
-          ? cmds.map((c) => '<div class="popItem" data-name="' + esc(c.name) + '"><span class="label">/' + esc(c.name) + '</span><span class="desc">' + esc(c.description || '') + '</span></div>').join('')
+          ? cmds.map((c) => c.cli
+            ? '<div class="popItem" data-name="' + esc(c.name) + '" data-cli="1" data-profile="' + esc(c.profile || '') + '" data-usage="' + esc(c.usage || '') + '"><span class="label">⌘ ' + esc(c.name) + '</span><span class="desc">' + esc(c.description || '') + '</span><span class="tick">RUN</span></div>'
+            : '<div class="popItem" data-name="' + esc(c.name) + '"><span class="label">/' + esc(c.name) + '</span><span class="desc">' + esc(c.description || '') + '</span></div>').join('')
           : '<div class="popMeta">' + A.t('commands.none') + '</div>';
       } catch (e) {
         cmdPop.innerHTML = '<div class="popMeta">' + A.t('commands.none') + '</div>';
@@ -7499,44 +7935,15 @@ window.PRTS_MARKET = {
       if (appEl().hasAttribute('data-details-collapsed')) { showDetailsDefault(); openDetails(); }
       else closeDetails();
     });
-    $('costBtn').addEventListener('click', () => {
-      if (appEl().hasAttribute('data-details-collapsed')) { A.showCost(); }
-      else closeDetails();
-    });
-    $('marketBtn').addEventListener('click', openMarket);
-    $('marketClose').addEventListener('click', closeMarket);
+    $('marketBtn').addEventListener('click', A.openMarket);
+    $('marketClose').addEventListener('click', A.closeMarket);
+    $('gitBtn').addEventListener('click', A.openGit);
+    $('gitClose').addEventListener('click', A.closeGit);
+    $('skillBtn').addEventListener('click', A.openSkills);
+    $('skillClose').addEventListener('click', A.closeSkills);
     $('dtClose').addEventListener('click', closeDetails);
-    $('settingsBtn').addEventListener('click', openSettings);
-    $('settingsClose').addEventListener('click', closeSettings);
-    $('cfgSave').addEventListener('click', async () => {
-      A.config.locale = $('cfgLocale').value;
-      await P.store.saveConfig(A.config);
-      A.locale = A.config.locale === 'auto' ? P.platform.detectLocale() : A.config.locale;
-      applyI18n();
-      closeSettings();
-      A.toast(A.t('settings.saved'));
-    });
-    $('modelCfgToggle').addEventListener('click', () => {
-      const btn = $('modelCfgToggle');
-      const body = $('modelCfgBody');
-      const open = body.classList.toggle('open');
-      btn.setAttribute('aria-expanded', String(open));
-      btn.classList.toggle('open', open);
-    });
-    $('updateBtn').addEventListener('click', async () => {
-      const status = $('updateStatus');
-      status.textContent = A.t('settings.updating');
-      try {
-        const bridge = window.prts && window.prts.bridge;
-        const r = bridge && bridge.update ? await bridge.update() : { ok: false, stderr: 'no bridge' };
-        if (r && r.ok) {
-          status.textContent = A.t('settings.updated');
-          A.toast(A.t('settings.updated'));
-        } else {
-          status.textContent = A.t('settings.updateFail', { msg: (r && (r.stderr || r.error)) || 'error' });
-        }
-      } catch (e) { status.textContent = A.t('settings.updateFail', { msg: e.message }); }
-    });
+    $('settingsBtn').addEventListener('click', A.openSettings);
+    $('settingsClose').addEventListener('click', A.closeSettings);
     // Search sessions: client-side filter (instant) — the wire session.search
     // stays a best-effort supplement for deployments where the index is on.
     const searchInput = $('sessionSearch');
@@ -7624,14 +8031,16 @@ window.PRTS_MARKET = {
 
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.chip') && !e.target.closest('.meterBtn') && !e.target.closest('.sbWsBtn') && !e.target.closest('.crumb')) closePops();
-      if (e.target === $('settingsOverlay')) closeSettings();
-      if (e.target === $('marketOverlay')) closeMarket();
+      if (e.target === $('settingsOverlay')) A.closeSettings();
+      if (e.target === $('marketOverlay')) A.closeMarket();
+      if (e.target === $('gitOverlay')) A.closeGit();
+      if (e.target === $('skillOverlay')) A.closeSkills();
     });
     let lastEscAt = 0;
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
       const now = Date.now();
-      closePops(); closeSettings(); closeMarket();
+      closePops(); A.closeSettings(); A.closeMarket(); A.closeGit(); A.closeSkills();
       if (P.system && P.system.open) P.system.close();
       if (now - lastEscAt < 500) {
         lastEscAt = 0;
@@ -7757,9 +8166,1798 @@ window.PRTS_MARKET = {
   A.updatePermissionChip = updatePermissionChip;
   A.updateMeter = updateMeter;
   A.switchView = switchView;
+  A.applyTheme = applyTheme;
+  A.applyI18n = applyI18n;
+  A.setModeLabel = setModeLabel;
+  A.presetLabel = presetLabel;
+  A.newSession = newSession;
+  A.loadCredentialState = loadCredentialState;
+  A.currentPreset = A.currentPreset || null;
+  A.showDetailsDefault = showDetailsDefault;
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/**
+ * PRTS balance panel — the DeepSeek official platform account seam.
+ *
+ * Flow (mirrors the user's spec):
+ *   - first use: 登录 → opens the official platform (in-app window in
+ *     Electron, new tab in the browser); the platform's own login session is
+ *     reused — if already logged in there, no password is needed and PRTS
+ *     comes straight back as "已登录";
+ *   - the platform's API key is imported into the dsh credential store
+ *     (ref DEEPSEEK_OFFICIAL_API_KEY) so the agent itself runs on it;
+ *   - balance is fetched from the official endpoint and displayed in CNY;
+ *   - 充值 opens the official top-up page.
+ *
+ * All network calls ride P.dshState.panelHttp (Electron main-process bridge
+ * or the host plugin's /prts/api/http proxy), so there is no CORS wall.
+ */
+(function (G) {
+  'use strict';
+  const P = G.PRTS = G.PRTS || {};
+  const D = P.balance = {};
+
+  const BALANCE_URL = 'https://api.deepseek.com/user/balance';
+  const PLATFORM_URL = 'https://platform.deepseek.com';
+  const API_KEYS_URL = 'https://platform.deepseek.com/api_keys';
+  const TOPUP_URL = 'https://platform.deepseek.com/top_up';
+  const CREDENTIAL_REF = 'DEEPSEEK_OFFICIAL_API_KEY';
+
+  function bridge() {
+    try {
+      if (typeof window !== 'undefined' && window.prts && window.prts.bridge) return window.prts.bridge;
+    } catch (e) { /* no preload */ }
+    return null;
+  }
+  function app() { return P.app; }
+
+  function openExternal(url) {
+    const b = bridge();
+    if (b && typeof b.openExternal === 'function') { b.openExternal(url); return true; }
+    try { window.open(url, '_blank', 'noopener'); return true; } catch (e) { return false; }
+  }
+
+  /** Official balance endpoint. Resolves the parsed body; throws on failure. */
+  async function rawBalance(key) {
+    const res = await P.dshState.panelHttp('GET', BALANCE_URL, { Authorization: 'Bearer ' + key });
+    if (res.status === 401) {
+      const err = new Error('401');
+      err.code = 'unauthorized';
+      throw err;
+    }
+    if (res.status !== 200) {
+      const err = new Error('HTTP ' + res.status);
+      err.code = 'http';
+      throw err;
+    }
+    let body;
+    try { body = JSON.parse(res.text); } catch (e) { throw new Error('bad response'); }
+    return body;
+  }
+
+  /** Normalize balance info → { currency, total, granted, toppedUp, available }. */
+  function pickBalance(body) {
+    const infos = (body && body.balance_infos) || [];
+    const cny = infos.find((i) => i.currency === 'CNY') || infos[0] || {};
+    const num = (v) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    };
+    return {
+      currency: cny.currency || 'CNY',
+      total: num(cny.total_balance),
+      granted: num(cny.granted_balance),
+      toppedUp: num(cny.topped_up_balance),
+      available: !!(body && body.is_available),
+    };
+  }
+
+  /** Current state for the UI: { status: 'none'|'ok'|'bad', loggedIn, balance, message }. */
+  async function refresh(config) {
+    const cfg = config.deepseek || {};
+    if (!cfg.apiKey) return { status: 'none', loggedIn: !!cfg.loggedIn, balance: null, message: 'no-key' };
+    try {
+      const body = await rawBalance(cfg.apiKey);
+      return { status: 'ok', loggedIn: true, balance: pickBalance(body), message: null };
+    } catch (e) {
+      if (e.code === 'unauthorized') {
+        return { status: 'bad', loggedIn: false, balance: null, message: 'unauthorized' };
+      }
+      return { status: 'bad', loggedIn: !!cfg.loggedIn, balance: null, message: e.message };
+    }
+  }
+
+  /** Persist the key: PRTS config + the dsh credential store (what the agent uses). */
+  async function persistKey(config, key) {
+    config.deepseek = config.deepseek || {};
+    config.deepseek.apiKey = key;
+    config.deepseek.loggedIn = true;
+    await P.store.saveConfig(config);
+    try { await P.dshState.credentialsSet(CREDENTIAL_REF, key); } catch (e) { /* credential store may reject; config still holds it */ }
+    try { if (app() && app().loadCredentialState) await app().loadCredentialState(); } catch (e) { /* noop */ }
+  }
+
+  /**
+   * The login flow. Electron: the main process opens an in-app window on the
+   * real platform — existing login sessions are reused automatically and the
+   * platform's API key is scraped once (best effort). Browser: open the site
+   * in a new tab, then ask the Doctor for the key. In every mode the key is
+   * verified against the official balance endpoint before it is kept.
+   */
+  async function login(config) {
+    const b = bridge();
+    let key = '';
+    let reason = '';
+    if (b && typeof b.loginDeepseek === 'function') {
+      try {
+        const r = await b.loginDeepseek();
+        if (r && r.ok && r.apiKey) key = String(r.apiKey);
+        reason = (r && r.reason) || '';
+      } catch (e) { reason = String(e && e.message || e); }
+    }
+    if (!key) {
+      // Web mode (or failed scrape): open the official site, then ask.
+      openExternal(PLATFORM_URL);
+      const t = P.app ? P.app.t : (k) => k;
+      const entered = await P.app.askPrompt(
+        t('balance.login.prompt'),
+        'sk-…'
+      );
+      if (!entered || !entered.trim()) return { ok: false, cancelled: true };
+      key = entered.trim();
+    }
+    try {
+      await rawBalance(key);
+      await persistKey(config, key);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e.message || String(e), reason };
+    }
+  }
+
+  /** Forget the login + key (both stores). */
+  async function logout(config) {
+    config.deepseek = config.deepseek || {};
+    config.deepseek.loggedIn = false;
+    config.deepseek.apiKey = '';
+    await P.store.saveConfig(config);
+    try { await P.dshState.credentialsUnset(CREDENTIAL_REF); } catch (e) { /* noop */ }
+    try { if (app() && app().loadCredentialState) await app().loadCredentialState(); } catch (e) { /* noop */ }
+  }
+
+  function openPlatform() { return openExternal(PLATFORM_URL); }
+  function openApiKeys() { return openExternal(API_KEYS_URL); }
+  function recharge() { return openExternal(TOPUP_URL); }
+
+  D.refresh = refresh;
+  D.login = login;
+  D.logout = logout;
+  D.openPlatform = openPlatform;
+  D.openApiKeys = openApiKeys;
+  D.recharge = recharge;
+  D.CREDENTIAL_REF = CREDENTIAL_REF;
+  D.BALANCE_URL = BALANCE_URL;
+  D.TOPUP_URL = TOPUP_URL;
+
+  /* ---------- settings-section UI ---------- */
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+  function t(key, params) { return P.app && P.app.t ? P.app.t(key, params) : key; }
+
+  function fmtCny(n) {
+    return '¥ ' + Number(n || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  async function render(container, config) {
+    container.textContent = '';
+    const cfg = config.deepseek || {};
+    const sec = el('div', 'sSection');
+    sec.appendChild(el('div', 'sSecTitle eyebrow', t('balance.title')));
+
+    const state = cfg.apiKey ? await D.refresh(config) : { status: 'none', balance: null };
+
+    const statusRow = el('div', 'sSecRow');
+    const badge = el('span', 'pState', cfg.loggedIn ? t('balance.loggedIn') : t('balance.loggedOut'));
+    badge.dataset.state = cfg.loggedIn ? 'ok' : 'none';
+    statusRow.appendChild(badge);
+    const loginBtn = el('button', 'sBtn ' + (cfg.loggedIn ? '' : 'primary'), cfg.loggedIn ? t('balance.relogin') : t('balance.login'));
+    loginBtn.type = 'button';
+    loginBtn.addEventListener('click', async () => {
+      loginBtn.disabled = true;
+      const r = await D.login(config);
+      loginBtn.disabled = false;
+      if (r.ok) { P.app.toast(t('balance.loggedInToast')); render(container, config); }
+      else if (!r.cancelled) P.app.toast(t('balance.loginFail', { msg: r.error || 'error' }));
+      else render(container, config);
+    });
+    statusRow.appendChild(loginBtn);
+    sec.appendChild(statusRow);
+    sec.appendChild(el('div', 'hint', t('balance.login.hint')));
+
+    // balance readout (CNY)
+    if (state.status === 'ok' && state.balance) {
+      const card = el('div', 'balCard');
+      const big = el('div', 'balBig', fmtCny(state.balance.total));
+      big.title = t('balance.total');
+      card.appendChild(big);
+      const sub = el('div', 'balSub');
+      const row = el('div', 'projectRow');
+      row.appendChild(el('span', 'pname', t('balance.toppedUp')));
+      row.appendChild(el('span', 'pmeta', fmtCny(state.balance.toppedUp)));
+      sub.appendChild(row);
+      const row2 = el('div', 'projectRow');
+      row2.appendChild(el('span', 'pname', t('balance.granted')));
+      row2.appendChild(el('span', 'pmeta', fmtCny(state.balance.granted)));
+      sub.appendChild(row2);
+      card.appendChild(sub);
+      sec.appendChild(card);
+    } else if (state.status === 'none') {
+      sec.appendChild(el('div', 'hint', t('balance.none')));
+    } else {
+      sec.appendChild(el('div', 'hint', t(state.message === 'unauthorized' ? 'balance.badKey' : 'balance.fetchFail', { msg: state.message || '' })));
+    }
+
+    // actions
+    const actions = el('div', 'sRow');
+    actions.style.marginTop = '10px';
+    const syncBtn = el('button', 'sBtn', t('balance.refresh'));
+    syncBtn.type = 'button';
+    syncBtn.disabled = !cfg.apiKey;
+    syncBtn.addEventListener('click', async () => { await render(container, config); });
+    actions.appendChild(syncBtn);
+    const rechargeBtn = el('button', 'sBtn primary', t('balance.recharge'));
+    rechargeBtn.type = 'button';
+    rechargeBtn.addEventListener('click', () => D.recharge());
+    actions.appendChild(rechargeBtn);
+    const keysBtn = el('button', 'sBtn', t('balance.openKeys'));
+    keysBtn.type = 'button';
+    keysBtn.addEventListener('click', () => D.openApiKeys());
+    actions.appendChild(keysBtn);
+    sec.appendChild(actions);
+
+    if (cfg.apiKey) {
+      const keyRow = el('div', 'sSection');
+      keyRow.appendChild(el('div', 'sSecTitle eyebrow', t('balance.key')));
+      const row = el('div', 'projectRow');
+      const masked = 'sk-' + String(cfg.apiKey).slice(3, 7) + '••••••' + String(cfg.apiKey).slice(-4);
+      row.appendChild(el('span', 'pname', masked));
+      row.appendChild(el('span', 'pmeta', D.CREDENTIAL_REF));
+      keyRow.appendChild(row);
+      const forget = el('button', 'sBtn', t('balance.forget'));
+      forget.type = 'button';
+      forget.addEventListener('click', async () => { await D.logout(config); render(container, config); });
+      keyRow.appendChild(forget);
+      sec.appendChild(keyRow);
+    }
+
+    container.appendChild(sec);
+  }
+
+  D.render = render;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/**
+ * PRTS git panel — GitHub account seam for the PRTS frame.
+ *
+ *   - 连接 GitHub: first click opens github.com in an in-app window
+ *     (Electron) or a new tab (browser); an already-logged-in session is
+ *     reused, so returning shows "已连接" immediately;
+ *   - token: best-effort capture from the token page; manual paste fallback;
+ *   - 创建仓库 via the REST API;
+ *   - 项目上传: pick a local directory, then git init/commit/push through the
+ *     main-process shell bridge;
+ *   - 贡献热力图: official contributions page parsed and drawn as an SVG
+ *     diamond-point grid in the PRTS monochrome palette.
+ */
+(function (G) {
+  'use strict';
+  const P = G.PRTS = G.PRTS || {};
+  const GIT = P.git = {};
+
+  const API = 'https://api.github.com';
+  const SITE = 'https://github.com';
+  const LOGIN_URL = SITE + '/login';
+  const TOKEN_URL = SITE + '/settings/tokens/new?scopes=repo,workflow&description=PRTS+Agent';
+
+  function bridge() {
+    try {
+      if (typeof window !== 'undefined' && window.prts && window.prts.bridge) return window.prts.bridge;
+    } catch (e) { /* no preload */ }
+    return null;
+  }
+  function t(key, params) { return P.app && P.app.t ? P.app.t(key, params) : key; }
+  function openExternal(url) {
+    const b = bridge();
+    if (b && typeof b.openExternal === 'function') { b.openExternal(url); return; }
+    try { window.open(url, '_blank', 'noopener'); } catch (e) { /* noop */ }
+  }
+
+  async function api(token, method, path, body) {
+    const res = await P.dshState.panelHttp(method, API + path, {
+      Authorization: 'token ' + token,
+      Accept: 'application/vnd.github+json',
+      'Content-Type': 'application/json',
+      'User-Agent': 'PRTS',
+      'X-GitHub-Api-Version': '2022-11-28',
+    }, body ? JSON.stringify(body) : undefined);
+    let data = null;
+    try { data = JSON.parse(res.text); } catch (e) { data = null; }
+    return { status: res.status, data };
+  }
+
+  async function userInfo(token) {
+    const r = await api(token, 'GET', '/user');
+    if (r.status !== 200) throw new Error('github: ' + r.status);
+    return { login: r.data.login, name: r.data.name || '', avatar: r.data.avatar_url || '' };
+  }
+
+  async function listRepos(token) {
+    const r = await api(token, 'GET', '/user/repos?per_page=50&sort=updated');
+    if (r.status !== 200) return [];
+    return (r.data || []).map((x) => ({ name: x.name, private: !!x.private, url: x.html_url }));
+  }
+
+  async function createRepo(token, opts) {
+    const r = await api(token, 'POST', '/user/repos', {
+      name: opts.name,
+      description: opts.description || '',
+      private: !!opts.isPrivate,
+      auto_init: false,
+    });
+    if (r.status === 422 && r.data && r.data.errors) {
+      throw new Error(t('git.repo.exists'));
+    }
+    if (r.status < 200 || r.status >= 300) {
+      throw new Error((r.data && r.data.message) || ('github: ' + r.status));
+    }
+    return { url: r.data.html_url, cloneUrl: r.data.clone_url, sshUrl: r.data.ssh_url };
+  }
+
+  /* ---------- contribution heatmap ---------- */
+
+  /** Fetch + parse the official contributions page → cells [{date, count, level}]. */
+  async function heatmapCells(login) {
+    const res = await P.dshState.panelHttp('GET', SITE + '/users/' + encodeURIComponent(login) + '/contributions', {});
+    if (res.status !== 200) throw new Error('github: ' + res.status);
+    const html = res.text;
+    const cells = [];
+    const tdRe = /<td[^>]*\bdata-date="([^"]+)"[^>]*\bdata-level="(\d)"[^>]*>([\s\S]*?)<\/td>/g;
+    let m;
+    while ((m = tdRe.exec(html)) !== null) {
+      const inner = m[3];
+      let count = 0;
+      const c = /(\d+)\s+contributions?/.exec(inner);
+      if (c) count = parseInt(c[1], 10);
+      else if (/No\s+contributions/i.test(inner)) count = 0;
+      cells.push({ date: m[1], level: parseInt(m[2], 10), count });
+    }
+    if (!cells.length) throw new Error('no contribution data');
+    return cells;
+  }
+
+  /** Draw the heatmap as SVG in PRTS tokens. Returns the SVG markup. */
+  function heatmapSvg(cells) {
+    const ink = '#FAFAFA';
+    const alpha = ['rgba(250,250,250,0.07)', 'rgba(250,250,250,0.22)', 'rgba(250,250,250,0.45)', 'rgba(250,250,250,0.72)', 'rgba(250,250,250,1)'];
+    const cell = 10, gap = 3, weeks = Math.ceil(cells.length / 7);
+    const w = weeks * (cell + gap) - gap;
+    const h = 7 * (cell + gap) - gap;
+    let body = '';
+    cells.forEach((c, i) => {
+      const col = Math.floor(i / 7), row = i % 7;
+      const x = col * (cell + gap), y = row * (cell + gap);
+      const fill = c.count > 0 ? alpha[Math.min(4, c.level)] : alpha[0];
+      const diamond = c.count > 0
+        ? '<path d="M' + (x + cell / 2) + ' ' + (y + 0.5) + ' L' + (x + cell - 0.5) + ' ' + (y + cell / 2) + ' L' + (x + cell / 2) + ' ' + (y + cell - 0.5) + ' L' + (x + 0.5) + ' ' + (y + cell / 2) + ' Z" fill="' + fill + '"/>'
+        : '<rect x="' + x + '" y="' + y + '" width="' + cell + '" height="' + cell + '" fill="' + alpha[0] + '"/>';
+      body += '<g><title>' + c.date + ' · ' + c.count + ' contributions</title>' + diamond + '</g>';
+    });
+    const total = cells.reduce((a, c) => a + c.count, 0);
+    const meta = '<text x="0" y="' + (h + 12) + '" font-size="8" fill="' + ink + '" opacity="0.45" font-family="monospace" letter-spacing="1">' +
+      total + ' CONTRIBUTIONS / ' + cells.length + 'D</text>';
+    return '<svg viewBox="0 0 ' + Math.max(w, 120) + ' ' + (h + 14) + '" width="100%" height="auto" role="img" aria-label="contribution heatmap">' + body + meta + '</svg>';
+  }
+
+  /* ---------- actions ---------- */
+
+  async function refresh(config) {
+    const cfg = config.github || {};
+    if (!cfg.token) return { status: 'none', user: null, repos: [], heatmap: null };
+    try {
+      const user = await userInfo(cfg.token);
+      let repos = [];
+      try { repos = await listRepos(cfg.token); } catch (e) { repos = []; }
+      let heatmap = null;
+      try { heatmap = heatmapSvg(await heatmapCells(user.login)); } catch (e) { heatmap = null; }
+      return { status: 'ok', user, repos, heatmap };
+    } catch (e) {
+      return { status: 'bad', user: null, repos: [], heatmap: null, error: e.message };
+    }
+  }
+
+  async function login(config) {
+    const b = bridge();
+    let token = '';
+    if (b && typeof b.loginGithub === 'function') {
+      try {
+        const r = await b.loginGithub();
+        if (r && r.ok && r.token) token = String(r.token);
+      } catch (e) { /* fall through to manual */ }
+    }
+    if (!token) {
+      openExternal(LOGIN_URL);
+      const entered = await P.app.askPrompt(t('git.login.prompt'), 'ghp_…');
+      if (!entered || !entered.trim()) return { ok: false, cancelled: true };
+      token = entered.trim();
+    }
+    try {
+      const user = await userInfo(token);
+      config.github = config.github || {};
+      config.github.token = token;
+      config.github.login = user.login;
+      config.github.loggedIn = true;
+      await P.store.saveConfig(config);
+      return { ok: true, user };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  }
+
+  async function logout(config) {
+    config.github = config.github || {};
+    config.github.token = '';
+    config.github.login = '';
+    config.github.loggedIn = false;
+    await P.store.saveConfig(config);
+  }
+
+  /** Create a repo (and optionally upload a folder right away). */
+  async function newRepo(config, opts) {
+    const cfg = config.github || {};
+    if (!cfg.token) return { ok: false, error: t('git.needLogin') };
+    const repo = await createRepo(cfg.token, opts);
+    if (opts.dirPath) {
+      const push = await uploadTo(cfg, repo, opts.dirPath);
+      return { ok: true, repo, push };
+    }
+    return { ok: true, repo };
+  }
+
+  /** Upload a local directory: init/commit/push through the shell bridge. */
+  async function uploadTo(config, repo, dirPath) {
+    const b = bridge();
+    if (!b || typeof b.shell !== 'function') {
+      return { ok: false, error: t('git.uploadUnavailable') };
+    }
+    const cfg = config.github || {};
+    const remote = 'https://' + encodeURIComponent(cfg.login) + ':' + encodeURIComponent(cfg.token) + '@github.com/' +
+      encodeURIComponent(cfg.login) + '/' + encodeURIComponent(repo.name || repo) + '.git';
+    const steps = [
+      ['init', ['init', dirPath]],
+      ['add', ['-C', dirPath, 'add', '-A']],
+      ['commit', ['-C', dirPath, 'commit', '-m', 'Upload via PRTS']],
+      ['remote', ['-C', dirPath, 'remote', 'add', 'origin', remote]],
+      ['push', ['-C', dirPath, 'push', '-u', 'origin', 'HEAD', '--force']],
+    ];
+    const log = [];
+    for (const [label, args] of steps) {
+      try {
+        const r = await b.shell('git', args);
+        if (r && r.stdout) log.push('$ git ' + args.join(' ') + '\n' + r.stdout);
+        if (r && r.stderr) log.push(r.stderr);
+        if (r && r.ok === false) return { ok: false, error: label + ': ' + (r.stderr || 'failed'), log: log.join('\n') };
+      } catch (e) {
+        return { ok: false, error: label + ': ' + (e && e.message || e), log: log.join('\n') };
+      }
+    }
+    return { ok: true, log: log.join('\n') };
+  }
+
+  async function uploadProject(config) {
+    const cfg = config.github || {};
+    if (!cfg.token) return { ok: false, error: t('git.needLogin') };
+    const dirPath = await P.dshState.pickDirectory();
+    if (!dirPath) return { ok: false, cancelled: true };
+    let repos = [];
+    try { repos = await listRepos(cfg.token); } catch (e) { /* repo list is advisory */ }
+    const name = dirPath.split(/[\\/]/).filter(Boolean).pop() || 'project';
+    const nameValue = await P.app.askPrompt(t('git.upload.repoName'), name);
+    if (!nameValue || !nameValue.trim()) return { ok: false, cancelled: true };
+    const finalName = nameValue.trim();
+    const existing = repos.find((r) => r.name === finalName);
+    let repo;
+    if (existing) {
+      repo = { name: finalName, cloneUrl: existing.url, sshUrl: '' };
+    } else {
+      const isPrivate = await P.app.askConfirm(t('git.upload.private'));
+      repo = await createRepo(cfg.token, { name: finalName, description: '', isPrivate: !!isPrivate });
+    }
+    const push = await uploadTo(cfg, repo, dirPath);
+    return { ok: push.ok, repo, push };
+  }
+
+  GIT.refresh = refresh;
+  GIT.login = login;
+  GIT.logout = logout;
+  GIT.newRepo = newRepo;
+  GIT.uploadProject = uploadProject;
+  GIT.heatmapCells = heatmapCells;
+  GIT.heatmapSvg = heatmapSvg;
+  GIT.openSite = () => openExternal(SITE);
+  GIT.openTokenPage = () => openExternal(TOKEN_URL);
+
+  /* ---------- panel UI (sidebar overlay + settings section) ---------- */
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+
+  let busy = false;
+
+  async function render(container, config) {
+    container.textContent = '';
+    const cfg = config.github || {};
+
+    const status = el('div', 'sSection');
+    const head = el('div', 'sSecRow');
+    head.appendChild(el('span', 'sSecTitle eyebrow', t('git.title')));
+    const loginBtn = el('button', 'sBtn ' + (cfg.loggedIn ? '' : 'primary'), cfg.loggedIn ? t('git.relogin') : t('git.connect'));
+    loginBtn.type = 'button';
+    loginBtn.addEventListener('click', async () => {
+      if (busy) return;
+      busy = true;
+      loginBtn.disabled = true;
+      const r = await GIT.login(config);
+      busy = false;
+      loginBtn.disabled = false;
+      if (r.ok) { P.app.toast(t('git.connected')); render(container, config); }
+      else if (!r.cancelled) P.app.toast(t('git.loginFail', { msg: r.error || 'error' }));
+      else render(container, config);
+    });
+    head.appendChild(loginBtn);
+    status.appendChild(head);
+    container.appendChild(status);
+
+    if (!cfg.loggedIn) {
+      const hint = el('div', 'hint', t('git.login.hint'));
+      container.appendChild(hint);
+      const openBtn = el('button', 'sBtn', t('git.openSite'));
+      openBtn.type = 'button';
+      openBtn.addEventListener('click', () => GIT.openSite());
+      container.appendChild(openBtn);
+      return;
+    }
+
+    // —— live state ——
+    const state = await GIT.refresh(config);
+    const who = el('div', 'ghUser');
+    who.innerHTML = (P.icons.user || '') +
+      '<span class="ghLogin">' + (state.user ? state.user.login : (cfg.login || '…')) + '</span>' +
+      '<span class="pState" data-state="' + (state.status === 'ok' ? 'ok' : 'none') + '">' + t(state.status === 'ok' ? 'git.loggedIn' : 'git.tokenBad') + '</span>';
+    container.appendChild(who);
+    const out = el('button', 'sBtn', t('git.disconnect'));
+    out.type = 'button';
+    out.addEventListener('click', async () => { await GIT.logout(config); render(container, config); });
+    container.appendChild(out);
+    const tokenBtn = el('button', 'sBtn', t('git.openToken'));
+    tokenBtn.type = 'button';
+    tokenBtn.addEventListener('click', () => GIT.openTokenPage());
+    container.appendChild(tokenBtn);
+
+    // —— contribution heatmap (PRTS palette) ——
+    const hmSec = el('div', 'sSection');
+    hmSec.appendChild(el('div', 'sSecTitle eyebrow', t('git.heatmap')));
+    if (state.heatmap) {
+      const box = el('div', 'ghHeat');
+      box.innerHTML = state.heatmap;
+      hmSec.appendChild(box);
+    } else {
+      hmSec.appendChild(el('div', 'hint', t('git.heatmap.empty')));
+    }
+    container.appendChild(hmSec);
+
+    // —— create repo ——
+    const rSec = el('div', 'sSection');
+    rSec.appendChild(el('div', 'sSecTitle eyebrow', t('git.newRepo')));
+    const form = el('div', 'inlineForm');
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.className = 'sInput';
+    nameInput.placeholder = t('git.repo.name');
+    nameInput.spellcheck = false;
+    const priv = el('label', 'mCheck');
+    const privBox = document.createElement('input');
+    privBox.type = 'checkbox';
+    const privLabel = el('span', '', t('git.repo.private'));
+    priv.appendChild(privBox); priv.appendChild(privLabel);
+    const createBtn = el('button', 'sBtn primary', t('git.repo.create'));
+    createBtn.type = 'button';
+    createBtn.addEventListener('click', async () => {
+      const name = nameInput.value.trim();
+      if (!/^[A-Za-z0-9._-]+$/.test(name)) { P.app.toast(t('git.repo.nameBad')); return; }
+      createBtn.disabled = true;
+      try {
+        const r = await GIT.newRepo(config, { name, description: '', isPrivate: privBox.checked });
+        if (r.ok) {
+          P.app.toast(t('git.repo.created', { name }));
+          nameInput.value = '';
+          render(container, config);
+        } else P.app.toast(r.error || t('market.failed', { msg: '' }));
+      } catch (e) { P.app.toast(e.message); }
+      createBtn.disabled = false;
+    });
+    form.appendChild(nameInput); form.appendChild(priv); form.appendChild(createBtn);
+    rSec.appendChild(form);
+    container.appendChild(rSec);
+
+    // —— upload project ——
+    const uSec = el('div', 'sSection');
+    uSec.appendChild(el('div', 'sSecTitle eyebrow', t('git.upload')));
+    uSec.appendChild(el('div', 'hint', t('git.upload.hint')));
+    const upBtn = el('button', 'sBtn', P.icons.upload ? '' : '', '');
+    upBtn.type = 'button';
+    if (P.icons.upload) { upBtn.innerHTML = P.icons.upload + ' ' + t('git.upload.go'); }
+    else upBtn.textContent = t('git.upload.go');
+    upBtn.addEventListener('click', async () => {
+      upBtn.disabled = true;
+      P.app.toast(t('git.upload.working'));
+      try {
+        const r = await GIT.uploadProject(config);
+        if (r.ok) { P.app.toast(t('git.upload.done')); render(container, config); }
+        else if (!r.cancelled) P.app.toast(r.error || t('git.upload.fail'));
+      } catch (e) { P.app.toast(e.message); }
+      upBtn.disabled = false;
+    });
+    uSec.appendChild(upBtn);
+    container.appendChild(uSec);
+
+    // —— repos ——
+    const listSec = el('div', 'sSection');
+    listSec.appendChild(el('div', 'sSecTitle eyebrow', t('git.repos')));
+    if (!state.repos.length) listSec.appendChild(el('div', 'hint', t('git.repos.empty')));
+    for (const r of state.repos) {
+      const row = el('div', 'projectRow');
+      row.appendChild(el('span', 'pname', r.name));
+      row.appendChild(el('span', 'pmeta', r.private ? 'PRIVATE' : 'PUBLIC'));
+      const a = el('a', 'mLink', '↗');
+      a.href = r.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      row.appendChild(a);
+      listSec.appendChild(row);
+    }
+    container.appendChild(listSec);
+  }
+
+  GIT.render = render;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/**
+ * PRTS skill module — the Doctor's skill dock.
+ *
+ * Skills live in the dsh user root (`~/.dsh/skills`, one directory per skill
+ * with a SKILL.md); the dsh agent discovers them there, so what PRTS manages
+ * here is exactly what the model can load. This module handles:
+ *   - discovery (Electron bridge list, host /prts/api/skills in the browser);
+ *   - skill groups — multi-select sets persisted in the PRTS config;
+ *   - the persona slot — exactly ONE persona-type skill may be active;
+ *   - installing skills from GitHub (clone into the skills root);
+ *   - raw SKILL.md editing (settings → skill config files).
+ */
+(function (G) {
+  'use strict';
+  const P = G.PRTS = G.PRTS || {};
+  const SK = P.skills = {};
+
+  function bridge() {
+    try {
+      if (typeof window !== 'undefined' && window.prts && window.prts.bridge) return window.prts.bridge;
+    } catch (e) { /* no preload */ }
+    return null;
+  }
+  function origin() {
+    try { return (typeof window !== 'undefined' && window.location && window.location.origin) || ''; } catch (e) { return ''; }
+  }
+
+  /** Is this skill the persona kind (AI 人格记忆)? Persona skills are
+   *  single-select: only one may be active at a time. */
+  function isPersona(name, meta) {
+    if (meta && (meta.category === 'persona' || meta.persona === true)) return true;
+    return /(^|[-_.])persona($|[-_.])/.test(String(name || '')) || String(name || '') === 'prts-persona';
+  }
+
+  /** List skills: [{ name, description, path, persona, hasFile }]. */
+  async function list() {
+    const b = bridge();
+    if (b && typeof b.listSkills === 'function') {
+      try { return await b.listSkills(); } catch (e) { /* fall through */ }
+    }
+    try {
+      const res = await fetch(origin() + '/prts/api/skills');
+      if (res.ok) return await res.json();
+    } catch (e) { /* no host route */ }
+    return [];
+  }
+
+  /** Raw SKILL.md text of one skill. */
+  async function read(name) {
+    const b = bridge();
+    if (b && typeof b.readSkill === 'function') {
+      try { return await b.readSkill(name); } catch (e) { /* fall through */ }
+    }
+    const res = await fetch(origin() + '/prts/api/skills?name=' + encodeURIComponent(name));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    return data.content;
+  }
+
+  /** Overwrite one SKILL.md. */
+  async function write(name, content) {
+    const b = bridge();
+    if (b && typeof b.writeSkill === 'function') {
+      try { await b.writeSkill(name, content); return; } catch (e) { /* fall through */ }
+    }
+    const res = await fetch(origin() + '/prts/api/skills', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, content }),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+  }
+
+  /** Clone a GitHub skill repo into the dsh skills root. */
+  async function install(repo) {
+    const b = bridge();
+    if (b && typeof b.skillInstall === 'function') {
+      return await b.skillInstall(repo);
+    }
+    const res = await fetch(origin() + '/prts/api/skill-install', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ repo }),
+    });
+    return await res.json();
+  }
+
+  /** Remove one skill directory. */
+  async function remove(name) {
+    const b = bridge();
+    if (b && typeof b.deleteSkill === 'function') {
+      try { await b.deleteSkill(name); return { ok: true }; } catch (e) { return { ok: false, error: String(e && e.message || e) }; }
+    }
+    const res = await fetch(origin() + '/prts/api/skill-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    return await res.json();
+  }
+
+  /* ---------- groups (persisted in PRTS config) ---------- */
+
+  function groupsOf(config) {
+    config.skills = config.skills || {};
+    if (!Array.isArray(config.skills.groups)) config.skills.groups = [];
+    return config.skills.groups;
+  }
+
+  async function saveConfig(config) { await P.store.saveConfig(config); }
+
+  async function createGroup(config, name) {
+    const groups = groupsOf(config);
+    const id = 'g' + Date.now().toString(36);
+    groups.push({ id, name: name || ('GROUP ' + (groups.length + 1)), skills: [] });
+    if (!config.skills.activeGroup) config.skills.activeGroup = id;
+    await saveConfig(config);
+    return groups[groups.length - 1];
+  }
+
+  async function setGroupSkills(config, groupId, skillNames) {
+    const g = groupsOf(config).find((x) => x.id === groupId);
+    if (!g) return;
+    g.skills = skillNames.slice();
+    await saveConfig(config);
+  }
+
+  async function removeGroup(config, groupId) {
+    const groups = groupsOf(config);
+    const i = groups.findIndex((x) => x.id === groupId);
+    if (i >= 0) groups.splice(i, 1);
+    if (config.skills.activeGroup === groupId) config.skills.activeGroup = groups.length ? groups[0].id : '';
+    await saveConfig(config);
+  }
+
+  async function setActiveGroup(config, groupId) {
+    config.skills.activeGroup = groupId;
+    await saveConfig(config);
+  }
+
+  /** The persona slot: exactly one persona skill. Persists the choice and
+   *  returns the chosen name ('' clears it). */
+  async function setPersona(config, name) {
+    config.skills = config.skills || {};
+    config.skills.persona = name || '';
+    await saveConfig(config);
+  }
+
+  SK.list = list;
+  SK.read = read;
+  SK.write = write;
+  SK.install = install;
+  SK.remove = remove;
+  SK.isPersona = isPersona;
+  SK.groupsOf = groupsOf;
+  SK.createGroup = createGroup;
+  SK.setGroupSkills = setGroupSkills;
+  SK.removeGroup = removeGroup;
+  SK.setActiveGroup = setActiveGroup;
+  SK.setPersona = setPersona;
+
+  /* ---------- dock UI (sidebar overlay + settings section share this) ---------- */
+
+  function t(key, params) { return P.app && P.app.t ? P.app.t(key, params) : key; }
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+
+  let editing = null; // skill name currently opened in the editor
+
+  async function renderEditor(container, config, name) {
+    container.textContent = '';
+    editing = name;
+    const back = el('button', 'sBtn', '← ' + t('skills.back'));
+    back.type = 'button';
+    back.addEventListener('click', () => render(container, config));
+    container.appendChild(back);
+    const head = el('div', 'sSecRow');
+    head.appendChild(el('span', 'sSecTitle eyebrow', name));
+    const save = el('button', 'sBtn primary', t('common.save'));
+    save.type = 'button';
+    head.appendChild(save);
+    container.appendChild(head);
+    const ta = document.createElement('textarea');
+    ta.className = 'sTextarea';
+    ta.spellcheck = false;
+    ta.rows = 18;
+    container.appendChild(ta);
+    let content = '';
+    try { content = await SK.read(name); } catch (e) { content = '# ' + name + '\n\n' + e.message; }
+    ta.value = content;
+    save.addEventListener('click', async () => {
+      try {
+        await SK.write(name, ta.value);
+        P.app.toast(t('skills.saved', { name }));
+      } catch (e) { P.app.toast(e.message); }
+    });
+  }
+
+  async function render(container, config) {
+    container.textContent = '';
+    config.skills = config.skills || {};
+    let skills = [];
+    try { skills = await SK.list(); } catch (e) { skills = []; }
+    const personaSkills = skills.filter((s) => s.persona);
+    const normalSkills = skills.filter((s) => !s.persona);
+
+    // —— persona slot (single select) ——
+    const pSec = el('div', 'sSection');
+    pSec.appendChild(el('div', 'sSecTitle eyebrow', t('skills.persona')));
+    pSec.appendChild(el('div', 'hint', t('skills.persona.hint')));
+    const pRow = el('div', 'skPersona');
+    const noneBtn = el('button', 'skChip' + (!config.skills.persona ? ' on' : ''), t('skills.persona.none'));
+    noneBtn.type = 'button';
+    noneBtn.addEventListener('click', async () => { await SK.setPersona(config, ''); render(container, config); });
+    pRow.appendChild(noneBtn);
+    for (const s of personaSkills) {
+      const b = el('button', 'skChip' + (config.skills.persona === s.name ? ' on' : ''), s.name);
+      b.type = 'button';
+      b.title = s.description || '';
+      b.addEventListener('click', async () => { await SK.setPersona(config, s.name); render(container, config); });
+      pRow.appendChild(b);
+    }
+    pSec.appendChild(pRow);
+    container.appendChild(pSec);
+
+    // —— groups ——
+    const gSec = el('div', 'sSection');
+    const gHead = el('div', 'sSecRow');
+    gHead.appendChild(el('span', 'sSecTitle eyebrow', t('skills.groups')));
+    const addBtn = el('button', 'sBtn', '+ ' + t('skills.group.new'));
+    addBtn.type = 'button';
+    addBtn.addEventListener('click', async () => {
+      const name = await P.app.askPrompt(t('skills.group.name'), 'GROUP ' + (SK.groupsOf(config).length + 1));
+      if (!name || !name.trim()) return;
+      await SK.createGroup(config, name.trim());
+      render(container, config);
+    });
+    gHead.appendChild(addBtn);
+    gSec.appendChild(gHead);
+    const groups = SK.groupsOf(config);
+    if (!groups.length) {
+      gSec.appendChild(el('div', 'hint', t('skills.groups.empty')));
+    }
+    for (const g of groups) {
+      const row = el('div', 'skGroup' + (config.skills.activeGroup === g.id ? ' active' : ''));
+      const nameBtn = el('button', 'skGroupName', g.name);
+      nameBtn.type = 'button';
+      nameBtn.addEventListener('click', async () => { await SK.setActiveGroup(config, g.id); render(container, config); });
+      row.appendChild(nameBtn);
+      const count = el('span', 'skGroupCount', String(g.skills.length));
+      row.appendChild(count);
+      const del = el('button', 'rowBtn', P.icons['trash2'] || '×');
+      del.type = 'button';
+      del.addEventListener('click', async () => { await SK.removeGroup(config, g.id); render(container, config); });
+      row.appendChild(del);
+      gSec.appendChild(row);
+      // multi-select chips for the active group
+      if (config.skills.activeGroup === g.id) {
+        const chips = el('div', 'skChips');
+        const all = normalSkills;
+        if (!all.length) chips.appendChild(el('span', 'hint', t('skills.none')));
+        for (const s of all) {
+          const on = g.skills.indexOf(s.name) >= 0;
+          const c = el('button', 'skChip' + (on ? ' on' : ''), s.name);
+          c.type = 'button';
+          c.title = s.description || '';
+          c.addEventListener('click', async () => {
+            const set = new Set(g.skills);
+            if (set.has(s.name)) set.delete(s.name); else set.add(s.name);
+            await SK.setGroupSkills(config, g.id, [...set]);
+            render(container, config);
+          });
+          chips.appendChild(c);
+        }
+        gSec.appendChild(chips);
+      }
+    }
+    container.appendChild(gSec);
+
+    // —— installed skills ——
+    const lSec = el('div', 'sSection');
+    lSec.appendChild(el('div', 'sSecTitle eyebrow', t('skills.installed')));
+    if (!skills.length) lSec.appendChild(el('div', 'hint', t('skills.none')));
+    for (const s of skills) {
+      const row = el('div', 'skItem');
+      const meta = el('div', 'skItemMeta');
+      meta.appendChild(el('span', 'skItemName', s.name));
+      if (s.persona) {
+        const tag = el('span', 'pState', t('skills.personaTag'));
+        tag.dataset.state = 'ok';
+        meta.appendChild(tag);
+      }
+      meta.appendChild(el('div', 'pModels', s.description || ''));
+      row.appendChild(meta);
+      const edit = el('button', 'sBtn', t('skills.edit'));
+      edit.type = 'button';
+      edit.addEventListener('click', () => renderEditor(container, config, s.name));
+      row.appendChild(edit);
+      const rm = el('button', 'rowBtn', P.icons['trash2'] || '×');
+      rm.type = 'button';
+      rm.addEventListener('click', async () => {
+        const ok = await P.app.askConfirm(t('skills.confirmRemove', { name: s.name }));
+        if (!ok) return;
+        const r = await SK.remove(s.name);
+        if (r && r.ok) { P.app.toast(t('skills.removed', { name: s.name })); render(container, config); }
+        else P.app.toast(t('skills.removeFail', { msg: (r && r.error) || 'error' }));
+      });
+      row.appendChild(rm);
+      lSec.appendChild(row);
+    }
+    // GitHub install row
+    const gh = el('div', 'mGh');
+    gh.appendChild(el('span', 'mGhLabel', t('skills.ghInstall')));
+    const url = document.createElement('input');
+    url.type = 'text';
+    url.className = 'sInput';
+    url.placeholder = 'https://github.com/owner/skill-repo';
+    url.spellcheck = false;
+    const go = el('button', 'sBtn primary', t('market.install'));
+    go.type = 'button';
+    go.addEventListener('click', async () => {
+      const repo = url.value.trim();
+      if (!/^https?:\/\/github\.com\/[\w.-]+\/[\w.-]+/.test(repo)) { P.app.toast(t('skills.repoBad')); return; }
+      go.disabled = true;
+      try {
+        const r = await SK.install(repo);
+        if (r && r.ok) { P.app.toast(t('market.skillInstalled', { name: repo })); url.value = ''; render(container, config); }
+        else P.app.toast(t('market.failed', { msg: (r && (r.error || r.stderr)) || 'error' }));
+      } catch (e) { P.app.toast(e.message); }
+      go.disabled = false;
+    });
+    gh.appendChild(url); gh.appendChild(go);
+    lSec.appendChild(gh);
+    container.appendChild(lSec);
+  }
+
+  SK.render = render;
+  SK.renderEditor = renderEditor;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/**
+ * PRTS plugin market — redone around categories, search, and the separation
+ * the Doctor asked for: dsh 插件 (npm/GitHub plugins for the harness) and
+ * skill (skills installed into ~/.dsh/skills) live in two distinct tabs.
+ * The card chrome mirrors dsh web's settings panels, restyled in PRTS.
+ */
+(function (G) {
+  'use strict';
+  const P = G.PRTS = G.PRTS || {};
+  const M = P.market = {};
+
+  const PLUGIN_FALLBACK = [
+    { pkg: '@liustack/modlens', displayName: 'ModLens', source: 'npm', category: 'visual', description: () => 'market.modlens' },
+    { pkg: 'dsh-cost-meter', displayName: 'Cost Meter', source: 'npm', category: 'tool', description: () => 'market.costMeter' },
+    { pkg: 'dsh-better-sidebar', displayName: 'Better Sidebar', source: 'npm', category: 'visual', description: () => 'market.betterSidebar' },
+  ];
+
+  let state = { tab: 'plugins', query: '', category: 'all', plugins: [], skills: [], installed: [] };
+
+  function t(key, params) { return P.app && P.app.t ? P.app.t(key, params) : key; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])); }
+
+  function catalog() {
+    let scanned = { plugins: [], skills: [] };
+    try {
+      if (window.PRTS_MARKET) scanned = { plugins: window.PRTS_MARKET.plugins || [], skills: window.PRTS_MARKET.skills || [] };
+    } catch (e) { scanned = { plugins: [], skills: [] }; }
+    const pMap = new Map();
+    for (const p of PLUGIN_FALLBACK.concat(scanned.plugins || [])) {
+      const key = p.pkg || p.repo || p.name;
+      if (!key || pMap.has(key)) continue;
+      pMap.set(key, Object.assign({}, p, { source: p.source || 'npm', category: p.category || 'other' }));
+    }
+    const sMap = new Map();
+    for (const s of (scanned.skills || [])) {
+      if (!s.name || sMap.has(s.name)) continue;
+      sMap.set(s.name, Object.assign({}, s, { category: s.category || 'tool' }));
+    }
+    return { plugins: [...pMap.values()], skills: [...sMap.values()] };
+  }
+
+  async function refresh() {
+    const cat = catalog();
+    state.plugins = cat.plugins;
+    state.skills = cat.skills;
+    let installed = [];
+    try { installed = (await P.dshState.pluginsList()).map((p) => p.name); } catch (e) { installed = []; }
+    state.installed = installed;
+    let skillNames = [];
+    try { skillNames = (await P.skills.list()).map((s) => s.name); } catch (e) { skillNames = []; }
+    state.installedSkills = new Set(skillNames);
+  }
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+
+  function match(text) {
+    const q = state.query.trim().toLowerCase();
+    return !q || String(text || '').toLowerCase().indexOf(q) >= 0;
+  }
+
+  function visiblePlugins() {
+    return state.plugins.filter((p) => {
+      if (state.category !== 'all' && p.category !== state.category) return false;
+      return match((p.displayName || p.name || p.pkg || '') + ' ' + (typeof p.description === 'function' ? p.description() : (p.description || '')));
+    });
+  }
+  function visibleSkills() {
+    return state.skills.filter((s) => {
+      if (state.category !== 'all' && s.category !== state.category) return false;
+      return match((s.displayName || s.name || '') + ' ' + (s.description || ''));
+    });
+  }
+
+  async function installPlugin(item, action) {
+    action.disabled = true;
+    action.textContent = t('market.installing');
+    try {
+      const b = (typeof window !== 'undefined' && window.prts && window.prts.bridge) || null;
+      let r;
+      if (item.source === 'github' && item.repo) r = b && b.pluginClone ? await b.pluginClone(item.repo) : { ok: false, stderr: 'no bridge' };
+      else r = b && b.pluginAdd ? await b.pluginAdd(item.pkg || item.repo) : { ok: false, stderr: 'no bridge' };
+      if (r && r.ok) {
+        P.app.toast(t('market.installed', { pkg: item.pkg || item.repo }));
+        await refresh();
+        render();
+      } else {
+        P.app.toast(t('market.failed', { msg: (r && (r.stderr || r.stdout || r.error)) || 'error' }));
+        action.disabled = false;
+        action.textContent = t('market.install');
+      }
+    } catch (e) {
+      P.app.toast(e.message);
+      action.disabled = false;
+      action.textContent = t('market.install');
+    }
+  }
+
+  async function installSkill(item, action) {
+    if (!item.repo || item.repo === 'local' || item.builtin) return;
+    action.disabled = true;
+    action.textContent = t('market.installing');
+    try {
+      const r = await P.skills.install(item.repo);
+      if (r && r.ok) {
+        P.app.toast(t('market.skillInstalled', { name: item.displayName || item.name }));
+        await refresh();
+        render();
+      } else {
+        P.app.toast(t('market.failed', { msg: (r && (r.error || r.stderr)) || 'error' }));
+        action.disabled = false;
+        action.textContent = t('market.install');
+      }
+    } catch (e) {
+      P.app.toast(e.message);
+      action.disabled = false;
+      action.textContent = t('market.install');
+    }
+  }
+
+  function card(item, kind) {
+    const isInstalled = kind === 'plugins'
+      ? state.installed.includes(item.pkg) || (item.pkg && state.installed.includes(item.pkg.replace(/^@[^/]+\//, '')))
+      : (state.installedSkills && state.installedSkills.has(item.name));
+    const card = el('div', 'pCard');
+    const head = el('div', 'pCardHead');
+    head.style.cursor = 'default';
+    const name = el('span', 'pName', item.displayName || item.name || item.pkg || item.repo);
+    const badge = el('span', 'pState');
+    badge.textContent = kind === 'plugins' ? (item.source === 'github' ? 'GITHUB' : 'NPM') : 'SKILL';
+    badge.dataset.state = 'ok';
+    const catBadge = el('span', 'pState');
+    catBadge.textContent = t('market.cat.' + (item.category || 'other'));
+    head.appendChild(name); head.appendChild(catBadge); head.appendChild(badge);
+    const body = el('div', 'pCardBody');
+    body.style.display = '';
+    const desc = el('div', 'pModels', typeof item.description === 'function' ? item.description() : (item.description || ''));
+    body.appendChild(desc);
+    if (kind === 'skills' && item.repo && item.repo !== 'local') {
+      const link = el('a', 'mLink', item.repo.replace(/^https?:\/\/(www\.)?github\.com\//, 'github.com/'));
+      link.href = item.repo;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      body.appendChild(link);
+    }
+    const action = el('button', 'sBtn' + (isInstalled ? '' : ' primary'));
+    action.type = 'button';
+    action.textContent = isInstalled ? t('market.installed') : t('market.install');
+    action.disabled = isInstalled || (kind === 'skills' && (!item.repo || item.repo === 'local' || item.builtin));
+    if (!action.disabled) {
+      action.addEventListener('click', () => (kind === 'plugins' ? installPlugin(item, action) : installSkill(item, action)));
+    }
+    body.appendChild(action);
+    card.appendChild(head); card.appendChild(body);
+    return card;
+  }
+
+  const CATS = { all: 'market.cat.all', visual: 'market.cat.visual', tool: 'market.cat.tool', other: 'market.cat.other', persona: 'market.cat.persona' };
+
+  function render() {
+    const box = document.getElementById('marketList');
+    if (!box) return;
+    box.textContent = '';
+
+    // —— controls: search + tabs + category chips ——
+    const controls = el('div', 'mControls');
+    const search = el('div', 'mSearch');
+    search.innerHTML = P.icons.search || '';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = t('market.searchPlaceholder');
+    input.value = state.query;
+    input.spellcheck = false;
+    input.addEventListener('input', () => { state.query = input.value; render(); });
+    search.appendChild(input);
+    controls.appendChild(search);
+
+    const tabs = el('div', 'mTabs');
+    const pluginTab = el('button', 'mTab' + (state.tab === 'plugins' ? ' on' : ''), t('market.tab.plugins'));
+    pluginTab.type = 'button';
+    pluginTab.addEventListener('click', () => { state.tab = 'plugins'; state.category = 'all'; render(); });
+    const skillTab = el('button', 'mTab' + (state.tab === 'skills' ? ' on' : ''), t('market.tab.skills'));
+    skillTab.type = 'button';
+    skillTab.addEventListener('click', () => { state.tab = 'skills'; state.category = 'all'; render(); });
+    tabs.appendChild(pluginTab); tabs.appendChild(skillTab);
+    controls.appendChild(tabs);
+    box.appendChild(controls);
+
+    const chips = el('div', 'mCats');
+    for (const key of Object.keys(CATS)) {
+      if (state.tab === 'skills' && key === 'all') continue;
+      const c = el('button', 'mCat' + (state.category === key ? ' on' : ''), t(CATS[key]));
+      c.type = 'button';
+      c.dataset.cat = key;
+      c.addEventListener('click', () => { state.category = key; render(); });
+      chips.appendChild(c);
+    }
+    box.appendChild(chips);
+
+    // —— GitHub skill install row (the GitHub skill section) ——
+    if (state.tab === 'skills') {
+      const gh = el('div', 'mGh');
+      const hint = el('span', 'mGhLabel', t('market.skillGh'));
+      const url = document.createElement('input');
+      url.type = 'text';
+      url.className = 'sInput';
+      url.placeholder = 'https://github.com/owner/skill-repo';
+      url.spellcheck = false;
+      const go = el('button', 'sBtn primary', t('market.install'));
+      go.type = 'button';
+      go.addEventListener('click', async () => {
+        const repo = url.value.trim();
+        if (!/^https?:\/\/github\.com\/[\w.-]+\/[\w.-]+/.test(repo)) { P.app.toast(t('market.skillRepoBad')); return; }
+        go.disabled = true;
+        try {
+          const r = await P.skills.install(repo);
+          if (r && r.ok) { P.app.toast(t('market.skillInstalled', { name: repo })); url.value = ''; await refresh(); render(); }
+          else P.app.toast(t('market.failed', { msg: (r && (r.error || r.stderr)) || 'error' }));
+        } catch (e) { P.app.toast(e.message); }
+        go.disabled = false;
+      });
+      gh.appendChild(hint); gh.appendChild(url); gh.appendChild(go);
+      box.appendChild(gh);
+    }
+
+    // —— cards ——
+    const grid = el('div', 'mGrid');
+    const items = state.tab === 'plugins' ? visiblePlugins() : visibleSkills();
+    if (!items.length) {
+      grid.appendChild(el('div', 'hint', t('market.empty')));
+    } else {
+      for (const item of items) grid.appendChild(card(item, state.tab));
+    }
+    box.appendChild(grid);
+  }
+
+  async function open() {
+    await refresh();
+    render();
+  }
+
+  M.open = open;
+  M.render = render;
+  M.refresh = refresh;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/**
+ * PRTS settings panel — rebuilt from scratch.
+ *
+ * Section structure mirrors the official dsh web settings
+ * (通用设置 / 模型 / 插件 / agent预设), then adds the PRTS extensions the
+ * Doctor ordered: 余额 (DeepSeek official account), Git (GitHub account) and
+ * skill (groups + persona + raw SKILL.md editing).
+ *
+ * Data sources are the same RPCs the official GUI uses:
+ *   settings.describe / settings.update  (locale, ui-theme, ui-conversation…)
+ *   llm.providers / llm.models / credentials.*
+ *   agentPreset.list / agentPreset.select
+ * plus PRTS-local state (config file, profile inventory, skills root).
+ */
+(function (G) {
+  'use strict';
+  const P = G.PRTS = G.PRTS || {};
+  const ST = P.settingsPanel = {};
+
+  const SECTIONS = [
+    { id: 'general', label: 'settings.nav.general' },
+    { id: 'models', label: 'settings.nav.models' },
+    { id: 'plugins', label: 'settings.nav.plugins' },
+    { id: 'presets', label: 'settings.nav.presets' },
+    { id: 'balance', label: 'settings.nav.balance' },
+    { id: 'git', label: 'settings.nav.git' },
+    { id: 'skills', label: 'settings.nav.skills' },
+  ];
+
+  let current = 'general';
+  let config = null;
+
+  function t(key, params) { return P.app && P.app.t ? P.app.t(key, params) : key; }
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+  function $id(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])); }
+
+  /* ---------- settings namespaces (official data) ---------- */
+
+  async function describeAll() {
+    try {
+      const r = await P.dshState.settingsGet(undefined);
+      return (r && r.namespaces) || [];
+    } catch (e) { return []; }
+  }
+  async function nsValue(ns) {
+    const all = await describeAll();
+    const hit = all.find((x) => x.ns === ns);
+    return hit ? (hit.value || {}) : null;
+  }
+  async function nsUpdate(ns, patch) {
+    try {
+      await P.dshState.settingsUpdate(ns, patch);
+      return true;
+    } catch (e) {
+      P.app.toast(e.message || String(e));
+      return false;
+    }
+  }
+
+  /* ---------- default model (~/.dsh/settings.yaml, agent-default-model) ---------- */
+
+  function settingsYamlPath() { return P.platform.dshHome() + '/settings.yaml'; }
+
+  async function readAgentDefaultModel() {
+    try {
+      const raw = await P.io.readFile(settingsYamlPath());
+      const m = /(?:^|\n)agent-default-model:\n((?:[ \t]+[^\n]*\n?)*)/.exec(raw);
+      if (!m) return null;
+      const out = {};
+      for (const line of m[1].split('\n')) {
+        const kv = /^[ \t]+([A-Za-z]+):[ \t]*(.*)$/.exec(line);
+        if (kv) out[kv[1]] = kv[2].trim();
+      }
+      return out;
+    } catch (e) { return null; }
+  }
+
+  async function writeAgentDefaultModel(patch) {
+    try {
+      let raw = '';
+      try { raw = await P.io.readFile(settingsYamlPath()); } catch (e) { raw = ''; }
+      const block = 'agent-default-model:\n  provider: ' + (patch.provider || '') +
+        '\n  model: ' + (patch.model || '') +
+        (patch.reasoningEffort ? '\n  reasoningEffort: ' + patch.reasoningEffort : '') + '\n';
+      const idx = raw.indexOf('agent-default-model:');
+      if (idx >= 0) {
+        const end = raw.indexOf('\n', idx);
+        let next = raw.indexOf('\n', end + 1);
+        // consume following indented lines
+        while (next >= 0 && /^[ \t]/.test(raw.slice(end + 1, next))) { const n2 = raw.indexOf('\n', next + 1); if (n2 < 0) break; next = n2; }
+        raw = raw.slice(0, idx) + block + raw.slice(end + 1);
+      } else {
+        raw = raw.replace(/\s*$/, '') + (raw ? '\n' : '') + block;
+      }
+      await P.io.writeFile(settingsYamlPath(), raw);
+      return true;
+    } catch (e) {
+      P.app.toast(t('settings.models.defaultFail', { msg: e.message || String(e) }));
+      return false;
+    }
+  }
+
+  function providerRef(provider) {
+    return String(provider || '').replace(/^llm-/, '').toUpperCase().replace(/-/g, '_') + '_API_KEY';
+  }
+
+  async function loadCredentialState() {
+    const providers = P.dshState.providers || [];
+    const refs = providers.map((p) => providerRef(p.provider));
+    let creds = {};
+    try { creds = await P.dshState.credentialsDescribe(refs); } catch (e) { creds = {}; }
+    const map = {};
+    for (const p of providers) {
+      const ref = providerRef(p.provider);
+      map[p.provider] = { ref, configured: !!(creds[ref] && creds[ref].configured) };
+    }
+    return map;
+  }
+
+  /* ---------- section renderers ---------- */
+
+  async function renderGeneral(box) {
+    box.textContent = '';
+
+    // Language (official locale ns)
+    const langSec = el('div', 'sSection');
+    langSec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.general.language')));
+    const lang = el('select', 'sInput sSelect');
+    const locale = (await nsValue('locale')) || {};
+    [['', 'AUTO'], ['zh', '中文'], ['en', 'ENGLISH']].forEach(([v, label]) => {
+      const o = document.createElement('option');
+      o.value = v;
+      o.textContent = label;
+      if ((locale.preference || '') === v) o.selected = true;
+      lang.appendChild(o);
+    });
+    lang.addEventListener('change', async () => {
+      const ok = await nsUpdate('locale', { preference: lang.value || null });
+      if (ok) {
+        config.locale = lang.value || 'auto';
+        await P.store.saveConfig(config);
+        P.app.locale = config.locale === 'auto' ? P.platform.detectLocale() : config.locale;
+        P.app.applyI18n();
+      }
+    });
+    langSec.appendChild(lang);
+    box.appendChild(langSec);
+
+    // Appearance (official ui-theme ns)
+    const themeSec = el('div', 'sSection');
+    themeSec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.general.appearance')));
+    const theme = el('select', 'sInput sSelect');
+    const themeNs = (await nsValue('ui-theme')) || {};
+    [['system', 'SYSTEM'], ['dark', 'DARK'], ['light', 'LIGHT']].forEach(([v, label]) => {
+      const o = document.createElement('option');
+      o.value = v;
+      o.textContent = label;
+      if ((themeNs.preference || 'system') === v) o.selected = true;
+      theme.appendChild(o);
+    });
+    theme.addEventListener('change', async () => {
+      const ok = await nsUpdate('ui-theme', { preference: theme.value });
+      if (ok) {
+        config.ui = config.ui || {};
+        config.ui.theme = theme.value === 'system' ? 'dark' : theme.value;
+        await P.store.saveConfig(config);
+        P.app.applyTheme(config.ui.theme);
+      }
+    });
+    themeSec.appendChild(theme);
+    box.appendChild(themeSec);
+
+    // Composer enter (official ui-conversation ns)
+    const enterSec = el('div', 'sSection');
+    enterSec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.general.enter')));
+    const enter = el('select', 'sInput sSelect');
+    const conv = (await nsValue('ui-conversation')) || {};
+    [['queue', 'QUEUE'], ['steer', 'STEER']].forEach(([v, label]) => {
+      const o = document.createElement('option');
+      o.value = v;
+      o.textContent = label;
+      if ((conv.busyEnter || 'queue') === v) o.selected = true;
+      enter.appendChild(o);
+    });
+    enter.addEventListener('change', () => { nsUpdate('ui-conversation', { busyEnter: enter.value }); });
+    enterSec.appendChild(enter);
+    box.appendChild(enterSec);
+
+    // Doctor name (PRTS persona)
+    const nameSec = el('div', 'sSection');
+    nameSec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.general.doctorName')));
+    nameSec.appendChild(el('div', 'hint', t('settings.general.doctorName.hint')));
+    const nameForm = el('div', 'inlineForm');
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.className = 'sInput';
+    nameInput.placeholder = t('settings.general.doctorName.placeholder');
+    nameInput.value = (config.persona && config.persona.userName) || '';
+    nameInput.spellcheck = false;
+    const saveName = el('button', 'sBtn', t('common.save'));
+    saveName.type = 'button';
+    saveName.addEventListener('click', async () => {
+      config.persona = config.persona || {};
+      config.persona.userName = nameInput.value.trim();
+      await P.store.saveConfig(config);
+      P.app.toast(t('settings.general.doctorName.saved'));
+    });
+    nameForm.appendChild(nameInput); nameForm.appendChild(saveName);
+    nameSec.appendChild(nameForm);
+    box.appendChild(nameSec);
+
+    // Version / update
+    const vSec = el('div', 'sSection');
+    vSec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.version')));
+    const vbox = el('div');
+    let prtsVer = '?';
+    try { prtsVer = (window.prts && window.prts.env && window.prts.env.prtsVersion) || '?'; } catch (e) { prtsVer = '?'; }
+    let dshVer = '—';
+    try { const h = await P.dshState.hostDescribe(); dshVer = (h && h.version) || '—'; } catch (e) { dshVer = '—'; }
+    [['PRTS', prtsVer], ['dsh', dshVer]].forEach(([n, v]) => {
+      const row = el('div', 'projectRow');
+      row.appendChild(el('span', 'pname', n));
+      row.appendChild(el('span', 'pmeta', v));
+      vbox.appendChild(row);
+    });
+    vSec.appendChild(vbox);
+    const updRow = el('div', 'sRow');
+    updRow.style.marginTop = '8px';
+    const updateBtn = el('button', 'sBtn', t('settings.update'));
+    updateBtn.type = 'button';
+    const updStatus = el('span', 'sStatus');
+    updateBtn.addEventListener('click', async () => {
+      updStatus.textContent = t('settings.updating');
+      try {
+        const b = (typeof window !== 'undefined' && window.prts && window.prts.bridge) || null;
+        const r = b && b.update ? await b.update() : { ok: false, stderr: 'no bridge' };
+        if (r && r.ok) { updStatus.textContent = t('settings.updated'); P.app.toast(t('settings.updated')); }
+        else updStatus.textContent = t('settings.updateFail', { msg: (r && (r.stderr || r.error)) || 'error' });
+      } catch (e) { updStatus.textContent = t('settings.updateFail', { msg: e.message }); }
+    });
+    updRow.appendChild(updateBtn); updRow.appendChild(updStatus);
+    vSec.appendChild(updRow);
+    box.appendChild(vSec);
+  }
+
+  async function renderModels(box) {
+    box.textContent = '';
+
+    // Default model for new sessions (agent-default-model in ~/.dsh/settings.yaml)
+    const defSec = el('div', 'sSection');
+    defSec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.models.default')));
+    defSec.appendChild(el('div', 'hint', t('settings.models.default.hint')));
+    const groups = P.dshState.models || [];
+    const current = await readAgentDefaultModel();
+    const form = el('div', 'inlineForm');
+    const provSel = el('select', 'sInput sSelect');
+    for (const g of groups) {
+      const o = document.createElement('option');
+      o.value = g.id;
+      o.textContent = g.name || g.id;
+      if (current && current.provider === g.id) o.selected = true;
+      provSel.appendChild(o);
+    }
+    const modelSel = el('select', 'sInput sSelect');
+    const effortSel = el('select', 'sInput sSelect');
+    function fillModels() {
+      modelSel.textContent = '';
+      const g = groups.find((x) => x.id === provSel.value) || {};
+      for (const m of g.models || []) {
+        const o = document.createElement('option');
+        o.value = m.id;
+        o.textContent = m.name || m.id;
+        if (current && current.model === m.id) o.selected = true;
+        modelSel.appendChild(o);
+      }
+      fillEfforts();
+    }
+    function fillEfforts() {
+      effortSel.textContent = '';
+      const o0 = document.createElement('option');
+      o0.value = '';
+      o0.textContent = '—';
+      effortSel.appendChild(o0);
+      const g = groups.find((x) => x.id === provSel.value) || {};
+      const m = (g.models || []).find((x) => x.id === modelSel.value);
+      for (const e of (m && m.reasoning && m.reasoning.efforts) || []) {
+        const o = document.createElement('option');
+        o.value = e.id;
+        o.textContent = e.name || e.id;
+        if (current && current.reasoningEffort === e.id) o.selected = true;
+        effortSel.appendChild(o);
+      }
+    }
+    provSel.addEventListener('change', fillModels);
+    modelSel.addEventListener('change', fillEfforts);
+    fillModels();
+    const saveDef = el('button', 'sBtn primary', t('common.save'));
+    saveDef.type = 'button';
+    saveDef.addEventListener('click', async () => {
+      const ok = await writeAgentDefaultModel({
+        provider: provSel.value,
+        model: modelSel.value,
+        reasoningEffort: effortSel.value,
+      });
+      if (ok) P.app.toast(t('settings.models.default.saved'));
+    });
+    form.appendChild(provSel); form.appendChild(modelSel); form.appendChild(effortSel); form.appendChild(saveDef);
+    defSec.appendChild(form);
+    box.appendChild(defSec);
+
+    // Provider API keys (credentials) + catalog
+    await P.dshState.listProviders();
+    await P.dshState.listModels();
+    const creds = await loadCredentialState();
+    const providers = P.dshState.providers || [];
+    const keySec = el('div', 'sSection');
+    keySec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.providers')));
+    keySec.appendChild(el('div', 'hint', t('settings.providers.hint')));
+    if (!providers.length) keySec.appendChild(el('div', 'hint', t('settings.providers.empty')));
+    for (const p of providers) {
+      const ref = providerRef(p.provider);
+      const configured = creds[p.provider] && creds[p.provider].configured;
+      const card = el('div', 'pCard');
+      const head = el('div', 'pCardHead');
+      head.appendChild(el('span', 'pName', p.displayName || p.provider));
+      const state = el('span', 'pState', configured ? t('settings.provider.set') : t('settings.provider.unset'));
+      state.dataset.state = configured ? 'ok' : 'none';
+      head.appendChild(state);
+      card.appendChild(head);
+      const body = el('div', 'pCardBody');
+      const row = el('div', 'inlineForm');
+      const input = document.createElement('input');
+      input.type = 'password';
+      input.className = 'sInput';
+      input.placeholder = ref;
+      input.autocomplete = 'off';
+      input.spellcheck = false;
+      const save = el('button', 'sBtn', t('settings.provider.save'));
+      save.type = 'button';
+      save.addEventListener('click', async () => {
+        const value = input.value.trim();
+        if (!value) return;
+        try {
+          await P.dshState.credentialsSet(ref, value);
+          input.value = '';
+          P.app.toast(t('settings.provider.saved', { ref }));
+          renderModels(box);
+        } catch (e) { P.app.toast(e.message); }
+      });
+      const unset = el('button', 'sBtn', t('settings.provider.unsetBtn'));
+      unset.type = 'button';
+      unset.disabled = !configured;
+      unset.addEventListener('click', async () => {
+        try { await P.dshState.credentialsUnset(ref); renderModels(box); } catch (e) { P.app.toast(e.message); }
+      });
+      row.appendChild(input); row.appendChild(save); row.appendChild(unset);
+      body.appendChild(row);
+      const grp = (P.dshState.models || []).find((g) => g.id === p.provider);
+      const models = (grp && grp.models) || [];
+      body.appendChild(el('div', 'pModels', models.length ? models.map((m) => m.id).join(' · ') : t('model.none')));
+      card.appendChild(body);
+      keySec.appendChild(card);
+    }
+    box.appendChild(keySec);
+  }
+
+  async function renderPlugins(box) {
+    box.textContent = '';
+    const sec = el('div', 'sSection');
+    sec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.plugins')));
+    sec.appendChild(el('div', 'hint', t('settings.plugins.hint')));
+    let profiles = [];
+    try { profiles = await P.dshState.profilesList(); } catch (e) { profiles = []; }
+    const any = (profiles || []).some((p) => (p.packages || []).length);
+    if (!any) sec.appendChild(el('div', 'hint', t('settings.plugins.empty')));
+    for (const p of profiles || []) {
+      const group = el('div', 'pGroup');
+      const head = el('div', 'pGroupHead');
+      head.appendChild(el('span', 'pname', 'PROFILE/' + p.profile));
+      if (p.cli !== false && p.profile !== 'prts' && p.profile !== 'web') {
+        const tag = el('span', 'pState', 'CLI');
+        tag.dataset.state = 'ok';
+        head.appendChild(tag);
+        const run = el('button', 'sBtn', t('settings.plugins.runCli'));
+        run.type = 'button';
+        run.addEventListener('click', async () => {
+          const args = await P.app.askPrompt(t('settings.plugins.runCliPrompt', { profile: p.profile }), (p.usage || '').split(' ')[0] || '');
+          if (args === null) return;
+          const r = await P.dshState.runCliPlugin(p.profile, args.trim() ? args.trim().split(/\s+/) : []);
+          if (r && r.ok) P.app.toast(t('settings.plugins.runCliStarted', { profile: p.profile }));
+          else P.app.toast(t('settings.plugins.runCliFail', { msg: (r && (r.error || r.stderr)) || 'error' }));
+        });
+        head.appendChild(run);
+      }
+      group.appendChild(head);
+      for (const pkg of p.packages || []) {
+        const row = el('div', 'projectRow');
+        row.appendChild(el('span', 'pname', pkg.name));
+        row.appendChild(el('span', 'pmeta', pkg.version || ''));
+        group.appendChild(row);
+      }
+      sec.appendChild(group);
+    }
+    const mRow = el('div', 'sRow');
+    mRow.style.marginTop = '10px';
+    const openMarket = el('button', 'sBtn primary', t('settings.plugins.openMarket'));
+    openMarket.type = 'button';
+    openMarket.addEventListener('click', () => { if (P.market) P.market.open(); });
+    mRow.appendChild(openMarket);
+    sec.appendChild(mRow);
+    box.appendChild(sec);
+  }
+
+  async function renderPresets(box) {
+    box.textContent = '';
+    const sec = el('div', 'sSection');
+    sec.appendChild(el('div', 'sSecTitle eyebrow', t('settings.presets')));
+    sec.appendChild(el('div', 'hint', t('settings.presets.hint')));
+    let presets = [];
+    try { presets = await P.dshState.listPresets(); } catch (e) { presets = []; }
+    if (!presets.length) sec.appendChild(el('div', 'hint', t('mode.none')));
+    for (const p of presets) {
+      const id = p.id || p.agentPreset;
+      const card = el('div', 'pCard');
+      const head = el('div', 'pCardHead');
+      head.appendChild(el('span', 'pName', p.name || id));
+      const tags = el('span');
+      const trust = el('span', 'pState', p.trust === 'system' ? 'SYSTEM' : 'USER');
+      trust.dataset.state = p.trust === 'system' ? 'none' : 'ok';
+      tags.appendChild(trust);
+      if (p.isDefault) {
+        const d = el('span', 'pState', 'DEFAULT');
+        d.dataset.state = 'ok';
+        tags.appendChild(d);
+      }
+      head.appendChild(tags);
+      card.appendChild(head);
+      const body = el('div', 'pCardBody');
+      body.appendChild(el('div', 'pModels', p.description || ''));
+      const useBtn = el('button', 'sBtn primary', t('settings.presets.use'));
+      useBtn.type = 'button';
+      useBtn.addEventListener('click', async () => {
+        try {
+          if (!P.dshState.currentSessionId || P.dshState.isSessionBlank(P.dshState.currentSessionId)) {
+            if (P.dshState.currentSessionId) {
+              await P.dshState.agentPresetSelect(P.dshState.currentSessionId, id);
+              P.app.currentPreset = id;
+              P.app.setModeLabel(P.app.presetLabel(id));
+            } else {
+              P.app.currentPreset = id;
+              P.app.setModeLabel(P.app.presetLabel(id));
+            }
+            P.app.toast(t('settings.presets.used', { name: p.name || id }));
+          } else {
+            const ok = await P.app.askConfirm(t('mode.locked', { preset: p.name || id }));
+            if (ok) {
+              P.app.currentPreset = id;
+              await P.app.newSession();
+            }
+          }
+        } catch (e) { P.app.toast(e.message); }
+      });
+      body.appendChild(useBtn);
+      card.appendChild(body);
+      sec.appendChild(card);
+    }
+    box.appendChild(sec);
+  }
+
+  /* ---------- shell ---------- */
+
+  function navItem(id) {
+    const spec = SECTIONS.find((s) => s.id === id);
+    const b = el('button', 'sNavItem' + (current === id ? ' on' : ''));
+    b.type = 'button';
+    b.innerHTML = (P.icons[spec.id] || '') + '<span>' + t(spec.label) + '</span>';
+    b.addEventListener('click', () => { current = id; render(); });
+    return b;
+  }
+
+  async function render() {
+    const nav = $id('settingsNav');
+    const content = $id('settingsContent');
+    if (!nav || !content) return;
+    nav.textContent = '';
+    for (const s of SECTIONS) nav.appendChild(navItem(s.id));
+    content.textContent = '';
+    content.appendChild(el('div', 'hint', t('settings.loading')));
+    const box = el('div', 'sSectionHost');
+    content.appendChild(box);
+    if (current === 'general') await renderGeneral(box);
+    else if (current === 'models') await renderModels(box);
+    else if (current === 'plugins') await renderPlugins(box);
+    else if (current === 'presets') await renderPresets(box);
+    else if (current === 'balance') await P.balance.render(box, config);
+    else if (current === 'git') await P.git.render(box, config);
+    else if (current === 'skills') await P.skills.render(box, config);
+  }
+
+  async function open(cfg) {
+    config = cfg;
+    $id('settingsOverlay').classList.add('open');
+    await render();
+  }
+  function close() { $id('settingsOverlay').classList.remove('open'); }
+
+  ST.open = open;
+  ST.close = close;
+  ST.render = render;
+  ST.SECTIONS = SECTIONS;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
 </script>

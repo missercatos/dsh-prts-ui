@@ -1,0 +1,13 @@
+{
+  "//": "Curated skill catalog for the PRTS market's GitHub skill section. Add entries as { name, displayName, description, repo, category, builtin }. repo is cloned into ~/.dsh/skills/<name> on install. category: persona | tool | visual | other.",
+  "skills": [
+    {
+      "name": "prts-persona",
+      "displayName": "PRTS 人格记忆",
+      "description": "PRTS 人格记忆：自称 PRTS、称呼用户博士（Dr.名字 / 博士.名字）、冷静精确带仪式感。随 PRTS 内置安装。",
+      "repo": "local",
+      "category": "persona",
+      "builtin": true
+    }
+  ]
+}

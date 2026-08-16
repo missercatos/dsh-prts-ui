@@ -394,14 +394,104 @@
   }
 
   // Installed plugins are the profile's own bundle dependencies — read them
-  // through the Electron bridge (the harness profile package.json).
-  async function pluginsList() {
+  // through the Electron bridge (the harness profile package.json). With no
+  // bridge (plain browser on the /prts route) the host plugin answers the
+  // same query over /prts/api/profiles.
+  const bridgeOr = () => {
     try {
-      if (typeof window !== 'undefined' && window.prts && window.prts.bridge && window.prts.bridge.pluginsList) {
-        return await window.prts.bridge.pluginsList();
-      }
+      if (typeof window !== 'undefined' && window.prts && window.prts.bridge) return window.prts.bridge;
     } catch (e) { /* no bridge */ }
+    return null;
+  };
+
+  /** HTTP helper for PRTS panel APIs (balance / github / skills). Uses the
+   *  Electron main-process bridge when present (no CORS); on the plain-browser
+   *  /prts route it goes through the host plugin's /prts/api/http proxy. */
+  async function panelHttp(method, url, headers, body) {
+    const bridge = bridgeOr();
+    if (bridge && typeof bridge.http === 'function') {
+      return new Promise((resolve, reject) => {
+        let text = '';
+        let status = 0;
+        bridge.http({
+          method, url, headers: headers || {}, body: body || '',
+          onChunk: (c) => { text += String(c); },
+          onEnd: (r) => {
+            status = r ? r.status : 0;
+            resolve({ status, text });
+          },
+        });
+        setTimeout(() => { if (status === 0) reject(new Error('PRTS: http timeout')); }, 45000);
+      });
+    }
+    const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+    const res = await fetch(origin + '/prts/api/http', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ method, url, headers: headers || {}, body: body || '' }),
+    });
+    return { status: res.status, text: await res.text() };
+  }
+
+  async function profilesList() {
+    const bridge = bridgeOr();
+    try {
+      if (bridge && bridge.listProfiles) return await bridge.listProfiles();
+    } catch (e) { /* no bridge */ }
+    try {
+      const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+      if (origin) {
+        const res = await fetch(origin + '/prts/api/profiles');
+        if (res.ok) return await res.json();
+      }
+    } catch (e) { /* no host route */ }
     return [];
+  }
+
+  /** CLI apps from OTHER dsh profiles (one-shot plugins like givemyflag).
+   *  Each becomes one visible command in the GUI command directory. */
+  async function cliPlugins() {
+    const profiles = await profilesList();
+    return (profiles || [])
+      .filter((p) => p && p.cli !== false && p.profile && p.profile !== 'prts' && p.profile !== 'web')
+      .map((p) => ({
+        name: p.profile,
+        description: (p.description || '') + (p.usage ? ' — ' + p.usage : ''),
+        usage: p.usage || '',
+        cli: true,
+        profile: p.profile,
+        packages: p.packages || [],
+      }));
+  }
+
+  /** Run a CLI profile plugin (e.g. `dsh --profile givemyflag <url>`). */
+  async function runCliPlugin(profile, args) {
+    const bridge = bridgeOr();
+    if (bridge && bridge.runCli) return await bridge.runCli(profile, args || []);
+    try {
+      const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+      if (origin) {
+        const res = await fetch(origin + '/prts/api/run-cli', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profile, args: args || [] }),
+        });
+        return await res.json();
+      }
+    } catch (e) { /* no host route */ }
+    return { ok: false, error: 'run-cli unavailable in this mode' };
+  }
+
+  async function pluginsList() {
+    const profiles = await profilesList();
+    // Keep the legacy flat shape for existing consumers: { name, version, profile }.
+    const out = [];
+    for (const p of profiles || []) {
+      for (const pkg of p.packages || []) {
+        out.push({ name: pkg.name, version: pkg.version || '', profile: p.profile, category: pkg.category || 'plugin' });
+      }
+    }
+    return out;
   }
 
   S.connect = connect;
@@ -448,4 +538,8 @@
   };
   S.hostDescribe = hostDescribe;
   S.pluginsList = pluginsList;
+  S.profilesList = profilesList;
+  S.cliPlugins = cliPlugins;
+  S.runCliPlugin = runCliPlugin;
+  S.panelHttp = panelHttp;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
