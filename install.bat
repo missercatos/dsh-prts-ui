@@ -31,6 +31,20 @@ if errorlevel 1 (
   )
 )
 
+REM ---------- 2.5. dsh plugins (optional, kept updated alongside PRTS) ----------
+REM dsh has no plugin marketplace: `dsh plugin --profile prts add <pkg>` just
+REM installs any npm package into the profile bundle. Add packages here,
+REM space-separated. Leave empty for none.
+set "PLUGINS="
+if not "%PLUGINS%"=="" (
+  echo Installing dsh plugins...
+  if not exist "%USERPROFILE%\.dsh\profiles\prts" mkdir "%USERPROFILE%\.dsh\profiles\prts"
+  for %%p in (%PLUGINS%) do (
+    dsh plugin --profile prts add %%p
+    if errorlevel 1 echo [WARN] plugin %%p failed to install (may not exist on npm).
+  )
+)
+
 REM ---------- 3. Build the plugin tarball ----------
 set "SRC=%~dp0"
 pushd "%SRC%"
@@ -51,15 +65,15 @@ REM ---------- 4. Install into the prts profile ----------
 set "PROFILE_DIR=%USERPROFILE%\.dsh\profiles\prts"
 if not exist "%PROFILE_DIR%" mkdir "%PROFILE_DIR%"
 echo Installing plugin into profile 'prts'...
-dsh plugin --profile prts install "%SRC%%TGZ%"
+dsh plugin --profile prts add "%SRC%%TGZ%"
 if errorlevel 1 (
   echo [ERROR] plugin install failed.
   exit /b 1
 )
 
-REM ---------- 5. Pin the minimal bundle ----------
-echo Pinning the minimal bundle (dsh-prts-ui)...
-node -e "var fs=require('fs'),p=process.argv[1],m=JSON.parse(fs.readFileSync(p,'utf8'));m.dsh=m.dsh||{};m.dsh.profile={bundles:['dsh-prts-ui']};fs.writeFileSync(p,JSON.stringify(m,null,2));" "%PROFILE_DIR%\package.json"
+REM ---------- 5. Pin the bundle (dsh-prts-ui first, other plugins preserved) ----------
+echo Pinning the bundle (dsh-prts-ui first, other plugins preserved)...
+node -e "var fs=require('fs'),p=process.argv[1],m=JSON.parse(fs.readFileSync(p,'utf8'));m.dsh=m.dsh||{};var ex=(m.dsh.profile&&m.dsh.profile.bundles)||[];m.dsh.profile={bundles:Array.from(new Set(['dsh-prts-ui'].concat(ex)))};fs.writeFileSync(p,JSON.stringify(m,null,2));" "%PROFILE_DIR%\package.json"
 
 REM ---------- 6. Shortcut ----------
 echo Creating the desktop shortcut...
@@ -81,7 +95,7 @@ if errorlevel 1 (
 
 echo.
 echo Done!
-echo   Terminal client : prts
-echo   GUI window      : prts --gui
+echo   GUI window      : prts
+echo   Update          : Settings menu - Update, or re-run update.bat
 echo   Remove          : see README "Removing PRTS".
 endlocal

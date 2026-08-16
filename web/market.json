@@ -1,0 +1,298 @@
+{
+  "generatedAt": "2026-08-16T02:58:09.101Z",
+  "plugins": [
+    {
+      "pkg": "@liustack/modlens",
+      "name": "ModLens",
+      "displayName": "ModLens",
+      "source": "npm",
+      "description": "Vision for text-only LLMs via Antigravity CLI."
+    },
+    {
+      "pkg": "dsh-cost-meter",
+      "name": "dsh-cost-meter",
+      "displayName": "Cost Meter",
+      "source": "npm",
+      "description": "Per-session cost, daily totals and official price sync."
+    },
+    {
+      "pkg": "dsh-better-sidebar",
+      "name": "dsh-better-sidebar",
+      "displayName": "Better Sidebar",
+      "source": "npm",
+      "description": "VSCode-like sidebar (explorer / editor / terminal / git)."
+    },
+    {
+      "name": "@liustack/modsearch",
+      "displayName": "@liustack/modsearch",
+      "description": "Plug-in web search, X search, and page fetch for models without native web access, powered by the free Antigravity CLI",
+      "source": "npm",
+      "pkg": "@liustack/modsearch",
+      "repo": "git+https://github.com/liustack/modsearch.git"
+    },
+    {
+      "name": "@liustack/pptfast",
+      "displayName": "@liustack/pptfast",
+      "description": "Stable, editable PPTX generation for AI agents — semantic IR in, native DrawingML out",
+      "source": "npm",
+      "pkg": "@liustack/pptfast",
+      "repo": "git+https://github.com/liustack/pptfast.git"
+    },
+    {
+      "name": "@microi.net/cli",
+      "displayName": "@microi.net/cli",
+      "description": "Microi吾码 AI 开发 CLI 与多宿主 Plugin：服务器连接、Skills、MCP、V8 同步和低代码交付",
+      "source": "npm",
+      "pkg": "@microi.net/cli",
+      "repo": "https://git.itdos.net:88/anderson/microi.vscode.git"
+    },
+    {
+      "name": "plaindeck",
+      "displayName": "plaindeck",
+      "description": "Git-native slide format, Agent API, CLI, MCP server, and renderer",
+      "source": "npm",
+      "pkg": "plaindeck",
+      "repo": "git+https://github.com/Mappedinfo/PlainDeck.git"
+    },
+    {
+      "name": "design-playbook",
+      "displayName": "design-playbook",
+      "description": "Design I/O for coding agents: controllable UI generation via declarations (spec/domain/craft/design/components/template) and contracts (skill/evaluator). Use for product UI—console, dashboard, agent-ops, CJK-first apps.",
+      "source": "npm",
+      "pkg": "design-playbook",
+      "repo": "git+https://github.com/Bandersnatch0x/design-playbook.git"
+    },
+    {
+      "name": "@sakikotgw/pack-agent",
+      "displayName": "@sakikotgw/pack-agent",
+      "description": "Pack skills, rules, and MCP into .pack.zip and install them into Claude Code, Codex, Cursor, and other harnesses",
+      "source": "npm",
+      "pkg": "@sakikotgw/pack-agent",
+      "repo": "git+https://github.com/sakikoTGW/pack-agent.git"
+    },
+    {
+      "name": "dsh-plugin-koishi",
+      "displayName": "dsh-plugin-koishi",
+      "description": "Koishi plugin for DeepSeek Harness",
+      "source": "npm",
+      "pkg": "dsh-plugin-koishi",
+      "repo": null
+    },
+    {
+      "name": "@qing3a/dsh-event-auditor",
+      "displayName": "@qing3a/dsh-event-auditor",
+      "description": "Harness 事件流审计面板：观察事件类型、分发模式、计数与最近事件，帮助插件作者理解 harness 内部发生了什么",
+      "source": "npm",
+      "pkg": "@qing3a/dsh-event-auditor",
+      "repo": "git+https://github.com/qing3a/dsh-event-auditor.git"
+    },
+    {
+      "name": "dsh-latex-tools",
+      "displayName": "dsh-latex-tools",
+      "description": "Hover LaTeX formulas in the DeepSeek Harness Web UI to copy the TeX source or export the formula as a standalone SVG.",
+      "source": "npm",
+      "pkg": "dsh-latex-tools",
+      "repo": "git+https://github.com/liuup/dsh-latex-tools.git"
+    },
+    {
+      "name": "dsh-claude-marketplace",
+      "displayName": "dsh-claude-marketplace",
+      "description": "Claude Code compatibility layer for DeepSeek Harness: load .claude skills/commands/agents and install plugins from Claude Code marketplaces as native dsh skills.",
+      "source": "npm",
+      "pkg": "dsh-claude-marketplace",
+      "repo": "git+https://github.com/ben7am1n/dsh-claude-marketplace.git"
+    },
+    {
+      "name": "dsh-plugins-raincode",
+      "displayName": "dsh-plugins-raincode",
+      "description": "Use raincode's model layer (cheap model pool, prompt caching, retry) and skill library inside DeepSeek Harness (dsh)",
+      "source": "npm",
+      "pkg": "dsh-plugins-raincode",
+      "repo": "git+https://github.com/rainforest888/dsh-plugins-raincode.git"
+    },
+    {
+      "name": "dsh-sandbox-keeper",
+      "displayName": "dsh-sandbox-keeper",
+      "description": "Remote-sandbox lifecycle owner for DeepSeek Harness: E2B sandbox create/pause/resume, sidecar deployment, heartbeat keep-alive, crash-transparent recovery, and pluggable tar IN/OUT sync.",
+      "source": "npm",
+      "pkg": "dsh-sandbox-keeper",
+      "repo": null
+    },
+    {
+      "name": "mypet",
+      "displayName": "mypet",
+      "description": "A tamagotchi-style desktop pet for DeepSeek Harness — lives in your browser, reacts to coding sessions, levels up, collects skins, and more.",
+      "source": "npm",
+      "pkg": "mypet",
+      "repo": null
+    },
+    {
+      "name": "dsh-verification-receipt",
+      "displayName": "dsh-verification-receipt",
+      "description": "Privacy-minimal heuristic per-turn execution summaries for DeepSeek Harness",
+      "source": "npm",
+      "pkg": "dsh-verification-receipt",
+      "repo": "git+https://github.com/030611/dsh-verification-receipt.git"
+    },
+    {
+      "name": "dsh-preset-flash-director",
+      "displayName": "dsh-preset-flash-director",
+      "description": "Flash 主控 · Pro 专家 — a DeepSeek Harness agent preset: flash-model orchestrator + pro-model (deepseek-v4-pro) expert subagents, with an enforced delegation protocol (curated briefs, hard per-task budget, no delegation chains).",
+      "source": "npm",
+      "pkg": "dsh-preset-flash-director",
+      "repo": "git+https://github.com/zhaoyilun/dsh-preset-flash-director.git"
+    },
+    {
+      "name": "dsh-client-new-session-ungrouped",
+      "displayName": "dsh-client-new-session-ungrouped",
+      "description": "dsh Web GUI plugin for project-less chat sessions: adds a \"Work outside of a project\" option to the workspace picker, repairs the ungrouped group-header \"+\", routes new sessions to project-less mode while the current one is ungrouped, unlocks the blank un",
+      "source": "npm",
+      "pkg": "dsh-client-new-session-ungrouped",
+      "repo": null
+    },
+    {
+      "name": "dsh-llm-auto-route",
+      "displayName": "dsh-llm-auto-route",
+      "description": "Provider discovery, matching, health checks, and pre-output failover for DeepSeek Harness.",
+      "source": "npm",
+      "pkg": "dsh-llm-auto-route",
+      "repo": "git+https://github.com/qinyu765/dsh-llm-auto-route.git"
+    },
+    {
+      "name": "dsh-cloudflare-browser-run",
+      "displayName": "dsh-cloudflare-browser-run",
+      "description": "DeepSeek Harness plugin: web browsing tools (markdown / screenshot / pdf) powered by Cloudflare Browser Run — real headless Chrome with JS rendering, login sessions and WebMCP support.",
+      "source": "npm",
+      "pkg": "dsh-cloudflare-browser-run",
+      "repo": "git+https://github.com/RealAlexandreAI/dsh-cloudflare-browser-run.git"
+    },
+    {
+      "name": "dsh-nocturne-memory",
+      "displayName": "dsh-nocturne-memory",
+      "description": "DeepSeek Harness plugin: Nocturne Memory client — automated long-term memory (boot/read/search/create/update) backed by your own Nocturne MCP server.",
+      "source": "npm",
+      "pkg": "dsh-nocturne-memory",
+      "repo": "git+https://github.com/RealAlexandreAI/dsh-nocturne-memory.git"
+    },
+    {
+      "name": "@ruihuahe/dsh-plugin-marketplace",
+      "displayName": "@ruihuahe/dsh-plugin-marketplace",
+      "description": "Generated-catalog plugin discovery and npm installation marketplace for DeepSeek Harness",
+      "source": "npm",
+      "pkg": "@ruihuahe/dsh-plugin-marketplace",
+      "repo": "git+https://github.com/hrhgit/deepseek-harness-plugin-manager.git"
+    },
+    {
+      "name": "visionpower",
+      "displayName": "visionpower",
+      "description": "VisionPower: a portable image understanding MCP server for Codex, Claude Desktop, Cursor, and other agents.",
+      "source": "npm",
+      "pkg": "visionpower",
+      "repo": null
+    },
+    {
+      "name": "easy-cr",
+      "displayName": "easy-cr",
+      "description": "Generate business-sequenced HTML code reviews with comments and optional GoLand, IntelliJ IDEA, or VS Code semantic navigation.",
+      "source": "npm",
+      "pkg": "easy-cr",
+      "repo": null
+    },
+    {
+      "name": "@banlan/inkstone",
+      "displayName": "@banlan/inkstone",
+      "description": "Browse and manage conversation history from Claude Code, Codex CLI, OpenCode, Reasonix, Oh My PI (omp), Pi, and DeepSeek Harness (dsh)",
+      "source": "npm",
+      "pkg": "@banlan/inkstone",
+      "repo": "git+https://github.com/banlanzs/inkstone.git"
+    },
+    {
+      "name": "create-dsh-plugin",
+      "displayName": "create-dsh-plugin",
+      "description": "Scaffold a DeepSeek Harness (DSH) plugin in seconds — tool / events / webui templates, next-tag version pinning, and a built-in --verify smoke test.",
+      "source": "npm",
+      "pkg": "create-dsh-plugin",
+      "repo": null
+    },
+    {
+      "name": "dsh-worktree",
+      "displayName": "dsh-worktree",
+      "description": "Codex-style permanent git worktrees for DeepSeek Harness: agent tools, a /worktree command, and session context for durable worktrees.",
+      "source": "npm",
+      "pkg": "dsh-worktree",
+      "repo": "git+https://github.com/FlashingChen/dsh-worktree.git"
+    },
+    {
+      "name": "deepseek-harness-terminal-fast-run",
+      "displayName": "deepseek-harness-terminal-fast-run",
+      "description": "Unofficial convenience launcher for the DeepSeek Harness Web UI",
+      "source": "npm",
+      "pkg": "deepseek-harness-terminal-fast-run",
+      "repo": "git+https://github.com/Wgj24/deepseek-harness-terminal-fast-run.git"
+    },
+    {
+      "name": "dsh-compaction-instant",
+      "displayName": "dsh-compaction-instant",
+      "description": "VCC-style instant, near-lossless deterministic compaction engine for the DeepSeek Harness — a drop-in replacement for @deepseek-ai/dsh-compaction-basic",
+      "source": "npm",
+      "pkg": "dsh-compaction-instant",
+      "repo": "git+https://github.com/KitDoesIt/dsh-compaction-instant.git"
+    },
+    {
+      "name": "dsh-plugin-product-subagents",
+      "displayName": "dsh-plugin-product-subagents",
+      "description": "Role-based Codex / Claude Code / ACP subagent providers for the DeepSeek Harness: continuable children, durable session recovery, per-role product permissions, delegation with a permission ceiling, and a declarative role library.",
+      "source": "npm",
+      "pkg": "dsh-plugin-product-subagents",
+      "repo": "git+https://github.com/shaokeyibb/dsh-plugin-product-subagents.git"
+    },
+    {
+      "name": "dsh-plugin-manager",
+      "displayName": "dsh-plugin-manager",
+      "description": "Web plugin manager for DeepSeek Harness (DSH) and Cordis: inspect, enable, disable, group, and manage runtime plugins",
+      "source": "npm",
+      "pkg": "dsh-plugin-manager",
+      "repo": "git+https://github.com/hrhgit/deepseek-harness-plugin-manager.git"
+    },
+    {
+      "name": "dsh-voice-webspeech",
+      "displayName": "dsh-voice-webspeech",
+      "description": "DSH Web 语音输入插件：零服务端、零密钥、零模型下载，直接使用浏览器内置 Web Speech API（Edge=微软 Azure 语音，Chrome=Google 语音）。",
+      "source": "npm",
+      "pkg": "dsh-voice-webspeech",
+      "repo": "git+https://github.com/anweat/dsh-voice-webspeech.git"
+    },
+    {
+      "name": "dsh-ui-enhance",
+      "displayName": "dsh-ui-enhance",
+      "description": "Optional Web UI enhancements for DeepSeek Harness",
+      "source": "npm",
+      "pkg": "dsh-ui-enhance",
+      "repo": null
+    },
+    {
+      "name": "@dong-victor/dsh-opencodego-usage",
+      "displayName": "@dong-victor/dsh-opencodego-usage",
+      "description": "opencode Go 套餐余额查看插件（DSH Web GUI）：侧边栏直接显示 rolling(5小时)/weekly(周)/monthly(余额) 三档用量进度条、百分比与重置时间，60s 自动刷新，无需点击；点击打开详情面板（倒计时、状态徽章、端点/密钥信息）；agent 工具 opencode_go_balance 可直接回答套餐用量。密钥与端点复用 DSH 已配置的 llm-deepseek 接线（credentials 服务 + settings），无需二次配置。零构建依赖、纯 JS 即装即",
+      "source": "npm",
+      "pkg": "@dong-victor/dsh-opencodego-usage",
+      "repo": "git+https://github.com/dong-victor/dsh-opencodego-usage.git"
+    },
+    {
+      "name": "code-monkey-ui",
+      "displayName": "code-monkey-ui",
+      "description": "A Component Library for Vue 3",
+      "source": "npm",
+      "pkg": "code-monkey-ui",
+      "repo": "git+https://github.com/element-plus/element-plus.git"
+    },
+    {
+      "name": "a4phone",
+      "displayName": "a4phone",
+      "description": "Claude Code / Codex / DSH 远程手机交互：任务完成通知（含 AI 最后输出）、提问/权限请求手机点选或文字作答、远程续聊（ntfy.sh，含 DSH 会话续聊）",
+      "source": "npm",
+      "pkg": "a4phone",
+      "repo": null
+    }
+  ]
+}

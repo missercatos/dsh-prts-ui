@@ -29,6 +29,14 @@
 }
 .intro.done { opacity: 0; pointer-events: none; }
 #introCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* Particle "WAIT" hint shown when the user clicks before loading finishes. */
+.waitHint {
+  position: fixed; z-index: 200; width: 150px; height: 56px;
+  transform: translate(-50%, -50%); pointer-events: none;
+  transition: opacity 0.5s var(--prts-ease);
+}
+.waitHint.fade { opacity: 0; }
 .introTag {
   position: absolute; left: 50%; bottom: 13vh; transform: translateX(-50%);
   font-size: 11px; letter-spacing: 0.5em; text-indent: 0.5em;
@@ -70,6 +78,10 @@
 .para { margin: 0; font-size: 14px; line-height: 24px; color: var(--prts-ink); white-space: pre-wrap; word-break: break-word; }
 .para .caret { display: inline-block; width: 7px; height: 15px; margin-left: 2px; vertical-align: -2px; background: var(--prts-ink); animation: prts-blink 1s steps(2) infinite; }
 @keyframes prts-blink { 50% { opacity: 0; } }
+.mdImg { display: block; max-width: 100%; max-height: 360px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--prts-hairline); }
+.para code, .userBubble code { padding: 1px 5px; border-radius: 4px; background: var(--prts-surface-2); font-family: var(--prts-mono); font-size: 0.92em; }
+.para pre, .userBubble pre { margin: 8px 0; padding: 10px 12px; border-radius: 8px; background: var(--prts-surface); border: 1px solid var(--prts-hairline); overflow-x: auto; font-family: var(--prts-mono); font-size: 12.5px; line-height: 20px; }
+.para a, .userBubble a { color: var(--prts-ink); text-decoration: underline; }
 
 .disclosure { min-width: 0; }
 .dRow {
@@ -158,6 +170,50 @@
 .projectRow .pname { flex: 1; font-size: 13px; color: var(--prts-ink); }
 .projectRow .pmeta { font-size: 11px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
 
+/* ===== Settings sections (Language / Model config / Plugins / Version) ===== */
+.settingsBody { display: flex; flex-direction: column; gap: 20px; }
+.sSection { display: flex; flex-direction: column; gap: 8px; }
+.sSecTitle {
+  font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--prts-ink-faint); padding-bottom: 4px; border-bottom: 1px solid var(--prts-hairline);
+}
+.sSecRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sSecRow .sSecTitle { flex: 1; border-bottom: none; padding-bottom: 0; }
+.sCollapse { display: flex; flex-direction: column; gap: 8px; }
+/* Abstract minimal toggle: a rotated square (diamond) that rights itself
+   when the section expands. */
+.toggleBtn {
+  width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--prts-hairline-strong); border-radius: 4px; background: transparent;
+  cursor: pointer; color: var(--prts-ink-dim); flex: none;
+  transition: border-color 0.15s var(--prts-ease), color 0.15s var(--prts-ease);
+}
+.toggleBtn:hover { border-color: var(--prts-ink); color: var(--prts-ink); }
+.tgDiamond {
+  width: 9px; height: 9px; border: 1px solid currentColor;
+  transform: rotate(45deg); transition: transform 0.25s var(--prts-ease-out);
+}
+.toggleBtn.open .tgDiamond { transform: rotate(0deg); }
+.sSection .hint { font-size: 11px; line-height: 18px; color: var(--prts-ink-faint); }
+.pCard { border: 1px solid var(--prts-hairline); border-radius: 8px; overflow: hidden; }
+.pCardHead {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px;
+  border: none; background: transparent; cursor: pointer; color: var(--prts-ink); font-size: 13px;
+}
+.pCardHead:hover { background: var(--prts-surface-2); }
+.pCardHead .pName { flex: 1; text-align: left; }
+.pCardHead .chev { color: var(--prts-ink-faint); transition: transform 0.15s var(--prts-ease); }
+.pCard.open .pCardHead .chev { transform: rotate(180deg); }
+.pState { font-size: 11px; font-family: var(--prts-mono); color: var(--prts-ink-faint); }
+.pState[data-state='ok'] { color: var(--prts-accent, var(--prts-ink)); }
+.pCardBody { padding: 10px 12px; border-top: 1px solid var(--prts-hairline); background: var(--prts-surface); display: flex; flex-direction: column; gap: 8px; }
+.pModels { font-size: 11px; line-height: 17px; color: var(--prts-ink-faint); font-family: var(--prts-mono); word-break: break-all; }
+.marketCard { width: min(520px, calc(100vw - 48px)); }
+.marketCard .pCard { margin-bottom: 8px; }
+.marketCard .pCardHead { cursor: default; }
+.marketCard .pModels { font-family: inherit; }
+.marketCard .sBtn { margin-top: 6px; }
+
 /* ===== Sidebar ===== */
 .sb { display: flex; flex-direction: column; height: 100%; padding: 6px 10px; }
 .logoRow { display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 8px 4px 8px 10px; }
@@ -196,14 +252,46 @@
 .sbFootItem:hover { background: var(--prts-surface-2); color: var(--prts-ink); }
 
 /* ===== Conversation column ===== */
-.cvt { display: flex; flex-direction: column; height: 100%; min-width: 0; }
+.cvt { position: relative; overflow: hidden; display: flex; flex-direction: column; height: 100%; min-width: 0; }
+
+/* Central voice diamond — semi-transparent rhombus that vibrates with the mic
+   (dB drives scale, frequency nudges rotation). Reserved for dsh voice output
+   too: `.speaking` vibrates on produced audio just like on captured audio.
+   It sits BEHIND the conversation content (z-index:0 vs. the raised header
+   and scroll body) so it can never intercept clicks or obscure the chat. */
+.voiceDiamond {
+  position: absolute; left: 50%; top: 50%; z-index: 0;
+  pointer-events: none; transform: translate(-50%, -50%);
+  opacity: 0.16; transition: opacity 0.3s var(--prts-ease);
+  will-change: transform;
+}
+.voiceDiamond.on { opacity: 0.5; }
+.voiceDiamond.speaking { opacity: 0.72; }
+.voiceDiamond .diamondShape {
+  display: block; width: 230px; height: 230px;
+  border: 1px solid var(--prts-ink);
+  transform: rotate(45deg);
+  background: color-mix(in srgb, var(--prts-ink) 5%, transparent);
+  box-shadow: 0 0 60px color-mix(in srgb, var(--prts-ink) 8%, transparent);
+}
+.voiceDiamond .squareShape {
+  display: block; position: absolute; left: 50%; top: 50%; width: 110px; height: 110px;
+  margin: -55px 0 0 -55px;
+  border: 1px solid var(--prts-ink);
+  background: color-mix(in srgb, var(--prts-ink) 5%, transparent);
+}
+.cvtHeader, .scrollBody { position: relative; z-index: 1; }
 .cvtHeader { flex: none; padding: 10px 20px 0 16px; border-bottom: 1px solid var(--prts-hairline); }
 .cvt[data-phase='hero'] .cvtHeader { display: none; }
 .titleRow { display: flex; align-items: center; min-height: 34px; }
 .crumbs { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; white-space: nowrap; }
 .crumb { max-width: 240px; overflow: hidden; padding: 3px 8px; border: none; border-radius: 4px; background: transparent; font-size: 13px; line-height: 20px; color: var(--prts-ink-faint); text-overflow: ellipsis; white-space: nowrap; }
 .crumb[disabled] { font-weight: 500; color: var(--prts-ink); cursor: default; }
-.headerMode { padding: 3px 8px; font-size: 10px; letter-spacing: 0.3em; color: var(--prts-ink-faint); border: 1px solid var(--prts-hairline); border-radius: 4px; white-space: nowrap; }
+.crumb { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; font-weight: 500; color: var(--prts-ink); }
+.crumb .chev { color: var(--prts-ink-faint); }
+.crumb:hover { background: var(--prts-surface-2); }
+.headerMode { padding: 0; font-size: 10px; letter-spacing: 0.3em; color: var(--prts-ink-faint); white-space: nowrap; }
+.modeChip { border: 1px solid var(--prts-hairline); }
 .headerUtils { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .logBtn {
   display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px;
@@ -637,6 +725,14 @@ button:focus:not(:focus-visible) { outline: none; }
         <div class="sbList" id="sessionList" style="overflow-y:auto;"></div>
       </div>
       <div class="sbFoot">
+        <button class="sbFootItem" id="costBtn" type="button">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5v12M3.5 3.5h7a2 2 0 0 1 0 4h-5a2 2 0 0 0 0 4h7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+          <span data-i18n="sidebar.cost">Cost</span>
+        </button>
+        <button class="sbFootItem" id="marketBtn" type="button">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"><path d="M4.5 2.5 6.5 4.5 4.5 6.5 2.5 4.5Z"/><path d="M11.5 2.5 13.5 4.5 11.5 6.5 9.5 4.5Z"/><path d="M4.5 9.5 6.5 11.5 4.5 13.5 2.5 11.5Z"/><path d="M11.5 9.5 13.5 11.5 11.5 13.5 9.5 11.5Z" fill="currentColor" stroke="none"/></svg>
+          <span data-i18n="sidebar.market">Market</span>
+        </button>
         <button class="sbFootItem" id="detailsBtn" type="button">
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="1.5" width="12" height="12" stroke="currentColor" stroke-width="1.1"/><path d="M5 1.5v12M7.5 1.5v12" stroke="currentColor" stroke-width="1.1"/></svg>
           <span data-i18n="sidebar.details">Details</span>
@@ -651,11 +747,18 @@ button:focus:not(:focus-visible) { outline: none; }
 
   <main class="ctCol">
     <div class="cvt" id="cvt" data-phase="hero">
+      <div class="voiceDiamond" id="voiceDiamond" aria-hidden="true"><span class="diamondShape" id="diamondShape"></span><span class="squareShape" id="squareShape"></span></div>
       <header class="cvtHeader" id="header">
         <div class="titleRow">
           <div class="crumbs">
-            <button class="crumb" disabled id="crumbProject">dsh</button>
-            <span class="headerMode" data-i18n="header.mode">STANDARD</span>
+            <button class="crumb" id="crumbProject" type="button" data-i18n-title="workspace.switch">
+              <span id="crumbProjectLabel">dsh</span>
+              <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
+            </button>
+            <button class="chip modeChip" id="modeChip" type="button">
+              <span class="headerMode" id="headerMode" data-i18n="header.mode">STANDARD</span>
+              <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
+            </button>
           </div>
           <div class="headerUtils">
             <span class="pluginBar" id="pluginHeader"></span>
@@ -753,7 +856,7 @@ button:focus:not(:focus-visible) { outline: none; }
   <section class="dtCol" id="dtCol">
     <div class="dtPanel">
       <div class="dtHeader">
-        <span class="dtTitle" data-i18n="details.title">Details</span>
+        <span class="dtTitle" id="dtTitle" data-i18n="details.title">Details</span>
         <button class="iconBtn" id="dtClose" type="button" title="Close">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
         </button>
@@ -775,22 +878,46 @@ button:focus:not(:focus-visible) { outline: none; }
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
       </button>
     </div>
-    <div class="sField">
-      <div class="label"><span data-i18n="settings.language">Language</span></div>
-      <select class="sInput sSelect" id="cfgLocale">
-        <option value="auto">AUTO</option>
-        <option value="zh">中文</option>
-        <option value="en">ENGLISH</option>
-      </select>
-    </div>
-    <div class="sField">
-      <div class="label"><span data-i18n="settings.providers">Providers &amp; API keys</span></div>
-      <div class="hint" data-i18n="settings.providers.hint">API keys are written to the dsh harness home (~/.dsh), managed by dsh — never by this plugin.</div>
-      <div id="cfgProviders"></div>
-    </div>
-    <div class="sRow" style="margin-top: 18px;">
-      <button class="sBtn primary" id="cfgSave" type="button" data-i18n="settings.done">Done</button>
-      <span class="sStatus" id="cfgStatus"></span>
+    <div class="settingsBody">
+      <div class="sSection">
+        <div class="sSecTitle eyebrow" data-i18n="settings.language">Language</div>
+        <select class="sInput sSelect" id="cfgLocale">
+          <option value="auto">AUTO</option>
+          <option value="zh">中文</option>
+          <option value="en">ENGLISH</option>
+        </select>
+      </div>
+
+      <div class="sSection">
+        <div class="sSecRow">
+          <span class="sSecTitle eyebrow" data-i18n="settings.modelConfig">Model configuration</span>
+          <button class="toggleBtn" id="modelCfgToggle" type="button" aria-expanded="false" data-i18n-title="settings.modelConfig.toggle"><span class="tgDiamond"></span></button>
+        </div>
+        <div class="sCollapse" id="modelCfgBody" hidden>
+          <div class="hint" data-i18n="settings.modelConfig.hint">API keys are written to the dsh harness home (~/.dsh) — exactly where dsh keeps them. Only models whose provider has a key can be picked.</div>
+          <div id="cfgProviders"></div>
+        </div>
+      </div>
+
+      <div class="sSection">
+        <div class="sSecTitle eyebrow" data-i18n="settings.plugins">Plugins</div>
+        <div class="hint" data-i18n="settings.plugins.hint">Installed into the dsh profile. Add more with `dsh plugin --profile prts add &lt;package&gt;`.</div>
+        <div id="cfgPlugins"></div>
+      </div>
+
+      <div class="sSection">
+        <div class="sSecTitle eyebrow" data-i18n="settings.version">Version</div>
+        <div id="cfgVersion"></div>
+        <div class="sRow" style="margin-top: 8px;">
+          <button class="sBtn" id="updateBtn" type="button" data-i18n="settings.update">Update</button>
+          <span class="sStatus" id="updateStatus"></span>
+        </div>
+      </div>
+
+      <div class="sRow" style="margin-top: 18px;">
+        <button class="sBtn primary" id="cfgSave" type="button" data-i18n="settings.done">Done</button>
+        <span class="sStatus" id="cfgStatus"></span>
+      </div>
     </div>
   </div>
 </div>
@@ -826,12 +953,325 @@ button:focus:not(:focus-visible) { outline: none; }
   </div>
 </div>
 
+<div class="overlay" id="marketOverlay">
+  <div class="settingsCard marketCard">
+    <div class="settingsHead">
+      <span class="title" data-i18n="market.title">Plugins</span>
+      <button class="iconBtn" id="marketClose" type="button" title="Close">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="hint" data-i18n="market.hint" style="margin-bottom:14px;">Install dsh plugins from npm into the profile. Installed plugins are marked.</div>
+    <div id="marketList"></div>
+  </div>
+</div>
+
 <div class="intro" id="intro">
   <canvas id="introCanvas"></canvas>
   <div class="introTag" id="introTag"></div>
 </div>
 <div class="toast" id="toast" role="status"></div>
 
+<script>
+window.PRTS_MARKET = {
+  "generatedAt": "2026-08-16T02:58:09.101Z",
+  "plugins": [
+    {
+      "pkg": "@liustack/modlens",
+      "name": "ModLens",
+      "displayName": "ModLens",
+      "source": "npm",
+      "description": "Vision for text-only LLMs via Antigravity CLI."
+    },
+    {
+      "pkg": "dsh-cost-meter",
+      "name": "dsh-cost-meter",
+      "displayName": "Cost Meter",
+      "source": "npm",
+      "description": "Per-session cost, daily totals and official price sync."
+    },
+    {
+      "pkg": "dsh-better-sidebar",
+      "name": "dsh-better-sidebar",
+      "displayName": "Better Sidebar",
+      "source": "npm",
+      "description": "VSCode-like sidebar (explorer / editor / terminal / git)."
+    },
+    {
+      "name": "@liustack/modsearch",
+      "displayName": "@liustack/modsearch",
+      "description": "Plug-in web search, X search, and page fetch for models without native web access, powered by the free Antigravity CLI",
+      "source": "npm",
+      "pkg": "@liustack/modsearch",
+      "repo": "git+https://github.com/liustack/modsearch.git"
+    },
+    {
+      "name": "@liustack/pptfast",
+      "displayName": "@liustack/pptfast",
+      "description": "Stable, editable PPTX generation for AI agents — semantic IR in, native DrawingML out",
+      "source": "npm",
+      "pkg": "@liustack/pptfast",
+      "repo": "git+https://github.com/liustack/pptfast.git"
+    },
+    {
+      "name": "@microi.net/cli",
+      "displayName": "@microi.net/cli",
+      "description": "Microi吾码 AI 开发 CLI 与多宿主 Plugin：服务器连接、Skills、MCP、V8 同步和低代码交付",
+      "source": "npm",
+      "pkg": "@microi.net/cli",
+      "repo": "https://git.itdos.net:88/anderson/microi.vscode.git"
+    },
+    {
+      "name": "plaindeck",
+      "displayName": "plaindeck",
+      "description": "Git-native slide format, Agent API, CLI, MCP server, and renderer",
+      "source": "npm",
+      "pkg": "plaindeck",
+      "repo": "git+https://github.com/Mappedinfo/PlainDeck.git"
+    },
+    {
+      "name": "design-playbook",
+      "displayName": "design-playbook",
+      "description": "Design I/O for coding agents: controllable UI generation via declarations (spec/domain/craft/design/components/template) and contracts (skill/evaluator). Use for product UI—console, dashboard, agent-ops, CJK-first apps.",
+      "source": "npm",
+      "pkg": "design-playbook",
+      "repo": "git+https://github.com/Bandersnatch0x/design-playbook.git"
+    },
+    {
+      "name": "@sakikotgw/pack-agent",
+      "displayName": "@sakikotgw/pack-agent",
+      "description": "Pack skills, rules, and MCP into .pack.zip and install them into Claude Code, Codex, Cursor, and other harnesses",
+      "source": "npm",
+      "pkg": "@sakikotgw/pack-agent",
+      "repo": "git+https://github.com/sakikoTGW/pack-agent.git"
+    },
+    {
+      "name": "dsh-plugin-koishi",
+      "displayName": "dsh-plugin-koishi",
+      "description": "Koishi plugin for DeepSeek Harness",
+      "source": "npm",
+      "pkg": "dsh-plugin-koishi",
+      "repo": null
+    },
+    {
+      "name": "@qing3a/dsh-event-auditor",
+      "displayName": "@qing3a/dsh-event-auditor",
+      "description": "Harness 事件流审计面板：观察事件类型、分发模式、计数与最近事件，帮助插件作者理解 harness 内部发生了什么",
+      "source": "npm",
+      "pkg": "@qing3a/dsh-event-auditor",
+      "repo": "git+https://github.com/qing3a/dsh-event-auditor.git"
+    },
+    {
+      "name": "dsh-latex-tools",
+      "displayName": "dsh-latex-tools",
+      "description": "Hover LaTeX formulas in the DeepSeek Harness Web UI to copy the TeX source or export the formula as a standalone SVG.",
+      "source": "npm",
+      "pkg": "dsh-latex-tools",
+      "repo": "git+https://github.com/liuup/dsh-latex-tools.git"
+    },
+    {
+      "name": "dsh-claude-marketplace",
+      "displayName": "dsh-claude-marketplace",
+      "description": "Claude Code compatibility layer for DeepSeek Harness: load .claude skills/commands/agents and install plugins from Claude Code marketplaces as native dsh skills.",
+      "source": "npm",
+      "pkg": "dsh-claude-marketplace",
+      "repo": "git+https://github.com/ben7am1n/dsh-claude-marketplace.git"
+    },
+    {
+      "name": "dsh-plugins-raincode",
+      "displayName": "dsh-plugins-raincode",
+      "description": "Use raincode's model layer (cheap model pool, prompt caching, retry) and skill library inside DeepSeek Harness (dsh)",
+      "source": "npm",
+      "pkg": "dsh-plugins-raincode",
+      "repo": "git+https://github.com/rainforest888/dsh-plugins-raincode.git"
+    },
+    {
+      "name": "dsh-sandbox-keeper",
+      "displayName": "dsh-sandbox-keeper",
+      "description": "Remote-sandbox lifecycle owner for DeepSeek Harness: E2B sandbox create/pause/resume, sidecar deployment, heartbeat keep-alive, crash-transparent recovery, and pluggable tar IN/OUT sync.",
+      "source": "npm",
+      "pkg": "dsh-sandbox-keeper",
+      "repo": null
+    },
+    {
+      "name": "mypet",
+      "displayName": "mypet",
+      "description": "A tamagotchi-style desktop pet for DeepSeek Harness — lives in your browser, reacts to coding sessions, levels up, collects skins, and more.",
+      "source": "npm",
+      "pkg": "mypet",
+      "repo": null
+    },
+    {
+      "name": "dsh-verification-receipt",
+      "displayName": "dsh-verification-receipt",
+      "description": "Privacy-minimal heuristic per-turn execution summaries for DeepSeek Harness",
+      "source": "npm",
+      "pkg": "dsh-verification-receipt",
+      "repo": "git+https://github.com/030611/dsh-verification-receipt.git"
+    },
+    {
+      "name": "dsh-preset-flash-director",
+      "displayName": "dsh-preset-flash-director",
+      "description": "Flash 主控 · Pro 专家 — a DeepSeek Harness agent preset: flash-model orchestrator + pro-model (deepseek-v4-pro) expert subagents, with an enforced delegation protocol (curated briefs, hard per-task budget, no delegation chains).",
+      "source": "npm",
+      "pkg": "dsh-preset-flash-director",
+      "repo": "git+https://github.com/zhaoyilun/dsh-preset-flash-director.git"
+    },
+    {
+      "name": "dsh-client-new-session-ungrouped",
+      "displayName": "dsh-client-new-session-ungrouped",
+      "description": "dsh Web GUI plugin for project-less chat sessions: adds a \"Work outside of a project\" option to the workspace picker, repairs the ungrouped group-header \"+\", routes new sessions to project-less mode while the current one is ungrouped, unlocks the blank un",
+      "source": "npm",
+      "pkg": "dsh-client-new-session-ungrouped",
+      "repo": null
+    },
+    {
+      "name": "dsh-llm-auto-route",
+      "displayName": "dsh-llm-auto-route",
+      "description": "Provider discovery, matching, health checks, and pre-output failover for DeepSeek Harness.",
+      "source": "npm",
+      "pkg": "dsh-llm-auto-route",
+      "repo": "git+https://github.com/qinyu765/dsh-llm-auto-route.git"
+    },
+    {
+      "name": "dsh-cloudflare-browser-run",
+      "displayName": "dsh-cloudflare-browser-run",
+      "description": "DeepSeek Harness plugin: web browsing tools (markdown / screenshot / pdf) powered by Cloudflare Browser Run — real headless Chrome with JS rendering, login sessions and WebMCP support.",
+      "source": "npm",
+      "pkg": "dsh-cloudflare-browser-run",
+      "repo": "git+https://github.com/RealAlexandreAI/dsh-cloudflare-browser-run.git"
+    },
+    {
+      "name": "dsh-nocturne-memory",
+      "displayName": "dsh-nocturne-memory",
+      "description": "DeepSeek Harness plugin: Nocturne Memory client — automated long-term memory (boot/read/search/create/update) backed by your own Nocturne MCP server.",
+      "source": "npm",
+      "pkg": "dsh-nocturne-memory",
+      "repo": "git+https://github.com/RealAlexandreAI/dsh-nocturne-memory.git"
+    },
+    {
+      "name": "@ruihuahe/dsh-plugin-marketplace",
+      "displayName": "@ruihuahe/dsh-plugin-marketplace",
+      "description": "Generated-catalog plugin discovery and npm installation marketplace for DeepSeek Harness",
+      "source": "npm",
+      "pkg": "@ruihuahe/dsh-plugin-marketplace",
+      "repo": "git+https://github.com/hrhgit/deepseek-harness-plugin-manager.git"
+    },
+    {
+      "name": "visionpower",
+      "displayName": "visionpower",
+      "description": "VisionPower: a portable image understanding MCP server for Codex, Claude Desktop, Cursor, and other agents.",
+      "source": "npm",
+      "pkg": "visionpower",
+      "repo": null
+    },
+    {
+      "name": "easy-cr",
+      "displayName": "easy-cr",
+      "description": "Generate business-sequenced HTML code reviews with comments and optional GoLand, IntelliJ IDEA, or VS Code semantic navigation.",
+      "source": "npm",
+      "pkg": "easy-cr",
+      "repo": null
+    },
+    {
+      "name": "@banlan/inkstone",
+      "displayName": "@banlan/inkstone",
+      "description": "Browse and manage conversation history from Claude Code, Codex CLI, OpenCode, Reasonix, Oh My PI (omp), Pi, and DeepSeek Harness (dsh)",
+      "source": "npm",
+      "pkg": "@banlan/inkstone",
+      "repo": "git+https://github.com/banlanzs/inkstone.git"
+    },
+    {
+      "name": "create-dsh-plugin",
+      "displayName": "create-dsh-plugin",
+      "description": "Scaffold a DeepSeek Harness (DSH) plugin in seconds — tool / events / webui templates, next-tag version pinning, and a built-in --verify smoke test.",
+      "source": "npm",
+      "pkg": "create-dsh-plugin",
+      "repo": null
+    },
+    {
+      "name": "dsh-worktree",
+      "displayName": "dsh-worktree",
+      "description": "Codex-style permanent git worktrees for DeepSeek Harness: agent tools, a /worktree command, and session context for durable worktrees.",
+      "source": "npm",
+      "pkg": "dsh-worktree",
+      "repo": "git+https://github.com/FlashingChen/dsh-worktree.git"
+    },
+    {
+      "name": "deepseek-harness-terminal-fast-run",
+      "displayName": "deepseek-harness-terminal-fast-run",
+      "description": "Unofficial convenience launcher for the DeepSeek Harness Web UI",
+      "source": "npm",
+      "pkg": "deepseek-harness-terminal-fast-run",
+      "repo": "git+https://github.com/Wgj24/deepseek-harness-terminal-fast-run.git"
+    },
+    {
+      "name": "dsh-compaction-instant",
+      "displayName": "dsh-compaction-instant",
+      "description": "VCC-style instant, near-lossless deterministic compaction engine for the DeepSeek Harness — a drop-in replacement for @deepseek-ai/dsh-compaction-basic",
+      "source": "npm",
+      "pkg": "dsh-compaction-instant",
+      "repo": "git+https://github.com/KitDoesIt/dsh-compaction-instant.git"
+    },
+    {
+      "name": "dsh-plugin-product-subagents",
+      "displayName": "dsh-plugin-product-subagents",
+      "description": "Role-based Codex / Claude Code / ACP subagent providers for the DeepSeek Harness: continuable children, durable session recovery, per-role product permissions, delegation with a permission ceiling, and a declarative role library.",
+      "source": "npm",
+      "pkg": "dsh-plugin-product-subagents",
+      "repo": "git+https://github.com/shaokeyibb/dsh-plugin-product-subagents.git"
+    },
+    {
+      "name": "dsh-plugin-manager",
+      "displayName": "dsh-plugin-manager",
+      "description": "Web plugin manager for DeepSeek Harness (DSH) and Cordis: inspect, enable, disable, group, and manage runtime plugins",
+      "source": "npm",
+      "pkg": "dsh-plugin-manager",
+      "repo": "git+https://github.com/hrhgit/deepseek-harness-plugin-manager.git"
+    },
+    {
+      "name": "dsh-voice-webspeech",
+      "displayName": "dsh-voice-webspeech",
+      "description": "DSH Web 语音输入插件：零服务端、零密钥、零模型下载，直接使用浏览器内置 Web Speech API（Edge=微软 Azure 语音，Chrome=Google 语音）。",
+      "source": "npm",
+      "pkg": "dsh-voice-webspeech",
+      "repo": "git+https://github.com/anweat/dsh-voice-webspeech.git"
+    },
+    {
+      "name": "dsh-ui-enhance",
+      "displayName": "dsh-ui-enhance",
+      "description": "Optional Web UI enhancements for DeepSeek Harness",
+      "source": "npm",
+      "pkg": "dsh-ui-enhance",
+      "repo": null
+    },
+    {
+      "name": "@dong-victor/dsh-opencodego-usage",
+      "displayName": "@dong-victor/dsh-opencodego-usage",
+      "description": "opencode Go 套餐余额查看插件（DSH Web GUI）：侧边栏直接显示 rolling(5小时)/weekly(周)/monthly(余额) 三档用量进度条、百分比与重置时间，60s 自动刷新，无需点击；点击打开详情面板（倒计时、状态徽章、端点/密钥信息）；agent 工具 opencode_go_balance 可直接回答套餐用量。密钥与端点复用 DSH 已配置的 llm-deepseek 接线（credentials 服务 + settings），无需二次配置。零构建依赖、纯 JS 即装即",
+      "source": "npm",
+      "pkg": "@dong-victor/dsh-opencodego-usage",
+      "repo": "git+https://github.com/dong-victor/dsh-opencodego-usage.git"
+    },
+    {
+      "name": "code-monkey-ui",
+      "displayName": "code-monkey-ui",
+      "description": "A Component Library for Vue 3",
+      "source": "npm",
+      "pkg": "code-monkey-ui",
+      "repo": "git+https://github.com/element-plus/element-plus.git"
+    },
+    {
+      "name": "a4phone",
+      "displayName": "a4phone",
+      "description": "Claude Code / Codex / DSH 远程手机交互：任务完成通知（含 AI 最后输出）、提问/权限请求手机点选或文字作答、远程续聊（ntfy.sh，含 DSH 会话续聊）",
+      "source": "npm",
+      "pkg": "a4phone",
+      "repo": null
+    }
+  ]
+};
+</script>
 <script>
 /**
  * PRTS platform adapter: OS, home/config directories, locale detection.
@@ -959,6 +1399,7 @@ button:focus:not(:focus-visible) { outline: none; }
       'session.archive': 'Archive session',
       'session.confirmArchive': 'Archive this session? It will be removed from the workspace.',
       'session.selectFirst': 'Open or create a session first',
+      'session.createFail': 'Could not create a session — is dsh connected?',
       'workspace.add': '+ Add workspace',
       'workspace.confirmDelete': 'Delete this workspace and its sessions?',
       'workspace.pathPrompt': 'Workspace directory (an existing folder):',
@@ -970,7 +1411,43 @@ button:focus:not(:focus-visible) { outline: none; }
       'settings.provider.unset': 'not set',
       'settings.provider.save': 'Save key',
       'settings.provider.saved': 'Saved {ref} to ~/.dsh',
+      'settings.modelConfig': 'Model configuration',
+      'settings.modelConfig.hint': 'API keys are written to the dsh harness home (~/.dsh) — exactly where dsh keeps them. Only models whose provider has a key can be picked.',
+      'settings.plugins': 'Plugins',
+      'settings.plugins.hint': 'Installed into the dsh profile. Add more with `dsh plugin --profile prts add <package>`.',
+      'settings.plugins.empty': 'No extra plugins installed — dsh core only.',
+      'settings.version': 'Version',
+      'settings.modelConfig.toggle': 'Show / hide model configuration',
+      'settings.update': 'Update',
+      'settings.updating': 'Updating…',
+      'settings.updated': 'Update finished',
+      'settings.updateFail': 'Update failed: {msg}',
+      'workspace.switch': 'Switch workspace',
+      'chat.cancelled': 'Conversation cancelled',
+      'model.noConfiguredKey': 'No API key configured — open Model configuration.',
+      'mode.loading': 'Loading work modes…',
+      'mode.none': 'No work modes available.',
+      'sidebar.cost': 'Cost',
+      'sidebar.market': 'Market',
+      'cost.title': 'Cost',
+      'cost.sessionCost': 'This session',
+      'cost.inputTokens': 'Input tokens',
+      'cost.outputTokens': 'Output tokens',
+      'cost.cacheTokens': 'Cache tokens',
+      'cost.calls': 'Model calls',
+      'cost.hint': 'Priced from the official DeepSeek rate card (peak/off-peak). USD.',
+      'market.title': 'Plugins',
+      'market.hint': 'Install dsh plugins from GitHub and npm into the profile. Installed plugins are marked.',
+      'market.empty': 'No plugins discovered — run `node scripts/scan-market.mjs` to refresh the catalog.',
+      'market.install': 'Install',
+      'market.installing': 'Installing…',
+      'market.installed': 'Installed',
+      'market.failed': 'Install failed: {msg}',
+      'market.modlens': 'Vision for text-only LLMs via Antigravity CLI (image → OCR evidence).',
+      'market.costMeter': 'Per-session cost, daily totals and official price sync.',
+      'market.betterSidebar': 'VSCode-like sidebar (explorer / editor / terminal / git).',
       'dsh.connectFail': 'Could not reach dsh: {msg}',
+      'dsh.noResponse': 'no response from dsh web',
 
       'sidebar.projects': 'PROJECTS',
       'sidebar.sessions': 'SESSIONS',
@@ -1169,6 +1646,7 @@ button:focus:not(:focus-visible) { outline: none; }
       'session.archive': '归档会话',
       'session.confirmArchive': '归档此会话？它将从工作区移除。',
       'session.selectFirst': '请先打开或新建会话',
+      'session.createFail': '无法创建会话 —— 请确认 dsh 已连接。',
       'workspace.add': '+ 添加工作区',
       'workspace.confirmDelete': '删除此工作区及其会话？',
       'workspace.pathPrompt': '工作区目录（一个已存在的文件夹）：',
@@ -1180,7 +1658,43 @@ button:focus:not(:focus-visible) { outline: none; }
       'settings.provider.unset': '未配置',
       'settings.provider.save': '保存 Key',
       'settings.provider.saved': '已保存 {ref} 至 ~/.dsh',
+      'settings.modelConfig': '模型配置',
+      'settings.modelConfig.hint': 'API Key 会写入 dsh 主目录（~/.dsh），与 dsh 原版同一位置。只有已配置密钥的厂家的模型才能被选用。',
+      'settings.plugins': '插件装载',
+      'settings.plugins.hint': '已装入 dsh profile 的插件。可用 `dsh plugin --profile prts add <包名>` 追加。',
+      'settings.plugins.empty': '尚未装载额外插件 —— 仅 dsh 核心。',
+      'settings.version': '版本',
+      'settings.modelConfig.toggle': '展开 / 收起模型配置',
+      'settings.update': '更新',
+      'settings.updating': '更新中…',
+      'settings.updated': '更新完成',
+      'settings.updateFail': '更新失败：{msg}',
+      'workspace.switch': '切换工作区',
+      'chat.cancelled': '已终止对话',
+      'model.noConfiguredKey': '尚未配置 API Key —— 请打开模型配置。',
+      'mode.loading': '正在加载工作模式…',
+      'mode.none': '暂无可用工作模式。',
+      'sidebar.cost': '费用',
+      'sidebar.market': '市场',
+      'cost.title': '费用',
+      'cost.sessionCost': '本会话',
+      'cost.inputTokens': '输入 tokens',
+      'cost.outputTokens': '输出 tokens',
+      'cost.cacheTokens': '缓存 tokens',
+      'cost.calls': '调用次数',
+      'cost.hint': '按 DeepSeek 官方价格表（峰/谷计价）计费，单位美元。',
+      'market.title': '插件',
+      'market.hint': '从 GitHub 与 npm 安装 dsh 插件到 profile。已安装的插件会被标记。',
+      'market.empty': '未发现插件 —— 运行 `node scripts/scan-market.mjs` 刷新目录。',
+      'market.install': '安装',
+      'market.installing': '安装中…',
+      'market.installed': '已安装',
+      'market.failed': '安装失败：{msg}',
+      'market.modlens': '为纯文本 LLM 提供视觉能力（经 Antigravity CLI，图片→OCR 证据）。',
+      'market.costMeter': '会话费用、当日汇总与官方价格同步。',
+      'market.betterSidebar': '类 VSCode 侧栏（资源管理器 / 编辑器 / 终端 / git）。',
       'dsh.connectFail': '无法连接 dsh：{msg}',
+      'dsh.noResponse': 'dsh web 无响应',
 
       'sidebar.projects': '项目',
       'sidebar.sessions': '会话',
@@ -1659,12 +2173,18 @@ button:focus:not(:focus-visible) { outline: none; }
     return parseResponse(id, await res.json());
   }
 
-  /** Respond to a server-request frame (questions, approvals, steers). */
-  function respond(rpcIdValue, result) {
-    const msg = JSON.stringify({ type: 'client-response', rpcId: rpcIdValue, result });
+  /** Respond to a server-request frame (questions, approvals, steers) via
+   *  POST /api/respond — the dsh client-response carrier, not the mux. */
+  async function respond(rpcIdValue, result) {
     const bridge = dshBridge();
-    if (bridge) { bridge.send(msg); return; }
-    if (ws && ws.readyState === 1) ws.send(msg);
+    if (bridge) { try { await bridge.respond(rpcIdValue, result); } catch (e) { /* noop */ } return; }
+    try {
+      await fetch(D.baseUrl.replace(/\/+$/, '') + '/api/respond', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'client-response', rpcId: rpcIdValue, result }),
+      });
+    } catch (e) { /* noop */ }
   }
 
   function emit(type, frame) {
@@ -1691,9 +2211,10 @@ button:focus:not(:focus-visible) { outline: none; }
     }
   }
 
-  /** Open the mux WebSocket and subscribe to session events. Non-blocking: it
+  /** Open the mux SSE stream and subscribe to session events. Non-blocking: it
    *  keeps retrying in the background until dsh is reachable. When running in
-   *  Electron, the main process owns the socket and relays frames via IPC. */
+   *  Electron, the main process owns the stream and relays frames via IPC. */
+  let muxAbort = null;
   function connect(url) {
     if (url) D.baseUrl = url;
     const bridge = dshBridge();
@@ -1703,26 +2224,42 @@ button:focus:not(:focus-visible) { outline: none; }
       emit('connect', {});
       return;
     }
-    if (ws && (ws.readyState === 0 || ws.readyState === 1)) return;
     manualClose = false;
-    const muxUrl = D.baseUrl.replace(/^http/, 'ws').replace(/\/+$/, '') + '/api/events.mux';
-    let sock;
-    try { sock = new WebSocket(muxUrl); } catch (e) { return; }
-    ws = sock;
-    sock.onopen = () => { D.connected = true; emit('connect', {}); };
-    sock.onmessage = (ev) => onMessage(typeof ev.data === 'string' ? ev.data : ev.data);
-    sock.onclose = () => {
-      D.connected = false;
-      for (const [, p] of pending) p.reject(new Error('dsh: connection closed'));
-      pending.clear();
-      emit('disconnect', {});
-      ws = null;
-      if (!manualClose) setTimeout(() => connect(), 1000);
-    };
-    sock.onerror = () => { /* onclose follows */ };
+    try { if (muxAbort) muxAbort.abort(); } catch (e) { /* noop */ }
+    const ac = new AbortController();
+    muxAbort = ac;
+    const muxUrl = D.baseUrl.replace(/\/+$/, '') + '/api/events.mux';
+    fetch(muxUrl, { signal: ac.signal })
+      .then(async (res) => {
+        if (!res.ok || !res.body) throw new Error('mux ' + res.status);
+        D.connected = true;
+        emit('connect', {});
+        const reader = res.body.getReader();
+        const dec = new TextDecoder();
+        let buf = '';
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += dec.decode(value, { stream: true });
+          let idx;
+          while ((idx = buf.indexOf('\n\n')) >= 0) {
+            const chunk = buf.slice(0, idx);
+            buf = buf.slice(idx + 2);
+            for (const line of chunk.split('\n')) {
+              if (line.startsWith('data: ')) onMessage(line.slice(6).trim());
+            }
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        D.connected = false;
+        emit('disconnect', {});
+        if (!manualClose) setTimeout(() => connect(), 1000);
+      });
   }
 
-  function close() { manualClose = true; if (ws) { try { ws.close(); } catch (e) { /* noop */ } } ws = null; D.connected = false; }
+  function close() { manualClose = true; try { if (muxAbort) muxAbort.abort(); } catch (e) { /* noop */ } D.connected = false; }
 
   /** Subscribe to a push event (method name). Returns an unsubscribe fn. */
   function on(type, fn) {
@@ -1760,6 +2297,7 @@ button:focus:not(:focus-visible) { outline: none; }
     providers: [],    // { provider, displayName, active, ... }
     currentWorkspaceId: null,
     currentSessionId: null,
+    selectedModel: null, // { provider, model } — the session's chosen model
     events: [],       // raw session events of the current session
   };
 
@@ -1808,6 +2346,15 @@ button:focus:not(:focus-visible) { outline: none; }
     await Promise.allSettled([listWorkspaces(), listSessions(), listModels(), listProviders()]);
   }
 
+  // True when dsh answers a real RPC — the "connected" signal (a 404/hang means
+  // the /api route is not mounted yet, which is "not ready", not "connected").
+  async function ping() {
+    try {
+      await P.dsh.request('workspace.list', {});
+      return true;
+    } catch (e) { return false; }
+  }
+
   async function createSession(workspaceId) {
     const r = await P.dsh.request('session.create', workspaceId ? { workspaceId } : {});
     return r && r.sessionId;
@@ -1848,7 +2395,9 @@ button:focus:not(:focus-visible) { outline: none; }
   }
 
   async function selectModel(sessionId, provider, model) {
-    return P.dsh.request('session.selectModel', { sessionId, provider, model });
+    const r = await P.dsh.request('session.selectModel', { sessionId, provider, model });
+    S.selectedModel = { provider, model };
+    return r;
   }
 
   async function settingsGet(ns) {
@@ -1875,12 +2424,41 @@ button:focus:not(:focus-visible) { outline: none; }
     return (r && Array.isArray(r)) ? r : (Array.isArray(r) ? r : []);
   }
 
+  // Work modes = dsh's own agent presets (the same presets dsh web offers).
+  async function agentPresetList() {
+    const r = await P.dsh.request('agentPreset.list', {});
+    return (r && r.presets) || [];
+  }
+  async function agentPresetSelect(sessionId, agentPreset) {
+    return P.dsh.request('agentPreset.select', { sessionId, agentPreset });
+  }
+
+  // Host version (Settings -> Version) straight from dsh, not from PRTS.
+  async function hostDescribe() {
+    try {
+      const r = await P.dsh.request('host.describe', {});
+      return r || {};
+    } catch (e) { return {}; }
+  }
+
+  // Installed plugins are the profile's own bundle dependencies — read them
+  // through the Electron bridge (the harness profile package.json).
+  async function pluginsList() {
+    try {
+      if (typeof window !== 'undefined' && window.prts && window.prts.bridge && window.prts.bridge.pluginsList) {
+        return await window.prts.bridge.pluginsList();
+      }
+    } catch (e) { /* no bridge */ }
+    return [];
+  }
+
   S.connect = connect;
   S.listWorkspaces = listWorkspaces;
   S.listSessions = listSessions;
   S.listModels = listModels;
   S.listProviders = listProviders;
   S.refreshAll = refreshAll;
+  S.ping = ping;
   S.createSession = createSession;
   S.history = history;
   S.prompt = prompt;
@@ -1896,6 +2474,10 @@ button:focus:not(:focus-visible) { outline: none; }
   S.credentialsSet = credentialsSet;
   S.credentialsUnset = credentialsUnset;
   S.commandsList = commandsList;
+  S.agentPresetList = agentPresetList;
+  S.agentPresetSelect = agentPresetSelect;
+  S.hostDescribe = hostDescribe;
+  S.pluginsList = pluginsList;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
 
@@ -1932,7 +2514,8 @@ button:focus:not(:focus-visible) { outline: none; }
   function create(canvas, opts) {
     opts = opts || {};
     const N = opts.count || 3200;
-    const speedRange = opts.speedRange || [0.018, 0.05];
+    // Faster particle *motion* — the effect timeline is unaffected.
+    const speedRange = (opts.speedRange || [0.018, 0.05]).map((v) => v * 1.5);
     const ctx = canvas.getContext('2d');
     const scratch = document.createElement('canvas');
     const sctx = scratch.getContext('2d');
@@ -2070,9 +2653,9 @@ button:focus:not(:focus-visible) { outline: none; }
     }
 
     function drawModelPp(maxPoints) {
-      // PRTS / DeepSeek banner (matches pp.png): a thin top rule, a large
-      // upright PRTS wordmark, a small italic DEEPSEEK caption, a horizontal
-      // bar, and a second small italic line.
+      // PRTS / DeepSeek harness banner (matches pp.png): a thin top rule, a
+      // large upright PRTS wordmark, a small italic DeepSeek caption, a
+      // horizontal bar, and "harness" beneath it.
       const cw = 700, ch = 400;
       scratch.width = cw; scratch.height = ch;
       sctx.clearRect(0, 0, cw, ch);
@@ -2083,16 +2666,16 @@ button:focus:not(:focus-visible) { outline: none; }
       sctx.font = '700 ' + Math.floor(176) + 'px ' + getFontStack();
       sctx.fillText('PRTS', cw / 2, 196);         // large PRTS
       sctx.font = 'italic 700 ' + Math.floor(58) + 'px ' + getFontStack();
-      sctx.fillText('DEEPSEEK', cw / 2, 262);     // caption
+      sctx.fillText('DeepSeek', cw / 2, 262);     // caption (above the bar)
       sctx.fillRect(132, 284, 436, 7);            // bar
-      sctx.fillText('DEEPSEEK', cw / 2, 344);     // second line
+      sctx.fillText('harness', cw / 2, 344);      // second line (below the bar)
       return sampleFromCanvas(scratch, sctx, cw, ch, maxPoints, 4);
     }
 
     function drawModelMark(scale, maxPoints) {
       // Square diamond mark (the packaged icon): white rhombus outline, italic
-      // P/R/T/S in the four corners, and a small italic PRTS wordmark with an
-      // accent rule raised above the centre.
+      // P/R/T/S in the four corners, and a small italic "dsh" wordmark with an
+      // accent rule beneath it (the wordmark is 0.5× the corner letters).
       const s = scale || 1;
       const cw = Math.floor(480 * s);
       const ch = cw;
@@ -2111,19 +2694,19 @@ button:focus:not(:focus-visible) { outline: none; }
       sctx.closePath();
       sctx.stroke();
       const q = Math.floor(half * 0.44);
-      sctx.font = 'italic 700 ' + Math.floor(104 * s) + 'px ' + getFontStack();
+      const cornerPx = Math.floor(104 * s);
+      sctx.font = 'italic 700 ' + cornerPx + 'px ' + getFontStack();
       sctx.textAlign = 'center';
       sctx.textBaseline = 'middle';
       sctx.fillText('P', cx - q, cy - q);
       sctx.fillText('R', cx + q, cy - q);
       sctx.fillText('T', cx - q, cy + q);
       sctx.fillText('S', cx + q, cy + q);
-      // Centre wordmark sits where the original icon had it (slightly below
-      // the middle), with its accent rule beneath.
-      sctx.font = 'italic 700 ' + Math.floor(34 * s) + 'px ' + getFontStack();
+      // Centre wordmark: "dsh" above its accent rule, at half the corner size.
+      sctx.font = 'italic 700 ' + Math.floor(cornerPx * 0.5) + 'px ' + getFontStack();
       sctx.textBaseline = 'alphabetic';
       const wy = cy + Math.floor(30 * s);
-      sctx.fillText('PRTS', cx, wy);
+      sctx.fillText('dsh', cx, wy);
       sctx.lineWidth = Math.max(2, 3 * s);
       sctx.beginPath();
       sctx.moveTo(cx - Math.floor(56 * s), wy + Math.floor(11 * s));
@@ -2938,6 +3521,133 @@ button:focus:not(:focus-visible) { outline: none; }
 
 
 /**
+ * PRTS cost meter — ported from the dsh-cost-meter community plugin's pricing
+ * math (official DeepSeek prices, peak/off-peak tiers). PRTS counts tokens
+ * from dsh session events and prices them here, so no separate plugin process
+ * is needed. Costs are USD internally; display is USD.
+ */
+(function (G) {
+  'use strict';
+  const P = G.PRTS = G.PRTS || {};
+
+  const DEFAULT_PRICE_TABLE = {
+    models: {
+      'deepseek-v4-flash': {
+        cacheHit: 0.0028, cacheMiss: 0.14, output: 0.28,
+        offPeak: { cacheHit: 0.007, cacheMiss: 0.22, output: 0.66 },
+        peak: { cacheHit: 0.014, cacheMiss: 0.44, output: 1.32 },
+      },
+      'deepseek-v4-pro': {
+        cacheHit: 0.003625, cacheMiss: 0.435, output: 0.87,
+        offPeak: { cacheHit: 0.022, cacheMiss: 0.66, output: 1.98 },
+        peak: { cacheHit: 0.044, cacheMiss: 1.32, output: 3.96 },
+      },
+      'deepseek-chat': { cacheHit: 0.07, cacheMiss: 0.27, output: 1.1, legacy: true },
+      'deepseek-reasoner': { cacheHit: 0.14, cacheMiss: 0.55, output: 2.19, legacy: true },
+    },
+    default: { cacheHit: 0.0028, cacheMiss: 0.14, output: 0.28 },
+  };
+
+  const PEAK = {
+    enabled: true,
+    effectiveAtMs: Date.parse('2026-08-16T16:00:00Z'),
+    windows: [{ start: 1, end: 4 }, { start: 6, end: 10 }],
+  };
+
+  function priceEntryFor(modelId) {
+    const models = DEFAULT_PRICE_TABLE.models;
+    if (typeof modelId === 'string' && models[modelId]) return models[modelId];
+    return DEFAULT_PRICE_TABLE.default;
+  }
+
+  function isPeakHour(atMs) {
+    if (!PEAK.enabled || !Number.isFinite(PEAK.effectiveAtMs) || atMs < PEAK.effectiveAtMs) return false;
+    const hour = new Date(atMs).getUTCHours();
+    return PEAK.windows.some((w) => hour >= w.start && hour < w.end);
+  }
+
+  function tierFor(entry, atMs) {
+    const base = entry || DEFAULT_PRICE_TABLE.default;
+    if (!PEAK.enabled) return { cacheHit: base.cacheHit, cacheMiss: base.cacheMiss, output: base.output };
+    if (isPeakHour(atMs)) {
+      const p = base.peak;
+      return p ? { cacheHit: p.cacheHit, cacheMiss: p.cacheMiss, output: p.output } : { cacheHit: base.cacheHit, cacheMiss: base.cacheMiss, output: base.output };
+    }
+    const off = base.offPeak;
+    return off ? { cacheHit: off.cacheHit, cacheMiss: off.cacheMiss, output: off.output } : { cacheHit: base.cacheHit, cacheMiss: base.cacheMiss, output: base.output };
+  }
+
+  function costOf(tokens, entry, atMs) {
+    const tier = tierFor(entry, atMs);
+    const input = Math.max(0, Number(tokens.input) || 0);
+    const output = Math.max(0, Number(tokens.output) || 0);
+    const cacheRead = Math.max(0, Number(tokens.cacheRead) || 0);
+    const cacheWrite = Math.max(0, Number(tokens.cacheWrite) || 0);
+    return Math.max(0, (input * tier.cacheMiss + output * tier.output + (cacheRead + cacheWrite) * tier.cacheHit) / 1e6);
+  }
+
+  function formatMoney(usd) {
+    const value = usd;
+    let decimals = 4;
+    if (value > 0 && value < 1e-4) decimals = 6;
+    let fixed = value.toFixed(decimals);
+    fixed = fixed.includes('.') ? fixed.replace(/0+$/, '').replace(/\.$/, '') : fixed;
+    return '$' + fixed;
+  }
+
+  function fmtTokens(n) {
+    if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'k';
+    return String(n);
+  }
+
+  // Per-message usage ledger, keyed by message id so stream updates never
+  // double-count. The session total is recomputed from this map.
+  const byId = new Map();
+  const session = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, usd: 0, calls: 0 };
+
+  function recompute() {
+    session.input = 0; session.output = 0; session.cacheRead = 0; session.cacheWrite = 0; session.usd = 0;
+    for (const m of byId.values()) {
+      session.input += m.input;
+      session.output += m.output;
+      session.cacheRead += m.cacheRead;
+      session.cacheWrite += m.cacheWrite;
+      session.usd += m.usd;
+    }
+    session.calls = byId.size;
+  }
+
+  function reset() { byId.clear(); recompute(); }
+
+  function addUsage(msg) {
+    const u = msg && msg.usage;
+    if (!u) return;
+    const id = msg.id || ('m' + (msg._seq || byId.size));
+    const input = u.prompt_tokens || u.input_tokens || 0;
+    const output = u.completion_tokens || u.output_tokens || 0;
+    const cacheRead = u.prompt_cache_hit_tokens || u.cacheRead || 0;
+    const cacheWrite = u.prompt_cache_write_tokens || u.cacheWrite || 0;
+    const entry = priceEntryFor(msg.model || 'deepseek-chat');
+    const usd = costOf({ input, output, cacheRead, cacheWrite }, entry, Date.now());
+    byId.set(id, { model: msg.model || '?', input, output, cacheRead, cacheWrite, usd });
+    recompute();
+  }
+
+  P.cost = {
+    session,
+    reset,
+    addUsage,
+    formatMoney,
+    fmtTokens,
+    priceEntryFor,
+    costOf,
+    tierFor,
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/**
  * PRTS conversation surface — renders dsh session events (user/message,
  * assistant/message, tool/result) streamed over the /api mux WebSocket.
  * No local persistence: the source of truth is the dsh session.
@@ -2964,6 +3674,22 @@ button:focus:not(:focus-visible) { outline: none; }
     if (cls) n.className = cls;
     if (text !== undefined) n.textContent = text;
     return n;
+  }
+
+  // Minimal markdown: images (built-in — the model may return one), code
+  // blocks, inline code, bold, links. Everything is HTML-escaped first.
+  function mdToHtml(text) {
+    let s = esc(text);
+    const codeBlocks = [];
+    s = s.replace(/```([\s\S]*?)```/g, (m, code) => { codeBlocks.push(code); return '\u0000CODE' + (codeBlocks.length - 1) + '\u0000'; });
+    s = s.replace(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g, '<img class="mdImg" src="$2" alt="$1">');
+    s = s.replace(/(^|\n)(https?:\/\/\S+\.(?:png|jpe?g|gif|webp|svg|bmp)(?:\?\S*)?)/gi, '$1<img class="mdImg" src="$2" alt="">');
+    s = s.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    s = s.replace(/\n/g, '<br>');
+    s = s.replace(/\u0000CODE(\d+)\u0000/g, (m, i) => '<pre>' + codeBlocks[Number(i)] + '</pre>');
+    return s;
   }
 
   function blockText(block) {
@@ -3017,6 +3743,7 @@ button:focus:not(:focus-visible) { outline: none; }
           content: text, reasoning, ts: ev.time, usage: msg.usage, model: msg.model,
         });
       }
+      if (P.cost && msg.usage) P.cost.addUsage(msg);
     } else if (type === 'tool/result') {
       const name = data.name || data.tool || 'tool';
       C.messages.push({ id: 't' + ev.seq, _seq: ev.seq, role: 'tool', content: (data.text || data.output || ''), name, ts: ev.time });
@@ -3026,7 +3753,8 @@ button:focus:not(:focus-visible) { outline: none; }
   /* ---------- rendering ---------- */
   function renderUser(msg) {
     const wrap = el('div', 'userRow');
-    const bubble = el('div', 'userBubble', msg.content);
+    const bubble = el('div', 'userBubble');
+    bubble.innerHTML = mdToHtml(msg.content);
     wrap.appendChild(bubble);
     const t = el('span', 'maTime', clock(msg.ts));
     wrap.appendChild(t);
@@ -3047,7 +3775,8 @@ button:focus:not(:focus-visible) { outline: none; }
       d.appendChild(row); d.appendChild(body);
       item.appendChild(d);
     }
-    const p = el('p', 'para', msg.content);
+    const p = el('p', 'para');
+    p.innerHTML = mdToHtml(msg.content);
     if (msg.streaming) p.appendChild(el('span', 'caret'));
     item.appendChild(p);
     if (msg.usage && (msg.usage.prompt_tokens || msg.usage.completion_tokens)) {
@@ -3086,6 +3815,7 @@ button:focus:not(:focus-visible) { outline: none; }
   async function loadHistory(sessionId) {
     C.sessionId = sessionId;
     C.messages = [];
+    if (P.cost) P.cost.reset();
     const items = await P.dshState.history(sessionId);
     for (const it of items) {
       if (it && it.event) foldEvent(it.event);
@@ -3095,7 +3825,15 @@ button:focus:not(:focus-visible) { outline: none; }
   }
 
   async function send(text) {
-    if (C.streaming || !C.sessionId) return;
+    if (C.streaming) return;
+    if (!C.sessionId) {
+      // No session yet — create one on the fly (it lands in the sidebar).
+      const id = await P.app.ensureSession();
+      if (!id) {
+        P.app.toast(P.i18n.t('session.createFail', P.app.locale));
+        return;
+      }
+    }
     const input = $('composerInput');
     input.value = '';
     C.streaming = true;
@@ -3392,9 +4130,11 @@ button:focus:not(:focus-visible) { outline: none; }
 
   async function selectSession(id) {
     P.dshState.currentSessionId = id;
+    P.dshState.selectedModel = null;
     A.enterChat();
     await P.chat.loadHistory(id);
     renderSessions();
+    updateModelChip();
     updateCrumb();
   }
 
@@ -3434,6 +4174,7 @@ button:focus:not(:focus-visible) { outline: none; }
 
   async function refreshAll() {
     await P.dshState.refreshAll();
+    await loadCredentialState();
     if (!P.dshState.currentWorkspaceId && P.dshState.workspaces.length) {
       P.dshState.currentWorkspaceId = P.dshState.workspaces[0].workspaceId;
     }
@@ -3441,6 +4182,8 @@ button:focus:not(:focus-visible) { outline: none; }
     renderSessions();
     updateModelChip();
     if (A.refreshModelPop) A.refreshModelPop();
+    if (A.refreshModePop) A.refreshModePop();
+    if (A.refreshWorkspacePop) A.refreshWorkspacePop();
     updateCrumb();
   }
 
@@ -3453,10 +4196,34 @@ button:focus:not(:focus-visible) { outline: none; }
   }
 
   function updateModelChip() {
-    const m = currentModel();
     const label = $('modelChipLabel');
-    if (label) label.textContent = m ? m.model.id : '—';
+    if (!label) return;
+    if (P.dshState.selectedModel && P.dshState.selectedModel.model) {
+      label.textContent = P.dshState.selectedModel.model;
+      return;
+    }
+    const m = currentModel();
+    label.textContent = m ? m.model.id : '—';
   }
+
+  // Make sure a session is open so the composer, model switch and mode switch
+  // all work immediately. Selects the first workspace, then the most recent
+  // session, and creates a blank one when none exists.
+  A.ensureSession = async function () {
+    if (P.dshState.currentSessionId) return P.dshState.currentSessionId;
+    if (!P.dshState.currentWorkspaceId && P.dshState.workspaces.length) {
+      P.dshState.currentWorkspaceId = P.dshState.workspaces[0].workspaceId;
+    }
+    if (P.dshState.sessions.length) {
+      await selectSession(P.dshState.sessions[0].sessionId);
+      return P.dshState.currentSessionId;
+    }
+    const id = await P.dshState.createSession(P.dshState.currentWorkspaceId || undefined);
+    if (!id) return null;
+    await selectSession(id);
+    await refreshSessions();
+    return id;
+  };
 
   /** Provider -> credential ref, by the dsh convention (e.g. deepseek -> DEEPSEEK_API_KEY). */
   function providerRef(provider) {
@@ -3464,43 +4231,31 @@ button:focus:not(:focus-visible) { outline: none; }
     return base + '_API_KEY';
   }
 
-  // model popover currently shows the provider picker; after a provider is
-  // chosen (and its key confirmed) it is replaced by that provider's models.
-  let currentModelProvider = null;
-
-  async function modelsForProvider(provider) {
-    const groups = P.dshState.models;
-    return groups.find((g) => g.id === provider) || null;
+  // Credential state by provider: { provider -> { ref, configured } }.
+  A.credentialState = {};
+  async function loadCredentialState() {
+    const providers = P.dshState.providers || [];
+    const refs = providers.map((p) => providerRef(p.provider));
+    let creds = {};
+    try { creds = await P.dshState.credentialsDescribe(refs); } catch (e) { /* noop */ }
+    const map = {};
+    for (const p of providers) {
+      const ref = providerRef(p.provider);
+      map[p.provider] = { ref, configured: !!(creds[ref] && creds[ref].configured) };
+    }
+    A.credentialState = map;
+    return map;
   }
+
+  // Only providers whose API key is configured are usable in the composer.
+  function configuredProviders() {
+    return (P.dshState.providers || []).filter((p) => A.credentialState[p.provider] && A.credentialState[p.provider].configured);
+  }
+
+  let currentModelProvider = null;
 
   async function pickProvider(provider) {
     currentModelProvider = provider;
-    const ref = providerRef(provider);
-    let creds = {};
-    try { creds = await P.dshState.credentialsDescribe([ref]); } catch (e) { /* ignore */ }
-    const configured = creds[ref] && creds[ref].configured;
-    const box = A.modelPop;
-    if (!configured) {
-      // Ask for the API key first.
-      box.innerHTML =
-        '<div class="popMeta">' + ref + ' — ' + A.t('model.needKey') + '</div>' +
-        '<div class="inlineForm" id="modelKeyForm"><input id="modelKeyInput" type="password" placeholder="sk-…" spellcheck="false"><button class="sBtn" id="modelKeySave">' + A.t('settings.provider.save') + '</button></div>';
-      const input = $('modelKeyInput');
-      const save = $('modelKeySave');
-      if (input) input.focus();
-      if (save) save.addEventListener('click', async () => {
-        const value = input.value.trim();
-        if (!value) return;
-        try {
-          await P.dshState.credentialsSet(ref, value);
-          await P.dshState.listModels();
-          A.toast(A.t('settings.provider.saved', { ref }));
-          renderModelsPicker();
-        } catch (e) { A.toast(e.message); }
-      });
-      if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save.click(); });
-      return;
-    }
     renderModelsPicker();
   }
 
@@ -3517,75 +4272,290 @@ button:focus:not(:focus-visible) { outline: none; }
   }
 
   function buildModelPop() {
-    // Provider picker (two levels: provider -> model). No provider chosen yet.
-    if (!currentModelProvider) {
-      return P.dshState.providers.map((p) => '<div class="popItem" data-provider="' + p.provider + '"><span class="label">' + (p.displayName || p.provider) + '</span></div>').join('') ||
-        '<div class="popMeta">' + A.t('model.refreshFail') + '</div>';
+    if (currentModelProvider) return '<div class="popMeta">' + currentModelProvider + '</div>';
+    const avail = configuredProviders();
+    if (!avail.length) {
+      return '<div class="popItem" data-settings="1"><span class="label">' + A.t('model.noConfiguredKey') + '</span></div>';
     }
-    return '<div class="popMeta">' + (currentModelProvider) + '</div>';
+    return avail.map((p) => '<div class="popItem" data-provider="' + p.provider + '"><span class="label">' + (p.displayName || p.provider) + '</span></div>').join('');
   }
 
-  function openSettings() {
+  /* ---------- settings overlay (Language / Model config / Plugins / Version) ---------- */
+  async function openSettings() {
     $('cfgLocale').value = A.config.locale || 'auto';
     $('settingsOverlay').classList.add('open');
-    renderProviders();
+    renderModelConfig();
+    renderPlugins();
+    renderVersion();
   }
   function closeSettings() { $('settingsOverlay').classList.remove('open'); }
 
-  async function renderProviders() {
+  // opencode-style: a flat list of providers; expand one to edit its API key
+  // and see its models. The key is written to dsh's own credential store.
+  async function renderModelConfig() {
     const box = $('cfgProviders');
     box.textContent = '';
     await P.dshState.listProviders();
+    await P.dshState.listModels();
+    await loadCredentialState();
     const providers = P.dshState.providers;
     if (!providers || !providers.length) {
       box.appendChild(Object.assign(document.createElement('div'), { className: 'hint', textContent: A.t('settings.providers.empty') }));
       return;
     }
-    const refs = providers.map((p) => providerRef(p.provider));
-    let creds = {};
-    try { creds = await P.dshState.credentialsDescribe(refs); } catch (e) { /* ignore */ }
     for (const p of providers) {
       const ref = providerRef(p.provider);
-      const row = document.createElement('div');
-      row.className = 'projectRow';
-      const name = document.createElement('span');
-      name.className = 'pname';
-      name.textContent = p.displayName || p.provider;
-      const state = document.createElement('span');
-      state.className = 'pmeta';
-      const c = creds[ref];
-      state.textContent = c && c.configured ? A.t('settings.provider.set') : A.t('settings.provider.unset');
+      const configured = A.credentialState[p.provider] && A.credentialState[p.provider].configured;
+
+      const card = document.createElement('div');
+      card.className = 'pCard';
+
+      const head = document.createElement('button');
+      head.type = 'button';
+      head.className = 'pCardHead';
+      head.innerHTML =
+        '<span class="pName">' + (p.displayName || p.provider) + '</span>' +
+        '<span class="pState" data-state="' + (configured ? 'ok' : 'none') + '">' + (configured ? A.t('settings.provider.set') : A.t('settings.provider.unset')) + '</span>' +
+        '<svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>';
+
+      const body = document.createElement('div');
+      body.className = 'pCardBody';
+
+      const keyRow = document.createElement('div');
+      keyRow.className = 'inlineForm';
       const input = document.createElement('input');
       input.type = 'password';
       input.className = 'sInput';
       input.placeholder = ref;
-      input.style.width = '180px';
-      input.style.height = '26px';
       input.autocomplete = 'off';
+      input.spellcheck = false;
       const save = document.createElement('button');
+      save.type = 'button';
       save.className = 'sBtn';
       save.textContent = A.t('settings.provider.save');
-      save.style.height = '26px';
       save.addEventListener('click', async () => {
         const value = input.value.trim();
         if (!value) return;
         try {
           await P.dshState.credentialsSet(ref, value);
-          state.textContent = A.t('settings.provider.set');
+          await loadCredentialState();
           input.value = '';
           A.toast(A.t('settings.provider.saved', { ref }));
+          renderModelConfig();
+          if (A.refreshModelPop) A.refreshModelPop();
         } catch (e) { A.toast(e.message); }
       });
-      row.appendChild(name); row.appendChild(state); row.appendChild(input); row.appendChild(save);
+      keyRow.appendChild(input); keyRow.appendChild(save);
+      body.appendChild(keyRow);
+
+      const grp = P.dshState.models.find((g) => g.id === p.provider);
+      const models = (grp && grp.models) || [];
+      const modelsLine = document.createElement('div');
+      modelsLine.className = 'pModels';
+      modelsLine.textContent = models.length
+        ? models.map((m) => m.id).join(' · ')
+        : A.t('model.none');
+      body.appendChild(modelsLine);
+
+      const state = head.querySelector('.pState');
+      head.addEventListener('click', () => {
+        const open = card.classList.toggle('open');
+        body.style.display = open ? '' : 'none';
+        if (open) input.focus();
+      });
+      body.style.display = 'none';
+      card.appendChild(head); card.appendChild(body);
+      box.appendChild(card);
+    }
+  }
+
+  async function renderPlugins() {
+    const box = $('cfgPlugins');
+    box.textContent = '';
+    let plugins = [];
+    try { plugins = await P.dshState.pluginsList(); } catch (e) { /* noop */ }
+    if (!plugins.length) {
+      box.appendChild(Object.assign(document.createElement('div'), { className: 'hint', textContent: A.t('settings.plugins.empty') }));
+      return;
+    }
+    for (const pl of plugins) {
+      const row = document.createElement('div');
+      row.className = 'projectRow';
+      const name = document.createElement('span');
+      name.className = 'pname';
+      name.textContent = pl.name;
+      const meta = document.createElement('span');
+      meta.className = 'pmeta';
+      meta.textContent = (pl.version || '') + (pl.profile ? ' · ' + pl.profile : '');
+      row.appendChild(name); row.appendChild(meta);
       box.appendChild(row);
     }
   }
 
+  async function renderVersion() {
+    const box = $('cfgVersion');
+    box.textContent = '';
+    let prtsVer = '?';
+    try { prtsVer = (window.prts && window.prts.env && window.prts.env.prtsVersion) || '?'; } catch (e) { /* noop */ }
+    let dshVer = '—';
+    try {
+      const h = await P.dshState.hostDescribe();
+      dshVer = (h && h.version) || '—';
+    } catch (e) { /* noop */ }
+    const row = document.createElement('div');
+    row.className = 'projectRow';
+    const n = document.createElement('span');
+    n.className = 'pname';
+    n.textContent = 'PRTS';
+    const v = document.createElement('span');
+    v.className = 'pmeta';
+    v.textContent = prtsVer;
+    row.appendChild(n); row.appendChild(v);
+    box.appendChild(row);
+    const row2 = document.createElement('div');
+    row2.className = 'projectRow';
+    const n2 = document.createElement('span');
+    n2.className = 'pname';
+    n2.textContent = 'dsh';
+    const v2 = document.createElement('span');
+    v2.className = 'pmeta';
+    v2.textContent = dshVer;
+    row2.appendChild(n2); row2.appendChild(v2);
+    box.appendChild(row2);
+  }
+
+  /* ---------- cost meter (right sidebar) ---------- */
+  function renderCost(container) {
+    container.textContent = '';
+    const c = P.cost ? P.cost.session : null;
+    const rows = [
+      [A.t('cost.sessionCost'), c ? P.cost.formatMoney(c.usd) : '—'],
+      [A.t('cost.inputTokens'), c ? P.cost.fmtTokens(c.input) : '—'],
+      [A.t('cost.outputTokens'), c ? P.cost.fmtTokens(c.output) : '—'],
+      [A.t('cost.cacheTokens'), c ? P.cost.fmtTokens(c.cacheRead + c.cacheWrite) : '—'],
+      [A.t('cost.calls'), c ? String(c.calls) : '—'],
+    ];
+    for (const [k, v] of rows) {
+      const f = document.createElement('div');
+      f.className = 'dtField';
+      const kk = document.createElement('div');
+      kk.className = 'k';
+      kk.textContent = k;
+      const vv = document.createElement('div');
+      vv.className = 'v';
+      vv.textContent = v;
+      f.appendChild(kk); f.appendChild(vv);
+      container.appendChild(f);
+    }
+    const note = document.createElement('div');
+    note.className = 'hint';
+    note.style.marginTop = '8px';
+    note.textContent = A.t('cost.hint');
+    container.appendChild(note);
+  }
+  A.showCost = function () {
+    openDetails();
+    $('dtTitle').textContent = A.t('cost.title');
+    renderCost($('dtBody'));
+  };
+  function showDetailsDefault() {
+    $('dtTitle').textContent = A.t('details.title');
+    $('dtBody').innerHTML = '<div class="dtEmpty">' + A.t('details.empty') + '</div>';
+  }
+
+  /* ---------- plugin market ---------- */
+  // The catalog comes from web/market.json (built by scripts/scan-market.mjs,
+  // which discovers real dsh plugins on GitHub + npm and filters them). The
+  // three known-good entries are always kept as a fallback.
+  const MARKET_FALLBACK = [
+    { pkg: '@liustack/modlens', displayName: 'ModLens', description: () => A.t('market.modlens'), source: 'npm' },
+    { pkg: 'dsh-cost-meter', displayName: 'Cost Meter', description: () => A.t('market.costMeter'), source: 'npm' },
+    { pkg: 'dsh-better-sidebar', displayName: 'Better Sidebar', description: () => A.t('market.betterSidebar'), source: 'npm' },
+  ];
+  function marketCatalog() {
+    let scanned = [];
+    try { scanned = (window.PRTS_MARKET && window.PRTS_MARKET.plugins) || []; } catch (e) { scanned = []; }
+    const map = new Map();
+    for (const p of MARKET_FALLBACK.concat(scanned)) {
+      const key = p.pkg || p.repo;
+      if (!key || map.has(key)) continue;
+      map.set(key, p);
+    }
+    return [...map.values()];
+  }
+  async function renderMarket() {
+    const box = $('marketList');
+    box.textContent = '';
+    let installed = [];
+    try { installed = (await P.dshState.pluginsList()).map((p) => p.name); } catch (e) { installed = []; }
+    const items = marketCatalog();
+    if (!items.length) {
+      box.appendChild(Object.assign(document.createElement('div'), { className: 'hint', textContent: A.t('market.empty') }));
+      return;
+    }
+    for (const item of items) {
+      const isInstalled = installed.includes(item.pkg) || (item.pkg && installed.includes(item.pkg.replace(/^@[^/]+\//, '')));
+      const card = document.createElement('div');
+      card.className = 'pCard';
+      const head = document.createElement('div');
+      head.className = 'pCardHead';
+      head.style.cursor = 'default';
+      const name = document.createElement('span');
+      name.className = 'pName';
+      name.textContent = item.displayName || item.name || item.pkg || item.repo;
+      const badge = document.createElement('span');
+      badge.className = 'pState';
+      badge.textContent = item.source === 'github' ? 'github' : 'npm';
+      head.appendChild(name); head.appendChild(badge);
+      const body = document.createElement('div');
+      body.className = 'pCardBody';
+      body.style.display = '';
+      const desc = document.createElement('div');
+      desc.className = 'pModels';
+      desc.textContent = typeof item.description === 'function' ? item.description() : (item.description || '');
+      body.appendChild(desc);
+      const action = document.createElement('button');
+      action.type = 'button';
+      action.className = 'sBtn' + (isInstalled ? '' : ' primary');
+      action.textContent = isInstalled ? A.t('market.installed') : A.t('market.install');
+      action.disabled = isInstalled;
+      action.addEventListener('click', async () => {
+        action.disabled = true;
+        action.textContent = A.t('market.installing');
+        try {
+          const bridge = window.prts && window.prts.bridge;
+          let r;
+          if (item.source === 'github' && item.repo) r = bridge && bridge.pluginClone ? await bridge.pluginClone(item.repo) : { ok: false, stderr: 'no bridge' };
+          else r = bridge && bridge.pluginAdd ? await bridge.pluginAdd(item.pkg || item.repo) : { ok: false, stderr: 'no bridge' };
+          if (r && r.ok) {
+            A.toast(A.t('market.installed', { pkg: item.pkg || item.repo }));
+            renderMarket();
+          } else {
+            A.toast(A.t('market.failed', { msg: (r && (r.stderr || r.stdout)) || 'error' }));
+            action.disabled = false;
+            action.textContent = A.t('market.install');
+          }
+        } catch (e) {
+          A.toast(e.message);
+          action.disabled = false;
+          action.textContent = A.t('market.install');
+        }
+      });
+      body.appendChild(action);
+      card.appendChild(head); card.appendChild(body);
+      box.appendChild(card);
+    }
+  }
+  function openMarket() { $('marketOverlay').classList.add('open'); renderMarket(); }
+  function closeMarket() { $('marketOverlay').classList.remove('open'); }
+
   /* ---------- header / crumbs ---------- */
   function updateCrumb() {
     const ws = P.dshState.workspaces.find((w) => w.workspaceId === P.dshState.currentWorkspaceId);
-    $('crumbProject').textContent = ws ? (ws.title || ws.workspaceId) : 'dsh';
-    $('workspaceLabel').textContent = ws ? (ws.title || ws.workspaceId) : 'dsh';
+    const label = ws ? (ws.title || ws.workspaceId) : 'dsh';
+    const crumb = $('crumbProjectLabel');
+    if (crumb) crumb.textContent = label;
+    $('workspaceLabel').textContent = label;
   }
 
   /* ---------- phase switch ---------- */
@@ -3602,6 +4572,7 @@ button:focus:not(:focus-visible) { outline: none; }
   /* ---------- details panel ---------- */
   A.showDetails = function (msg) {
     openDetails();
+    $('dtTitle').textContent = A.t('details.title');
     const body = $('dtBody');
     body.textContent = '';
     const fields = [
@@ -3682,6 +4653,7 @@ button:focus:not(:focus-visible) { outline: none; }
     pop.innerHTML = itemsHtml;
     trigger.appendChild(pop);
     pop.addEventListener('click', (e) => {
+      e.stopPropagation();
       const item = e.target.closest('.popItem');
       if (item && onPick) onPick(item);
     });
@@ -3698,28 +4670,65 @@ button:focus:not(:focus-visible) { outline: none; }
   function bindPopovers() {
     const modelPop = attachPop($('modelChip'), buildModelPop(), async (item) => {
       if (!P.dshState.currentSessionId) { A.toast(A.t('session.selectFirst')); return; }
+      // No key configured yet -> send the user to Model configuration.
+      if (item.dataset.settings === '1') { closePops(); openSettings(); return; }
       // Back to provider list.
       if (item.dataset.back === '1') { currentModelProvider = null; A.refreshModelPop(); return; }
-      // Provider picked -> key check, then its models.
+      // Provider picked -> its models.
       if (item.dataset.provider) { await pickProvider(item.dataset.provider); return; }
-      // Model picked -> select.
+      // Model picked -> select, then close the pop.
       if (item.dataset.model) {
         try {
           await P.dshState.selectModel(P.dshState.currentSessionId, currentModelProvider, item.dataset.model);
           updateModelChip();
+          closePops();
         } catch (e) { A.toast(e.message); }
       }
     });
     A.modelPop = modelPop;
     A.refreshModelPop = () => { modelPop.innerHTML = buildModelPop(); };
 
-    attachPop($('workspaceBtn'),
-      '<div class="popItem" data-value="__add"><span class="label">' + A.t('workspace.add') + '</span></div>' +
-      P.dshState.workspaces.map((w) => '<div class="popItem" data-value="' + w.workspaceId + '"><span class="label">' + (w.title || w.workspaceId) + '</span><span class="tick">&#10003;</span></div>').join(''),
-      async (item) => {
-        if (item.dataset.value === '__add') { await newWorkspace(); return; }
-        await selectWorkspace(item.dataset.value);
-      });
+    // Work modes = dsh's own agent presets (the same set dsh web offers).
+    const modePop = attachPop($('modeChip'), '<div class="popMeta">' + A.t('mode.loading') + '</div>', async (item) => {
+      if (!item.dataset.preset) return;
+      if (!P.dshState.currentSessionId) { A.toast(A.t('session.selectFirst')); return; }
+      try {
+        await P.dshState.agentPresetSelect(P.dshState.currentSessionId, item.dataset.preset);
+        A.currentPreset = item.dataset.preset;
+        $('headerMode').textContent = item.dataset.preset;
+        closePops();
+      } catch (e) { A.toast(e.message); }
+    });
+    A.modePop = modePop;
+    A.refreshModePop = async () => {
+      try {
+        const presets = await P.dshState.agentPresetList();
+        modePop.innerHTML = presets.length
+          ? presets.map((p) => {
+            const id = p.id || p.agentPreset;
+            const label = p.name || id;
+            return '<div class="popItem" data-preset="' + id + '"><span class="label">' + label + '</span></div>';
+          }).join('')
+          : '<div class="popMeta">' + A.t('mode.none') + '</div>';
+      } catch (e) {
+        modePop.innerHTML = '<div class="popMeta">' + A.t('mode.none') + '</div>';
+      }
+    };
+    $('modeChip').addEventListener('click', () => { A.refreshModePop(); });
+
+    // Workspace selector — lives on the header crumb (always visible) so it is
+    // reachable from the chat view, not just the hero.
+    const wsPop = attachPop($('crumbProject'), '', async (item) => {
+      if (item.dataset.value === '__add') { await newWorkspace(); closePops(); return; }
+      await selectWorkspace(item.dataset.value);
+      closePops();
+    });
+    A.refreshWorkspacePop = () => {
+      wsPop.innerHTML =
+        '<div class="popItem" data-value="__add"><span class="label">' + A.t('workspace.add') + '</span></div>' +
+        P.dshState.workspaces.map((w) => '<div class="popItem" data-value="' + w.workspaceId + '"><span class="label">' + (w.title || w.workspaceId) + '</span><span class="tick">&#10003;</span></div>').join('');
+    };
+    A.refreshWorkspacePop();
 
     // Commands chip — lists dsh's installed commands (e.g. givemyflag's).
     const cmdPop = attachPop($('commandsChip'), '<div class="popMeta">' + A.t('commands.loading') + '</div>', async (item) => {
@@ -3728,6 +4737,7 @@ button:focus:not(:focus-visible) { outline: none; }
         input.value = '/' + (item.dataset.name || '') + ' ';
         input.focus();
         P.chat.updateSend();
+        closePops();
       }
     });
     A.cmdPop = cmdPop;
@@ -3752,19 +4762,66 @@ button:focus:not(:focus-visible) { outline: none; }
     A.introEngine.start();
     const tag = $('introTag');
     tag.textContent = A.t('intro.welcome');
+
+    // The intro is a loading shell: it cycles the three wordmark phases until
+    // dsh is connected and the first session is ready. No progress bar.
+    A.introDone = false;
+    A.ready = false;
+
     const finish = () => {
+      if (A.introDone) return;
+      A.introDone = true;
+      clearTimeout(A.introTimer);
       $('intro').classList.add('done');
       setTimeout(() => { $('intro').style.display = 'none'; A.introEngine.stop(); }, 800);
-      startHeroAmbient();
+      // If dsh never connected we are still on the hero view — start its field.
+      if (!$('cvt').dataset.phase || $('cvt').dataset.phase === 'hero') startHeroAmbient();
     };
-    let done = false;
-    const skip = () => { if (done) return; done = true; finish(); };
-    window.addEventListener('pointerdown', skip, { once: true });
-    window.addEventListener('keydown', skip, { once: true });
-    setTimeout(() => { A.introEngine.showIntro(9000); tag.classList.add('show'); }, 700);
-    setTimeout(() => { A.introEngine.showPp(10000); tag.classList.remove('show'); }, 4400);
-    setTimeout(() => { A.introEngine.showMark(1.05, 9000); }, 8000);
-    setTimeout(skip, 12200);
+    A.finishIntro = finish;
+
+    // Early click: if ready, enter at once; otherwise show a particle "WAIT".
+    const skip = (e) => {
+      if (A.ready) finish();
+      else showWaitHint(e);
+    };
+    window.addEventListener('pointerdown', skip);
+    window.addEventListener('keydown', skip);
+
+    // Three-phase loop. It always plays the full three-image cycle at least
+    // once, then keeps cycling until dsh is ready — only a click skips ahead.
+    A.phaseCount = 0;
+    let phase = 0;
+    const tick = () => {
+      if (A.introDone) return;
+      if (A.ready && A.phaseCount >= 3) { finish(); return; }
+      if (phase === 0) { A.introEngine.showIntro(9000); tag.classList.add('show'); }
+      else if (phase === 1) { A.introEngine.showPp(10000); tag.classList.remove('show'); }
+      else { A.introEngine.showMark(1.05, 9000); tag.classList.remove('show'); }
+      A.phaseCount++;
+      phase = (phase + 1) % 3;
+      A.introTimer = setTimeout(tick, 2400);
+    };
+    A.introTimer = setTimeout(tick, 500);
+  }
+
+  // Particle "WAIT" hint at the click point, one second then dissipates.
+  function showWaitHint(e) {
+    const x = (e && (e.clientX ?? e.x)) ?? window.innerWidth / 2;
+    const y = (e && (e.clientY ?? e.y)) ?? window.innerHeight / 2;
+    const hint = document.createElement('canvas');
+    hint.className = 'waitHint';
+    hint.width = 150; hint.height = 56;
+    hint.style.left = x + 'px';
+    hint.style.top = y + 'px';
+    document.body.appendChild(hint);
+    const eng = P.particles.create(hint, { count: 520, speedRange: [0.04, 0.10], drift: false });
+    eng.start();
+    eng.showText('WAIT', 22, 900);
+    setTimeout(() => {
+      eng.scatter();
+      hint.classList.add('fade');
+      setTimeout(() => { eng.stop(); hint.remove(); }, 500);
+    }, 1000);
   }
 
   function startHeroAmbient() {
@@ -3802,6 +4859,31 @@ button:focus:not(:focus-visible) { outline: none; }
     }
     ctx.globalAlpha = 1;
   }
+  // Central diamond: dB drives the scale, the dominant frequency nudges the
+  // rotation. The inner square vibrates too, but on its own phase. `.speaking`
+  // is the same path reserved for dsh voice *output* — when dsh gains speech,
+  // produced audio drives this diamond identically.
+  function drawVoiceDiamond(frame) {
+    const el = $('voiceDiamond');
+    if (!el) return;
+    const on = A.voiceOn || frame.speaking;
+    el.classList.toggle('on', !!on);
+    el.classList.toggle('speaking', !!frame.speaking);
+    const bars = (frame.bars && frame.bars.length) ? frame.bars : [];
+    const peak = bars.length ? bars.reduce((a, b) => Math.max(a, b), 0) : 0;
+    const level = on ? Math.max(0, Math.min(1, peak)) : 0;
+    const freq = Math.max(0, Math.min(1, (frame.dominant || 0) / 4000));
+    const now = performance.now();
+    const dScale = 1 + level * (0.10 + 0.05 * freq);
+    const dRot = on ? Math.sin(now / 90) * 2.5 * level : 0;
+    const sScale = 1 + level * (0.07 + 0.03 * freq);
+    const sRot = on ? Math.sin(now / 70 + 1.2) * 3 * level : 0;
+    const diamond = $('diamondShape');
+    const square = $('squareShape');
+    if (diamond) diamond.style.transform = 'rotate(45deg) scale(' + dScale.toFixed(3) + ') rotate(' + dRot.toFixed(2) + 'deg)';
+    if (square) square.style.transform = 'scale(' + sScale.toFixed(3) + ') rotate(' + sRot.toFixed(2) + 'deg)';
+    el.style.setProperty('--vd-level', level.toFixed(3));
+  }
   function bindVoice() {
     const btn = $('voiceBtn');
     btn.addEventListener('click', async () => {
@@ -3819,6 +4901,7 @@ button:focus:not(:focus-visible) { outline: none; }
     P.asr.onFrame((frame) => {
       btn.classList.toggle('recognizing', A.voiceOn && frame.state === 'recognizing');
       drawBrandFx(frame);
+      drawVoiceDiamond(frame);
     });
     P.asr.onResult((text) => {
       const input = $('composerInput');
@@ -3875,9 +4958,15 @@ button:focus:not(:focus-visible) { outline: none; }
     $('newProjectBtn').addEventListener('click', newWorkspace);
     $('newSessionBtn').addEventListener('click', newSession);
     $('detailsBtn').addEventListener('click', () => {
-      if (appEl().hasAttribute('data-details-collapsed')) openDetails();
+      if (appEl().hasAttribute('data-details-collapsed')) { showDetailsDefault(); openDetails(); }
       else closeDetails();
     });
+    $('costBtn').addEventListener('click', () => {
+      if (appEl().hasAttribute('data-details-collapsed')) { A.showCost(); }
+      else closeDetails();
+    });
+    $('marketBtn').addEventListener('click', openMarket);
+    $('marketClose').addEventListener('click', closeMarket);
     $('dtClose').addEventListener('click', closeDetails);
     $('settingsBtn').addEventListener('click', openSettings);
     $('settingsClose').addEventListener('click', closeSettings);
@@ -3889,6 +4978,30 @@ button:focus:not(:focus-visible) { outline: none; }
       closeSettings();
       A.toast(A.t('settings.saved'));
     });
+    // Model configuration is hidden until the abstract toggle is clicked.
+    $('modelCfgToggle').addEventListener('click', () => {
+      const btn = $('modelCfgToggle');
+      const body = $('modelCfgBody');
+      const open = !!body.hidden;
+      body.hidden = !open;
+      btn.setAttribute('aria-expanded', String(open));
+      btn.classList.toggle('open', open);
+    });
+    // Update: run the packaged updater script from the main process.
+    $('updateBtn').addEventListener('click', async () => {
+      const status = $('updateStatus');
+      status.textContent = A.t('settings.updating');
+      try {
+        const bridge = window.prts && window.prts.bridge;
+        const r = bridge && bridge.update ? await bridge.update() : { ok: false, stderr: 'no bridge' };
+        if (r && r.ok) {
+          status.textContent = A.t('settings.updated');
+          A.toast(A.t('settings.updated'));
+        } else {
+          status.textContent = A.t('settings.updateFail', { msg: (r && (r.stderr || r.error)) || 'error' });
+        }
+      } catch (e) { status.textContent = A.t('settings.updateFail', { msg: e.message }); }
+    });
     $('flow').addEventListener('click', (e) => {
       const item = e.target.closest('.assistantItem') || e.target.closest('.userBubble');
       if (item) {
@@ -3899,11 +5012,24 @@ button:focus:not(:focus-visible) { outline: none; }
     });
 
     document.addEventListener('click', (e) => {
-      if (!e.target.closest('.chip') && !e.target.closest('.meterBtn') && !e.target.closest('.workspaceBtn')) closePops();
+      if (!e.target.closest('.chip') && !e.target.closest('.meterBtn') && !e.target.closest('.workspaceBtn') && !e.target.closest('.crumb')) closePops();
       if (e.target === $('settingsOverlay')) closeSettings();
+      if (e.target === $('marketOverlay')) closeMarket();
     });
+    let lastEscAt = 0;
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') { closePops(); closeSettings(); if (P.system && P.system.open) P.system.close(); }
+      if (e.key !== 'Escape') return;
+      const now = Date.now();
+      closePops(); closeSettings(); closeMarket();
+      if (P.system && P.system.open) P.system.close();
+      if (now - lastEscAt < 500) {
+        // Double-Esc: cancel the running conversation / task.
+        lastEscAt = 0;
+        if (P.chat && P.chat.stop) P.chat.stop();
+        A.toast(A.t('chat.cancelled'));
+      } else {
+        lastEscAt = now;
+      }
     });
     window.addEventListener('resize', () => {
       placeHandles();
@@ -3913,18 +5039,36 @@ button:focus:not(:focus-visible) { outline: none; }
 
     P.chat.init();
 
-    // Connect to dsh and mirror its state (re-populate whenever it comes up).
-    P.dsh.on('connect', () => { refreshAll().catch(() => { /* dsh may still be warming up */ }); });
-    try {
-      await P.dshState.connect();
-      await refreshAll();
-    } catch (e) {
-      A.toast(A.t('dsh.connectFail', { msg: e.message }));
-    }
-
+    // The window shows immediately; the particle intro acts as a loading shell
+    // while dsh connects and the first session is prepared in the background.
     updateCrumb();
     placeHandles();
     runIntro();
+
+    P.dsh.on('connect', () => { refreshAll().catch(() => { /* dsh may still be warming up */ }); });
+    (async () => {
+      try {
+        await P.dshState.connect();
+        // Wait until dsh actually answers (the /api route may still be warming
+        // up); the intro keeps cycling meanwhile.
+        let up = false;
+        for (let i = 0; i < 40; i++) {
+          if (await P.dshState.ping()) { up = true; break; }
+          await new Promise((r) => setTimeout(r, 750));
+        }
+        if (up) {
+          await refreshAll();
+          await A.ensureSession();
+        } else {
+          A.toast(A.t('dsh.connectFail', { msg: A.t('dsh.noResponse') }));
+        }
+      } catch (e) {
+        A.toast(A.t('dsh.connectFail', { msg: e.message }));
+      }
+      // Mark ready — the intro finishes once its full three-image cycle has
+      // played (or immediately on a click).
+      A.ready = true;
+    })();
   }
 
   A.updateCrumb = updateCrumb;

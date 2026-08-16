@@ -31,8 +31,9 @@
     "update.bat"
   ],
   "scripts": {
-    "postinstall": "node scripts/postinstall.mjs",
     "bundle": "node scripts/bundle-gui.mjs",
+    "scan-market": "node scripts/scan-market.mjs",
+    "prepack": "node scripts/bundle-gui.mjs",
     "pack:ui": "pnpm bundle && pnpm pack"
   },
   "keywords": [

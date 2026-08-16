@@ -15,6 +15,10 @@
 .para { margin: 0; font-size: 14px; line-height: 24px; color: var(--prts-ink); white-space: pre-wrap; word-break: break-word; }
 .para .caret { display: inline-block; width: 7px; height: 15px; margin-left: 2px; vertical-align: -2px; background: var(--prts-ink); animation: prts-blink 1s steps(2) infinite; }
 @keyframes prts-blink { 50% { opacity: 0; } }
+.mdImg { display: block; max-width: 100%; max-height: 360px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--prts-hairline); }
+.para code, .userBubble code { padding: 1px 5px; border-radius: 4px; background: var(--prts-surface-2); font-family: var(--prts-mono); font-size: 0.92em; }
+.para pre, .userBubble pre { margin: 8px 0; padding: 10px 12px; border-radius: 8px; background: var(--prts-surface); border: 1px solid var(--prts-hairline); overflow-x: auto; font-family: var(--prts-mono); font-size: 12.5px; line-height: 20px; }
+.para a, .userBubble a { color: var(--prts-ink); text-decoration: underline; }
 
 .disclosure { min-width: 0; }
 .dRow {
@@ -102,3 +106,47 @@
 .projectRow { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .projectRow .pname { flex: 1; font-size: 13px; color: var(--prts-ink); }
 .projectRow .pmeta { font-size: 11px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+
+/* ===== Settings sections (Language / Model config / Plugins / Version) ===== */
+.settingsBody { display: flex; flex-direction: column; gap: 20px; }
+.sSection { display: flex; flex-direction: column; gap: 8px; }
+.sSecTitle {
+  font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--prts-ink-faint); padding-bottom: 4px; border-bottom: 1px solid var(--prts-hairline);
+}
+.sSecRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sSecRow .sSecTitle { flex: 1; border-bottom: none; padding-bottom: 0; }
+.sCollapse { display: flex; flex-direction: column; gap: 8px; }
+/* Abstract minimal toggle: a rotated square (diamond) that rights itself
+   when the section expands. */
+.toggleBtn {
+  width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--prts-hairline-strong); border-radius: 4px; background: transparent;
+  cursor: pointer; color: var(--prts-ink-dim); flex: none;
+  transition: border-color 0.15s var(--prts-ease), color 0.15s var(--prts-ease);
+}
+.toggleBtn:hover { border-color: var(--prts-ink); color: var(--prts-ink); }
+.tgDiamond {
+  width: 9px; height: 9px; border: 1px solid currentColor;
+  transform: rotate(45deg); transition: transform 0.25s var(--prts-ease-out);
+}
+.toggleBtn.open .tgDiamond { transform: rotate(0deg); }
+.sSection .hint { font-size: 11px; line-height: 18px; color: var(--prts-ink-faint); }
+.pCard { border: 1px solid var(--prts-hairline); border-radius: 8px; overflow: hidden; }
+.pCardHead {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px;
+  border: none; background: transparent; cursor: pointer; color: var(--prts-ink); font-size: 13px;
+}
+.pCardHead:hover { background: var(--prts-surface-2); }
+.pCardHead .pName { flex: 1; text-align: left; }
+.pCardHead .chev { color: var(--prts-ink-faint); transition: transform 0.15s var(--prts-ease); }
+.pCard.open .pCardHead .chev { transform: rotate(180deg); }
+.pState { font-size: 11px; font-family: var(--prts-mono); color: var(--prts-ink-faint); }
+.pState[data-state='ok'] { color: var(--prts-accent, var(--prts-ink)); }
+.pCardBody { padding: 10px 12px; border-top: 1px solid var(--prts-hairline); background: var(--prts-surface); display: flex; flex-direction: column; gap: 8px; }
+.pModels { font-size: 11px; line-height: 17px; color: var(--prts-ink-faint); font-family: var(--prts-mono); word-break: break-all; }
+.marketCard { width: min(520px, calc(100vw - 48px)); }
+.marketCard .pCard { margin-bottom: 8px; }
+.marketCard .pCardHead { cursor: default; }
+.marketCard .pModels { font-family: inherit; }
+.marketCard .sBtn { margin-top: 6px; }

@@ -91,16 +91,42 @@ ipcMain.handle('prts:abort', (_e, token) => {
   if (c) c.abort()
 })
 
-/* ---------- dsh bridge: RPC + mux WebSocket relay (no CORS in Node) ---------- */
-let dshWs = null
-function dshWsConnect() {
-  const mux = DSH_WEB_URL.replace(/^http/, 'ws').replace(/\/+$/, '') + '/api/events.mux'
-  try {
-    dshWs = new WebSocket(mux)
-    dshWs.onmessage = (ev) => { if (win && !win.isDestroyed()) win.webContents.send('prts:dshFrame', ev.data) }
-    dshWs.onclose = () => { dshWs = null; setTimeout(dshWsConnect, 1000) }
-    dshWs.onerror = () => {}
-  } catch (e) { setTimeout(dshWsConnect, 1000) }
+/* ---------- dsh bridge: RPC + mux SSE relay (no CORS in Node) ---------- */
+// dsh's mux is a Server-Sent-Events GET stream (/api/events.mux), not a
+// WebSocket. Frames arrive as `data: <json>\n\n` lines. This relays them to
+// the renderer and reconnects on drop.
+let dshMuxAbort = null
+function dshMuxConnect() {
+  try { if (dshMuxAbort) dshMuxAbort.abort() } catch (e) {}
+  const ac = new AbortController()
+  dshMuxAbort = ac
+  const muxUrl = DSH_WEB_URL.replace(/\/+$/, '') + '/api/events.mux'
+  fetch(muxUrl, { signal: ac.signal })
+    .then((res) => {
+      if (!res.ok || !res.body) throw new Error('mux ' + res.status)
+      const reader = res.body.getReader()
+      const dec = new TextDecoder()
+      let buf = ''
+      const pump = () => reader.read().then(({ done, value }) => {
+        if (done) return
+        buf += dec.decode(value, { stream: true })
+        let idx
+        while ((idx = buf.indexOf('\n\n')) >= 0) {
+          const chunk = buf.slice(0, idx)
+          buf = buf.slice(idx + 2)
+          for (const line of chunk.split('\n')) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6).trim()
+              if (data && win && !win.isDestroyed()) win.webContents.send('prts:dshFrame', data)
+            }
+          }
+        }
+        return pump()
+      })
+      return pump()
+    })
+    .catch(() => {})
+    .finally(() => { dshMuxAbort = null; setTimeout(dshMuxConnect, 1000) })
 }
 ipcMain.handle('prts:dshRequest', async (_e, method, payload) => {
   const res = await fetch(DSH_WEB_URL.replace(/\/+$/, '') + '/api/' + method, {
@@ -110,9 +136,86 @@ ipcMain.handle('prts:dshRequest', async (_e, method, payload) => {
   })
   return res.json()
 })
-ipcMain.handle('prts:dshSend', (_e, msg) => {
-  if (dshWs && dshWs.readyState === 1) dshWs.send(msg)
+ipcMain.handle('prts:dshRespond', async (_e, rpcId, result) => {
+  const res = await fetch(DSH_WEB_URL.replace(/\/+$/, '') + '/api/respond', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'client-response', rpcId, result }),
+  })
+  return res.json()
 })
+
+// Installed plugins = the harness profile's own bundle dependencies. There is
+// no plugin *marketplace* RPC in dsh — this lists what is already installed
+// (dsh core + dsh-prts-ui + anything added via `dsh plugin add <pkg>`).
+function readInstalledPlugins() {
+  const home = process.env.DSH_HOME || path.join(os.homedir(), '.dsh')
+  const out = []
+  let dirs = []
+  try { dirs = fs.readdirSync(path.join(home, 'profiles')) } catch (e) { return out }
+  for (const p of dirs) {
+    const pkgPath = path.join(home, 'profiles', p, 'package.json')
+    let m
+    try { m = JSON.parse(fs.readFileSync(pkgPath, 'utf8')) } catch (e) { continue }
+    const deps = Object.assign({}, m.dependencies, m.devDependencies)
+    for (const name of Object.keys(deps)) {
+      if (name === 'dsh-prts-ui') continue
+      if (!out.some((x) => x.name === name)) out.push({ name, version: deps[name], profile: p })
+    }
+  }
+  return out
+}
+ipcMain.handle('prts:listPlugins', () => readInstalledPlugins())
+
+// Run the packaged updater script (update.sh / update.bat) from the app root.
+ipcMain.handle('prts:update', () => new Promise((resolve) => {
+  const root = path.join(__dirname, '..')
+  const isWin = process.platform === 'win32'
+  const script = isWin ? 'update.bat' : 'update.sh'
+  const file = isWin ? 'cmd' : 'bash'
+  const args = isWin ? ['/c', script] : [script]
+  const child = execFile(file, args, { cwd: root, timeout: 600000 }, (err, stdout, stderr) => {
+    resolve({ ok: !err, stdout: String(stdout || ''), stderr: String(stderr || '') })
+  })
+  if (!child) resolve({ ok: false, stderr: 'could not spawn the updater' })
+}))
+
+// Find the harness profile that owns dsh-prts-ui (so `dsh plugin add` targets
+// the right profile). Defaults to "prts".
+function resolveProfile() {
+  const home = process.env.DSH_HOME || path.join(os.homedir(), '.dsh')
+  let dirs = []
+  try { dirs = fs.readdirSync(path.join(home, 'profiles')) } catch (e) { return 'prts' }
+  for (const p of dirs) {
+    const pkgPath = path.join(home, 'profiles', p, 'package.json')
+    let m
+    try { m = JSON.parse(fs.readFileSync(pkgPath, 'utf8')) } catch (e) { continue }
+    const deps = Object.assign({}, m.dependencies, m.devDependencies)
+    if (deps['dsh-prts-ui']) return p
+  }
+  return 'prts'
+}
+
+// Install/update a plugin by npm package name, the same command dsh uses.
+ipcMain.handle('prts:pluginAdd', (_e, pkg) => new Promise((resolve) => {
+  const profile = resolveProfile()
+  const child = execFile('dsh', ['plugin', '--profile', profile, 'add', String(pkg)], { timeout: 300000 }, (err, stdout, stderr) => {
+    resolve({ ok: !err, profile, stdout: String(stdout || ''), stderr: String(stderr || '') })
+  })
+  if (!child) resolve({ ok: false, profile, stderr: 'could not spawn dsh' })
+}))
+
+// Install a plugin from a GitHub repo: clone it, then `dsh plugin add <dir>`.
+ipcMain.handle('prts:pluginClone', (_e, repo) => new Promise((resolve) => {
+  const tmp = path.join(os.tmpdir(), 'dsh-prts-plugin-' + Date.now().toString(36))
+  execFile('git', ['clone', '--depth', '1', String(repo), tmp], { timeout: 180000 }, (err) => {
+    if (err) return resolve({ ok: false, stderr: 'git clone failed: ' + String(err.message || err) })
+    const profile = resolveProfile()
+    execFile('dsh', ['plugin', '--profile', profile, 'add', tmp], { timeout: 300000 }, (e2, stdout, stderr) => {
+      resolve({ ok: !e2, profile, stdout: String(stdout || ''), stderr: String(stderr || '') })
+    })
+  })
+}))
 
 /* ---------- system info (hardware + agent-side stats are computed in the renderer) ---------- */
 function readProcMem() {
@@ -221,7 +324,7 @@ app.whenReady().then(() => {
   })
   session.defaultSession.setPermissionCheckHandler((_wc, permission) => permission === 'media')
   createWindow()
-  dshWsConnect()
+  dshMuxConnect()
 })
 app.on('window-all-closed', () => app.quit())
 app.on('activate', () => {

@@ -14,6 +14,7 @@
     providers: [],    // { provider, displayName, active, ... }
     currentWorkspaceId: null,
     currentSessionId: null,
+    selectedModel: null, // { provider, model } — the session's chosen model
     events: [],       // raw session events of the current session
   };
 
@@ -62,6 +63,15 @@
     await Promise.allSettled([listWorkspaces(), listSessions(), listModels(), listProviders()]);
   }
 
+  // True when dsh answers a real RPC — the "connected" signal (a 404/hang means
+  // the /api route is not mounted yet, which is "not ready", not "connected").
+  async function ping() {
+    try {
+      await P.dsh.request('workspace.list', {});
+      return true;
+    } catch (e) { return false; }
+  }
+
   async function createSession(workspaceId) {
     const r = await P.dsh.request('session.create', workspaceId ? { workspaceId } : {});
     return r && r.sessionId;
@@ -102,7 +112,9 @@
   }
 
   async function selectModel(sessionId, provider, model) {
-    return P.dsh.request('session.selectModel', { sessionId, provider, model });
+    const r = await P.dsh.request('session.selectModel', { sessionId, provider, model });
+    S.selectedModel = { provider, model };
+    return r;
   }
 
   async function settingsGet(ns) {
@@ -129,12 +141,41 @@
     return (r && Array.isArray(r)) ? r : (Array.isArray(r) ? r : []);
   }
 
+  // Work modes = dsh's own agent presets (the same presets dsh web offers).
+  async function agentPresetList() {
+    const r = await P.dsh.request('agentPreset.list', {});
+    return (r && r.presets) || [];
+  }
+  async function agentPresetSelect(sessionId, agentPreset) {
+    return P.dsh.request('agentPreset.select', { sessionId, agentPreset });
+  }
+
+  // Host version (Settings -> Version) straight from dsh, not from PRTS.
+  async function hostDescribe() {
+    try {
+      const r = await P.dsh.request('host.describe', {});
+      return r || {};
+    } catch (e) { return {}; }
+  }
+
+  // Installed plugins are the profile's own bundle dependencies — read them
+  // through the Electron bridge (the harness profile package.json).
+  async function pluginsList() {
+    try {
+      if (typeof window !== 'undefined' && window.prts && window.prts.bridge && window.prts.bridge.pluginsList) {
+        return await window.prts.bridge.pluginsList();
+      }
+    } catch (e) { /* no bridge */ }
+    return [];
+  }
+
   S.connect = connect;
   S.listWorkspaces = listWorkspaces;
   S.listSessions = listSessions;
   S.listModels = listModels;
   S.listProviders = listProviders;
   S.refreshAll = refreshAll;
+  S.ping = ping;
   S.createSession = createSession;
   S.history = history;
   S.prompt = prompt;
@@ -150,4 +191,8 @@
   S.credentialsSet = credentialsSet;
   S.credentialsUnset = credentialsUnset;
   S.commandsList = commandsList;
+  S.agentPresetList = agentPresetList;
+  S.agentPresetSelect = agentPresetSelect;
+  S.hostDescribe = hostDescribe;
+  S.pluginsList = pluginsList;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

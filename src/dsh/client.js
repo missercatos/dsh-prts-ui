@@ -74,12 +74,18 @@
     return parseResponse(id, await res.json());
   }
 
-  /** Respond to a server-request frame (questions, approvals, steers). */
-  function respond(rpcIdValue, result) {
-    const msg = JSON.stringify({ type: 'client-response', rpcId: rpcIdValue, result });
+  /** Respond to a server-request frame (questions, approvals, steers) via
+   *  POST /api/respond — the dsh client-response carrier, not the mux. */
+  async function respond(rpcIdValue, result) {
     const bridge = dshBridge();
-    if (bridge) { bridge.send(msg); return; }
-    if (ws && ws.readyState === 1) ws.send(msg);
+    if (bridge) { try { await bridge.respond(rpcIdValue, result); } catch (e) { /* noop */ } return; }
+    try {
+      await fetch(D.baseUrl.replace(/\/+$/, '') + '/api/respond', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'client-response', rpcId: rpcIdValue, result }),
+      });
+    } catch (e) { /* noop */ }
   }
 
   function emit(type, frame) {
@@ -106,9 +112,10 @@
     }
   }
 
-  /** Open the mux WebSocket and subscribe to session events. Non-blocking: it
+  /** Open the mux SSE stream and subscribe to session events. Non-blocking: it
    *  keeps retrying in the background until dsh is reachable. When running in
-   *  Electron, the main process owns the socket and relays frames via IPC. */
+   *  Electron, the main process owns the stream and relays frames via IPC. */
+  let muxAbort = null;
   function connect(url) {
     if (url) D.baseUrl = url;
     const bridge = dshBridge();
@@ -118,26 +125,42 @@
       emit('connect', {});
       return;
     }
-    if (ws && (ws.readyState === 0 || ws.readyState === 1)) return;
     manualClose = false;
-    const muxUrl = D.baseUrl.replace(/^http/, 'ws').replace(/\/+$/, '') + '/api/events.mux';
-    let sock;
-    try { sock = new WebSocket(muxUrl); } catch (e) { return; }
-    ws = sock;
-    sock.onopen = () => { D.connected = true; emit('connect', {}); };
-    sock.onmessage = (ev) => onMessage(typeof ev.data === 'string' ? ev.data : ev.data);
-    sock.onclose = () => {
-      D.connected = false;
-      for (const [, p] of pending) p.reject(new Error('dsh: connection closed'));
-      pending.clear();
-      emit('disconnect', {});
-      ws = null;
-      if (!manualClose) setTimeout(() => connect(), 1000);
-    };
-    sock.onerror = () => { /* onclose follows */ };
+    try { if (muxAbort) muxAbort.abort(); } catch (e) { /* noop */ }
+    const ac = new AbortController();
+    muxAbort = ac;
+    const muxUrl = D.baseUrl.replace(/\/+$/, '') + '/api/events.mux';
+    fetch(muxUrl, { signal: ac.signal })
+      .then(async (res) => {
+        if (!res.ok || !res.body) throw new Error('mux ' + res.status);
+        D.connected = true;
+        emit('connect', {});
+        const reader = res.body.getReader();
+        const dec = new TextDecoder();
+        let buf = '';
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += dec.decode(value, { stream: true });
+          let idx;
+          while ((idx = buf.indexOf('\n\n')) >= 0) {
+            const chunk = buf.slice(0, idx);
+            buf = buf.slice(idx + 2);
+            for (const line of chunk.split('\n')) {
+              if (line.startsWith('data: ')) onMessage(line.slice(6).trim());
+            }
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        D.connected = false;
+        emit('disconnect', {});
+        if (!manualClose) setTimeout(() => connect(), 1000);
+      });
   }
 
-  function close() { manualClose = true; if (ws) { try { ws.close(); } catch (e) { /* noop */ } } ws = null; D.connected = false; }
+  function close() { manualClose = true; try { if (muxAbort) muxAbort.abort(); } catch (e) { /* noop */ } D.connected = false; }
 
   /** Subscribe to a push event (method name). Returns an unsubscribe fn. */
   function on(type, fn) {

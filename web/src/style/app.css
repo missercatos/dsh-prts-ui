@@ -22,6 +22,14 @@
 }
 .intro.done { opacity: 0; pointer-events: none; }
 #introCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* Particle "WAIT" hint shown when the user clicks before loading finishes. */
+.waitHint {
+  position: fixed; z-index: 200; width: 150px; height: 56px;
+  transform: translate(-50%, -50%); pointer-events: none;
+  transition: opacity 0.5s var(--prts-ease);
+}
+.waitHint.fade { opacity: 0; }
 .introTag {
   position: absolute; left: 50%; bottom: 13vh; transform: translateX(-50%);
   font-size: 11px; letter-spacing: 0.5em; text-indent: 0.5em;

@@ -36,14 +36,46 @@
 .sbFootItem:hover { background: var(--prts-surface-2); color: var(--prts-ink); }
 
 /* ===== Conversation column ===== */
-.cvt { display: flex; flex-direction: column; height: 100%; min-width: 0; }
+.cvt { position: relative; overflow: hidden; display: flex; flex-direction: column; height: 100%; min-width: 0; }
+
+/* Central voice diamond — semi-transparent rhombus that vibrates with the mic
+   (dB drives scale, frequency nudges rotation). Reserved for dsh voice output
+   too: `.speaking` vibrates on produced audio just like on captured audio.
+   It sits BEHIND the conversation content (z-index:0 vs. the raised header
+   and scroll body) so it can never intercept clicks or obscure the chat. */
+.voiceDiamond {
+  position: absolute; left: 50%; top: 50%; z-index: 0;
+  pointer-events: none; transform: translate(-50%, -50%);
+  opacity: 0.16; transition: opacity 0.3s var(--prts-ease);
+  will-change: transform;
+}
+.voiceDiamond.on { opacity: 0.5; }
+.voiceDiamond.speaking { opacity: 0.72; }
+.voiceDiamond .diamondShape {
+  display: block; width: 230px; height: 230px;
+  border: 1px solid var(--prts-ink);
+  transform: rotate(45deg);
+  background: color-mix(in srgb, var(--prts-ink) 5%, transparent);
+  box-shadow: 0 0 60px color-mix(in srgb, var(--prts-ink) 8%, transparent);
+}
+.voiceDiamond .squareShape {
+  display: block; position: absolute; left: 50%; top: 50%; width: 110px; height: 110px;
+  margin: -55px 0 0 -55px;
+  border: 1px solid var(--prts-ink);
+  background: color-mix(in srgb, var(--prts-ink) 5%, transparent);
+}
+.cvtHeader, .scrollBody { position: relative; z-index: 1; }
 .cvtHeader { flex: none; padding: 10px 20px 0 16px; border-bottom: 1px solid var(--prts-hairline); }
 .cvt[data-phase='hero'] .cvtHeader { display: none; }
 .titleRow { display: flex; align-items: center; min-height: 34px; }
 .crumbs { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; white-space: nowrap; }
 .crumb { max-width: 240px; overflow: hidden; padding: 3px 8px; border: none; border-radius: 4px; background: transparent; font-size: 13px; line-height: 20px; color: var(--prts-ink-faint); text-overflow: ellipsis; white-space: nowrap; }
 .crumb[disabled] { font-weight: 500; color: var(--prts-ink); cursor: default; }
-.headerMode { padding: 3px 8px; font-size: 10px; letter-spacing: 0.3em; color: var(--prts-ink-faint); border: 1px solid var(--prts-hairline); border-radius: 4px; white-space: nowrap; }
+.crumb { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; font-weight: 500; color: var(--prts-ink); }
+.crumb .chev { color: var(--prts-ink-faint); }
+.crumb:hover { background: var(--prts-surface-2); }
+.headerMode { padding: 0; font-size: 10px; letter-spacing: 0.3em; color: var(--prts-ink-faint); white-space: nowrap; }
+.modeChip { border: 1px solid var(--prts-hairline); }
 .headerUtils { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .logBtn {
   display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px;

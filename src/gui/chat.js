@@ -27,6 +27,22 @@
     return n;
   }
 
+  // Minimal markdown: images (built-in — the model may return one), code
+  // blocks, inline code, bold, links. Everything is HTML-escaped first.
+  function mdToHtml(text) {
+    let s = esc(text);
+    const codeBlocks = [];
+    s = s.replace(/```([\s\S]*?)```/g, (m, code) => { codeBlocks.push(code); return '\u0000CODE' + (codeBlocks.length - 1) + '\u0000'; });
+    s = s.replace(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g, '<img class="mdImg" src="$2" alt="$1">');
+    s = s.replace(/(^|\n)(https?:\/\/\S+\.(?:png|jpe?g|gif|webp|svg|bmp)(?:\?\S*)?)/gi, '$1<img class="mdImg" src="$2" alt="">');
+    s = s.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    s = s.replace(/\n/g, '<br>');
+    s = s.replace(/\u0000CODE(\d+)\u0000/g, (m, i) => '<pre>' + codeBlocks[Number(i)] + '</pre>');
+    return s;
+  }
+
   function blockText(block) {
     if (!block) return '';
     if (block.type === 'text') return block.text || '';
@@ -78,6 +94,7 @@
           content: text, reasoning, ts: ev.time, usage: msg.usage, model: msg.model,
         });
       }
+      if (P.cost && msg.usage) P.cost.addUsage(msg);
     } else if (type === 'tool/result') {
       const name = data.name || data.tool || 'tool';
       C.messages.push({ id: 't' + ev.seq, _seq: ev.seq, role: 'tool', content: (data.text || data.output || ''), name, ts: ev.time });
@@ -87,7 +104,8 @@
   /* ---------- rendering ---------- */
   function renderUser(msg) {
     const wrap = el('div', 'userRow');
-    const bubble = el('div', 'userBubble', msg.content);
+    const bubble = el('div', 'userBubble');
+    bubble.innerHTML = mdToHtml(msg.content);
     wrap.appendChild(bubble);
     const t = el('span', 'maTime', clock(msg.ts));
     wrap.appendChild(t);
@@ -108,7 +126,8 @@
       d.appendChild(row); d.appendChild(body);
       item.appendChild(d);
     }
-    const p = el('p', 'para', msg.content);
+    const p = el('p', 'para');
+    p.innerHTML = mdToHtml(msg.content);
     if (msg.streaming) p.appendChild(el('span', 'caret'));
     item.appendChild(p);
     if (msg.usage && (msg.usage.prompt_tokens || msg.usage.completion_tokens)) {
@@ -147,6 +166,7 @@
   async function loadHistory(sessionId) {
     C.sessionId = sessionId;
     C.messages = [];
+    if (P.cost) P.cost.reset();
     const items = await P.dshState.history(sessionId);
     for (const it of items) {
       if (it && it.event) foldEvent(it.event);
@@ -156,7 +176,15 @@
   }
 
   async function send(text) {
-    if (C.streaming || !C.sessionId) return;
+    if (C.streaming) return;
+    if (!C.sessionId) {
+      // No session yet — create one on the fly (it lands in the sidebar).
+      const id = await P.app.ensureSession();
+      if (!id) {
+        P.app.toast(P.i18n.t('session.createFail', P.app.locale));
+        return;
+      }
+    }
     const input = $('composerInput');
     input.value = '';
     C.streaming = true;

@@ -52,6 +52,14 @@
         <div class="sbList" id="sessionList" style="overflow-y:auto;"></div>
       </div>
       <div class="sbFoot">
+        <button class="sbFootItem" id="costBtn" type="button">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5v12M3.5 3.5h7a2 2 0 0 1 0 4h-5a2 2 0 0 0 0 4h7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+          <span data-i18n="sidebar.cost">Cost</span>
+        </button>
+        <button class="sbFootItem" id="marketBtn" type="button">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"><path d="M4.5 2.5 6.5 4.5 4.5 6.5 2.5 4.5Z"/><path d="M11.5 2.5 13.5 4.5 11.5 6.5 9.5 4.5Z"/><path d="M4.5 9.5 6.5 11.5 4.5 13.5 2.5 11.5Z"/><path d="M11.5 9.5 13.5 11.5 11.5 13.5 9.5 11.5Z" fill="currentColor" stroke="none"/></svg>
+          <span data-i18n="sidebar.market">Market</span>
+        </button>
         <button class="sbFootItem" id="detailsBtn" type="button">
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="1.5" width="12" height="12" stroke="currentColor" stroke-width="1.1"/><path d="M5 1.5v12M7.5 1.5v12" stroke="currentColor" stroke-width="1.1"/></svg>
           <span data-i18n="sidebar.details">Details</span>
@@ -66,11 +74,18 @@
 
   <main class="ctCol">
     <div class="cvt" id="cvt" data-phase="hero">
+      <div class="voiceDiamond" id="voiceDiamond" aria-hidden="true"><span class="diamondShape" id="diamondShape"></span><span class="squareShape" id="squareShape"></span></div>
       <header class="cvtHeader" id="header">
         <div class="titleRow">
           <div class="crumbs">
-            <button class="crumb" disabled id="crumbProject">dsh</button>
-            <span class="headerMode" data-i18n="header.mode">STANDARD</span>
+            <button class="crumb" id="crumbProject" type="button" data-i18n-title="workspace.switch">
+              <span id="crumbProjectLabel">dsh</span>
+              <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
+            </button>
+            <button class="chip modeChip" id="modeChip" type="button">
+              <span class="headerMode" id="headerMode" data-i18n="header.mode">STANDARD</span>
+              <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
+            </button>
           </div>
           <div class="headerUtils">
             <span class="pluginBar" id="pluginHeader"></span>
@@ -168,7 +183,7 @@
   <section class="dtCol" id="dtCol">
     <div class="dtPanel">
       <div class="dtHeader">
-        <span class="dtTitle" data-i18n="details.title">Details</span>
+        <span class="dtTitle" id="dtTitle" data-i18n="details.title">Details</span>
         <button class="iconBtn" id="dtClose" type="button" title="Close">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
         </button>
@@ -190,22 +205,46 @@
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
       </button>
     </div>
-    <div class="sField">
-      <div class="label"><span data-i18n="settings.language">Language</span></div>
-      <select class="sInput sSelect" id="cfgLocale">
-        <option value="auto">AUTO</option>
-        <option value="zh">中文</option>
-        <option value="en">ENGLISH</option>
-      </select>
-    </div>
-    <div class="sField">
-      <div class="label"><span data-i18n="settings.providers">Providers &amp; API keys</span></div>
-      <div class="hint" data-i18n="settings.providers.hint">API keys are written to the dsh harness home (~/.dsh), managed by dsh — never by this plugin.</div>
-      <div id="cfgProviders"></div>
-    </div>
-    <div class="sRow" style="margin-top: 18px;">
-      <button class="sBtn primary" id="cfgSave" type="button" data-i18n="settings.done">Done</button>
-      <span class="sStatus" id="cfgStatus"></span>
+    <div class="settingsBody">
+      <div class="sSection">
+        <div class="sSecTitle eyebrow" data-i18n="settings.language">Language</div>
+        <select class="sInput sSelect" id="cfgLocale">
+          <option value="auto">AUTO</option>
+          <option value="zh">中文</option>
+          <option value="en">ENGLISH</option>
+        </select>
+      </div>
+
+      <div class="sSection">
+        <div class="sSecRow">
+          <span class="sSecTitle eyebrow" data-i18n="settings.modelConfig">Model configuration</span>
+          <button class="toggleBtn" id="modelCfgToggle" type="button" aria-expanded="false" data-i18n-title="settings.modelConfig.toggle"><span class="tgDiamond"></span></button>
+        </div>
+        <div class="sCollapse" id="modelCfgBody" hidden>
+          <div class="hint" data-i18n="settings.modelConfig.hint">API keys are written to the dsh harness home (~/.dsh) — exactly where dsh keeps them. Only models whose provider has a key can be picked.</div>
+          <div id="cfgProviders"></div>
+        </div>
+      </div>
+
+      <div class="sSection">
+        <div class="sSecTitle eyebrow" data-i18n="settings.plugins">Plugins</div>
+        <div class="hint" data-i18n="settings.plugins.hint">Installed into the dsh profile. Add more with `dsh plugin --profile prts add &lt;package&gt;`.</div>
+        <div id="cfgPlugins"></div>
+      </div>
+
+      <div class="sSection">
+        <div class="sSecTitle eyebrow" data-i18n="settings.version">Version</div>
+        <div id="cfgVersion"></div>
+        <div class="sRow" style="margin-top: 8px;">
+          <button class="sBtn" id="updateBtn" type="button" data-i18n="settings.update">Update</button>
+          <span class="sStatus" id="updateStatus"></span>
+        </div>
+      </div>
+
+      <div class="sRow" style="margin-top: 18px;">
+        <button class="sBtn primary" id="cfgSave" type="button" data-i18n="settings.done">Done</button>
+        <span class="sStatus" id="cfgStatus"></span>
+      </div>
     </div>
   </div>
 </div>
@@ -241,12 +280,28 @@
   </div>
 </div>
 
+<div class="overlay" id="marketOverlay">
+  <div class="settingsCard marketCard">
+    <div class="settingsHead">
+      <span class="title" data-i18n="market.title">Plugins</span>
+      <button class="iconBtn" id="marketClose" type="button" title="Close">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="hint" data-i18n="market.hint" style="margin-bottom:14px;">Install dsh plugins from npm into the profile. Installed plugins are marked.</div>
+    <div id="marketList"></div>
+  </div>
+</div>
+
 <div class="intro" id="intro">
   <canvas id="introCanvas"></canvas>
   <div class="introTag" id="introTag"></div>
 </div>
 <div class="toast" id="toast" role="status"></div>
 
+<script>
+<!--MARKET-->
+</script>
 <script>
 <!--SCRIPTS-->
 </script>

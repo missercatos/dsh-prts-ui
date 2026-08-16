@@ -31,7 +31,8 @@
   function create(canvas, opts) {
     opts = opts || {};
     const N = opts.count || 3200;
-    const speedRange = opts.speedRange || [0.018, 0.05];
+    // Faster particle *motion* — the effect timeline is unaffected.
+    const speedRange = (opts.speedRange || [0.018, 0.05]).map((v) => v * 1.5);
     const ctx = canvas.getContext('2d');
     const scratch = document.createElement('canvas');
     const sctx = scratch.getContext('2d');
@@ -169,9 +170,9 @@
     }
 
     function drawModelPp(maxPoints) {
-      // PRTS / DeepSeek banner (matches pp.png): a thin top rule, a large
-      // upright PRTS wordmark, a small italic DEEPSEEK caption, a horizontal
-      // bar, and a second small italic line.
+      // PRTS / DeepSeek harness banner (matches pp.png): a thin top rule, a
+      // large upright PRTS wordmark, a small italic DeepSeek caption, a
+      // horizontal bar, and "harness" beneath it.
       const cw = 700, ch = 400;
       scratch.width = cw; scratch.height = ch;
       sctx.clearRect(0, 0, cw, ch);
@@ -182,16 +183,16 @@
       sctx.font = '700 ' + Math.floor(176) + 'px ' + getFontStack();
       sctx.fillText('PRTS', cw / 2, 196);         // large PRTS
       sctx.font = 'italic 700 ' + Math.floor(58) + 'px ' + getFontStack();
-      sctx.fillText('DEEPSEEK', cw / 2, 262);     // caption
+      sctx.fillText('DeepSeek', cw / 2, 262);     // caption (above the bar)
       sctx.fillRect(132, 284, 436, 7);            // bar
-      sctx.fillText('DEEPSEEK', cw / 2, 344);     // second line
+      sctx.fillText('harness', cw / 2, 344);      // second line (below the bar)
       return sampleFromCanvas(scratch, sctx, cw, ch, maxPoints, 4);
     }
 
     function drawModelMark(scale, maxPoints) {
       // Square diamond mark (the packaged icon): white rhombus outline, italic
-      // P/R/T/S in the four corners, and a small italic PRTS wordmark with an
-      // accent rule raised above the centre.
+      // P/R/T/S in the four corners, and a small italic "dsh" wordmark with an
+      // accent rule beneath it (the wordmark is 0.5× the corner letters).
       const s = scale || 1;
       const cw = Math.floor(480 * s);
       const ch = cw;
@@ -210,19 +211,19 @@
       sctx.closePath();
       sctx.stroke();
       const q = Math.floor(half * 0.44);
-      sctx.font = 'italic 700 ' + Math.floor(104 * s) + 'px ' + getFontStack();
+      const cornerPx = Math.floor(104 * s);
+      sctx.font = 'italic 700 ' + cornerPx + 'px ' + getFontStack();
       sctx.textAlign = 'center';
       sctx.textBaseline = 'middle';
       sctx.fillText('P', cx - q, cy - q);
       sctx.fillText('R', cx + q, cy - q);
       sctx.fillText('T', cx - q, cy + q);
       sctx.fillText('S', cx + q, cy + q);
-      // Centre wordmark sits where the original icon had it (slightly below
-      // the middle), with its accent rule beneath.
-      sctx.font = 'italic 700 ' + Math.floor(34 * s) + 'px ' + getFontStack();
+      // Centre wordmark: "dsh" above its accent rule, at half the corner size.
+      sctx.font = 'italic 700 ' + Math.floor(cornerPx * 0.5) + 'px ' + getFontStack();
       sctx.textBaseline = 'alphabetic';
       const wy = cy + Math.floor(30 * s);
-      sctx.fillText('PRTS', cx, wy);
+      sctx.fillText('dsh', cx, wy);
       sctx.lineWidth = Math.max(2, 3 * s);
       sctx.beginPath();
       sctx.moveTo(cx - Math.floor(56 * s), wy + Math.floor(11 * s));

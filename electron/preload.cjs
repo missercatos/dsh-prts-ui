@@ -8,6 +8,9 @@ const pending = new Map()
 
 const dshUrl = process.argv.find((a) => a.startsWith('--dsh-url='))?.slice('--dsh-url='.length) || 'http://127.0.0.1:3085'
 
+let prtsVersion = '0.0.0'
+try { prtsVersion = require('../package.json').version || '0.0.0' } catch (e) { /* ignore */ }
+
 contextBridge.exposeInMainWorld('prts', {
   env: {
     platform: process.platform,
@@ -17,6 +20,7 @@ contextBridge.exposeInMainWorld('prts', {
     xdgDesktopDir: process.env.XDG_DESKTOP_DIR || '',
     appData: process.env.APPDATA || '',
     dshUrl,
+    prtsVersion,
   },
   bridge: {
     readFile: (p) => ipcRenderer.invoke('prts:readFile', p),
@@ -27,9 +31,13 @@ contextBridge.exposeInMainWorld('prts', {
     mkdir: (p) => ipcRenderer.invoke('prts:mkdir', p),
     listDir: (p) => ipcRenderer.invoke('prts:listDir', p),
     systemInfo: () => ipcRenderer.invoke('prts:systemInfo'),
+    pluginsList: () => ipcRenderer.invoke('prts:listPlugins'),
+    pluginAdd: (pkg) => ipcRenderer.invoke('prts:pluginAdd', pkg),
+    pluginClone: (repo) => ipcRenderer.invoke('prts:pluginClone', repo),
+    update: () => ipcRenderer.invoke('prts:update'),
     dsh: {
       request: (method, payload) => ipcRenderer.invoke('prts:dshRequest', method, payload),
-      send: (msg) => ipcRenderer.invoke('prts:dshSend', msg),
+      respond: (rpcId, result) => ipcRenderer.invoke('prts:dshRespond', rpcId, result),
       onFrame: (cb) => ipcRenderer.on('prts:dshFrame', (_e, data) => cb(data)),
     },
     http(req) {

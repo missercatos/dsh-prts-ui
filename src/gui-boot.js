@@ -17,30 +17,43 @@ const VERSION = (pkg.devDependencies && pkg.devDependencies.electron) || '43.4.0
 
 /* ---------- dsh web backend ---------- */
 
-/** Start `dsh web` and resolve with its local URL once it is printed. */
-function bootDshWeb() {
-  return new Promise((resolve, reject) => {
-    let child
-    try {
-      child = spawn('dsh', ['web'], { stdio: ['ignore', 'pipe', 'pipe'], detached: false })
-    } catch (e) {
-      reject(new Error('dsh is not installed — run `npm i -g @deepseek-ai/dsh` first'))
-      return
-    }
-    let buf = ''
-    let settled = false
-    const timer = setTimeout(() => { if (!settled) { settled = true; reject(new Error('dsh web did not start in time')); try { child.kill(); } catch (e) {} } }, 60000)
-    const onData = (d) => {
-      if (settled) return
-      buf += d.toString()
-      const m = buf.match(/https?:\/\/127\.0\.0\.1:\d+/)
-      if (m) { settled = true; clearTimeout(timer); resolve({ url: m[0], child }) }
-    }
-    child.stdout.on('data', onData)
-    child.stderr.on('data', onData)
-    child.on('error', (e) => { if (!settled) { settled = true; clearTimeout(timer); reject(e) } })
-    child.on('exit', (code) => { if (!settled) { settled = true; clearTimeout(timer); reject(new Error('dsh web exited: ' + code)) } })
-  })
+/** Reuse a dsh web that is already serving this default port. Only a genuine
+ *  server-response (200 + `ok`) counts — a 404 from an unmounted /api route is
+ *  a server that is not ready yet, not one to reuse. */
+async function dshUp(url) {
+  try {
+    const res = await fetch(url.replace(/\/+$/, '') + '/api/workspace.list', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'client-request', rpcId: 'probe', method: 'workspace.list', payload: {} }),
+    });
+    if (res.status !== 200) return false;
+    const body = await res.json().catch(() => null);
+    return !!(body && body.type === 'server-response' && body.result && body.result.ok === true);
+  } catch (e) { return false; }
+}
+
+/** Start (or reuse) `dsh web` and resolve with its local URL once /api answers. */
+async function bootDshWeb() {
+  const defaultUrl = process.env.PRTS_DSH_URL || 'http://127.0.0.1:3080';
+  // 1. An instance may already be running (previous launch, a separate
+  //    `dsh web`, etc.) — reuse it instead of failing on the port.
+  if (await dshUp(defaultUrl)) return { url: defaultUrl, child: null };
+  // 2. Spawn one, detached, and poll /api until it answers. stdout is
+  //    ignored — the endpoint is the real readiness signal, not the log text.
+  let child;
+  try {
+    child = spawn('dsh', ['web'], { stdio: 'ignore', detached: true });
+  } catch (e) {
+    throw new Error('dsh is not installed — run `npm i -g @deepseek-ai/dsh` first');
+  }
+  child.unref();
+  const deadline = Date.now() + 30000;
+  while (Date.now() < deadline) {
+    if (await dshUp(defaultUrl)) return { url: defaultUrl, child };
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  throw new Error('dsh web did not start in time — check that `dsh web` boots (its agent tree may be unhealthy)');
 }
 
 /* ---------- Electron ---------- */

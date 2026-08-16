@@ -11,15 +11,16 @@
       </feMerge>
     </filter>
   </defs>
-  <!-- PRTS mark: white diamond outline, italic P/R/T/S corner letters, and a
-       small italic PRTS wordmark with an accent rule across the centre. -->
+  <!-- PRTS mark: white diamond outline, italic P/R/T/S corner letters (the
+       "PRTS" corners), and a small italic "dsh" wordmark (half the corner
+       size) above an accent rule across the centre. -->
   <g filter="url(#shadow)" fill="#FFFFFF">
     <path d="M256 30 L482 256 L256 482 L30 256 Z" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linejoin="round"/>
     <text x="150" y="204" font-family="'Liberation Sans','DejaVu Sans',sans-serif" font-size="124" font-style="italic" font-weight="700" text-anchor="middle">P</text>
     <text x="362" y="204" font-family="'Liberation Sans','DejaVu Sans',sans-serif" font-size="124" font-style="italic" font-weight="700" text-anchor="middle">R</text>
     <text x="150" y="384" font-family="'Liberation Sans','DejaVu Sans',sans-serif" font-size="112" font-style="italic" font-weight="700" text-anchor="middle">T</text>
     <text x="362" y="384" font-family="'Liberation Sans','DejaVu Sans',sans-serif" font-size="112" font-style="italic" font-weight="700" text-anchor="middle">S</text>
-    <text x="256" y="262" font-family="'Liberation Sans','DejaVu Sans',sans-serif" font-size="38" font-style="italic" font-weight="700" text-anchor="middle">PRTS</text>
-    <path d="M164 274 H348" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+    <text x="256" y="284" font-family="'Liberation Sans','DejaVu Sans',sans-serif" font-size="62" font-style="italic" font-weight="700" text-anchor="middle">dsh</text>
+    <path d="M164 300 H348" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
   </g>
 </svg>
