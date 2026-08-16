@@ -413,6 +413,6 @@ return {
     )
     ctx.effect(() => () => { for (const d of disposers) d() })
 
-    harness.handle('prts-version', () => ({ version: '0.8.0', path: GUI_PATH }))
+    harness.handle('prts-version', () => ({ version: '0.8.1', path: GUI_PATH }))
   },
 }

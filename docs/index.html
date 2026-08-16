@@ -404,10 +404,10 @@
   /* Release mapping — point these at your host. Files are served from
      ./releases/ by default; edit PRTS_RELEASES to override per platform. */
   window.PRTS_RELEASES = window.PRTS_RELEASES || {
-    windows: 'releases/PRTS-Setup-0.8.0-windows-x64.exe',
-    linux: 'releases/PRTS-0.8.0-linux-x64.run',
-    macos: 'releases/PRTS-0.8.0-macos.sh',
-    android: 'releases/PRTS-0.8.0-android.zip',
+    windows: 'releases/PRTS-Setup-0.8.1-windows-x64.exe',
+    linux: 'releases/PRTS-0.8.1-linux-x64.run',
+    macos: 'releases/PRTS-0.8.1-macos.sh',
+    android: 'releases/PRTS-0.8.1-android.zip',
   };
 
   let lang = 'zh';
@@ -420,19 +420,22 @@
   // stage, and long platform lists render word by word in a smaller font.
   function splitPhase(text) {
     const words = String(text).split(/\s*·\s*|\s+/).filter(Boolean);
+    const LIMIT = 6;   // chars per particle frame
+    const out = [];
     if (words.length > 1) {
-      const out = [];
       let cur = '';
       for (const w of words) {
         const next = cur ? cur + ' · ' + w : w;
-        if (next.length > 9 && cur) { out.push(cur); cur = w; }
+        if (next.length > LIMIT && cur) { out.push(cur); cur = w; }
         else cur = next;
       }
       if (cur) out.push(cur);
       return out;
     }
-    const out = [];
-    for (let i = 0; i < text.length; i += 6) out.push(text.slice(i, i + 6));
+    // no separators: short phrases (the welcome line) show in one piece,
+    // longer ones cut every 6 chars so no glyph ever runs off the stage
+    if (text.length <= 8) return [text];
+    for (let i = 0; i < text.length; i += LIMIT) out.push(text.slice(i, i + LIMIT));
     return out;
   }
 
@@ -485,14 +488,15 @@
     const phases = I18N[lang].phases;
     const chunks = splitPhase(phases[phaseIndex % phases.length]);
     const text = chunks[chunkIndex % chunks.length];
-    const ascii = /[A-Za-z]/.test(text);
-    // Small font for the platform words (windows/macos/linux/android) so the
-    // tail of the list never clips off the stage; Chinese chunks stay big.
-    engine.showText(text, ascii ? 44 : 84);
+    const pureAscii = /^[A-Za-z0-9 .-]+$/.test(text);
+    // Font by kind: ASCII headline words (PRTS) big, platform words small,
+    // Chinese chunks standard. The welcome line shows complete at once.
+    const fontPx = pureAscii ? (text.length <= 5 ? 60 : 44) : 84;
+    engine.showText(text, fontPx);
     chunkIndex++;
     if (chunkIndex % chunks.length === 0) { phaseIndex++; chunkIndex = 0; }
     // Short linger per chunk: the phrase reads piece by piece.
-    phaseTimer = setTimeout(() => cycle(), ascii ? 3000 : 2600);
+    phaseTimer = setTimeout(() => cycle(), 2600);
   }
 
   $('langBtn').addEventListener('click', () => setLang(lang === 'zh' ? 'en' : 'zh'));
