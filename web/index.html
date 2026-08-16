@@ -1408,6 +1408,33 @@ body[data-wallpaper='on'] .settingsCard {
 .frame[data-sbview='workspaces'] .sbSectionSessions { display: none; }
 .frame[data-sbview='sessions'] .sbSectionWorkspaces { display: none; }
 
+/* ---------- 0.7.0: webUI-render parity ---------- */
+/* colors: think grey, errors red, main output pure ink */
+.thinkBody { color: var(--prts-ink-dim); }
+.errText { color: #f7768e; }
+.para { color: var(--prts-ink); }
+/* emoji → monochrome rendered marks (webUI style) */
+.emoji { font-style: normal; filter: grayscale(1) brightness(1.55) contrast(1.05); }
+[data-theme='light'] .emoji { filter: grayscale(1) brightness(0.35) contrast(1.1); }
+/* markdown tables scroll both ways (webUI parity) */
+.tblWrap { max-height: 320px; overflow: auto; margin: 6px 0; border: 1px solid var(--prts-hairline); border-radius: 8px; }
+.tblWrap table { border-collapse: collapse; min-width: 100%; font-size: 12px; font-family: var(--prts-mono); }
+.tblWrap th, .tblWrap td { border-bottom: 1px solid var(--prts-hairline); padding: 5px 10px; text-align: left; white-space: nowrap; }
+.tblWrap th { color: var(--prts-accent); font-weight: 600; }
+/* persistent message footer: meta + big actions, bottom-right of the OUTPUT */
+.msgFoot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+.msgMeta { display: flex; gap: 6px; font-size: 10px; color: var(--prts-ink-faint); font-family: var(--prts-mono); margin: 0; opacity: 1; }
+.msgActions { display: inline-flex; gap: 6px; opacity: 1; position: static; transform: none; margin: 0; background: transparent; padding: 0; }
+.maBtn { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--prts-hairline); background: color-mix(in srgb, var(--prts-surface) 55%, transparent); color: var(--prts-ink-dim); }
+.maBtn svg { width: 16px; height: 16px; }
+.maBtn:hover { color: var(--prts-accent); border-color: var(--prts-accent); }
+/* tool blocks (Bash/Read/Edit cards) */
+.toolBlock { margin: 6px 0; border: 1px solid var(--prts-hairline); border-radius: 8px; overflow: hidden; }
+.toolBlock .dRow { width: 100%; }
+.toolBlock .dBody { border-top: 1px solid var(--prts-hairline); padding: 8px 10px; }
+/* working status glows in the accent color */
+.statusRow .shimmer { color: var(--prts-accent); text-shadow: 0 0 12px color-mix(in srgb, var(--prts-accent) 55%, transparent); }
+
 /* PRTS design tokens — pure black/white. Dark is the default surface; light
    inverts the pair. Every component derives from these tokens only. */
 :root {
@@ -3127,6 +3154,7 @@ window.PRTS_MARKET = {
       'chat.copy': 'Copy',
       'chat.copied': 'Copied',
       'chat.loading': 'LOADING…',
+      'chat.working': 'WORKING · {s}s',
       'onboard.apiKey.title': '配置 DeepSeek API Key',
       'onboard.apiKey.body': '尚未检测到 DeepSeek API Key。前往设置配置，或跳转官网现场注册一个（注册后在 API Keys 页创建）。仅首次启动提示。',
       'onboard.apiKey.settings': '前往设置配置',
@@ -3730,6 +3758,7 @@ window.PRTS_MARKET = {
       'chat.copy': '复制',
       'chat.copied': '已复制',
       'chat.loading': '读取中…',
+      'chat.working': '正在工作中 · {s}s',
       'onboard.apiKey.title': '配置 DeepSeek API Key',
       'onboard.apiKey.body': '尚未检测到 DeepSeek API Key。前往设置配置，或跳转官网现场注册一个（注册后在 API Keys 页创建）。仅首次启动提示。',
       'onboard.apiKey.settings': '前往设置配置',
@@ -5263,6 +5292,7 @@ window.PRTS_MARKET = {
     'ma.clear': S('<path d="M3 2.2 5.4 4 3 5.8M9.2 2.2 6.8 4l2.4 1.8M3 8.4 5.4 10.2 3 12M9.2 8.4 6.8 10.2l2.4 1.8" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>'),
     // Edit / Think / Read marks — abstract PRTS glyphs for message actions
     'ma.think': S('<path d="' + D + '" stroke="currentColor" stroke-width="1.15"/><circle cx="5.6" cy="7" r="0.9" fill="currentColor"/><circle cx="8.4" cy="7" r="0.9" fill="currentColor"/><circle cx="7" cy="4.2" r="0.9" fill="currentColor"/>'),
+    'ma.bash': S('<path d="M2.2 3.2h9.6a.9.9 0 0 1 .9.9v5.8a.9.9 0 0 1-.9.9H2.2a.9.9 0 0 1-.9-.9V4.1a.9.9 0 0 1 .9-.9Z" stroke="currentColor" stroke-width="1.15"/><path d="M3.8 5.2 5.4 6.6 3.8 8M6 8.6h4" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>'),
     'ma.tool': S('<path d="M4.4 9.6 8 6l2.6 2.6-3.6 3.6a2.4 2.4 0 0 1-3.4-3.4L5 7.4" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M8.8 5.2l1.6-1.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>'),
     'ma.edit': S('<path d="M8.4 2.2 11.8 5.6 5.2 12.2 1.8 12.2l.2-3.4Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M7.4 3.2 10.8 6.6" stroke="currentColor" stroke-width="1.15"/>'),
     'ma.read': S('<path d="M7 2.4c-1.8 0-3.5.7-4.8 1.8L7 8.6l4.8-4.4A6.8 6.8 0 0 0 7 2.4Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M2.2 8v2.6c0 .6.5 1 1 1h7.6a1 1 0 0 0 1-1V8" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
@@ -6446,16 +6476,42 @@ window.PRTS_MARKET = {
 
   // Minimal markdown: images (built-in — the model may return one), code
   // blocks, inline code, bold, links. Everything is HTML-escaped first.
+  const INLINE_MD = (t) => String(t)
+    .replace(/`([^`\n]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  function tableHtml(rows) {
+    const grid = rows.map((r) => r.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|').map((c) => c.trim()));
+    let html = '<div class="tblWrap"><table>';
+    grid.forEach((cs, ri) => {
+      if (ri === 1 && cs.every((c) => /^:?-{2,}:?$/.test(c))) return;
+      html += '<tr>' + cs.map((c) => (ri === 0 ? '<th>' : '<td>') + INLINE_MD(c) + (ri === 0 ? '</th>' : '</td>')).join('') + '</tr>';
+    });
+    html += '</table></div>';
+    return html;
+  }
   function mdToHtml(text) {
     let s = esc(text);
+    // emoji → monochrome glyphs (webUI-style rendered marks, not color emoji)
+    s = s.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}]/gu, (m) => '<span class="emoji">' + m + '</span>');
     const codeBlocks = [];
     s = s.replace(/```([\s\S]*?)```/g, (m, code) => { codeBlocks.push(code); return '\u0000CODE' + (codeBlocks.length - 1) + '\u0000'; });
     s = s.replace(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g, '<img class="mdImg" src="$2" alt="$1">');
     s = s.replace(/(^|\n)(https?:\/\/\S+\.(?:png|jpe?g|gif|webp|svg|bmp)(?:\?\S*)?)/gi, '$1<img class="mdImg" src="$2" alt="">');
-    s = s.replace(/`([^`\n]+)`/g, '<code>$1</code>');
-    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-    s = s.replace(/\n/g, '<br>');
+    // pipe tables first (line-based), everything else inline
+    const lines = s.split('\n');
+    const out = [];
+    for (let i = 0; i < lines.length; i++) {
+      if (/^\s*\|.*\|\s*$/.test(lines[i]) && i + 1 < lines.length && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1])) {
+        const rows = [];
+        while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) rows.push(lines[i++]);
+        out.push(tableHtml(rows));
+        i--;
+      } else {
+        out.push(INLINE_MD(lines[i]));
+      }
+    }
+    s = out.join('<br>');
     s = s.replace(/\u0000CODE(\d+)\u0000/g, (m, i) => '<pre>' + codeBlocks[Number(i)] + '</pre>');
     return s;
   }
@@ -6479,19 +6535,28 @@ window.PRTS_MARKET = {
     return null;
   }
 
-  /** message -> { reasoning, text, images: [src|{attachmentId}] , usage, model } */
+  /** message -> ordered blocks + aggregated fields (webUI block parity). */
   function messageParts(msg) {
-    const out = { reasoning: '', text: '', images: [], usage: null, model: null };
+    const out = { blocks: [], reasoning: '', text: '', images: [], usage: null, model: null };
     if (!msg) return out;
-    if (typeof msg.reasoning === 'string') out.reasoning = msg.reasoning;
+    if (typeof msg.reasoning === 'string' && msg.reasoning) {
+      out.reasoning = msg.reasoning;
+      out.blocks.push({ kind: 'reasoning', text: msg.reasoning });
+    }
     const content = Array.isArray(msg.content) ? msg.content : [];
     for (const b of content) {
-      const k = blockKind(b);
-      if (k === 'reasoning') out.reasoning += (b.text || b.content || '');
-      else if (k === 'text') out.text += (b.text || '');
-      else if (k === 'image') {
-        const src = imageSrcOf(b);
-        if (src) out.images.push(src);
+      const ty = b && b.type;
+      if (ty === 'reasoning' || ty === 'thinking') {
+        const t = (b.text || b.content || '');
+        if (t) { out.reasoning += t; out.blocks.push({ kind: 'reasoning', text: t }); }
+      } else if (ty === 'text') {
+        const t = b.text || '';
+        if (t) { out.text += t; out.blocks.push({ kind: 'text', text: t }); }
+      } else if (ty === 'image') {
+        const s2 = imageSrcOf(b);
+        if (s2) { out.images.push(s2); out.blocks.push({ kind: 'image', src: s2 }); }
+      } else if (ty === 'tool-call' || ty === 'tool_use') {
+        out.blocks.push({ kind: 'toolcall', callId: b.id || b.callId || null, name: b.name || 'tool', arguments: b.arguments || b.input || '' });
       }
     }
     out.usage = msg.usage || null;
@@ -6508,6 +6573,7 @@ window.PRTS_MARKET = {
     usage: null,
     model: null,
     toolCalls: [],   // [{ callId, name, args }]
+    blocks: [],      // ordered streamed blocks (toolcall entries)
     turn: null,
     step: null,
     finished: false,
@@ -6516,7 +6582,7 @@ window.PRTS_MARKET = {
 
   function resetLive() {
     live.seq = -1; live.id = null; live.reasoning = ''; live.text = '';
-    live.usage = null; live.model = null; live.toolCalls = [];
+    live.usage = null; live.model = null; live.toolCalls = []; live.blocks = [];
     live.turn = null; live.step = null; live.finished = false;
     live.msgRef = null;
   }
@@ -6597,7 +6663,10 @@ window.PRTS_MARKET = {
         if (!tc) {
           tc = { callId, name: chunk.name || (chunk.toolCall && chunk.toolCall.name) || '', args: '' };
           live.toolCalls.push(tc);
+          live.blocks.push({ kind: 'toolcall', callId, name: tc.name, arguments: '', result: null });
         }
+        const blk = live.blocks.find((b) => b.kind === 'toolcall' && b.callId === callId);
+        if (blk) blk.arguments = tc.args;
         if (!tc.name && (chunk.name || (chunk.toolCall && chunk.toolCall.name))) tc.name = chunk.name || chunk.toolCall.name;
         if (chunk.arguments || chunk.argumentsDelta || (chunk.toolCall && chunk.toolCall.arguments)) {
           tc.args += chunk.arguments || chunk.argumentsDelta || (chunk.toolCall && chunk.toolCall.arguments) || '';
@@ -6622,6 +6691,7 @@ window.PRTS_MARKET = {
     if (!C.streaming) return;
     C.streaming = false;
     swapSendStop(false);
+    if (C.workTimer) { clearInterval(C.workTimer); C.workTimer = null; }
     if (C.onStreaming) { try { C.onStreaming(false); } catch (e) { /* noop */ } }
   }
 
@@ -6660,6 +6730,7 @@ window.PRTS_MARKET = {
         existing.content = parts.text;
         if (parts.reasoning) existing.reasoning = parts.reasoning;
         existing.images = parts.images;
+        existing.blocks = parts.blocks;
         existing.usage = parts.usage || existing.usage;
         existing.model = parts.model || existing.model;
         existing.streaming = false;
@@ -6670,6 +6741,7 @@ window.PRTS_MARKET = {
         C.messages.push({
           id: id || ('a' + ev.seq), _seq: ev.seq, role: 'assistant',
           content: parts.text, reasoning: parts.reasoning, images: parts.images,
+          blocks: parts.blocks,
           ts: ev.time, usage: parts.usage, model: parts.model, streaming: false,
           durMs,
         });
@@ -6703,19 +6775,46 @@ window.PRTS_MARKET = {
         text = data.text || data.output || '';
       }
       let target = null;
-      if (callId) target = C.messages.filter((m) => m.role === 'tool').reverse().find((m) => m.callId === callId);
-      if (target) {
+      let targetBlock = null;
+      if (callId) {
+        // 1) streamed live blocks
+        const lb = live.blocks.find((b) => b.kind === 'toolcall' && b.callId === callId);
+        if (lb) { lb.result = text; targetBlock = lb; target = live.msgRef || null; }
+        // 2) blocks inside final assistant messages
+        if (!targetBlock) {
+          for (let i = C.messages.length - 1; i >= 0; i--) {
+            const m = C.messages[i];
+            if (m.role !== 'assistant' || !Array.isArray(m.blocks)) continue;
+            const blk = m.blocks.find((b) => b.kind === 'toolcall' && b.callId === callId);
+            if (blk) { blk.result = text; targetBlock = blk; target = m; break; }
+          }
+        }
+        // 3) standalone tool messages (fallback)
+        if (!targetBlock) target = C.messages.filter((m) => m.role === 'tool').reverse().find((m) => m.callId === callId);
+      }
+      if (target && !targetBlock) {
         target.content = text;
         target.resultSeq = ev.seq;
-      } else {
+      } else if (!targetBlock) {
         C.messages.push({ id: 'r' + ev.seq, _seq: ev.seq, role: 'tool', content: text, name: data.name || 'tool', callId, ts: ev.time });
       }
+      scheduleRender();
     } else if (type === 'step/start') {
       C.activeSteps += 1;
-      if (C.onStatus) { try { C.onStatus(t('chat.step', { n: C.activeSteps })); } catch (e) { /* noop */ } }
+      if (!C.workTimer) {
+        C.workStartAt = Date.now();
+        C.workTimer = setInterval(() => {
+          const s = Math.round((Date.now() - C.workStartAt) / 1000);
+          if (C.onStatus) { try { C.onStatus(t('chat.working', { s })); } catch (e) { /* noop */ } }
+        }, 1000);
+      }
+      if (C.onStatus) { try { C.onStatus(t('chat.working', { s: 0 })); } catch (e) { /* noop */ } }
     } else if (type === 'step/end') {
       C.activeSteps = Math.max(0, C.activeSteps - 1);
-      if (C.activeSteps <= 0 && C.onStatus) { try { C.onStatus(null); } catch (e) { /* noop */ } }
+      if (C.activeSteps <= 0) {
+        if (C.workTimer) { clearInterval(C.workTimer); C.workTimer = null; }
+        if (C.onStatus) { try { C.onStatus(null); } catch (e) { /* noop */ } }
+      }
     } else if (type === 'command/run') {
       C.messages.push({
         id: 'c' + ev.seq, _seq: ev.seq, role: 'system', ts: ev.time,
@@ -6728,18 +6827,38 @@ window.PRTS_MARKET = {
     } else if (type === 'approval/policy') {
       C.messages.push({ id: 'ap' + ev.seq, _seq: ev.seq, role: 'system', ts: ev.time, content: t('chat.approvalPolicy', { policy: data.policy }) });
     }
+    // Any event that changed the message list repaints the flow — webUI
+    // parity: your own sends show up instantly, results attach in place.
+    if (type === 'user/message' || type === 'assistant/message' || type === 'tool/call' || type === 'tool/result' || type === 'command/run' || type === 'permission/preset' || type === 'sandbox/mode' || type === 'approval/policy') {
+      scheduleRender();
+    }
   }
 
   /* ---------- rendering ---------- */
   function renderUser(msg) {
     const wrap = el('div', 'userRow');
     const bubble = el('div', 'userBubble');
-    if (msg.content) bubble.innerHTML = mdToHtml(msg.content);
+    if (msg.content) bubble.innerHTML = linkifyPaths(mdToHtml(msg.content));
     for (const img of msg.images || []) bubble.appendChild(imageEl(img));
     wrap.appendChild(bubble);
-    const tr = el('div', 'maRow timeStart');
+    const foot = el('div', 'msgFoot');
+    const tr = el('div', 'maRow');
     tr.appendChild(el('span', 'maTime', clock(msg.ts)));
-    wrap.appendChild(tr);
+    foot.appendChild(tr);
+    const actions = el('div', 'msgActions');
+    const cp = el('button', 'maBtn');
+    cp.type = 'button';
+    cp.title = t('chat.copy');
+    cp.innerHTML = P.icons['ma.copy'] || '';
+    cp.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const p = navigator.clipboard ? navigator.clipboard.writeText(msg.content || '') : Promise.reject(new Error('no clipboard'));
+      p.then(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copied')); })
+        .catch(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copyFail')); });
+    });
+    actions.appendChild(cp);
+    foot.appendChild(actions);
+    wrap.appendChild(foot);
     return wrap;
   }
 
@@ -6876,42 +6995,125 @@ window.PRTS_MARKET = {
     }
   }
 
+  function toolIcon(name) {
+    const map = {
+      bash: 'ma.bash', terminal: 'ma.bash', read: 'ma.read', read_file: 'ma.read',
+      edit: 'ma.edit', str_replace_editor: 'ma.edit', str_replace: 'ma.edit', write: 'ma.edit',
+      web_fetch: 'search', web_search: 'search', grep: 'search', glob: 'search',
+    };
+    return P.icons[map[name]] || P.icons['ma.tool'] || '⟳';
+  }
+
+  /** One tool-call block: icon + name, folded args, folded result (Bash/Read…). */
+  function renderToolBlock(blk) {
+    const item = el('div', 'toolBlock');
+    const head = el('button', 'dRow');
+    head.type = 'button';
+    head.innerHTML = toolIcon(blk.name || 'tool');
+    head.appendChild(el('span', 'dTitle', String(blk.name || 'tool')));
+    item.appendChild(head);
+    if (blk.arguments) {
+      const argsBody = el('div', 'dBody');
+      const pre = el('div', 'thinkBody');
+      pre.textContent = String(blk.arguments).slice(0, 1200);
+      // paths inside args get clickable underlines
+      const paths = extractPaths(String(blk.arguments));
+      const pathRow = el('div', 'dlvChips');
+      for (const p of paths.slice(0, 6)) {
+        const chip = el('button', 'dlvChip');
+        chip.type = 'button';
+        chip.innerHTML = P.icons['ma.read'] + '<span>' + esc(p.split('/').pop() || p) + '</span>';
+        chip.addEventListener('click', (e) => { e.stopPropagation(); openFilePath(p); });
+        pathRow.appendChild(chip);
+      }
+      if (pathRow.childNodes.length) argsBody.appendChild(pathRow);
+      argsBody.appendChild(pre);
+      item.appendChild(argsBody);
+      head.addEventListener('click', () => item.classList.toggle('openArgs'));
+      item.classList.add('openArgs');
+    }
+    if (blk.result) {
+      const d = el('div', 'disclosure open');
+      const body = el('div', 'dBody toolBody');
+      const pre = el('div', 'thinkBody');
+      const err = /(^|\n)(error|failed|stderr|not allowed|denied)/i.test(String(blk.result).slice(0, 400));
+      if (err) pre.classList.add('errText');
+      pre.innerHTML = linkifyPaths(mdToHtml(String(blk.result).slice(0, 20000)));
+      body.appendChild(pre);
+      d.appendChild(body);
+      item.appendChild(d);
+    }
+    return item;
+  }
+
   function renderAssistant(msg) {
     const item = el('div', 'assistantItem');
     item.dataset.msg = msg.id;
-    if (msg.reasoning) {
-      const d = el('div', 'disclosure');
-      const row = el('button', 'dRow');
-      row.type = 'button';
-      row.innerHTML = P.icons['ma.think'] || '';
-      row.appendChild(el('span', 'dTitle', t('chat.thinking')));
-      const body = el('div', 'dBody');
-      const tb = el('div', 'thinkBody');
-      tb.textContent = msg.reasoning;
-      body.appendChild(tb);
-      row.addEventListener('click', () => d.classList.toggle('open'));
-      d.appendChild(row); d.appendChild(body);
-      item.appendChild(d);
-    }
-    if (msg.content) {
-      const p = el('p', 'para');
-      p.innerHTML = linkifyPaths(mdToHtml(msg.content));
-      if (msg.streaming) p.appendChild(el('span', 'caret'));
-      item.appendChild(p);
+    // Ordered blocks (webUI parity): think folds, text is the main output,
+    // tool-call blocks render Bash/Read/Edit cards with their results.
+    const blocks = Array.isArray(msg.blocks) && msg.blocks.length ? msg.blocks : null;
+    if (blocks) {
+      for (const blk of blocks) {
+        if (blk.kind === 'reasoning') {
+          const d = el('div', 'disclosure');
+          const row = el('button', 'dRow');
+          row.type = 'button';
+          row.innerHTML = P.icons['ma.think'] || '';
+          row.appendChild(el('span', 'dTitle', t('chat.thinking')));
+          const body = el('div', 'dBody');
+          const tb = el('div', 'thinkBody');
+          tb.textContent = blk.text;
+          body.appendChild(tb);
+          row.addEventListener('click', () => d.classList.toggle('open'));
+          d.appendChild(row); d.appendChild(body);
+          item.appendChild(d);
+        } else if (blk.kind === 'text') {
+          const p = el('p', 'para');
+          p.innerHTML = linkifyPaths(mdToHtml(blk.text));
+          if (msg.streaming) p.appendChild(el('span', 'caret'));
+          item.appendChild(p);
+        } else if (blk.kind === 'image') {
+          item.appendChild(imageEl(blk.src));
+        } else if (blk.kind === 'toolcall') {
+          item.appendChild(renderToolBlock(blk));
+        }
+      }
+    } else {
+      // legacy fallback (no block info)
+      if (msg.reasoning) {
+        const d = el('div', 'disclosure');
+        const row = el('button', 'dRow');
+        row.type = 'button';
+        row.innerHTML = P.icons['ma.think'] || '';
+        row.appendChild(el('span', 'dTitle', t('chat.thinking')));
+        const body = el('div', 'dBody');
+        const tb = el('div', 'thinkBody');
+        tb.textContent = msg.reasoning;
+        body.appendChild(tb);
+        row.addEventListener('click', () => d.classList.toggle('open'));
+        d.appendChild(row); d.appendChild(body);
+        item.appendChild(d);
+      }
+      if (msg.content) {
+        const p = el('p', 'para');
+        p.innerHTML = linkifyPaths(mdToHtml(msg.content));
+        if (msg.streaming) p.appendChild(el('span', 'caret'));
+        item.appendChild(p);
+      }
     }
     for (const img of msg.images || []) item.appendChild(imageEl(img));
     // deliverables: every produced file, clickable, always visible at the end
     const dlv = deliverablesEl(msg.content || '');
     if (dlv) item.appendChild(dlv);
-    // meta: 完成时间 · 用时 · token (appears on hover)
+    // meta + persistent actions (bottom-right of the OUTPUT, not on think/tool)
+    const foot = el('div', 'msgFoot');
     const meta = el('div', 'msgMeta');
     meta.appendChild(el('span', '', clock(msg.ts)));
     if (msg.durMs) meta.appendChild(el('span', '', ' · ' + fmtDurShort(msg.durMs)));
     if (msg.usage && (msg.usage.prompt_tokens || msg.usage.completion_tokens)) {
       meta.appendChild(el('span', '', ' · ' + t('chat.tokens', { in: msg.usage.prompt_tokens || 0, out: msg.usage.completion_tokens || 0 })));
     }
-    item.appendChild(meta);
-    // actions: 复制 / 好 / 坏 / 分支
+    foot.appendChild(meta);
     const actions = el('div', 'msgActions');
     const mk = (icon, label, fn) => {
       const b = el('button', 'maBtn');
@@ -6922,7 +7124,7 @@ window.PRTS_MARKET = {
       return b;
     };
     actions.appendChild(mk('ma.copy', t('chat.copy'), () => {
-      const txt = [msg.reasoning ? msg.reasoning : '', msg.content || ''].filter(Boolean).join('\n');
+      const txt = [msg.reasoning || '', msg.content || ''].filter(Boolean).join('\n');
       const p = navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject(new Error('no clipboard'));
       p.then(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copied')); })
         .catch(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copyFail')); });
@@ -6934,7 +7136,8 @@ window.PRTS_MARKET = {
     if (fb[msg.id] === 'bad') dn.classList.add('on');
     actions.appendChild(up); actions.appendChild(dn);
     actions.appendChild(mk('ma.branch', t('chat.branch'), () => branchFrom(msg)));
-    item.appendChild(actions);
+    foot.appendChild(actions);
+    item.appendChild(foot);
     return item;
   }
 

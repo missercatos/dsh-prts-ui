@@ -42,16 +42,42 @@
 
   // Minimal markdown: images (built-in — the model may return one), code
   // blocks, inline code, bold, links. Everything is HTML-escaped first.
+  const INLINE_MD = (t) => String(t)
+    .replace(/`([^`\n]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  function tableHtml(rows) {
+    const grid = rows.map((r) => r.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|').map((c) => c.trim()));
+    let html = '<div class="tblWrap"><table>';
+    grid.forEach((cs, ri) => {
+      if (ri === 1 && cs.every((c) => /^:?-{2,}:?$/.test(c))) return;
+      html += '<tr>' + cs.map((c) => (ri === 0 ? '<th>' : '<td>') + INLINE_MD(c) + (ri === 0 ? '</th>' : '</td>')).join('') + '</tr>';
+    });
+    html += '</table></div>';
+    return html;
+  }
   function mdToHtml(text) {
     let s = esc(text);
+    // emoji → monochrome glyphs (webUI-style rendered marks, not color emoji)
+    s = s.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}]/gu, (m) => '<span class="emoji">' + m + '</span>');
     const codeBlocks = [];
     s = s.replace(/```([\s\S]*?)```/g, (m, code) => { codeBlocks.push(code); return '\u0000CODE' + (codeBlocks.length - 1) + '\u0000'; });
     s = s.replace(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g, '<img class="mdImg" src="$2" alt="$1">');
     s = s.replace(/(^|\n)(https?:\/\/\S+\.(?:png|jpe?g|gif|webp|svg|bmp)(?:\?\S*)?)/gi, '$1<img class="mdImg" src="$2" alt="">');
-    s = s.replace(/`([^`\n]+)`/g, '<code>$1</code>');
-    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-    s = s.replace(/\n/g, '<br>');
+    // pipe tables first (line-based), everything else inline
+    const lines = s.split('\n');
+    const out = [];
+    for (let i = 0; i < lines.length; i++) {
+      if (/^\s*\|.*\|\s*$/.test(lines[i]) && i + 1 < lines.length && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1])) {
+        const rows = [];
+        while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) rows.push(lines[i++]);
+        out.push(tableHtml(rows));
+        i--;
+      } else {
+        out.push(INLINE_MD(lines[i]));
+      }
+    }
+    s = out.join('<br>');
     s = s.replace(/\u0000CODE(\d+)\u0000/g, (m, i) => '<pre>' + codeBlocks[Number(i)] + '</pre>');
     return s;
   }
@@ -75,19 +101,28 @@
     return null;
   }
 
-  /** message -> { reasoning, text, images: [src|{attachmentId}] , usage, model } */
+  /** message -> ordered blocks + aggregated fields (webUI block parity). */
   function messageParts(msg) {
-    const out = { reasoning: '', text: '', images: [], usage: null, model: null };
+    const out = { blocks: [], reasoning: '', text: '', images: [], usage: null, model: null };
     if (!msg) return out;
-    if (typeof msg.reasoning === 'string') out.reasoning = msg.reasoning;
+    if (typeof msg.reasoning === 'string' && msg.reasoning) {
+      out.reasoning = msg.reasoning;
+      out.blocks.push({ kind: 'reasoning', text: msg.reasoning });
+    }
     const content = Array.isArray(msg.content) ? msg.content : [];
     for (const b of content) {
-      const k = blockKind(b);
-      if (k === 'reasoning') out.reasoning += (b.text || b.content || '');
-      else if (k === 'text') out.text += (b.text || '');
-      else if (k === 'image') {
-        const src = imageSrcOf(b);
-        if (src) out.images.push(src);
+      const ty = b && b.type;
+      if (ty === 'reasoning' || ty === 'thinking') {
+        const t = (b.text || b.content || '');
+        if (t) { out.reasoning += t; out.blocks.push({ kind: 'reasoning', text: t }); }
+      } else if (ty === 'text') {
+        const t = b.text || '';
+        if (t) { out.text += t; out.blocks.push({ kind: 'text', text: t }); }
+      } else if (ty === 'image') {
+        const s2 = imageSrcOf(b);
+        if (s2) { out.images.push(s2); out.blocks.push({ kind: 'image', src: s2 }); }
+      } else if (ty === 'tool-call' || ty === 'tool_use') {
+        out.blocks.push({ kind: 'toolcall', callId: b.id || b.callId || null, name: b.name || 'tool', arguments: b.arguments || b.input || '' });
       }
     }
     out.usage = msg.usage || null;
@@ -104,6 +139,7 @@
     usage: null,
     model: null,
     toolCalls: [],   // [{ callId, name, args }]
+    blocks: [],      // ordered streamed blocks (toolcall entries)
     turn: null,
     step: null,
     finished: false,
@@ -112,7 +148,7 @@
 
   function resetLive() {
     live.seq = -1; live.id = null; live.reasoning = ''; live.text = '';
-    live.usage = null; live.model = null; live.toolCalls = [];
+    live.usage = null; live.model = null; live.toolCalls = []; live.blocks = [];
     live.turn = null; live.step = null; live.finished = false;
     live.msgRef = null;
   }
@@ -193,7 +229,10 @@
         if (!tc) {
           tc = { callId, name: chunk.name || (chunk.toolCall && chunk.toolCall.name) || '', args: '' };
           live.toolCalls.push(tc);
+          live.blocks.push({ kind: 'toolcall', callId, name: tc.name, arguments: '', result: null });
         }
+        const blk = live.blocks.find((b) => b.kind === 'toolcall' && b.callId === callId);
+        if (blk) blk.arguments = tc.args;
         if (!tc.name && (chunk.name || (chunk.toolCall && chunk.toolCall.name))) tc.name = chunk.name || chunk.toolCall.name;
         if (chunk.arguments || chunk.argumentsDelta || (chunk.toolCall && chunk.toolCall.arguments)) {
           tc.args += chunk.arguments || chunk.argumentsDelta || (chunk.toolCall && chunk.toolCall.arguments) || '';
@@ -218,6 +257,7 @@
     if (!C.streaming) return;
     C.streaming = false;
     swapSendStop(false);
+    if (C.workTimer) { clearInterval(C.workTimer); C.workTimer = null; }
     if (C.onStreaming) { try { C.onStreaming(false); } catch (e) { /* noop */ } }
   }
 
@@ -256,6 +296,7 @@
         existing.content = parts.text;
         if (parts.reasoning) existing.reasoning = parts.reasoning;
         existing.images = parts.images;
+        existing.blocks = parts.blocks;
         existing.usage = parts.usage || existing.usage;
         existing.model = parts.model || existing.model;
         existing.streaming = false;
@@ -266,6 +307,7 @@
         C.messages.push({
           id: id || ('a' + ev.seq), _seq: ev.seq, role: 'assistant',
           content: parts.text, reasoning: parts.reasoning, images: parts.images,
+          blocks: parts.blocks,
           ts: ev.time, usage: parts.usage, model: parts.model, streaming: false,
           durMs,
         });
@@ -299,19 +341,46 @@
         text = data.text || data.output || '';
       }
       let target = null;
-      if (callId) target = C.messages.filter((m) => m.role === 'tool').reverse().find((m) => m.callId === callId);
-      if (target) {
+      let targetBlock = null;
+      if (callId) {
+        // 1) streamed live blocks
+        const lb = live.blocks.find((b) => b.kind === 'toolcall' && b.callId === callId);
+        if (lb) { lb.result = text; targetBlock = lb; target = live.msgRef || null; }
+        // 2) blocks inside final assistant messages
+        if (!targetBlock) {
+          for (let i = C.messages.length - 1; i >= 0; i--) {
+            const m = C.messages[i];
+            if (m.role !== 'assistant' || !Array.isArray(m.blocks)) continue;
+            const blk = m.blocks.find((b) => b.kind === 'toolcall' && b.callId === callId);
+            if (blk) { blk.result = text; targetBlock = blk; target = m; break; }
+          }
+        }
+        // 3) standalone tool messages (fallback)
+        if (!targetBlock) target = C.messages.filter((m) => m.role === 'tool').reverse().find((m) => m.callId === callId);
+      }
+      if (target && !targetBlock) {
         target.content = text;
         target.resultSeq = ev.seq;
-      } else {
+      } else if (!targetBlock) {
         C.messages.push({ id: 'r' + ev.seq, _seq: ev.seq, role: 'tool', content: text, name: data.name || 'tool', callId, ts: ev.time });
       }
+      scheduleRender();
     } else if (type === 'step/start') {
       C.activeSteps += 1;
-      if (C.onStatus) { try { C.onStatus(t('chat.step', { n: C.activeSteps })); } catch (e) { /* noop */ } }
+      if (!C.workTimer) {
+        C.workStartAt = Date.now();
+        C.workTimer = setInterval(() => {
+          const s = Math.round((Date.now() - C.workStartAt) / 1000);
+          if (C.onStatus) { try { C.onStatus(t('chat.working', { s })); } catch (e) { /* noop */ } }
+        }, 1000);
+      }
+      if (C.onStatus) { try { C.onStatus(t('chat.working', { s: 0 })); } catch (e) { /* noop */ } }
     } else if (type === 'step/end') {
       C.activeSteps = Math.max(0, C.activeSteps - 1);
-      if (C.activeSteps <= 0 && C.onStatus) { try { C.onStatus(null); } catch (e) { /* noop */ } }
+      if (C.activeSteps <= 0) {
+        if (C.workTimer) { clearInterval(C.workTimer); C.workTimer = null; }
+        if (C.onStatus) { try { C.onStatus(null); } catch (e) { /* noop */ } }
+      }
     } else if (type === 'command/run') {
       C.messages.push({
         id: 'c' + ev.seq, _seq: ev.seq, role: 'system', ts: ev.time,
@@ -324,18 +393,38 @@
     } else if (type === 'approval/policy') {
       C.messages.push({ id: 'ap' + ev.seq, _seq: ev.seq, role: 'system', ts: ev.time, content: t('chat.approvalPolicy', { policy: data.policy }) });
     }
+    // Any event that changed the message list repaints the flow — webUI
+    // parity: your own sends show up instantly, results attach in place.
+    if (type === 'user/message' || type === 'assistant/message' || type === 'tool/call' || type === 'tool/result' || type === 'command/run' || type === 'permission/preset' || type === 'sandbox/mode' || type === 'approval/policy') {
+      scheduleRender();
+    }
   }
 
   /* ---------- rendering ---------- */
   function renderUser(msg) {
     const wrap = el('div', 'userRow');
     const bubble = el('div', 'userBubble');
-    if (msg.content) bubble.innerHTML = mdToHtml(msg.content);
+    if (msg.content) bubble.innerHTML = linkifyPaths(mdToHtml(msg.content));
     for (const img of msg.images || []) bubble.appendChild(imageEl(img));
     wrap.appendChild(bubble);
-    const tr = el('div', 'maRow timeStart');
+    const foot = el('div', 'msgFoot');
+    const tr = el('div', 'maRow');
     tr.appendChild(el('span', 'maTime', clock(msg.ts)));
-    wrap.appendChild(tr);
+    foot.appendChild(tr);
+    const actions = el('div', 'msgActions');
+    const cp = el('button', 'maBtn');
+    cp.type = 'button';
+    cp.title = t('chat.copy');
+    cp.innerHTML = P.icons['ma.copy'] || '';
+    cp.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const p = navigator.clipboard ? navigator.clipboard.writeText(msg.content || '') : Promise.reject(new Error('no clipboard'));
+      p.then(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copied')); })
+        .catch(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copyFail')); });
+    });
+    actions.appendChild(cp);
+    foot.appendChild(actions);
+    wrap.appendChild(foot);
     return wrap;
   }
 
@@ -472,42 +561,125 @@
     }
   }
 
+  function toolIcon(name) {
+    const map = {
+      bash: 'ma.bash', terminal: 'ma.bash', read: 'ma.read', read_file: 'ma.read',
+      edit: 'ma.edit', str_replace_editor: 'ma.edit', str_replace: 'ma.edit', write: 'ma.edit',
+      web_fetch: 'search', web_search: 'search', grep: 'search', glob: 'search',
+    };
+    return P.icons[map[name]] || P.icons['ma.tool'] || '⟳';
+  }
+
+  /** One tool-call block: icon + name, folded args, folded result (Bash/Read…). */
+  function renderToolBlock(blk) {
+    const item = el('div', 'toolBlock');
+    const head = el('button', 'dRow');
+    head.type = 'button';
+    head.innerHTML = toolIcon(blk.name || 'tool');
+    head.appendChild(el('span', 'dTitle', String(blk.name || 'tool')));
+    item.appendChild(head);
+    if (blk.arguments) {
+      const argsBody = el('div', 'dBody');
+      const pre = el('div', 'thinkBody');
+      pre.textContent = String(blk.arguments).slice(0, 1200);
+      // paths inside args get clickable underlines
+      const paths = extractPaths(String(blk.arguments));
+      const pathRow = el('div', 'dlvChips');
+      for (const p of paths.slice(0, 6)) {
+        const chip = el('button', 'dlvChip');
+        chip.type = 'button';
+        chip.innerHTML = P.icons['ma.read'] + '<span>' + esc(p.split('/').pop() || p) + '</span>';
+        chip.addEventListener('click', (e) => { e.stopPropagation(); openFilePath(p); });
+        pathRow.appendChild(chip);
+      }
+      if (pathRow.childNodes.length) argsBody.appendChild(pathRow);
+      argsBody.appendChild(pre);
+      item.appendChild(argsBody);
+      head.addEventListener('click', () => item.classList.toggle('openArgs'));
+      item.classList.add('openArgs');
+    }
+    if (blk.result) {
+      const d = el('div', 'disclosure open');
+      const body = el('div', 'dBody toolBody');
+      const pre = el('div', 'thinkBody');
+      const err = /(^|\n)(error|failed|stderr|not allowed|denied)/i.test(String(blk.result).slice(0, 400));
+      if (err) pre.classList.add('errText');
+      pre.innerHTML = linkifyPaths(mdToHtml(String(blk.result).slice(0, 20000)));
+      body.appendChild(pre);
+      d.appendChild(body);
+      item.appendChild(d);
+    }
+    return item;
+  }
+
   function renderAssistant(msg) {
     const item = el('div', 'assistantItem');
     item.dataset.msg = msg.id;
-    if (msg.reasoning) {
-      const d = el('div', 'disclosure');
-      const row = el('button', 'dRow');
-      row.type = 'button';
-      row.innerHTML = P.icons['ma.think'] || '';
-      row.appendChild(el('span', 'dTitle', t('chat.thinking')));
-      const body = el('div', 'dBody');
-      const tb = el('div', 'thinkBody');
-      tb.textContent = msg.reasoning;
-      body.appendChild(tb);
-      row.addEventListener('click', () => d.classList.toggle('open'));
-      d.appendChild(row); d.appendChild(body);
-      item.appendChild(d);
-    }
-    if (msg.content) {
-      const p = el('p', 'para');
-      p.innerHTML = linkifyPaths(mdToHtml(msg.content));
-      if (msg.streaming) p.appendChild(el('span', 'caret'));
-      item.appendChild(p);
+    // Ordered blocks (webUI parity): think folds, text is the main output,
+    // tool-call blocks render Bash/Read/Edit cards with their results.
+    const blocks = Array.isArray(msg.blocks) && msg.blocks.length ? msg.blocks : null;
+    if (blocks) {
+      for (const blk of blocks) {
+        if (blk.kind === 'reasoning') {
+          const d = el('div', 'disclosure');
+          const row = el('button', 'dRow');
+          row.type = 'button';
+          row.innerHTML = P.icons['ma.think'] || '';
+          row.appendChild(el('span', 'dTitle', t('chat.thinking')));
+          const body = el('div', 'dBody');
+          const tb = el('div', 'thinkBody');
+          tb.textContent = blk.text;
+          body.appendChild(tb);
+          row.addEventListener('click', () => d.classList.toggle('open'));
+          d.appendChild(row); d.appendChild(body);
+          item.appendChild(d);
+        } else if (blk.kind === 'text') {
+          const p = el('p', 'para');
+          p.innerHTML = linkifyPaths(mdToHtml(blk.text));
+          if (msg.streaming) p.appendChild(el('span', 'caret'));
+          item.appendChild(p);
+        } else if (blk.kind === 'image') {
+          item.appendChild(imageEl(blk.src));
+        } else if (blk.kind === 'toolcall') {
+          item.appendChild(renderToolBlock(blk));
+        }
+      }
+    } else {
+      // legacy fallback (no block info)
+      if (msg.reasoning) {
+        const d = el('div', 'disclosure');
+        const row = el('button', 'dRow');
+        row.type = 'button';
+        row.innerHTML = P.icons['ma.think'] || '';
+        row.appendChild(el('span', 'dTitle', t('chat.thinking')));
+        const body = el('div', 'dBody');
+        const tb = el('div', 'thinkBody');
+        tb.textContent = msg.reasoning;
+        body.appendChild(tb);
+        row.addEventListener('click', () => d.classList.toggle('open'));
+        d.appendChild(row); d.appendChild(body);
+        item.appendChild(d);
+      }
+      if (msg.content) {
+        const p = el('p', 'para');
+        p.innerHTML = linkifyPaths(mdToHtml(msg.content));
+        if (msg.streaming) p.appendChild(el('span', 'caret'));
+        item.appendChild(p);
+      }
     }
     for (const img of msg.images || []) item.appendChild(imageEl(img));
     // deliverables: every produced file, clickable, always visible at the end
     const dlv = deliverablesEl(msg.content || '');
     if (dlv) item.appendChild(dlv);
-    // meta: 完成时间 · 用时 · token (appears on hover)
+    // meta + persistent actions (bottom-right of the OUTPUT, not on think/tool)
+    const foot = el('div', 'msgFoot');
     const meta = el('div', 'msgMeta');
     meta.appendChild(el('span', '', clock(msg.ts)));
     if (msg.durMs) meta.appendChild(el('span', '', ' · ' + fmtDurShort(msg.durMs)));
     if (msg.usage && (msg.usage.prompt_tokens || msg.usage.completion_tokens)) {
       meta.appendChild(el('span', '', ' · ' + t('chat.tokens', { in: msg.usage.prompt_tokens || 0, out: msg.usage.completion_tokens || 0 })));
     }
-    item.appendChild(meta);
-    // actions: 复制 / 好 / 坏 / 分支
+    foot.appendChild(meta);
     const actions = el('div', 'msgActions');
     const mk = (icon, label, fn) => {
       const b = el('button', 'maBtn');
@@ -518,7 +690,7 @@
       return b;
     };
     actions.appendChild(mk('ma.copy', t('chat.copy'), () => {
-      const txt = [msg.reasoning ? msg.reasoning : '', msg.content || ''].filter(Boolean).join('\n');
+      const txt = [msg.reasoning || '', msg.content || ''].filter(Boolean).join('\n');
       const p = navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject(new Error('no clipboard'));
       p.then(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copied')); })
         .catch(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copyFail')); });
@@ -530,7 +702,8 @@
     if (fb[msg.id] === 'bad') dn.classList.add('on');
     actions.appendChild(up); actions.appendChild(dn);
     actions.appendChild(mk('ma.branch', t('chat.branch'), () => branchFrom(msg)));
-    item.appendChild(actions);
+    foot.appendChild(actions);
+    item.appendChild(foot);
     return item;
   }
 

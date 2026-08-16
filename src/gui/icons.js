@@ -31,6 +31,7 @@
     'ma.clear': S('<path d="M3 2.2 5.4 4 3 5.8M9.2 2.2 6.8 4l2.4 1.8M3 8.4 5.4 10.2 3 12M9.2 8.4 6.8 10.2l2.4 1.8" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>'),
     // Edit / Think / Read marks — abstract PRTS glyphs for message actions
     'ma.think': S('<path d="' + D + '" stroke="currentColor" stroke-width="1.15"/><circle cx="5.6" cy="7" r="0.9" fill="currentColor"/><circle cx="8.4" cy="7" r="0.9" fill="currentColor"/><circle cx="7" cy="4.2" r="0.9" fill="currentColor"/>'),
+    'ma.bash': S('<path d="M2.2 3.2h9.6a.9.9 0 0 1 .9.9v5.8a.9.9 0 0 1-.9.9H2.2a.9.9 0 0 1-.9-.9V4.1a.9.9 0 0 1 .9-.9Z" stroke="currentColor" stroke-width="1.15"/><path d="M3.8 5.2 5.4 6.6 3.8 8M6 8.6h4" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>'),
     'ma.tool': S('<path d="M4.4 9.6 8 6l2.6 2.6-3.6 3.6a2.4 2.4 0 0 1-3.4-3.4L5 7.4" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M8.8 5.2l1.6-1.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>'),
     'ma.edit': S('<path d="M8.4 2.2 11.8 5.6 5.2 12.2 1.8 12.2l.2-3.4Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M7.4 3.2 10.8 6.6" stroke="currentColor" stroke-width="1.15"/>'),
     'ma.read': S('<path d="M7 2.4c-1.8 0-3.5.7-4.8 1.8L7 8.6l4.8-4.4A6.8 6.8 0 0 0 7 2.4Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M2.2 8v2.6c0 .6.5 1 1 1h7.6a1 1 0 0 0 1-1V8" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),

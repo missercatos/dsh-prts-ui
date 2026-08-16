@@ -474,3 +474,30 @@ body[data-wallpaper='on'] .settingsCard {
 .sbViewIcon svg { width: 12px; height: 12px; }
 .frame[data-sbview='workspaces'] .sbSectionSessions { display: none; }
 .frame[data-sbview='sessions'] .sbSectionWorkspaces { display: none; }
+
+/* ---------- 0.7.0: webUI-render parity ---------- */
+/* colors: think grey, errors red, main output pure ink */
+.thinkBody { color: var(--prts-ink-dim); }
+.errText { color: #f7768e; }
+.para { color: var(--prts-ink); }
+/* emoji → monochrome rendered marks (webUI style) */
+.emoji { font-style: normal; filter: grayscale(1) brightness(1.55) contrast(1.05); }
+[data-theme='light'] .emoji { filter: grayscale(1) brightness(0.35) contrast(1.1); }
+/* markdown tables scroll both ways (webUI parity) */
+.tblWrap { max-height: 320px; overflow: auto; margin: 6px 0; border: 1px solid var(--prts-hairline); border-radius: 8px; }
+.tblWrap table { border-collapse: collapse; min-width: 100%; font-size: 12px; font-family: var(--prts-mono); }
+.tblWrap th, .tblWrap td { border-bottom: 1px solid var(--prts-hairline); padding: 5px 10px; text-align: left; white-space: nowrap; }
+.tblWrap th { color: var(--prts-accent); font-weight: 600; }
+/* persistent message footer: meta + big actions, bottom-right of the OUTPUT */
+.msgFoot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+.msgMeta { display: flex; gap: 6px; font-size: 10px; color: var(--prts-ink-faint); font-family: var(--prts-mono); margin: 0; opacity: 1; }
+.msgActions { display: inline-flex; gap: 6px; opacity: 1; position: static; transform: none; margin: 0; background: transparent; padding: 0; }
+.maBtn { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--prts-hairline); background: color-mix(in srgb, var(--prts-surface) 55%, transparent); color: var(--prts-ink-dim); }
+.maBtn svg { width: 16px; height: 16px; }
+.maBtn:hover { color: var(--prts-accent); border-color: var(--prts-accent); }
+/* tool blocks (Bash/Read/Edit cards) */
+.toolBlock { margin: 6px 0; border: 1px solid var(--prts-hairline); border-radius: 8px; overflow: hidden; }
+.toolBlock .dRow { width: 100%; }
+.toolBlock .dBody { border-top: 1px solid var(--prts-hairline); padding: 8px 10px; }
+/* working status glows in the accent color */
+.statusRow .shimmer { color: var(--prts-accent); text-shadow: 0 0 12px color-mix(in srgb, var(--prts-accent) 55%, transparent); }
