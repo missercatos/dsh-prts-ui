@@ -56,7 +56,13 @@ command -v dsh >/dev/null 2>&1 || die "dsh is not installed. Run \`sh install.sh
 DSH_PKG="$(cfg_get dshPackage)"
 [ -n "$DSH_PKG" ] || DSH_PKG="@deepseek-ai/dsh"
 say "Updating the dsh harness ($DSH_PKG)…"
-npm_i -g "$DSH_PKG" || warn "dsh update failed (continuing with the installed version)."
+if npm_i -g "$DSH_PKG" >/tmp/prts-npm-i.log 2>&1; then
+  :
+elif grep -q "EACCES\|permission denied" /tmp/prts-npm-i.log 2>/dev/null; then
+  warn "dsh is installed system-wide and the global update needs sudo — run \`sudo npm i -g $DSH_PKG\` later (continuing with the installed version)."
+else
+  warn "dsh update failed (continuing with the installed version)."
+fi
 
 # ---------- 2. dsh plugins (kept updated alongside PRTS) ----------
 PLUGINS="$(node -e '
@@ -103,8 +109,14 @@ if [ -z "$TGZ" ]; then
           if (!body) { process.stdout.write(""); return; }
           try {
             const m = JSON.parse(body);
-            const latest = (m.versions && m.versions[0]) || m.latest || {};
-            process.stdout.write(latest.url || latest.tgz || "");
+            // releases.json layout: { downloads: { tarball, ... }, files: [...] }
+            let file = "";
+            if (m.downloads && m.downloads.tarball) file = m.downloads.tarball;
+            else if (Array.isArray(m.files)) {
+              const hit = m.files.find((f) => f.file && /\.tgz$/.test(f.file));
+              if (hit) file = hit.file;
+            }
+            process.stdout.write(file ? base + "/" + file : "");
           } catch (e) { process.stdout.write(""); }
         });
       ' "$RELEASE_BASE" "$MANIFEST" 2>/dev/null || true)"

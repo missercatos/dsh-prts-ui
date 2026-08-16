@@ -8,6 +8,7 @@ PRTS 是 **dsh（DeepSeek Harness）的 GUI 外壳**，不是独立软件。它�
 
 - **工作区**：侧栏列表、新建/删除、头部面包屑随时切换
 - **会话**：新建会话、归档、**搜索会话**（本地过滤 + dsh 的 session.search）、**多选批量归档**（选择模式 + 全选，配合搜索可一键清掉一批）
+- **轨迹与日志拆分**：“轨迹”页签是**分步时间线**（按轮/步分组：每一步的模型/工具事件与耗时）；“会话日志”按钮是独立的**原始事件日志**浮层（可导出 JSON）
 - **模式选择**：dsh 自己的 agent preset（标准 / PTC / 极简 / 创造…）。空白会话直接切换；**已开始的会话模式锁定**（dsh 约束），改模式会提示并以所选模式新建会话
 - **模型选择**：先选厂商再选模型（`session.models` 实时显示当前模型）
 - **推理等级**：模型自带的 reasoning efforts（Off / High / Max，经 `session.selectModel` 的 `reasoningEffort`）
@@ -15,7 +16,9 @@ PRTS 是 **dsh（DeepSeek Harness）的 GUI 外壳**，不是独立软件。它�
 - **传递文件**：附加图片（PNG/JPEG/WebP/GIF）随消息发送，历史里的图片自动回读
 - **审批 / 提问**：`approval/requested`、`question/requested` 弹卡，可批准/拒绝/回答
 - **上下文仪表**：输入框旁的百分比环显示上下文窗口占用（projection `contextPressure`）
-- 其余：粒子开场、系统面板（硬件遥测）、语音输入、费用面板、插件市场、轨迹视图、中英文界面、明暗主题
+- **底部统计条**：与会话页同款实时统计 —— `6 轮 · 311 步 · LLM 51m15s · 工具调用 7m00s · 首 token 平均 2.6s · 113 tok/s · 缓存命中 99% · 输入 86M tok · 输出 255K`（projection `sessionStats`/`tokenUsage`，mux `session/projection` 帧实时刷新 + 8s 轮询兜底）
+- **语音输入**：完整可用的麦克风语音转文字 —— 首次开启弹窗询问麦克风权限；VAD 检测说话/静音自动开始与结束；识别引擎为本地 whisper-tiny ONNX（首次使用从 npmmirror / hf-mirror 下载引擎与模型到 `~/.cache/prts/stt/`，之后完全离线），浏览器里有 `webkitSpeechRecognition` 时自动优先
+- 其余：三幕粒子开场（welcome → PRTS·DEEPSEEK 横幅 → 菱形标志，每幕 3.2s，点击跳过）、系统面板（硬件遥测）、费用面板、插件市场、中英文界面、明暗主题
 
 ## 与当前 dsh 内核的兼容性修正（0.2.0）
 
@@ -33,7 +36,9 @@ PRTS 是 **dsh（DeepSeek Harness）的 GUI 外壳**，不是独立软件。它�
 | 死按钮 | 侧栏折叠（折叠后左侧出现悬浮展开条，可随时重开）、对话/轨迹页签、会话日志、上下文仪表均已接线 |
 | 设置里“模型配置”折叠钮无效（CSS `display` 压过 `hidden` 属性） | 全局 `[hidden]{display:none!important}`，同时修好附件条/状态行等同类隐患 |
 | 发送后卡在“停止”状态（mux 断流导致 streaming 永久为 true） | 流结束/断线都会复位 |
-| 流式期间每条 chunk 全量重渲染（大 session 卡顿） | 渲染按帧批处理 + 90ms 节流（实测一轮 9 秒只重写 DOM 16 次）；开场粒子 8000 + willReadFrequently；历史重载 30 秒冷却；开场播完第一段即进入 |
+| 流式期间每条 chunk 全量重渲染（大 session 卡顿） | 渲染按帧批处理 + 90ms 节流（实测一轮 9 秒只重写 DOM 16 次）；粒子 willReadFrequently；历史重载 30 秒冷却 |
+| 设置“模型配置”折叠瞬间跳变 | 改为网格行高动画（0fr→1fr），文字平滑收起、下方内容平滑上移 |
+| Electron 内 GUI 从 file:// 改为仅回环 HTTP 服务（127.0.0.1 随机端口） | 语音引擎的 wasm 模块导入/Worker 需要真实 http 源；API 仍走 preload 桥，无窗口、不外露 |
 
 ## 安装（一键，国内网络可用）
 

@@ -54,6 +54,34 @@
 .trajItem .idx { flex: none; font-family: var(--prts-mono); font-size: 11px; color: var(--prts-ink-faint); padding-top: 3px; }
 .trajEmpty { padding: 60px 0; text-align: center; color: var(--prts-ink-faint); font-size: 13px; letter-spacing: 0.08em; }
 
+/* Step timeline (the Trajectory tab) — grouped by turn/step. */
+.tlStep {
+  margin-bottom: 14px; border: 1px solid var(--prts-hairline); border-radius: 10px;
+  background: var(--prts-surface); overflow: hidden;
+}
+.tlHead {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  border-bottom: 1px solid var(--prts-hairline);
+}
+.tlLabel { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--prts-ink); font-family: var(--prts-mono); }
+.tlDur { margin-left: auto; font-size: 11px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+.tlItem { display: flex; gap: 10px; align-items: baseline; padding: 5px 12px; border-bottom: 1px solid var(--prts-hairline); }
+.tlItem:last-of-type { border-bottom: none; }
+.tlType { flex: none; width: 118px; font-family: var(--prts-mono); font-size: 10.5px; color: var(--prts-ink-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tlBrief { min-width: 0; flex: 1; color: var(--prts-ink-faint); font-size: 12px; line-height: 18px; word-break: break-word; white-space: pre-wrap; max-height: 48px; overflow: hidden; }
+.tlUsage { padding: 4px 12px 8px; font-size: 10.5px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+
+/* Session log overlay (raw events). */
+.logCard { width: min(640px, calc(100vw - 48px)); display: flex; flex-direction: column; }
+.logCard .settingsHead { margin-bottom: 0; }
+.logCard .sBtn { height: 28px; }
+.logBody { flex: 1; min-height: 0; max-height: calc(100vh - 180px); overflow-y: auto; padding: 4px 10px 12px; }
+
+/* Stats dock under the composer. */
+.dockStats .stat { color: var(--prts-ink-dim); }
+.dockStats .statSep { color: var(--prts-ink-faint); }
+.dockStats { padding-bottom: 4px; }
+
 /* ===== New project inline form ===== */
 .inlineForm { display: flex; gap: 6px; padding: 2px; }
 .inlineForm input {
@@ -250,6 +278,15 @@
 .sSecRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .sSecRow .sSecTitle { flex: 1; border-bottom: none; padding-bottom: 0; }
 .sCollapse { display: flex; flex-direction: column; gap: 8px; }
+/* Accordion animation: the body's grid row collapses smoothly, the sections
+   below slide up, the toggle itself never moves the card. */
+.sCollapse.collapseAnim {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.32s var(--prts-ease-out);
+}
+.sCollapse.collapseAnim.open { grid-template-rows: 1fr; }
+.sCollapse.collapseAnim > .collapseInner { overflow: hidden; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
 /* Abstract minimal toggle: a rotated square (diamond) that rights itself
    when the section expands. */
 .toggleBtn {
@@ -1022,6 +1059,7 @@ button:focus:not(:focus-visible) { outline: none; }
               </div>
             </div>
           </div>
+          <div class="dockStats" id="statsDock" hidden></div>
         </div>
       </div>
     </div>
@@ -1071,9 +1109,11 @@ button:focus:not(:focus-visible) { outline: none; }
           <span class="sSecTitle eyebrow" data-i18n="settings.modelConfig">Model configuration</span>
           <button class="toggleBtn" id="modelCfgToggle" type="button" aria-expanded="false" data-i18n-title="settings.modelConfig.toggle"><span class="tgDiamond"></span></button>
         </div>
-        <div class="sCollapse" id="modelCfgBody" hidden>
-          <div class="hint" data-i18n="settings.modelConfig.hint">API keys are written to the dsh harness home (~/.dsh) — exactly where dsh keeps them. Only models whose provider has a key can be picked.</div>
-          <div id="cfgProviders"></div>
+        <div class="sCollapse collapseAnim" id="modelCfgBody">
+          <div class="collapseInner">
+            <div class="hint" data-i18n="settings.modelConfig.hint">API keys are written to the dsh harness home (~/.dsh) — exactly where dsh keeps them. Only models whose provider has a key can be picked.</div>
+            <div id="cfgProviders"></div>
+          </div>
         </div>
       </div>
 
@@ -1144,6 +1184,21 @@ button:focus:not(:focus-visible) { outline: none; }
   </div>
 </div>
 
+<div class="overlay" id="logOverlay">
+  <div class="settingsCard logCard">
+    <div class="settingsHead">
+      <span class="title" data-i18n="log.title">Session log</span>
+      <span class="sRow">
+        <button class="sBtn" id="logExport" type="button" data-i18n="log.export">Export</button>
+        <button class="iconBtn" id="logClose" type="button" title="Close">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </button>
+      </span>
+    </div>
+    <div class="logBody" id="logBody"></div>
+  </div>
+</div>
+
 <div class="overlay" id="modalOverlay">
   <div class="modalCard">
     <div class="modalHead">
@@ -1169,7 +1224,7 @@ button:focus:not(:focus-visible) { outline: none; }
 
 <script>
 window.PRTS_MARKET = {
-  "generatedAt": "2026-08-16T02:58:09.101Z",
+  "generatedAt": "2026-08-16T06:29:32.238Z",
   "plugins": [
     {
       "pkg": "@liustack/modlens",
@@ -1193,12 +1248,36 @@ window.PRTS_MARKET = {
       "description": "VSCode-like sidebar (explorer / editor / terminal / git)."
     },
     {
+      "name": "@memtensor/memos-local-plugin",
+      "displayName": "@memtensor/memos-local-plugin",
+      "description": "Reflect2Evolve memory plugin: layered L1/L2/L3 memory, reflection-weighted value backprop, cross-task policy induction, skill crystallization, and three-tier retrieval for OpenClaw, Hermes Agent, and DeepSeek Harness.",
+      "source": "npm",
+      "pkg": "@memtensor/memos-local-plugin",
+      "repo": null
+    },
+    {
       "name": "@liustack/modsearch",
       "displayName": "@liustack/modsearch",
       "description": "Plug-in web search, X search, and page fetch for models without native web access, powered by the free Antigravity CLI",
       "source": "npm",
       "pkg": "@liustack/modsearch",
       "repo": "git+https://github.com/liustack/modsearch.git"
+    },
+    {
+      "name": "dsh-pocket",
+      "displayName": "dsh-pocket",
+      "description": "把 DeepSeek Harness 装进你的口袋：一个包、一个设置页，手机扫码即同步访问电脑上的 DSH（局域网 + 公网，实时同屏）。",
+      "source": "npm",
+      "pkg": "dsh-pocket",
+      "repo": "git+https://github.com/shaobeichen/dsh-pocket.git"
+    },
+    {
+      "name": "opencode-engram-learning",
+      "displayName": "opencode-engram-learning",
+      "description": "Evidence-based learning engine for OpenCode — learn anything, verify by free recall, schedule with FSRS, adapt from your own data.",
+      "source": "npm",
+      "pkg": "opencode-engram-learning",
+      "repo": "git+https://github.com/nagisanzenin/engram.git"
     },
     {
       "name": "@liustack/pptfast",
@@ -1217,12 +1296,76 @@ window.PRTS_MARKET = {
       "repo": "https://git.itdos.net:88/anderson/microi.vscode.git"
     },
     {
+      "name": "dsh-web-open",
+      "displayName": "dsh-web-open",
+      "description": "Auto-open the browser, whale tray icon, desktop shortcut and one-shot installer for `dsh web` (DeepSeek Harness plugin)",
+      "source": "npm",
+      "pkg": "dsh-web-open",
+      "repo": null
+    },
+    {
+      "name": "dsh-builtin-browser",
+      "displayName": "dsh-builtin-browser",
+      "description": "Shared real browser plugin for DeepSeek Harness: install-and-use — a visible native browser the human can take over, driven by the agent over CDP. DOM-level interaction (React/Vue safe), per-task session isolation, cookie persistence (browser_auth), CAPTC",
+      "source": "npm",
+      "pkg": "dsh-builtin-browser",
+      "repo": "git+https://github.com/wqty123/dsh-browser.git"
+    },
+    {
       "name": "plaindeck",
       "displayName": "plaindeck",
       "description": "Git-native slide format, Agent API, CLI, MCP server, and renderer",
       "source": "npm",
       "pkg": "plaindeck",
       "repo": "git+https://github.com/Mappedinfo/PlainDeck.git"
+    },
+    {
+      "name": "dsh-better-edit",
+      "displayName": "dsh-better-edit",
+      "description": "Hash-anchored read/edit/batch_edit/undo_last_edit tools for DeepSeek Harness (dsh). Every line gets a unique 3-char hash (A-Za-z0-9) that stays stable across edits; stale or ambiguous anchors are rejected, never fuzzy-matched. Undo persists across restart",
+      "source": "npm",
+      "pkg": "dsh-better-edit",
+      "repo": "git+https://github.com/Rianico/dsh-better-edit.git"
+    },
+    {
+      "name": "dsh-win32",
+      "displayName": "dsh-win32",
+      "description": "DeepSeek Harness 的 Windows 插件：沙箱内唯一能跑的持久 shell、可用的极简模式、前台命令识别、旧编码读取与安装体检 | First-class Windows for DSH",
+      "source": "npm",
+      "pkg": "dsh-win32",
+      "repo": "git+https://github.com/sjh9714/dsh-win32.git"
+    },
+    {
+      "name": "pi2dsh",
+      "displayName": "pi2dsh",
+      "description": "Bridge the Pi and DeepSeek Harness ecosystems: a general Pi Host ABI that runs unmodified Pi extensions as native DSH plugins, plus per-package conversion and MCP config translation.",
+      "source": "npm",
+      "pkg": "pi2dsh",
+      "repo": "git+https://github.com/weijiafu14/pi2dsh.git"
+    },
+    {
+      "name": "dsh-desktop-windows",
+      "displayName": "dsh-desktop-windows",
+      "description": "DeepSeek Harness 桌面版（Windows）· Electron desktop shell for DeepSeek Harness — 双击即用 / double-click to run · 支持选区截图提问、系统托盘、会话管理 / region screenshot, system tray, session manager",
+      "source": "npm",
+      "pkg": "dsh-desktop-windows",
+      "repo": "git+https://github.com/ReachGa0/dsh-desktop.git"
+    },
+    {
+      "name": "dsh-find-plugin",
+      "displayName": "dsh-find-plugin",
+      "description": "Find DeepSeek Harness plugins inside the agent — live GitHub dsh-plugin topic search, ranked by stars.",
+      "source": "npm",
+      "pkg": "dsh-find-plugin",
+      "repo": "git+https://github.com/awesome-dsh-plugin/dsh-find-plugin.git"
+    },
+    {
+      "name": "@crazy_th/dsh-computer-use",
+      "displayName": "@crazy_th/dsh-computer-use",
+      "description": "Native Windows Computer Use tools for DeepSeek Harness.",
+      "source": "npm",
+      "pkg": "@crazy_th/dsh-computer-use",
+      "repo": "git+https://github.com/ThreeBody6666/dsh-computer-use.git"
     },
     {
       "name": "design-playbook",
@@ -1233,124 +1376,44 @@ window.PRTS_MARKET = {
       "repo": "git+https://github.com/Bandersnatch0x/design-playbook.git"
     },
     {
-      "name": "@sakikotgw/pack-agent",
-      "displayName": "@sakikotgw/pack-agent",
-      "description": "Pack skills, rules, and MCP into .pack.zip and install them into Claude Code, Codex, Cursor, and other harnesses",
+      "name": "dsh-testkit",
+      "displayName": "dsh-testkit",
+      "description": "Real-host lifecycle testing for DeepSeek Harness plugins.",
       "source": "npm",
-      "pkg": "@sakikotgw/pack-agent",
-      "repo": "git+https://github.com/sakikoTGW/pack-agent.git"
+      "pkg": "dsh-testkit",
+      "repo": "git+https://github.com/iiwish/dsh-testkit.git"
     },
     {
-      "name": "dsh-plugin-koishi",
-      "displayName": "dsh-plugin-koishi",
-      "description": "Koishi plugin for DeepSeek Harness",
+      "name": "dsh-codex-oauth",
+      "displayName": "dsh-codex-oauth",
+      "description": "Use a ChatGPT Codex subscription in DeepSeek Harness through standalone OAuth",
       "source": "npm",
-      "pkg": "dsh-plugin-koishi",
-      "repo": null
+      "pkg": "dsh-codex-oauth",
+      "repo": "git+https://github.com/eons2long/dsh-codex-oauth.git"
     },
     {
-      "name": "@qing3a/dsh-event-auditor",
-      "displayName": "@qing3a/dsh-event-auditor",
-      "description": "Harness 事件流审计面板：观察事件类型、分发模式、计数与最近事件，帮助插件作者理解 harness 内部发生了什么",
+      "name": "@michengai/dsh-skills-manager",
+      "displayName": "@michengai/dsh-skills-manager",
+      "description": "NPM-installable DSH Web plugin for managing local skills and viewing shared Agent skills safely.",
       "source": "npm",
-      "pkg": "@qing3a/dsh-event-auditor",
-      "repo": "git+https://github.com/qing3a/dsh-event-auditor.git"
+      "pkg": "@michengai/dsh-skills-manager",
+      "repo": "git+https://github.com/MichengAI/dsh-skills-manager.git"
     },
     {
-      "name": "dsh-latex-tools",
-      "displayName": "dsh-latex-tools",
-      "description": "Hover LaTeX formulas in the DeepSeek Harness Web UI to copy the TeX source or export the formula as a standalone SVG.",
+      "name": "dsh-plugin-vetting",
+      "displayName": "dsh-plugin-vetting",
+      "description": "装插件前，先体检：第三方插件 = 进程内全权限代码，这个工具让'盲装'变成'知情安装'——恶意模式、越权路径、未检查依赖，一目了然。Static heuristic vetting for third-party DeepSeek Harness plugins: exfiltration, credential access, over-privileged paths, unvetted dependencies.",
       "source": "npm",
-      "pkg": "dsh-latex-tools",
-      "repo": "git+https://github.com/liuup/dsh-latex-tools.git"
+      "pkg": "dsh-plugin-vetting",
+      "repo": "git+https://github.com/truelove-dreamer/dsh-plugin-vetting.git"
     },
     {
-      "name": "dsh-claude-marketplace",
-      "displayName": "dsh-claude-marketplace",
-      "description": "Claude Code compatibility layer for DeepSeek Harness: load .claude skills/commands/agents and install plugins from Claude Code marketplaces as native dsh skills.",
+      "name": "dsh-web-plugin-manager",
+      "displayName": "dsh-web-plugin-manager",
+      "description": "Manage DeepSeek Harness (DSH) plugins from the Web UI: list, enable/disable, install/remove, environments, and a GitHub-awesome-driven marketplace.",
       "source": "npm",
-      "pkg": "dsh-claude-marketplace",
-      "repo": "git+https://github.com/ben7am1n/dsh-claude-marketplace.git"
-    },
-    {
-      "name": "dsh-plugins-raincode",
-      "displayName": "dsh-plugins-raincode",
-      "description": "Use raincode's model layer (cheap model pool, prompt caching, retry) and skill library inside DeepSeek Harness (dsh)",
-      "source": "npm",
-      "pkg": "dsh-plugins-raincode",
-      "repo": "git+https://github.com/rainforest888/dsh-plugins-raincode.git"
-    },
-    {
-      "name": "dsh-sandbox-keeper",
-      "displayName": "dsh-sandbox-keeper",
-      "description": "Remote-sandbox lifecycle owner for DeepSeek Harness: E2B sandbox create/pause/resume, sidecar deployment, heartbeat keep-alive, crash-transparent recovery, and pluggable tar IN/OUT sync.",
-      "source": "npm",
-      "pkg": "dsh-sandbox-keeper",
-      "repo": null
-    },
-    {
-      "name": "mypet",
-      "displayName": "mypet",
-      "description": "A tamagotchi-style desktop pet for DeepSeek Harness — lives in your browser, reacts to coding sessions, levels up, collects skins, and more.",
-      "source": "npm",
-      "pkg": "mypet",
-      "repo": null
-    },
-    {
-      "name": "dsh-verification-receipt",
-      "displayName": "dsh-verification-receipt",
-      "description": "Privacy-minimal heuristic per-turn execution summaries for DeepSeek Harness",
-      "source": "npm",
-      "pkg": "dsh-verification-receipt",
-      "repo": "git+https://github.com/030611/dsh-verification-receipt.git"
-    },
-    {
-      "name": "dsh-preset-flash-director",
-      "displayName": "dsh-preset-flash-director",
-      "description": "Flash 主控 · Pro 专家 — a DeepSeek Harness agent preset: flash-model orchestrator + pro-model (deepseek-v4-pro) expert subagents, with an enforced delegation protocol (curated briefs, hard per-task budget, no delegation chains).",
-      "source": "npm",
-      "pkg": "dsh-preset-flash-director",
-      "repo": "git+https://github.com/zhaoyilun/dsh-preset-flash-director.git"
-    },
-    {
-      "name": "dsh-client-new-session-ungrouped",
-      "displayName": "dsh-client-new-session-ungrouped",
-      "description": "dsh Web GUI plugin for project-less chat sessions: adds a \"Work outside of a project\" option to the workspace picker, repairs the ungrouped group-header \"+\", routes new sessions to project-less mode while the current one is ungrouped, unlocks the blank un",
-      "source": "npm",
-      "pkg": "dsh-client-new-session-ungrouped",
-      "repo": null
-    },
-    {
-      "name": "dsh-llm-auto-route",
-      "displayName": "dsh-llm-auto-route",
-      "description": "Provider discovery, matching, health checks, and pre-output failover for DeepSeek Harness.",
-      "source": "npm",
-      "pkg": "dsh-llm-auto-route",
-      "repo": "git+https://github.com/qinyu765/dsh-llm-auto-route.git"
-    },
-    {
-      "name": "dsh-cloudflare-browser-run",
-      "displayName": "dsh-cloudflare-browser-run",
-      "description": "DeepSeek Harness plugin: web browsing tools (markdown / screenshot / pdf) powered by Cloudflare Browser Run — real headless Chrome with JS rendering, login sessions and WebMCP support.",
-      "source": "npm",
-      "pkg": "dsh-cloudflare-browser-run",
-      "repo": "git+https://github.com/RealAlexandreAI/dsh-cloudflare-browser-run.git"
-    },
-    {
-      "name": "dsh-nocturne-memory",
-      "displayName": "dsh-nocturne-memory",
-      "description": "DeepSeek Harness plugin: Nocturne Memory client — automated long-term memory (boot/read/search/create/update) backed by your own Nocturne MCP server.",
-      "source": "npm",
-      "pkg": "dsh-nocturne-memory",
-      "repo": "git+https://github.com/RealAlexandreAI/dsh-nocturne-memory.git"
-    },
-    {
-      "name": "@ruihuahe/dsh-plugin-marketplace",
-      "displayName": "@ruihuahe/dsh-plugin-marketplace",
-      "description": "Generated-catalog plugin discovery and npm installation marketplace for DeepSeek Harness",
-      "source": "npm",
-      "pkg": "@ruihuahe/dsh-plugin-marketplace",
-      "repo": "git+https://github.com/hrhgit/deepseek-harness-plugin-manager.git"
+      "pkg": "dsh-web-plugin-manager",
+      "repo": "git+https://github.com/LX2000WASD/dsh-web-plugin-manager.git"
     },
     {
       "name": "visionpower",
@@ -1361,6 +1424,30 @@ window.PRTS_MARKET = {
       "repo": null
     },
     {
+      "name": "@yun520-1/deepseek-heartflow",
+      "displayName": "@yun520-1/deepseek-heartflow",
+      "description": "心虫 HeartFlow — AGI 第1层辨别门禁作为 DSH 插件: 47维纯规则判别 (heartflow_check/analyze/verdict/dimensions) + 工具调用后自动输出监督, fail-closed, 零LLM依赖",
+      "source": "npm",
+      "pkg": "@yun520-1/deepseek-heartflow",
+      "repo": "git+https://github.com/yun520-1/deepseek-heartflow.git"
+    },
+    {
+      "name": "@open-agfs/dsh-agfs",
+      "displayName": "@open-agfs/dsh-agfs",
+      "description": "Host file-browser web app over the dsh webserver with a /dsh-agfs command",
+      "source": "npm",
+      "pkg": "@open-agfs/dsh-agfs",
+      "repo": "git+https://github.com/openAGFS/dsh-agfs.git"
+    },
+    {
+      "name": "@luzhengyangtx/dsh-telegram-duty",
+      "displayName": "@luzhengyangtx/dsh-telegram-duty",
+      "description": "Telegram duty gateway for DeepSeek Harness: long-poll Telegram into a dedicated duty session, global approval forwarding while on duty, and a local/duty watch toggle.",
+      "source": "npm",
+      "pkg": "@luzhengyangtx/dsh-telegram-duty",
+      "repo": "git+https://github.com/luzhengyangtx/dsh-telegram-duty.git"
+    },
+    {
       "name": "easy-cr",
       "displayName": "easy-cr",
       "description": "Generate business-sequenced HTML code reviews with comments and optional GoLand, IntelliJ IDEA, or VS Code semantic navigation.",
@@ -1369,100 +1456,196 @@ window.PRTS_MARKET = {
       "repo": null
     },
     {
-      "name": "@banlan/inkstone",
-      "displayName": "@banlan/inkstone",
-      "description": "Browse and manage conversation history from Claude Code, Codex CLI, OpenCode, Reasonix, Oh My PI (omp), Pi, and DeepSeek Harness (dsh)",
+      "name": "deepseek-flow",
+      "displayName": "deepseek-flow",
+      "description": "DeepSeek Flow — Markdown-first visual workflow plugin for DeepSeek Harness with executable Boolean gate semantics, two-way canvas sync, and AI review/optimization.",
       "source": "npm",
-      "pkg": "@banlan/inkstone",
-      "repo": "git+https://github.com/banlanzs/inkstone.git"
+      "pkg": "deepseek-flow",
+      "repo": "git+https://github.com/kanghelyu/dsh-deepseek-flow.git"
     },
     {
-      "name": "create-dsh-plugin",
-      "displayName": "create-dsh-plugin",
-      "description": "Scaffold a DeepSeek Harness (DSH) plugin in seconds — tool / events / webui templates, next-tag version pinning, and a built-in --verify smoke test.",
+      "name": "dsh-git-rollback",
+      "displayName": "dsh-git-rollback",
+      "description": "DSH turn-level Git rollback plugin: /rollback /redo /checkpoints /undo commands, per-turn checkpoints in hidden refs, non-destructive workspace restore, scoped turn undo, checkpoint-SHA restore.",
       "source": "npm",
-      "pkg": "create-dsh-plugin",
-      "repo": null
+      "pkg": "dsh-git-rollback",
+      "repo": "git+https://github.com/NEXTINDIE/DeepSeek-Harness-for-VS-Code.git"
     },
     {
-      "name": "dsh-worktree",
-      "displayName": "dsh-worktree",
-      "description": "Codex-style permanent git worktrees for DeepSeek Harness: agent tools, a /worktree command, and session context for durable worktrees.",
+      "name": "dsh-weixin",
+      "displayName": "dsh-weixin",
+      "description": "微信 ClawBot (iLink) 通道插件：把微信消息接入 DeepSeek Harness 会话，按用户隔离、原生注入与回发。",
       "source": "npm",
-      "pkg": "dsh-worktree",
-      "repo": "git+https://github.com/FlashingChen/dsh-worktree.git"
+      "pkg": "dsh-weixin",
+      "repo": "git+https://github.com/caoyilearnai/dsh-weixin.git"
     },
     {
-      "name": "deepseek-harness-terminal-fast-run",
-      "displayName": "deepseek-harness-terminal-fast-run",
-      "description": "Unofficial convenience launcher for the DeepSeek Harness Web UI",
+      "name": "dsh-cost-log",
+      "displayName": "dsh-cost-log",
+      "description": "DSH 原生插件：按 DeepSeek 峰谷价格表实时计算当前对话花费，并显示在输入框旁",
       "source": "npm",
-      "pkg": "deepseek-harness-terminal-fast-run",
-      "repo": "git+https://github.com/Wgj24/deepseek-harness-terminal-fast-run.git"
+      "pkg": "dsh-cost-log",
+      "repo": "git+https://github.com/kami-mura/dsh-cost.git"
     },
     {
-      "name": "dsh-compaction-instant",
-      "displayName": "dsh-compaction-instant",
-      "description": "VCC-style instant, near-lossless deterministic compaction engine for the DeepSeek Harness — a drop-in replacement for @deepseek-ai/dsh-compaction-basic",
+      "name": "@deepseek-ai/dsh-headless",
+      "displayName": "@deepseek-ai/dsh-headless",
+      "description": "The dsh one-shot bundle: a direct core Agent/Session runner over dsh-base with no Host, HTTP, or browser layer",
       "source": "npm",
-      "pkg": "dsh-compaction-instant",
-      "repo": "git+https://github.com/KitDoesIt/dsh-compaction-instant.git"
+      "pkg": "@deepseek-ai/dsh-headless",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
     },
     {
-      "name": "dsh-plugin-product-subagents",
-      "displayName": "dsh-plugin-product-subagents",
-      "description": "Role-based Codex / Claude Code / ACP subagent providers for the DeepSeek Harness: continuable children, durable session recovery, per-role product permissions, delegation with a permission ceiling, and a declarative role library.",
+      "name": "@deepseek-ai/dsh-skill-badge",
+      "displayName": "@deepseek-ai/dsh-skill-badge",
+      "description": "Bundled dsh badge skill provider for DeepSeek Harness",
       "source": "npm",
-      "pkg": "dsh-plugin-product-subagents",
-      "repo": "git+https://github.com/shaokeyibb/dsh-plugin-product-subagents.git"
+      "pkg": "@deepseek-ai/dsh-skill-badge",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
     },
     {
-      "name": "dsh-plugin-manager",
-      "displayName": "dsh-plugin-manager",
-      "description": "Web plugin manager for DeepSeek Harness (DSH) and Cordis: inspect, enable, disable, group, and manage runtime plugins",
+      "name": "@deepseek-ai/dsh-compaction",
+      "displayName": "@deepseek-ai/dsh-compaction",
+      "description": "Abstract compaction service seam (ctx.compaction) for the DeepSeek Harness",
       "source": "npm",
-      "pkg": "dsh-plugin-manager",
-      "repo": "git+https://github.com/hrhgit/deepseek-harness-plugin-manager.git"
+      "pkg": "@deepseek-ai/dsh-compaction",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
     },
     {
-      "name": "dsh-voice-webspeech",
-      "displayName": "dsh-voice-webspeech",
-      "description": "DSH Web 语音输入插件：零服务端、零密钥、零模型下载，直接使用浏览器内置 Web Speech API（Edge=微软 Azure 语音，Chrome=Google 语音）。",
+      "name": "@deepseek-ai/dsh-web-app",
+      "displayName": "@deepseek-ai/dsh-web-app",
+      "description": "The dsh browser-surface bundle: the web patch layer over dsh-base plus the runtime glue plugin (frontend dist serving, web-surface prompt, bash runtime variables, URL line)",
       "source": "npm",
-      "pkg": "dsh-voice-webspeech",
-      "repo": "git+https://github.com/anweat/dsh-voice-webspeech.git"
+      "pkg": "@deepseek-ai/dsh-web-app",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
     },
     {
-      "name": "dsh-ui-enhance",
-      "displayName": "dsh-ui-enhance",
-      "description": "Optional Web UI enhancements for DeepSeek Harness",
+      "name": "@deepseek-ai/dsh-fs-local",
+      "displayName": "@deepseek-ai/dsh-fs-local",
+      "description": "Local-filesystem implementation of the DeepSeek Harness filesystem seam (ctx.fs)",
       "source": "npm",
-      "pkg": "dsh-ui-enhance",
-      "repo": null
+      "pkg": "@deepseek-ai/dsh-fs-local",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
     },
     {
-      "name": "@dong-victor/dsh-opencodego-usage",
-      "displayName": "@dong-victor/dsh-opencodego-usage",
-      "description": "opencode Go 套餐余额查看插件（DSH Web GUI）：侧边栏直接显示 rolling(5小时)/weekly(周)/monthly(余额) 三档用量进度条、百分比与重置时间，60s 自动刷新，无需点击；点击打开详情面板（倒计时、状态徽章、端点/密钥信息）；agent 工具 opencode_go_balance 可直接回答套餐用量。密钥与端点复用 DSH 已配置的 llm-deepseek 接线（credentials 服务 + settings），无需二次配置。零构建依赖、纯 JS 即装即",
+      "name": "@deepseek-ai/dsh-sandbox",
+      "displayName": "@deepseek-ai/dsh-sandbox",
+      "description": "Abstract process-sandbox seam (ctx.sandbox) for the DeepSeek Harness: same-world confinement vocabulary and the SandboxProvider contract",
       "source": "npm",
-      "pkg": "@dong-victor/dsh-opencodego-usage",
-      "repo": "git+https://github.com/dong-victor/dsh-opencodego-usage.git"
+      "pkg": "@deepseek-ai/dsh-sandbox",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
     },
     {
-      "name": "code-monkey-ui",
-      "displayName": "code-monkey-ui",
-      "description": "A Component Library for Vue 3",
+      "name": "@deepseek-ai/dsh-fs-sandbox",
+      "displayName": "@deepseek-ai/dsh-fs-sandbox",
+      "description": "Sandbox-enforcing implementation of the DeepSeek Harness filesystem seam: fences write/edit by the per-call sandbox mode (read-only denies mutation, workspace-write contains it to the workspace + temp roots) while reads pass through",
       "source": "npm",
-      "pkg": "code-monkey-ui",
-      "repo": "git+https://github.com/element-plus/element-plus.git"
+      "pkg": "@deepseek-ai/dsh-fs-sandbox",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
     },
     {
-      "name": "a4phone",
-      "displayName": "a4phone",
-      "description": "Claude Code / Codex / DSH 远程手机交互：任务完成通知（含 AI 最后输出）、提问/权限请求手机点选或文字作答、远程续聊（ntfy.sh，含 DSH 会话续聊）",
+      "name": "@deepseek-ai/dsh-fs",
+      "displayName": "@deepseek-ai/dsh-fs",
+      "description": "Abstract filesystem capability seam (ctx.fs) for the DeepSeek Harness — vocabulary types, the FileSystem service (text IO + optional version-guarded atomic mutations), and the fs/* policy event vocabulary",
       "source": "npm",
-      "pkg": "a4phone",
-      "repo": null
+      "pkg": "@deepseek-ai/dsh-fs",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-brand",
+      "displayName": "@deepseek-ai/dsh-brand",
+      "description": "Type-only Branded<B> nominal-typing primitive for the DeepSeek Harness",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-brand",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-command-goal",
+      "displayName": "@deepseek-ai/dsh-command-goal",
+      "description": "Human-facing slash command for persisted same-session goals",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-command-goal",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-bash-sandbox",
+      "displayName": "@deepseek-ai/dsh-bash-sandbox",
+      "description": "Sandbox-consuming implementation of the DeepSeek Harness bash executor seam (confines every command via ctx.sandbox, reports denial/enforcement result facts)",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-bash-sandbox",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-subprocess-local",
+      "displayName": "@deepseek-ai/dsh-subprocess-local",
+      "description": "Local-subprocess implementation of the DeepSeek Harness subprocess seam",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-subprocess-local",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-telemetry-otel",
+      "displayName": "@deepseek-ai/dsh-session-telemetry-otel",
+      "description": "OpenTelemetry backend for the DeepSeek Harness telemetry seam: hands captured session records to the OTel JS SDK's log pipeline",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-session-telemetry-otel",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-attachment-local",
+      "displayName": "@deepseek-ai/dsh-attachment-local",
+      "description": "Private content-addressed DSH_HOME attachment storage",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-attachment-local",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-pwsh-local",
+      "displayName": "@deepseek-ai/dsh-pwsh-local",
+      "description": "Local PowerShell implementation of the DeepSeek Harness bash executor seam",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-pwsh-local",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-home-paths",
+      "displayName": "@deepseek-ai/dsh-home-paths",
+      "description": "Shared filesystem path helpers for the DeepSeek Harness",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-home-paths",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-command-feedback",
+      "displayName": "@deepseek-ai/dsh-command-feedback",
+      "description": "Log-only session feedback producer and human-facing slash command",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-command-feedback",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-bash",
+      "displayName": "@deepseek-ai/dsh-tool-bash",
+      "description": "Model-facing bash tool with optional generic background-task and sandbox-escalation support",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-tool-bash",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-output-retention",
+      "displayName": "@deepseek-ai/dsh-output-retention",
+      "description": "Zero-dependency bounded-retention primitive: ItemRetainer/TextRetainer + neutral notice helpers (what did we keep, what did we omit)",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-output-retention",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-session",
+      "displayName": "@deepseek-ai/dsh-session",
+      "description": "Event-sourced session store for the DeepSeek Harness",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-session",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
     }
   ]
 };
@@ -1870,6 +2053,24 @@ window.PRTS_MARKET = {
       'session.confirmArchiveSelected': 'Archive {n} selected sessions? They will be removed from the workspace.',
       'session.archivedSelected': 'Archived {n} sessions',
       'sidebar.expand': 'Show sidebar',
+
+      'stats.turnsSteps': '{turns} turns · {steps} steps',
+      'stats.llmTool': 'LLM {llm} · tools {tool}',
+      'stats.ttft': 'avg TTFT {ttft} · {tps} tok/s',
+      'stats.cache': 'cache hit {pct}%',
+      'stats.io': 'in {input} tok · out {output}',
+
+      'traj.stepHeader': 'turn {turn} · step {step}',
+      'traj.duration': '{d}',
+      'log.title': 'Session log',
+      'log.export': 'Export',
+
+      'voice.consent.title': 'Microphone permission',
+      'voice.consent.body': 'Voice input captures your microphone and sends audio to the speech recognition backend. Allow PRTS to use the microphone?',
+      'voice.consent.allow': 'Allow',
+      'voice.consent.deny': 'Deny',
+      'voice.engineLoading': 'Loading the speech engine (first use)…',
+      'voice.engineFailed': 'Speech engine could not be loaded: {msg}',
     },
 
     zh: {
@@ -2164,6 +2365,24 @@ window.PRTS_MARKET = {
       'session.confirmArchiveSelected': '归档选中的 {n} 个会话？它们将从工作区移除。',
       'session.archivedSelected': '已归档 {n} 个会话',
       'sidebar.expand': '展开侧栏',
+
+      'stats.turnsSteps': '{turns} 轮 · {steps} 步',
+      'stats.llmTool': 'LLM {llm} · 工具调用 {tool}',
+      'stats.ttft': '首 token 平均 {ttft} · {tps} tok/s',
+      'stats.cache': '缓存命中 {pct}%',
+      'stats.io': '输入 {input} tok · 输出 {output}',
+
+      'traj.stepHeader': '第 {turn} 轮 · 第 {step} 步',
+      'traj.duration': '{d}',
+      'log.title': '会话日志',
+      'log.export': '导出',
+
+      'voice.consent.title': '麦克风权限',
+      'voice.consent.body': '语音输入会采集麦克风音频并发送给语音识别引擎。允许 PRTS 使用麦克风吗？',
+      'voice.consent.allow': '允许',
+      'voice.consent.deny': '拒绝',
+      'voice.engineLoading': '正在加载语音引擎（首次使用）…',
+      'voice.engineFailed': '语音引擎加载失败：{msg}',
     },
   };
 
@@ -2691,6 +2910,7 @@ window.PRTS_MARKET = {
     presets: [],            // agentPreset.list
     events: [],             // raw events of the current session (recent window)
     permissions: null,      // { options: [{value,name}], currentValue } projection
+    liveProjections: {},    // sessionId -> { key: value } from session/projection frames
   };
 
   function dshUrl() {
@@ -2760,6 +2980,15 @@ window.PRTS_MARKET = {
       options: (p.options || []).map((o) => ({ value: o.value, name: o.name || o.value })),
       currentValue: p.currentValue || null,
     };
+  }
+
+  /** Merged projection values for a session: session.list snapshot overlaid
+   *  with the live `session/projection` mux frames. */
+  function projectionValues(sessionId) {
+    const s = sessionSummary(sessionId);
+    const base = (s && s.projections && s.projections.values) || {};
+    const live = S.liveProjections[sessionId] || {};
+    return Object.assign({}, base, live);
   }
 
   async function listModels() {
@@ -2978,6 +3207,7 @@ window.PRTS_MARKET = {
   S.sessionSummary = sessionSummary;
   S.isSessionBlank = isSessionBlank;
   S.permissionState = permissionState;
+  S.projectionValues = projectionValues;
   S.listModels = listModels;
   S.listProviders = listProviders;
   S.listPresets = listPresets;
@@ -3451,6 +3681,131 @@ window.PRTS_MARKET = {
 
 
 /**
+ * PRTS speech engine — the recognition backend behind voice input.
+ *
+ * Two backends, best available wins:
+ *   - web-speech: the browser's built-in SpeechRecognition (Chrome/Edge).
+ *   - whisper: transformers.js + whisper-tiny quantized ONNX, downloaded on
+ *     first use from CN-reachable mirrors (npmmirror for the engine files,
+ *     hf-mirror for the model). Works fully offline afterwards (per-origin
+ *     cache) and inside the Electron window, where web-speech is unavailable.
+ *
+ * Engine files resolve through the Electron bridge (`prts:sttFile`) or, when
+ * the page is served from a dsh origin, the `/prts/stt/*` plugin routes.
+ */
+(function (G) {
+  'use strict';
+  const P = G.PRTS = G.PRTS || {};
+  const S = P.stt = {
+    backend: 'none',        // 'web-speech' | 'whisper' | 'none'
+    loading: false,
+    ready: false,
+  };
+
+  let pipePromise = null;
+  let transformersMod = null;
+
+  /* ---------- engine file access ---------- */
+
+  function fileUrlBase() {
+    try {
+      if (typeof window !== 'undefined' && window.location && /^https?:$/.test(window.location.protocol)) {
+        return window.location.origin;
+      }
+    } catch (e) { /* file:// in Electron */ }
+    return null;
+  }
+
+  const inElectron = () => !!(typeof window !== 'undefined' && window.prts && window.prts.bridge && window.prts.bridge.dsh)
+
+  async function sttJsText() {
+    const base = fileUrlBase();
+    const url = inElectron() ? base + '/assets/transformers.min.js' : base + '/prts/stt/transformers.min.js';
+    if (base) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return await res.text();
+    }
+    throw new Error('no stt file source');
+  }
+
+  /** Where the ort wasm/mjs live. Both builds serve them over http(s) so the
+   *  glue .mjs loads through import() and the wasm through plain fetch. */
+  function wasmBase() {
+    const base = fileUrlBase();
+    if (!base) throw new Error('no stt file source');
+    return inElectron() ? base + '/assets/' : base + '/prts/stt/assets/';
+  }
+
+  /** The whisper model id — a plain name resolved against the page origin:
+   *  the Electron loopback server serves /whisper-tiny/*, and the dsh-origin
+   *  plugin serves the same path for the browser build. */
+  function modelBase() {
+    return 'whisper-tiny';
+  }
+
+  /* ---------- whisper pipeline ---------- */
+
+  async function loadTransformers() {
+    if (transformersMod) return transformersMod;
+    S.loading = true;
+    try {
+      const base = fileUrlBase();
+      let url = null;
+      if (base) {
+        // Import directly from the http URL: the module's publicPath then
+        // resolves correctly for the ort chunks (blob imports break it).
+        url = inElectron() ? base + '/assets/transformers.min.js' : base + '/prts/stt/transformers.min.js';
+        transformersMod = await import(/* webpackIgnore: true */ url);
+      } else {
+        const js = await sttJsText();
+        url = URL.createObjectURL(new Blob([js], { type: 'text/javascript' }));
+        transformersMod = await import(/* webpackIgnore: true */ url);
+      }
+      if (!transformersMod || !transformersMod.pipeline || !transformersMod.env) throw new Error('transformers module shape unexpected');
+      return transformersMod;
+    } finally {
+      S.loading = false;
+    }
+  }
+
+  async function getPipe() {
+    if (!pipePromise) {
+      pipePromise = (async () => {
+        const mod = await loadTransformers();
+        // Local-model loading: model id "whisper-tiny" + localModelPath "/"
+        // resolves to "/whisper-tiny/<file>" on the page origin — served by
+        // the Electron loopback server (or the /whisper-tiny plugin route).
+        mod.env.allowLocalModels = true;
+        mod.env.localModelPath = '/';
+        mod.env.backends.onnx.wasm.wasmPaths = wasmBase();
+        mod.env.backends.onnx.wasm.numThreads = 2;
+        mod.env.allowRemoteModels = false;
+        const pipe = await mod.pipeline('automatic-speech-recognition', modelBase(), { quantized: true });
+        S.ready = true;
+        return pipe;
+      })();
+      pipePromise.catch((e) => { console.log('[stt] pipe error', e && e.message); pipePromise = null; S.ready = false; });
+    }
+    return pipePromise;
+  }
+
+  /** Transcribe 16 kHz mono Float32 PCM. language: 'zh' | 'en' | undefined. */
+  async function transcribe(pcm, language) {
+    const pipe = await getPipe();
+    const opts = { task: 'transcribe', chunk_length_s: 30, return_timestamps: false };
+    if (language) opts.language = language;
+    const out = await pipe(pcm, opts);
+    const text = Array.isArray(out) ? out.map((o) => o && o.text || '').join(' ').trim() : ((out && out.text) || '');
+    return text;
+  }
+
+  S.transcribe = transcribe;
+  S.getPipe = getPipe;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+/**
  * PRTS voice input — mic capture, voice-activity detection and speech
  * recognition. The analyser drives the PRTS-icon line-wave effect from the
  * microphone's real-time level and spectrum. When enabled, recognition
@@ -3476,6 +3831,7 @@ window.PRTS_MARKET = {
   let analyser = null;
   let micStream = null;
   let micSource = null;
+  let scriptNode = null;
   let freqData = null;
   let timeData = null;
   let raf = 0;
@@ -3483,8 +3839,15 @@ window.PRTS_MARKET = {
   let recActive = false;
   let pluginEngine = null;
 
+  // PCM capture: raw mic samples are accumulated while speaking and handed to
+  // the whisper backend (16 kHz mono) when silence ends.
+  let speechChunks = [];
+  let speechSamples = 0;
+  const NATIVE_RATE = () => (audioCtx ? audioCtx.sampleRate : 48000);
+
   let onFrame = null;
   let onResult = null;
+  let onError = null;
   let locale = 'en';
 
   const VAD = {
@@ -3569,6 +3932,12 @@ window.PRTS_MARKET = {
       if (!VAD.speakSince) VAD.speakSince = now;
       VAD.silenceSince = 0;
       if (now - VAD.speakSince >= VAD.speakHoldMs) {
+        if (!A.speaking) {
+          // Speech just began — the capture buffer starts fresh here so the
+          // transcribed segment contains only this utterance.
+          speechChunks = [];
+          speechSamples = 0;
+        }
         A.speaking = true;
         if (A.state !== 'recognizing') A.state = 'speaking';
       }
@@ -3579,12 +3948,14 @@ window.PRTS_MARKET = {
         if (now - VAD.silenceSince >= VAD.silenceMs) {
           A.speaking = false;
           if (A.state !== 'recognizing') A.state = 'listening';
+          // Speech finished — hand the captured audio to the whisper backend.
+          if (!recActive && speechSamples > 0) transcribeCapture();
         }
       }
     }
     VAD.frames++;
 
-    // Auto-start recognition on sustained voice.
+    // Auto-start recognition on sustained voice (web-speech backend only).
     if (A.speaking && A.state === 'speaking' && !recActive && rec) {
       startRecognition();
     }
@@ -3630,13 +4001,56 @@ window.PRTS_MARKET = {
   function handleError(ev) {
     recActive = false;
     A.state = A.speaking ? 'speaking' : 'listening';
-    if (onErrorCb) onErrorCb(ev && ev.error);
+    if (onError) onError(ev && ev.error);
   }
-  let onErrorCb = null;
   function finalizeRecognition() {
     if (!recActive) return;
     try { rec.stop(); } catch (e) { /* already stopped */ }
     handleEnd();
+  }
+
+  /* ---------- whisper capture path ---------- */
+
+  /** Linear resample (native rate → 16 kHz mono) of the captured utterance. */
+  function resample16k(chunks) {
+    const total = speechSamples;
+    const src = new Float32Array(total);
+    let off = 0;
+    for (const c of chunks) { src.set(c, off); off += c.length; }
+    const ratio = 16000 / NATIVE_RATE();
+    const outLen = Math.max(1, Math.floor(total * ratio));
+    const out = new Float32Array(outLen);
+    for (let i = 0; i < outLen; i++) {
+      const pos = i / ratio;
+      const i0 = Math.floor(pos);
+      const i1 = Math.min(total - 1, i0 + 1);
+      const frac = pos - i0;
+      out[i] = src[i0] * (1 - frac) + src[i1] * frac;
+    }
+    return out;
+  }
+
+  let transcribing = false;
+  function transcribeCapture() {
+    if (transcribing || !P.stt) return;
+    const seconds = speechSamples / NATIVE_RATE();
+    if (seconds < 0.5) { speechChunks = []; speechSamples = 0; return; }
+    const pcm = resample16k(speechChunks);
+    speechChunks = [];
+    speechSamples = 0;
+    transcribing = true;
+    A.state = 'recognizing';
+    P.stt.transcribe(pcm, locale === 'zh' ? 'zh' : 'en')
+      .then((text) => {
+        if (text && onResult) onResult(text);
+      })
+      .catch((e) => {
+        if (onError) onError('engine: ' + (e && e.message ? e.message : e));
+      })
+      .finally(() => {
+        transcribing = false;
+        if (A.listening) A.state = A.speaking ? 'speaking' : 'listening';
+      });
   }
 
   /* ---------- lifecycle ---------- */
@@ -3649,20 +4063,46 @@ window.PRTS_MARKET = {
     timeData = new Uint8Array(analyser.fftSize);
     micSource = audioCtx.createMediaStreamSource(micStream);
     micSource.connect(analyser);
+    // Whisper path: capture raw samples through a silent ScriptProcessor.
+    scriptNode = audioCtx.createScriptProcessor(4096, 1, 1);
+    scriptNode.onaudioprocess = (ev) => {
+      if (!A.listening) return;
+      if (A.speaking) {
+        const data = ev.inputBuffer.getChannelData(0);
+        speechChunks.push(new Float32Array(data));
+        speechSamples += data.length;
+        // Keep only the last ~40 s of audio.
+        const maxSamples = NATIVE_RATE() * 40;
+        while (speechSamples > maxSamples) {
+          const drop = speechChunks.shift();
+          if (!drop) break;
+          speechSamples -= drop.length;
+        }
+      } else {
+        speechChunks = [];
+        speechSamples = 0;
+      }
+    };
+    const silent = audioCtx.createGain();
+    silent.gain.value = 0;
+    scriptNode.connect(silent);
+    silent.connect(audioCtx.destination);
   }
 
   A.setLocale = function (l) { locale = l === 'zh' ? 'zh' : 'en'; };
 
   A.onFrame = function (fn) { onFrame = fn; };
   A.onResult = function (fn) { onResult = fn; };
-  A.onError = function (fn) { onErrorCb = fn; };
+  A.onError = function (fn) { onError = fn; };
 
   A.start = async function () {
     if (A.listening) return 'ok';
     adoptPluginEngine();
-    A.supported = !!engine();
+    // web-speech only when the browser really provides it; the whisper
+    // backend (P.stt) covers everything else, including Electron.
+    A.supported = !!(engine() || (P.stt && P.stt !== null));
     if (!G.navigator || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      if (onErrorCb) onErrorCb('unsupported');
+      if (onError) onError('unsupported');
       return 'unsupported';
     }
     try {
@@ -3670,22 +4110,28 @@ window.PRTS_MARKET = {
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
     } catch (e) {
-      if (onErrorCb) onErrorCb('not-allowed');
+      if (onError) onError('not-allowed');
       return 'not-allowed';
     }
     try {
       buildGraph();
     } catch (e) {
       stop();
-      if (onErrorCb) onErrorCb('unsupported');
+      if (onError) onError('unsupported');
       return 'unsupported';
     }
     A.listening = true;
     A.state = 'listening';
     VAD.speakSince = 0; VAD.silenceSince = 0; A.speaking = false;
+    speechChunks = []; speechSamples = 0;
     if (engine()) {
       const Ctor = engine();
       try { rec = new Ctor(); } catch (e) { rec = null; }
+    }
+    // Warm the whisper engine early (first use downloads the model) — it
+    // fails silently here and retries on the first utterance.
+    if (!engine() && P.stt && !P.stt.ready && !P.stt.loading) {
+      P.stt.getPipe().catch(() => { /* surfaced on first utterance */ });
     }
     raf = requestAnimationFrame(tick);
     return 'ok';
@@ -3699,11 +4145,13 @@ window.PRTS_MARKET = {
     A.listening = false;
     A.speaking = false;
     A.state = 'idle';
+    speechChunks = []; speechSamples = 0;
     cancelAnimationFrame(raf);
+    try { if (scriptNode) scriptNode.disconnect(); } catch (e) { /* noop */ }
     try { if (micSource) micSource.disconnect(); } catch (e) { /* noop */ }
     try { if (micStream) micStream.getTracks().forEach((t) => t.stop()); } catch (e) { /* noop */ }
     try { if (audioCtx && audioCtx.state !== 'closed') audioCtx.close(); } catch (e) { /* noop */ }
-    micSource = null; micStream = null; audioCtx = null; analyser = null;
+    scriptNode = null; micSource = null; micStream = null; audioCtx = null; analyser = null;
     if (onFrame) onFrame({ db: -90, dominant: 0, voiceRatio: 0, bars: [], speaking: false, listening: false, state: 'idle' });
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -4605,8 +5053,8 @@ window.PRTS_MARKET = {
     requestAnimationFrame(() => { const s = $('chatScroll'); if (s) s.scrollTop = s.scrollHeight; });
   }
 
-  /* ---------- trajectory ---------- */
-  function renderTraj() {
+  /* ---------- trajectory (step timeline) ---------- */
+  function renderTimeline() {
     const box = $('trajView');
     if (!box) return;
     box.textContent = '';
@@ -4614,7 +5062,64 @@ window.PRTS_MARKET = {
       box.appendChild(el('div', 'trajEmpty', t('traj.empty')));
       return;
     }
-    C.rawEvents.slice(-300).forEach((ev, i) => {
+    // Group events by (turn, step) in log order.
+    const steps = new Map();   // key -> { turn, step, start, end, items }
+    const order = [];
+    for (const ev of C.rawEvents) {
+      const d = ev.data || {};
+      let turn = d.turn, step = d.step;
+      if (ev.type === 'step/start' || ev.type === 'step/end') { turn = d.turn; step = d.step; }
+      if (step === undefined && turn === undefined) continue;   // session-level rows stay out of the timeline
+      const key = (turn === undefined ? '?' : turn) + '/' + step;
+      let rec = steps.get(key);
+      if (!rec) { rec = { turn, step, start: null, end: null, items: [] }; steps.set(key, rec); order.push(key); }
+      if (ev.type === 'step/start') rec.start = ev.time;
+      else if (ev.type === 'step/end') rec.end = ev.time;
+      else rec.items.push(ev);
+    }
+    for (const key of order) {
+      const rec = steps.get(key);
+      const block = el('div', 'tlStep');
+      const head = el('div', 'tlHead');
+      const label = t('traj.stepHeader', { turn: rec.turn === undefined ? '?' : rec.turn, step: rec.step === undefined ? '?' : rec.step });
+      head.appendChild(el('span', 'tlLabel', label));
+      if (rec.start && rec.end && rec.end > rec.start) {
+        head.appendChild(el('span', 'tlDur', t('traj.duration', { d: fmtDurShort(rec.end - rec.start) })));
+      }
+      block.appendChild(head);
+      let usage = null;
+      for (const ev of rec.items) {
+        const row = el('div', 'tlItem');
+        row.appendChild(el('span', 'tlType', String(ev.type)));
+        const brief = summaryOf(ev);
+        if (brief) row.appendChild(el('span', 'tlBrief', brief));
+        block.appendChild(row);
+        if (ev.type === 'assistant/chunk' && ev.data && ev.data.chunk && ev.data.chunk.type === 'usage') {
+          usage = ev.data.chunk.usage || ev.data.chunk;
+        }
+      }
+      if (usage && (usage.prompt_tokens || usage.completion_tokens)) {
+        block.appendChild(el('div', 'tlUsage', t('chat.tokens', { in: usage.prompt_tokens || 0, out: usage.completion_tokens || 0 })));
+      }
+      box.appendChild(block);
+    }
+  }
+  function fmtDurShort(ms) {
+    const s = Math.round(ms / 1000);
+    if (s < 60) return s + 's';
+    return Math.floor(s / 60) + 'm' + String(s % 60).padStart(2, '0') + 's';
+  }
+
+  /* ---------- session log (raw event list, overlay) ---------- */
+  function renderLog() {
+    const box = $('logBody');
+    if (!box) return;
+    box.textContent = '';
+    if (!C.rawEvents.length) {
+      box.appendChild(el('div', 'trajEmpty', t('traj.empty')));
+      return;
+    }
+    C.rawEvents.slice(-500).forEach((ev, i) => {
       const row = el('div', 'trajItem');
       row.appendChild(el('span', 'idx', String(ev.seq !== undefined ? ev.seq : i)));
       const body = el('div', 'trajBody');
@@ -4626,6 +5131,18 @@ window.PRTS_MARKET = {
       row.appendChild(body);
       box.appendChild(row);
     });
+  }
+  function exportLog() {
+    if (!C.rawEvents.length) return;
+    const blob = new Blob([JSON.stringify(C.rawEvents, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'prts-session-log-' + (C.sessionId || 'session').slice(0, 12) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
   function summaryOf(ev) {
     const d = ev.data || {};
@@ -4941,7 +5458,9 @@ window.PRTS_MARKET = {
   C.send = send;
   C.stop = stop;
   C.renderFlow = renderFlow;
-  C.renderTraj = renderTraj;
+  C.renderTimeline = renderTimeline;
+  C.renderLog = renderLog;
+  C.exportLog = exportLog;
   C.loadHistory = loadHistory;
   C.attachFiles = attachFiles;
   C.updateSend = updateSend;
@@ -4989,6 +5508,8 @@ window.PRTS_MARKET = {
     document.querySelectorAll('[data-i18n-placeholder]').forEach((n) => { n.placeholder = A.t(n.dataset.i18nPlaceholder); });
     document.querySelectorAll('[data-i18n-title]').forEach((n) => { n.title = A.t(n.dataset.i18nTitle); });
     document.documentElement.lang = A.locale === 'zh' ? 'zh-CN' : 'en';
+    if (A.renderStatsDock) A.renderStatsDock();
+    if (P.asr && P.asr.setLocale) P.asr.setLocale(A.locale);
   }
 
   /* ---------- theme ---------- */
@@ -5008,14 +5529,15 @@ window.PRTS_MARKET = {
   /* ---------- PRTS modal (replaces window.prompt / window.confirm, which
      Electron disables) ---------- */
   let modalResolve = null;
-  function openModal(kind, title, placeholder) {
+  function openModal(kind, title, placeholder, labels) {
     const ov = $('modalOverlay');
     $('modalTitle').textContent = title;
     const input = $('modalInput');
     input.value = '';
     input.placeholder = placeholder || '';
     input.hidden = kind !== 'prompt';
-    $('modalOk').textContent = A.t('common.ok');
+    $('modalOk').textContent = (labels && labels.ok) || A.t('common.ok');
+    $('modalCancel').textContent = (labels && labels.cancel) || A.t('common.cancel');
     $('modalCancel').hidden = kind === 'alert';
     ov.classList.add('open');
     if (kind === 'prompt') setTimeout(() => input.focus(), 40);
@@ -5028,7 +5550,7 @@ window.PRTS_MARKET = {
     if (r) r(value);
   }
   A.askPrompt = (title, placeholder) => openModal('prompt', title, placeholder);
-  A.askConfirm = (title) => openModal('confirm', title);
+  A.askConfirm = (title, labels) => openModal('confirm', title, '', labels);
   A.alert = (title) => openModal('alert', title);
 
   /* ---------- sidebar: workspaces + sessions (dsh) ---------- */
@@ -5217,6 +5739,7 @@ window.PRTS_MARKET = {
     await P.chat.loadHistory(id);
     renderSessions();
     updateMeter();
+    renderStatsDock();
     updateCrumb();
   }
 
@@ -5276,6 +5799,7 @@ window.PRTS_MARKET = {
     if (A.refreshModePop) A.refreshModePop();
     if (A.refreshWorkspacePop) A.refreshWorkspacePop();
     updateMeter();
+    renderStatsDock();
     updateCrumb();
   }
 
@@ -5342,6 +5866,70 @@ window.PRTS_MARKET = {
     label.textContent = cur ? (cur.name || cur.value) : (st.currentValue || '—');
     chip.title = A.t('permission.title');
   }
+
+  /* ---------- session stats dock (turns · steps / LLM · tools / TTFT · tok/s / cache / tokens) ---------- */
+  function fmtDur(ms) {
+    const n = Number(ms);
+    if (!isFinite(n) || n <= 0) return '—';
+    const s = Math.round(n / 1000);
+    if (s < 60) return s + 's';
+    return Math.floor(s / 60) + 'm' + String(s % 60).padStart(2, '0') + 's';
+  }
+  function fmtTok(n) {
+    if (n === undefined || n === null || !isFinite(Number(n))) return '—';
+    const v = Number(n);
+    if (v >= 1e9) return (v / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+    if (v >= 1e6) return (v / 1e6).toFixed(v >= 10e6 ? 0 : 1).replace(/\.0$/, '') + 'M';
+    if (v >= 1e3) return (v / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+    return String(Math.round(v));
+  }
+  function renderStatsDock() {
+    const dock = $('statsDock');
+    if (!dock) return;
+    const v = P.dshState.projectionValues(P.dshState.currentSessionId);
+    const st = v && v.sessionStats ? v.sessionStats : {};
+    const tu = v && v.tokenUsage ? v.tokenUsage : {};
+    const parts = [];
+    if (st.turns !== undefined || st.steps !== undefined) {
+      parts.push(A.t('stats.turnsSteps', { turns: st.turns || 0, steps: st.steps || 0 }));
+    }
+    if (st.llmMs || st.toolMs) {
+      parts.push(A.t('stats.llmTool', { llm: fmtDur(st.llmMs), tool: fmtDur(st.toolMs) }));
+    }
+    if (st.ttftMs && st.ttftSteps) {
+      const ttft = (st.ttftMs / st.ttftSteps / 1000).toFixed(1) + 's';
+      const tps = st.decodeMs ? Math.round(st.decodeTokens / (st.decodeMs / 1000)) : 0;
+      parts.push(A.t('stats.ttft', { ttft, tps }));
+    }
+    const cacheRead = tu.cacheReadTokens || 0;
+    const uncached = tu.uncachedInputTokens || 0;
+    if (cacheRead + uncached > 0) {
+      const pct = Math.round((cacheRead / (cacheRead + uncached)) * 100);
+      parts.push(A.t('stats.cache', { pct }));
+    }
+    if (tu.outputTokens !== undefined || (cacheRead + uncached) > 0) {
+      parts.push(A.t('stats.io', { input: fmtTok(cacheRead + uncached), output: fmtTok(tu.outputTokens) }));
+    }
+    dock.hidden = parts.length === 0;
+    dock.textContent = '';
+    parts.forEach((text, i) => {
+      if (i > 0) dock.appendChild(elSpan(' · '));
+      dock.appendChild(elB(text));
+    });
+  }
+  function elSpan(text) {
+    const s = document.createElement('span');
+    s.className = 'statSep';
+    s.textContent = text;
+    return s;
+  }
+  function elB(text) {
+    const b = document.createElement('span');
+    b.className = 'stat';
+    b.textContent = text;
+    return b;
+  }
+  A.renderStatsDock = renderStatsDock;
 
   /* ---------- context meter (composer ring) ---------- */
   function sessionUsage(sessionId) {
@@ -5671,7 +6259,7 @@ window.PRTS_MARKET = {
       chat.hidden = true;
       traj.hidden = false;
       composer.style.display = 'none';
-      P.chat.renderTraj();
+      P.chat.renderTimeline();
     } else {
       chat.hidden = false;
       traj.hidden = true;
@@ -6137,15 +6725,15 @@ window.PRTS_MARKET = {
     let phase = 0;
     const tick = () => {
       if (A.introDone) return;
-      // Enter as soon as dsh is ready and one wordmark phase has played —
-      // the minimum full cycle was the slowest part of startup.
-      if (A.ready && A.phaseCount >= 1) { finish(); return; }
+      // Play the full three-wordmark cycle at least once (welcome → banner →
+      // diamond mark); a click skips at any moment. Each phase lingers 3.2 s.
+      if (A.ready && A.phaseCount >= 3) { finish(); return; }
       if (phase === 0) { A.introEngine.showIntro(9000); tag.classList.add('show'); }
       else if (phase === 1) { A.introEngine.showPp(10000); tag.classList.remove('show'); }
       else { A.introEngine.showMark(1.05, 9000); tag.classList.remove('show'); }
       A.phaseCount++;
       phase = (phase + 1) % 3;
-      A.introTimer = setTimeout(tick, 2400);
+      A.introTimer = setTimeout(tick, 3200);
     };
     A.introTimer = setTimeout(tick, 500);
   }
@@ -6235,10 +6823,27 @@ window.PRTS_MARKET = {
         btn.classList.remove('on', 'recognizing');
         return;
       }
-      const ok = await P.asr.start();
-      if (ok !== 'ok') { A.toast(A.t('voice.unsupported')); return; }
-      A.voiceOn = true;
-      btn.classList.add('on');
+      // First enable asks for microphone consent (in-app; the OS prompt also
+      // appears on first getUserMedia).
+      if (!(A.config.ui && A.config.ui.voiceConsent)) {
+        const ok = await A.askConfirm(A.t('voice.consent.body'), {
+          ok: A.t('voice.consent.allow'),
+          cancel: A.t('voice.consent.deny'),
+        });
+        if (!ok) return;
+        A.config.ui = A.config.ui || {};
+        A.config.ui.voiceConsent = true;
+        P.store.saveConfig(A.config).catch(() => { /* noop */ });
+      }
+      const res = await P.asr.start();
+      if (res === 'ok') {
+        A.voiceOn = true;
+        btn.classList.add('on');
+      } else if (res === 'not-allowed') {
+        A.toast(A.t('voice.noMic'));
+      } else {
+        A.toast(A.t('voice.unsupported'));
+      }
     });
     P.asr.onFrame((frame) => {
       btn.classList.toggle('recognizing', A.voiceOn && frame.state === 'recognizing');
@@ -6252,6 +6857,9 @@ window.PRTS_MARKET = {
       input.value += text;
       P.chat.updateSend();
       P.chat.scrollInputBottom();
+    });
+    P.asr.onError((err) => {
+      A.toast(A.t('voice.error', { msg: String(err === 'not-allowed' ? 'permission denied' : err || '') }));
     });
   }
 
@@ -6360,8 +6968,7 @@ window.PRTS_MARKET = {
     $('modelCfgToggle').addEventListener('click', () => {
       const btn = $('modelCfgToggle');
       const body = $('modelCfgBody');
-      const open = !!body.hidden;
-      body.hidden = !open;
+      const open = body.classList.toggle('open');
       btn.setAttribute('aria-expanded', String(open));
       btn.classList.toggle('open', open);
     });
@@ -6398,7 +7005,13 @@ window.PRTS_MARKET = {
     document.querySelectorAll('.tab').forEach((b) => {
       b.addEventListener('click', () => switchView(b.dataset.view));
     });
-    $('logBtn').addEventListener('click', () => switchView('trajectory'));
+    // Session log: a separate raw-event overlay (distinct from the tab).
+    $('logBtn').addEventListener('click', () => {
+      P.chat.renderLog();
+      $('logOverlay').classList.add('open');
+    });
+    $('logClose').addEventListener('click', () => $('logOverlay').classList.remove('open'));
+    $('logExport').addEventListener('click', () => P.chat.exportLog());
 
     // Modal (prompt / confirm).
     $('modalOk').addEventListener('click', () => {
@@ -6467,6 +7080,31 @@ window.PRTS_MARKET = {
     runIntro();
 
     P.dsh.on('connect', () => { refreshAll().catch(() => { /* dsh may still be warming up */ }); });
+    // Live projection frames → stats dock, permission chip and meter.
+    P.dsh.on('session/projection', (frame) => {
+      const pl = frame.payload || {};
+      if (!pl.sessionId) return;
+      const bucket = P.dshState.liveProjections[pl.sessionId] || (P.dshState.liveProjections[pl.sessionId] = {});
+      bucket[pl.key] = pl.value;
+      if (pl.sessionId !== P.dshState.currentSessionId) return;
+      if (pl.key === 'sessionStats' || pl.key === 'tokenUsage' || pl.key === 'contextPressure') renderStatsDock();
+      if (pl.key === 'contextPressure') updateMeter();
+      if (pl.key === 'permissions') {
+        P.dshState.permissions = P.dshState.permissionState(pl.sessionId);
+        updatePermissionChip();
+        if (A.refreshPermissionPop) A.refreshPermissionPop();
+      }
+    });
+    // Periodic session-list refresh keeps summaries (titles, stats, running
+    // flags, permissions) fresh even when the mux is quiet.
+    setInterval(() => {
+      if (!P.dshState.currentSessionId) return;
+      P.dshState.listSessions().then(() => {
+        renderSessions();
+        renderStatsDock();
+        updateMeter();
+      }).catch(() => { /* noop */ });
+    }, 8000);
     (async () => {
       try {
         await P.dshState.connect();

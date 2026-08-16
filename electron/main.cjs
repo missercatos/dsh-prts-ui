@@ -4,11 +4,21 @@
  * API traffic go through the IPC bridge to avoid CORS and enable real file
  * storage. Single instance, auto-hide menu, quit on last window closed.
  */
-const { app, BrowserWindow, ipcMain, session } = require('electron')
+const { app, BrowserWindow, ipcMain, session, protocol } = require('electron')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
+const http = require('node:http')
 const { execFile } = require('node:child_process')
+
+// The speech engine loads its wasm glue through dynamic import() and falls
+// back to XMLHttpRequest for non-http(s) URLs — custom protocols don't work
+// for XHR. So the renderer is served over a loopback-only HTTP server that
+// also hosts the speech-engine files and the whisper model, all over http(s).
+// (Keep the prts-stt scheme registration harmless/removed — no longer used.)
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'prts-stt', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
+])
 
 let win = null
 const controllers = new Map()
@@ -36,7 +46,7 @@ function createWindow() {
   })
   win.once('ready-to-show', () => win.show())
   win.removeMenu()
-  win.loadFile(path.join(__dirname, '..', 'web', 'index.html'))
+  win.loadURL('http://127.0.0.1:' + guiPort + '/index.html')
 }
 
 /* ---------- filesystem bridge ---------- */
@@ -222,6 +232,101 @@ ipcMain.handle('prts:update', () => new Promise((resolve) => {
   if (!child) resolve({ ok: false, stderr: 'could not spawn the updater' })
 }))
 
+// Speech-engine files (transformers.js + ort wasm + whisper-tiny model):
+// download from CN-reachable mirrors (npmmirror / hf-mirror with official
+// fallbacks), extract and cache, then hand the renderer the content. Keeps
+// voice input working without GitHub or huggingface.co access at run time.
+const STT_WHITELIST = new Set(['transformers.min.js', 'ort-wasm-simd-threaded.jsep.wasm', 'ort-wasm-simd-threaded.jsep.mjs'])
+function runSttCache(args) {
+  return new Promise((resolve, reject) => {
+    const cacheScript = path.join(__dirname, '..', 'scripts', 'stt-cache.mjs')
+    const child = execFile('node', [cacheScript, ...args], { timeout: 600000 }, () => {})
+    if (!child) return reject(new Error('could not spawn node'))
+    let stdout = ''
+    let stderr = ''
+    child.stdout.on('data', (d) => { stdout += d })
+    child.stderr.on('data', (d) => { stderr += d })
+    child.on('close', () => {
+      const filePath = stdout.trim().split('\n').pop()
+      if (!filePath) return reject(new Error('stt cache miss: ' + stderr))
+      resolve(filePath)
+    })
+    child.on('error', (e) => reject(new Error(String(e && e.message || e))))
+  })
+}
+function ensureSttFile(rel) {
+  const base = String(rel || '').split('/').filter(Boolean).pop() || ''
+  if (!STT_WHITELIST.has(base)) return Promise.reject(new Error('not allowed: ' + rel))
+  return runSttCache(['ensure', base])
+}
+function ensureModelFile(rel) {
+  const base = String(rel || '').split('/').filter(Boolean).pop() || ''
+  return runSttCache(['model-file', base])
+}
+ipcMain.handle('prts:sttFile', async (_e, rel) => {
+  try {
+    const filePath = await ensureSttFile(rel)
+    const buf = await fs.promises.readFile(filePath)
+    if (String(rel).endsWith('.js') || String(rel).endsWith('.mjs')) return { text: buf.toString('utf8') }
+    return { base64: buf.toString('base64') }
+  } catch (e) {
+    return { error: 'stt read failed: ' + String(e && e.message || e) }
+  }
+})
+function sttContentType(rel) {
+  if (rel.endsWith('.wasm')) return 'application/wasm'
+  if (rel.endsWith('.onnx')) return 'application/octet-stream'
+  if (rel.endsWith('.json')) return 'application/json; charset=utf-8'
+  return 'text/javascript; charset=utf-8'
+}
+
+/* Loopback-only HTTP server: serves the single-file GUI plus the speech
+ * engine files and the whisper model from the shared cache. Everything stays
+ * on http(s) so transformers.js's XHR/module loading works untouched. */
+let guiServer = null
+let guiPort = 0
+function startGuiServer() {
+  const guiHtml = fs.readFileSync(path.join(__dirname, '..', 'web', 'index.html'), 'utf8')
+  guiServer = http.createServer(async (req, res) => {
+    const urlPath = decodeURIComponent(String(req.url || '/').split('?')[0])
+    try {
+      if (urlPath === '/' || urlPath === '/index.html') {
+        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' })
+        res.end(guiHtml)
+        return
+      }
+      if (urlPath.startsWith('/assets/')) {
+        const rel = urlPath.slice('/assets/'.length).split('/').filter(Boolean).pop() || ''
+        const filePath = await ensureSttFile(rel)
+        const buf = await fs.promises.readFile(filePath)
+        res.writeHead(200, { 'content-type': sttContentType(rel), 'cache-control': 'public, max-age=86400', 'access-control-allow-origin': '*' })
+        res.end(buf)
+        return
+      }
+      if (urlPath.startsWith('/whisper-tiny/')) {
+        const rel = urlPath.split('/').filter(Boolean).pop() || ''
+        const filePath = await ensureModelFile(rel)
+        const buf = await fs.promises.readFile(filePath)
+        res.writeHead(200, { 'content-type': sttContentType(rel), 'cache-control': 'public, max-age=86400', 'access-control-allow-origin': '*' })
+        res.end(buf)
+        return
+      }
+      res.writeHead(404); res.end('404')
+    } catch (e) {
+      res.writeHead(503, { 'content-type': 'text/plain; charset=utf-8' })
+      res.end('prts asset: ' + String(e && e.message || e))
+    }
+  })
+  return new Promise((resolve, reject) => {
+    guiServer.on('error', reject)
+    guiServer.listen(0, '127.0.0.1', () => {
+      guiPort = guiServer.address().port
+      console.error('[prts] gui server on http://127.0.0.1:' + guiPort)
+      resolve()
+    })
+  })
+}
+
 // Find the harness profile that owns dsh-prts-ui (so `dsh plugin add` targets
 // the right profile). Defaults to "prts".
 function resolveProfile() {
@@ -359,12 +464,19 @@ async function collectSystemInfo() {
 }
 ipcMain.handle('prts:systemInfo', () => collectSystemInfo())
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Grant microphone access so voice input works in the renderer.
   session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
     callback(permission === 'media')
   })
   session.defaultSession.setPermissionCheckHandler((_wc, permission) => permission === 'media')
+  await startGuiServer()
+  // Warm the speech-engine cache in the background (first voice use would
+  // otherwise wait for the download).
+  for (const rel of ['transformers.min.js', 'ort-wasm-simd-threaded.jsep.wasm', 'ort-wasm-simd-threaded.jsep.mjs', 'ort.bundle.min.mjs']) {
+    ensureSttFile(rel).catch(() => {})
+  }
+  ensureModelFile('config.json').catch(() => {})
   createWindow()
   dshMuxConnect()
 })

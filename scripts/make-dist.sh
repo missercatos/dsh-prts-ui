@@ -27,6 +27,8 @@ STUB="dist-tools/PRTS-Setup.exe"
 
 rm -rf "$OUT/.payload" "$OUT/.work"
 mkdir -p "$OUT" "$PAYLOAD"
+# Drop previous-version artifacts so dist/ only ever holds one release.
+rm -f "$OUT"/PRTS-*.run "$OUT"/PRTS-*.sh "$OUT"/PRTS-Setup-*.exe "$OUT"/PRTS-Setup-*.zip "$OUT"/PRTS-*.zip "$OUT"/dsh-prts-ui-*.tgz "$OUT"/SHA256SUMS "$OUT"/releases.json
 
 say() { printf '\033[32m==>\033[0m %s\n' "$*"; }
 die() { printf '\033[31merror:\033[0m %s\n' "$*" >&2; exit 1; }

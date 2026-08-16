@@ -24,6 +24,7 @@
   let analyser = null;
   let micStream = null;
   let micSource = null;
+  let scriptNode = null;
   let freqData = null;
   let timeData = null;
   let raf = 0;
@@ -31,8 +32,15 @@
   let recActive = false;
   let pluginEngine = null;
 
+  // PCM capture: raw mic samples are accumulated while speaking and handed to
+  // the whisper backend (16 kHz mono) when silence ends.
+  let speechChunks = [];
+  let speechSamples = 0;
+  const NATIVE_RATE = () => (audioCtx ? audioCtx.sampleRate : 48000);
+
   let onFrame = null;
   let onResult = null;
+  let onError = null;
   let locale = 'en';
 
   const VAD = {
@@ -117,6 +125,12 @@
       if (!VAD.speakSince) VAD.speakSince = now;
       VAD.silenceSince = 0;
       if (now - VAD.speakSince >= VAD.speakHoldMs) {
+        if (!A.speaking) {
+          // Speech just began — the capture buffer starts fresh here so the
+          // transcribed segment contains only this utterance.
+          speechChunks = [];
+          speechSamples = 0;
+        }
         A.speaking = true;
         if (A.state !== 'recognizing') A.state = 'speaking';
       }
@@ -127,12 +141,14 @@
         if (now - VAD.silenceSince >= VAD.silenceMs) {
           A.speaking = false;
           if (A.state !== 'recognizing') A.state = 'listening';
+          // Speech finished — hand the captured audio to the whisper backend.
+          if (!recActive && speechSamples > 0) transcribeCapture();
         }
       }
     }
     VAD.frames++;
 
-    // Auto-start recognition on sustained voice.
+    // Auto-start recognition on sustained voice (web-speech backend only).
     if (A.speaking && A.state === 'speaking' && !recActive && rec) {
       startRecognition();
     }
@@ -178,13 +194,56 @@
   function handleError(ev) {
     recActive = false;
     A.state = A.speaking ? 'speaking' : 'listening';
-    if (onErrorCb) onErrorCb(ev && ev.error);
+    if (onError) onError(ev && ev.error);
   }
-  let onErrorCb = null;
   function finalizeRecognition() {
     if (!recActive) return;
     try { rec.stop(); } catch (e) { /* already stopped */ }
     handleEnd();
+  }
+
+  /* ---------- whisper capture path ---------- */
+
+  /** Linear resample (native rate → 16 kHz mono) of the captured utterance. */
+  function resample16k(chunks) {
+    const total = speechSamples;
+    const src = new Float32Array(total);
+    let off = 0;
+    for (const c of chunks) { src.set(c, off); off += c.length; }
+    const ratio = 16000 / NATIVE_RATE();
+    const outLen = Math.max(1, Math.floor(total * ratio));
+    const out = new Float32Array(outLen);
+    for (let i = 0; i < outLen; i++) {
+      const pos = i / ratio;
+      const i0 = Math.floor(pos);
+      const i1 = Math.min(total - 1, i0 + 1);
+      const frac = pos - i0;
+      out[i] = src[i0] * (1 - frac) + src[i1] * frac;
+    }
+    return out;
+  }
+
+  let transcribing = false;
+  function transcribeCapture() {
+    if (transcribing || !P.stt) return;
+    const seconds = speechSamples / NATIVE_RATE();
+    if (seconds < 0.5) { speechChunks = []; speechSamples = 0; return; }
+    const pcm = resample16k(speechChunks);
+    speechChunks = [];
+    speechSamples = 0;
+    transcribing = true;
+    A.state = 'recognizing';
+    P.stt.transcribe(pcm, locale === 'zh' ? 'zh' : 'en')
+      .then((text) => {
+        if (text && onResult) onResult(text);
+      })
+      .catch((e) => {
+        if (onError) onError('engine: ' + (e && e.message ? e.message : e));
+      })
+      .finally(() => {
+        transcribing = false;
+        if (A.listening) A.state = A.speaking ? 'speaking' : 'listening';
+      });
   }
 
   /* ---------- lifecycle ---------- */
@@ -197,20 +256,46 @@
     timeData = new Uint8Array(analyser.fftSize);
     micSource = audioCtx.createMediaStreamSource(micStream);
     micSource.connect(analyser);
+    // Whisper path: capture raw samples through a silent ScriptProcessor.
+    scriptNode = audioCtx.createScriptProcessor(4096, 1, 1);
+    scriptNode.onaudioprocess = (ev) => {
+      if (!A.listening) return;
+      if (A.speaking) {
+        const data = ev.inputBuffer.getChannelData(0);
+        speechChunks.push(new Float32Array(data));
+        speechSamples += data.length;
+        // Keep only the last ~40 s of audio.
+        const maxSamples = NATIVE_RATE() * 40;
+        while (speechSamples > maxSamples) {
+          const drop = speechChunks.shift();
+          if (!drop) break;
+          speechSamples -= drop.length;
+        }
+      } else {
+        speechChunks = [];
+        speechSamples = 0;
+      }
+    };
+    const silent = audioCtx.createGain();
+    silent.gain.value = 0;
+    scriptNode.connect(silent);
+    silent.connect(audioCtx.destination);
   }
 
   A.setLocale = function (l) { locale = l === 'zh' ? 'zh' : 'en'; };
 
   A.onFrame = function (fn) { onFrame = fn; };
   A.onResult = function (fn) { onResult = fn; };
-  A.onError = function (fn) { onErrorCb = fn; };
+  A.onError = function (fn) { onError = fn; };
 
   A.start = async function () {
     if (A.listening) return 'ok';
     adoptPluginEngine();
-    A.supported = !!engine();
+    // web-speech only when the browser really provides it; the whisper
+    // backend (P.stt) covers everything else, including Electron.
+    A.supported = !!(engine() || (P.stt && P.stt !== null));
     if (!G.navigator || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      if (onErrorCb) onErrorCb('unsupported');
+      if (onError) onError('unsupported');
       return 'unsupported';
     }
     try {
@@ -218,22 +303,28 @@
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
     } catch (e) {
-      if (onErrorCb) onErrorCb('not-allowed');
+      if (onError) onError('not-allowed');
       return 'not-allowed';
     }
     try {
       buildGraph();
     } catch (e) {
       stop();
-      if (onErrorCb) onErrorCb('unsupported');
+      if (onError) onError('unsupported');
       return 'unsupported';
     }
     A.listening = true;
     A.state = 'listening';
     VAD.speakSince = 0; VAD.silenceSince = 0; A.speaking = false;
+    speechChunks = []; speechSamples = 0;
     if (engine()) {
       const Ctor = engine();
       try { rec = new Ctor(); } catch (e) { rec = null; }
+    }
+    // Warm the whisper engine early (first use downloads the model) — it
+    // fails silently here and retries on the first utterance.
+    if (!engine() && P.stt && !P.stt.ready && !P.stt.loading) {
+      P.stt.getPipe().catch(() => { /* surfaced on first utterance */ });
     }
     raf = requestAnimationFrame(tick);
     return 'ok';
@@ -247,11 +338,13 @@
     A.listening = false;
     A.speaking = false;
     A.state = 'idle';
+    speechChunks = []; speechSamples = 0;
     cancelAnimationFrame(raf);
+    try { if (scriptNode) scriptNode.disconnect(); } catch (e) { /* noop */ }
     try { if (micSource) micSource.disconnect(); } catch (e) { /* noop */ }
     try { if (micStream) micStream.getTracks().forEach((t) => t.stop()); } catch (e) { /* noop */ }
     try { if (audioCtx && audioCtx.state !== 'closed') audioCtx.close(); } catch (e) { /* noop */ }
-    micSource = null; micStream = null; audioCtx = null; analyser = null;
+    scriptNode = null; micSource = null; micStream = null; audioCtx = null; analyser = null;
     if (onFrame) onFrame({ db: -90, dominant: 0, voiceRatio: 0, bars: [], speaking: false, listening: false, state: 'idle' });
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

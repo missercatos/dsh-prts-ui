@@ -17,7 +17,10 @@ Version 0.2.0 has been fixed and tested against the **current dsh core (v4-gener
 - **File transfer**: attach images (PNG/JPEG/WebP/GIF) to messages; history images resolve via `session.attachment`
 - **Approvals & questions**: `approval/requested` / `question/requested` cards with allow/reject/answer
 - **Context meter**: live context-window pressure ring next to the composer
-- Plus: particle intro, system panel (hardware telemetry), voice input, cost panel, plugin market, trajectory view, zh/en UI, light/dark theme
+- **Bottom stats dock**: the same live stats line as the session UI — turns · steps | LLM · tool time | avg TTFT · tok/s | cache hit % | in/out tokens (projection frames + 8 s poll)
+- **Voice input**: real microphone speech-to-text — first-use consent modal, VAD auto start/stop, local whisper-tiny ONNX engine (engine + model cached from npmmirror / hf-mirror on first use, fully offline after; webkitSpeechRecognition preferred when present)
+- **Trajectory & log split**: the Trajectory tab is a step timeline (grouped by turn/step with durations); the Session log button is a separate raw-event overlay with JSON export
+- Plus: three-phase particle intro (welcome → PRTS·DEEPSEEK banner → diamond mark, 3.2 s each, click to skip), system panel (hardware telemetry), cost panel, plugin market, zh/en UI, light/dark theme
 
 ## Compatibility fixes in 0.2.0
 
@@ -32,7 +35,9 @@ Version 0.2.0 has been fixed and tested against the **current dsh core (v4-gener
 - Header popovers open downward when the trigger is near the top edge
 - Dead controls wired: sidebar collapse (a floating expand chip reappears when collapsed), chat/trajectory tabs, session log, context meter
 - Settings "Model configuration" collapse fixed (`[hidden]{display:none!important}` — CSS display was overriding the attribute; same fix for the attach strip and status row)
-- Streaming renders are batched per animation frame + throttled to 90 ms (a 9 s live turn rewrites the DOM ~16 times instead of once per chunk); intro particle count trimmed; history reloads cooldown 30 s
+- Streaming renders are batched per animation frame + throttled to 90 ms (a 9 s live turn rewrites the DOM ~16 times instead of once per chunk); history reloads cooldown 30 s
+- Settings collapse animates (grid-row 0fr→1fr) instead of jumping
+- The Electron renderer is served over a loopback-only HTTP server (random 127.0.0.1 port) so the speech engine's wasm import()/worker loading works; the dsh API still rides the preload bridge — no window, no exposure
 - Streaming state no longer sticks on "stop" after a mux drop
 
 ## Install (one click, CN-network friendly)

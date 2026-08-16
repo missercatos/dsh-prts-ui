@@ -299,6 +299,24 @@
       'session.confirmArchiveSelected': 'Archive {n} selected sessions? They will be removed from the workspace.',
       'session.archivedSelected': 'Archived {n} sessions',
       'sidebar.expand': 'Show sidebar',
+
+      'stats.turnsSteps': '{turns} turns · {steps} steps',
+      'stats.llmTool': 'LLM {llm} · tools {tool}',
+      'stats.ttft': 'avg TTFT {ttft} · {tps} tok/s',
+      'stats.cache': 'cache hit {pct}%',
+      'stats.io': 'in {input} tok · out {output}',
+
+      'traj.stepHeader': 'turn {turn} · step {step}',
+      'traj.duration': '{d}',
+      'log.title': 'Session log',
+      'log.export': 'Export',
+
+      'voice.consent.title': 'Microphone permission',
+      'voice.consent.body': 'Voice input captures your microphone and sends audio to the speech recognition backend. Allow PRTS to use the microphone?',
+      'voice.consent.allow': 'Allow',
+      'voice.consent.deny': 'Deny',
+      'voice.engineLoading': 'Loading the speech engine (first use)…',
+      'voice.engineFailed': 'Speech engine could not be loaded: {msg}',
     },
 
     zh: {
@@ -593,6 +611,24 @@
       'session.confirmArchiveSelected': '归档选中的 {n} 个会话？它们将从工作区移除。',
       'session.archivedSelected': '已归档 {n} 个会话',
       'sidebar.expand': '展开侧栏',
+
+      'stats.turnsSteps': '{turns} 轮 · {steps} 步',
+      'stats.llmTool': 'LLM {llm} · 工具调用 {tool}',
+      'stats.ttft': '首 token 平均 {ttft} · {tps} tok/s',
+      'stats.cache': '缓存命中 {pct}%',
+      'stats.io': '输入 {input} tok · 输出 {output}',
+
+      'traj.stepHeader': '第 {turn} 轮 · 第 {step} 步',
+      'traj.duration': '{d}',
+      'log.title': '会话日志',
+      'log.export': '导出',
+
+      'voice.consent.title': '麦克风权限',
+      'voice.consent.body': '语音输入会采集麦克风音频并发送给语音识别引擎。允许 PRTS 使用麦克风吗？',
+      'voice.consent.allow': '允许',
+      'voice.consent.deny': '拒绝',
+      'voice.engineLoading': '正在加载语音引擎（首次使用）…',
+      'voice.engineFailed': '语音引擎加载失败：{msg}',
     },
   };
 

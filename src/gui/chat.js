@@ -423,8 +423,8 @@
     requestAnimationFrame(() => { const s = $('chatScroll'); if (s) s.scrollTop = s.scrollHeight; });
   }
 
-  /* ---------- trajectory ---------- */
-  function renderTraj() {
+  /* ---------- trajectory (step timeline) ---------- */
+  function renderTimeline() {
     const box = $('trajView');
     if (!box) return;
     box.textContent = '';
@@ -432,7 +432,64 @@
       box.appendChild(el('div', 'trajEmpty', t('traj.empty')));
       return;
     }
-    C.rawEvents.slice(-300).forEach((ev, i) => {
+    // Group events by (turn, step) in log order.
+    const steps = new Map();   // key -> { turn, step, start, end, items }
+    const order = [];
+    for (const ev of C.rawEvents) {
+      const d = ev.data || {};
+      let turn = d.turn, step = d.step;
+      if (ev.type === 'step/start' || ev.type === 'step/end') { turn = d.turn; step = d.step; }
+      if (step === undefined && turn === undefined) continue;   // session-level rows stay out of the timeline
+      const key = (turn === undefined ? '?' : turn) + '/' + step;
+      let rec = steps.get(key);
+      if (!rec) { rec = { turn, step, start: null, end: null, items: [] }; steps.set(key, rec); order.push(key); }
+      if (ev.type === 'step/start') rec.start = ev.time;
+      else if (ev.type === 'step/end') rec.end = ev.time;
+      else rec.items.push(ev);
+    }
+    for (const key of order) {
+      const rec = steps.get(key);
+      const block = el('div', 'tlStep');
+      const head = el('div', 'tlHead');
+      const label = t('traj.stepHeader', { turn: rec.turn === undefined ? '?' : rec.turn, step: rec.step === undefined ? '?' : rec.step });
+      head.appendChild(el('span', 'tlLabel', label));
+      if (rec.start && rec.end && rec.end > rec.start) {
+        head.appendChild(el('span', 'tlDur', t('traj.duration', { d: fmtDurShort(rec.end - rec.start) })));
+      }
+      block.appendChild(head);
+      let usage = null;
+      for (const ev of rec.items) {
+        const row = el('div', 'tlItem');
+        row.appendChild(el('span', 'tlType', String(ev.type)));
+        const brief = summaryOf(ev);
+        if (brief) row.appendChild(el('span', 'tlBrief', brief));
+        block.appendChild(row);
+        if (ev.type === 'assistant/chunk' && ev.data && ev.data.chunk && ev.data.chunk.type === 'usage') {
+          usage = ev.data.chunk.usage || ev.data.chunk;
+        }
+      }
+      if (usage && (usage.prompt_tokens || usage.completion_tokens)) {
+        block.appendChild(el('div', 'tlUsage', t('chat.tokens', { in: usage.prompt_tokens || 0, out: usage.completion_tokens || 0 })));
+      }
+      box.appendChild(block);
+    }
+  }
+  function fmtDurShort(ms) {
+    const s = Math.round(ms / 1000);
+    if (s < 60) return s + 's';
+    return Math.floor(s / 60) + 'm' + String(s % 60).padStart(2, '0') + 's';
+  }
+
+  /* ---------- session log (raw event list, overlay) ---------- */
+  function renderLog() {
+    const box = $('logBody');
+    if (!box) return;
+    box.textContent = '';
+    if (!C.rawEvents.length) {
+      box.appendChild(el('div', 'trajEmpty', t('traj.empty')));
+      return;
+    }
+    C.rawEvents.slice(-500).forEach((ev, i) => {
       const row = el('div', 'trajItem');
       row.appendChild(el('span', 'idx', String(ev.seq !== undefined ? ev.seq : i)));
       const body = el('div', 'trajBody');
@@ -444,6 +501,18 @@
       row.appendChild(body);
       box.appendChild(row);
     });
+  }
+  function exportLog() {
+    if (!C.rawEvents.length) return;
+    const blob = new Blob([JSON.stringify(C.rawEvents, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'prts-session-log-' + (C.sessionId || 'session').slice(0, 12) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
   function summaryOf(ev) {
     const d = ev.data || {};
@@ -759,7 +828,9 @@
   C.send = send;
   C.stop = stop;
   C.renderFlow = renderFlow;
-  C.renderTraj = renderTraj;
+  C.renderTimeline = renderTimeline;
+  C.renderLog = renderLog;
+  C.exportLog = exportLog;
   C.loadHistory = loadHistory;
   C.attachFiles = attachFiles;
   C.updateSend = updateSend;

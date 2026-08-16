@@ -187,6 +187,15 @@
 .sSecRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .sSecRow .sSecTitle { flex: 1; border-bottom: none; padding-bottom: 0; }
 .sCollapse { display: flex; flex-direction: column; gap: 8px; }
+/* Accordion animation: the body's grid row collapses smoothly, the sections
+   below slide up, the toggle itself never moves the card. */
+.sCollapse.collapseAnim {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.32s var(--prts-ease-out);
+}
+.sCollapse.collapseAnim.open { grid-template-rows: 1fr; }
+.sCollapse.collapseAnim > .collapseInner { overflow: hidden; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
 /* Abstract minimal toggle: a rotated square (diamond) that rights itself
    when the section expands. */
 .toggleBtn {

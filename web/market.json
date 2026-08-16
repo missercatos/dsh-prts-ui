@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-16T02:58:09.101Z",
+  "generatedAt": "2026-08-16T06:29:32.238Z",
   "plugins": [
     {
       "pkg": "@liustack/modlens",
@@ -23,12 +23,36 @@
       "description": "VSCode-like sidebar (explorer / editor / terminal / git)."
     },
     {
+      "name": "@memtensor/memos-local-plugin",
+      "displayName": "@memtensor/memos-local-plugin",
+      "description": "Reflect2Evolve memory plugin: layered L1/L2/L3 memory, reflection-weighted value backprop, cross-task policy induction, skill crystallization, and three-tier retrieval for OpenClaw, Hermes Agent, and DeepSeek Harness.",
+      "source": "npm",
+      "pkg": "@memtensor/memos-local-plugin",
+      "repo": null
+    },
+    {
       "name": "@liustack/modsearch",
       "displayName": "@liustack/modsearch",
       "description": "Plug-in web search, X search, and page fetch for models without native web access, powered by the free Antigravity CLI",
       "source": "npm",
       "pkg": "@liustack/modsearch",
       "repo": "git+https://github.com/liustack/modsearch.git"
+    },
+    {
+      "name": "dsh-pocket",
+      "displayName": "dsh-pocket",
+      "description": "把 DeepSeek Harness 装进你的口袋：一个包、一个设置页，手机扫码即同步访问电脑上的 DSH（局域网 + 公网，实时同屏）。",
+      "source": "npm",
+      "pkg": "dsh-pocket",
+      "repo": "git+https://github.com/shaobeichen/dsh-pocket.git"
+    },
+    {
+      "name": "opencode-engram-learning",
+      "displayName": "opencode-engram-learning",
+      "description": "Evidence-based learning engine for OpenCode — learn anything, verify by free recall, schedule with FSRS, adapt from your own data.",
+      "source": "npm",
+      "pkg": "opencode-engram-learning",
+      "repo": "git+https://github.com/nagisanzenin/engram.git"
     },
     {
       "name": "@liustack/pptfast",
@@ -47,12 +71,76 @@
       "repo": "https://git.itdos.net:88/anderson/microi.vscode.git"
     },
     {
+      "name": "dsh-web-open",
+      "displayName": "dsh-web-open",
+      "description": "Auto-open the browser, whale tray icon, desktop shortcut and one-shot installer for `dsh web` (DeepSeek Harness plugin)",
+      "source": "npm",
+      "pkg": "dsh-web-open",
+      "repo": null
+    },
+    {
+      "name": "dsh-builtin-browser",
+      "displayName": "dsh-builtin-browser",
+      "description": "Shared real browser plugin for DeepSeek Harness: install-and-use — a visible native browser the human can take over, driven by the agent over CDP. DOM-level interaction (React/Vue safe), per-task session isolation, cookie persistence (browser_auth), CAPTC",
+      "source": "npm",
+      "pkg": "dsh-builtin-browser",
+      "repo": "git+https://github.com/wqty123/dsh-browser.git"
+    },
+    {
       "name": "plaindeck",
       "displayName": "plaindeck",
       "description": "Git-native slide format, Agent API, CLI, MCP server, and renderer",
       "source": "npm",
       "pkg": "plaindeck",
       "repo": "git+https://github.com/Mappedinfo/PlainDeck.git"
+    },
+    {
+      "name": "dsh-better-edit",
+      "displayName": "dsh-better-edit",
+      "description": "Hash-anchored read/edit/batch_edit/undo_last_edit tools for DeepSeek Harness (dsh). Every line gets a unique 3-char hash (A-Za-z0-9) that stays stable across edits; stale or ambiguous anchors are rejected, never fuzzy-matched. Undo persists across restart",
+      "source": "npm",
+      "pkg": "dsh-better-edit",
+      "repo": "git+https://github.com/Rianico/dsh-better-edit.git"
+    },
+    {
+      "name": "dsh-win32",
+      "displayName": "dsh-win32",
+      "description": "DeepSeek Harness 的 Windows 插件：沙箱内唯一能跑的持久 shell、可用的极简模式、前台命令识别、旧编码读取与安装体检 | First-class Windows for DSH",
+      "source": "npm",
+      "pkg": "dsh-win32",
+      "repo": "git+https://github.com/sjh9714/dsh-win32.git"
+    },
+    {
+      "name": "pi2dsh",
+      "displayName": "pi2dsh",
+      "description": "Bridge the Pi and DeepSeek Harness ecosystems: a general Pi Host ABI that runs unmodified Pi extensions as native DSH plugins, plus per-package conversion and MCP config translation.",
+      "source": "npm",
+      "pkg": "pi2dsh",
+      "repo": "git+https://github.com/weijiafu14/pi2dsh.git"
+    },
+    {
+      "name": "dsh-desktop-windows",
+      "displayName": "dsh-desktop-windows",
+      "description": "DeepSeek Harness 桌面版（Windows）· Electron desktop shell for DeepSeek Harness — 双击即用 / double-click to run · 支持选区截图提问、系统托盘、会话管理 / region screenshot, system tray, session manager",
+      "source": "npm",
+      "pkg": "dsh-desktop-windows",
+      "repo": "git+https://github.com/ReachGa0/dsh-desktop.git"
+    },
+    {
+      "name": "dsh-find-plugin",
+      "displayName": "dsh-find-plugin",
+      "description": "Find DeepSeek Harness plugins inside the agent — live GitHub dsh-plugin topic search, ranked by stars.",
+      "source": "npm",
+      "pkg": "dsh-find-plugin",
+      "repo": "git+https://github.com/awesome-dsh-plugin/dsh-find-plugin.git"
+    },
+    {
+      "name": "@crazy_th/dsh-computer-use",
+      "displayName": "@crazy_th/dsh-computer-use",
+      "description": "Native Windows Computer Use tools for DeepSeek Harness.",
+      "source": "npm",
+      "pkg": "@crazy_th/dsh-computer-use",
+      "repo": "git+https://github.com/ThreeBody6666/dsh-computer-use.git"
     },
     {
       "name": "design-playbook",
@@ -63,124 +151,44 @@
       "repo": "git+https://github.com/Bandersnatch0x/design-playbook.git"
     },
     {
-      "name": "@sakikotgw/pack-agent",
-      "displayName": "@sakikotgw/pack-agent",
-      "description": "Pack skills, rules, and MCP into .pack.zip and install them into Claude Code, Codex, Cursor, and other harnesses",
+      "name": "dsh-testkit",
+      "displayName": "dsh-testkit",
+      "description": "Real-host lifecycle testing for DeepSeek Harness plugins.",
       "source": "npm",
-      "pkg": "@sakikotgw/pack-agent",
-      "repo": "git+https://github.com/sakikoTGW/pack-agent.git"
+      "pkg": "dsh-testkit",
+      "repo": "git+https://github.com/iiwish/dsh-testkit.git"
     },
     {
-      "name": "dsh-plugin-koishi",
-      "displayName": "dsh-plugin-koishi",
-      "description": "Koishi plugin for DeepSeek Harness",
+      "name": "dsh-codex-oauth",
+      "displayName": "dsh-codex-oauth",
+      "description": "Use a ChatGPT Codex subscription in DeepSeek Harness through standalone OAuth",
       "source": "npm",
-      "pkg": "dsh-plugin-koishi",
-      "repo": null
+      "pkg": "dsh-codex-oauth",
+      "repo": "git+https://github.com/eons2long/dsh-codex-oauth.git"
     },
     {
-      "name": "@qing3a/dsh-event-auditor",
-      "displayName": "@qing3a/dsh-event-auditor",
-      "description": "Harness 事件流审计面板：观察事件类型、分发模式、计数与最近事件，帮助插件作者理解 harness 内部发生了什么",
+      "name": "@michengai/dsh-skills-manager",
+      "displayName": "@michengai/dsh-skills-manager",
+      "description": "NPM-installable DSH Web plugin for managing local skills and viewing shared Agent skills safely.",
       "source": "npm",
-      "pkg": "@qing3a/dsh-event-auditor",
-      "repo": "git+https://github.com/qing3a/dsh-event-auditor.git"
+      "pkg": "@michengai/dsh-skills-manager",
+      "repo": "git+https://github.com/MichengAI/dsh-skills-manager.git"
     },
     {
-      "name": "dsh-latex-tools",
-      "displayName": "dsh-latex-tools",
-      "description": "Hover LaTeX formulas in the DeepSeek Harness Web UI to copy the TeX source or export the formula as a standalone SVG.",
+      "name": "dsh-plugin-vetting",
+      "displayName": "dsh-plugin-vetting",
+      "description": "装插件前，先体检：第三方插件 = 进程内全权限代码，这个工具让'盲装'变成'知情安装'——恶意模式、越权路径、未检查依赖，一目了然。Static heuristic vetting for third-party DeepSeek Harness plugins: exfiltration, credential access, over-privileged paths, unvetted dependencies.",
       "source": "npm",
-      "pkg": "dsh-latex-tools",
-      "repo": "git+https://github.com/liuup/dsh-latex-tools.git"
+      "pkg": "dsh-plugin-vetting",
+      "repo": "git+https://github.com/truelove-dreamer/dsh-plugin-vetting.git"
     },
     {
-      "name": "dsh-claude-marketplace",
-      "displayName": "dsh-claude-marketplace",
-      "description": "Claude Code compatibility layer for DeepSeek Harness: load .claude skills/commands/agents and install plugins from Claude Code marketplaces as native dsh skills.",
+      "name": "dsh-web-plugin-manager",
+      "displayName": "dsh-web-plugin-manager",
+      "description": "Manage DeepSeek Harness (DSH) plugins from the Web UI: list, enable/disable, install/remove, environments, and a GitHub-awesome-driven marketplace.",
       "source": "npm",
-      "pkg": "dsh-claude-marketplace",
-      "repo": "git+https://github.com/ben7am1n/dsh-claude-marketplace.git"
-    },
-    {
-      "name": "dsh-plugins-raincode",
-      "displayName": "dsh-plugins-raincode",
-      "description": "Use raincode's model layer (cheap model pool, prompt caching, retry) and skill library inside DeepSeek Harness (dsh)",
-      "source": "npm",
-      "pkg": "dsh-plugins-raincode",
-      "repo": "git+https://github.com/rainforest888/dsh-plugins-raincode.git"
-    },
-    {
-      "name": "dsh-sandbox-keeper",
-      "displayName": "dsh-sandbox-keeper",
-      "description": "Remote-sandbox lifecycle owner for DeepSeek Harness: E2B sandbox create/pause/resume, sidecar deployment, heartbeat keep-alive, crash-transparent recovery, and pluggable tar IN/OUT sync.",
-      "source": "npm",
-      "pkg": "dsh-sandbox-keeper",
-      "repo": null
-    },
-    {
-      "name": "mypet",
-      "displayName": "mypet",
-      "description": "A tamagotchi-style desktop pet for DeepSeek Harness — lives in your browser, reacts to coding sessions, levels up, collects skins, and more.",
-      "source": "npm",
-      "pkg": "mypet",
-      "repo": null
-    },
-    {
-      "name": "dsh-verification-receipt",
-      "displayName": "dsh-verification-receipt",
-      "description": "Privacy-minimal heuristic per-turn execution summaries for DeepSeek Harness",
-      "source": "npm",
-      "pkg": "dsh-verification-receipt",
-      "repo": "git+https://github.com/030611/dsh-verification-receipt.git"
-    },
-    {
-      "name": "dsh-preset-flash-director",
-      "displayName": "dsh-preset-flash-director",
-      "description": "Flash 主控 · Pro 专家 — a DeepSeek Harness agent preset: flash-model orchestrator + pro-model (deepseek-v4-pro) expert subagents, with an enforced delegation protocol (curated briefs, hard per-task budget, no delegation chains).",
-      "source": "npm",
-      "pkg": "dsh-preset-flash-director",
-      "repo": "git+https://github.com/zhaoyilun/dsh-preset-flash-director.git"
-    },
-    {
-      "name": "dsh-client-new-session-ungrouped",
-      "displayName": "dsh-client-new-session-ungrouped",
-      "description": "dsh Web GUI plugin for project-less chat sessions: adds a \"Work outside of a project\" option to the workspace picker, repairs the ungrouped group-header \"+\", routes new sessions to project-less mode while the current one is ungrouped, unlocks the blank un",
-      "source": "npm",
-      "pkg": "dsh-client-new-session-ungrouped",
-      "repo": null
-    },
-    {
-      "name": "dsh-llm-auto-route",
-      "displayName": "dsh-llm-auto-route",
-      "description": "Provider discovery, matching, health checks, and pre-output failover for DeepSeek Harness.",
-      "source": "npm",
-      "pkg": "dsh-llm-auto-route",
-      "repo": "git+https://github.com/qinyu765/dsh-llm-auto-route.git"
-    },
-    {
-      "name": "dsh-cloudflare-browser-run",
-      "displayName": "dsh-cloudflare-browser-run",
-      "description": "DeepSeek Harness plugin: web browsing tools (markdown / screenshot / pdf) powered by Cloudflare Browser Run — real headless Chrome with JS rendering, login sessions and WebMCP support.",
-      "source": "npm",
-      "pkg": "dsh-cloudflare-browser-run",
-      "repo": "git+https://github.com/RealAlexandreAI/dsh-cloudflare-browser-run.git"
-    },
-    {
-      "name": "dsh-nocturne-memory",
-      "displayName": "dsh-nocturne-memory",
-      "description": "DeepSeek Harness plugin: Nocturne Memory client — automated long-term memory (boot/read/search/create/update) backed by your own Nocturne MCP server.",
-      "source": "npm",
-      "pkg": "dsh-nocturne-memory",
-      "repo": "git+https://github.com/RealAlexandreAI/dsh-nocturne-memory.git"
-    },
-    {
-      "name": "@ruihuahe/dsh-plugin-marketplace",
-      "displayName": "@ruihuahe/dsh-plugin-marketplace",
-      "description": "Generated-catalog plugin discovery and npm installation marketplace for DeepSeek Harness",
-      "source": "npm",
-      "pkg": "@ruihuahe/dsh-plugin-marketplace",
-      "repo": "git+https://github.com/hrhgit/deepseek-harness-plugin-manager.git"
+      "pkg": "dsh-web-plugin-manager",
+      "repo": "git+https://github.com/LX2000WASD/dsh-web-plugin-manager.git"
     },
     {
       "name": "visionpower",
@@ -191,6 +199,30 @@
       "repo": null
     },
     {
+      "name": "@yun520-1/deepseek-heartflow",
+      "displayName": "@yun520-1/deepseek-heartflow",
+      "description": "心虫 HeartFlow — AGI 第1层辨别门禁作为 DSH 插件: 47维纯规则判别 (heartflow_check/analyze/verdict/dimensions) + 工具调用后自动输出监督, fail-closed, 零LLM依赖",
+      "source": "npm",
+      "pkg": "@yun520-1/deepseek-heartflow",
+      "repo": "git+https://github.com/yun520-1/deepseek-heartflow.git"
+    },
+    {
+      "name": "@open-agfs/dsh-agfs",
+      "displayName": "@open-agfs/dsh-agfs",
+      "description": "Host file-browser web app over the dsh webserver with a /dsh-agfs command",
+      "source": "npm",
+      "pkg": "@open-agfs/dsh-agfs",
+      "repo": "git+https://github.com/openAGFS/dsh-agfs.git"
+    },
+    {
+      "name": "@luzhengyangtx/dsh-telegram-duty",
+      "displayName": "@luzhengyangtx/dsh-telegram-duty",
+      "description": "Telegram duty gateway for DeepSeek Harness: long-poll Telegram into a dedicated duty session, global approval forwarding while on duty, and a local/duty watch toggle.",
+      "source": "npm",
+      "pkg": "@luzhengyangtx/dsh-telegram-duty",
+      "repo": "git+https://github.com/luzhengyangtx/dsh-telegram-duty.git"
+    },
+    {
       "name": "easy-cr",
       "displayName": "easy-cr",
       "description": "Generate business-sequenced HTML code reviews with comments and optional GoLand, IntelliJ IDEA, or VS Code semantic navigation.",
@@ -199,100 +231,196 @@
       "repo": null
     },
     {
-      "name": "@banlan/inkstone",
-      "displayName": "@banlan/inkstone",
-      "description": "Browse and manage conversation history from Claude Code, Codex CLI, OpenCode, Reasonix, Oh My PI (omp), Pi, and DeepSeek Harness (dsh)",
+      "name": "deepseek-flow",
+      "displayName": "deepseek-flow",
+      "description": "DeepSeek Flow — Markdown-first visual workflow plugin for DeepSeek Harness with executable Boolean gate semantics, two-way canvas sync, and AI review/optimization.",
       "source": "npm",
-      "pkg": "@banlan/inkstone",
-      "repo": "git+https://github.com/banlanzs/inkstone.git"
+      "pkg": "deepseek-flow",
+      "repo": "git+https://github.com/kanghelyu/dsh-deepseek-flow.git"
     },
     {
-      "name": "create-dsh-plugin",
-      "displayName": "create-dsh-plugin",
-      "description": "Scaffold a DeepSeek Harness (DSH) plugin in seconds — tool / events / webui templates, next-tag version pinning, and a built-in --verify smoke test.",
+      "name": "dsh-git-rollback",
+      "displayName": "dsh-git-rollback",
+      "description": "DSH turn-level Git rollback plugin: /rollback /redo /checkpoints /undo commands, per-turn checkpoints in hidden refs, non-destructive workspace restore, scoped turn undo, checkpoint-SHA restore.",
       "source": "npm",
-      "pkg": "create-dsh-plugin",
-      "repo": null
+      "pkg": "dsh-git-rollback",
+      "repo": "git+https://github.com/NEXTINDIE/DeepSeek-Harness-for-VS-Code.git"
     },
     {
-      "name": "dsh-worktree",
-      "displayName": "dsh-worktree",
-      "description": "Codex-style permanent git worktrees for DeepSeek Harness: agent tools, a /worktree command, and session context for durable worktrees.",
+      "name": "dsh-weixin",
+      "displayName": "dsh-weixin",
+      "description": "微信 ClawBot (iLink) 通道插件：把微信消息接入 DeepSeek Harness 会话，按用户隔离、原生注入与回发。",
       "source": "npm",
-      "pkg": "dsh-worktree",
-      "repo": "git+https://github.com/FlashingChen/dsh-worktree.git"
+      "pkg": "dsh-weixin",
+      "repo": "git+https://github.com/caoyilearnai/dsh-weixin.git"
     },
     {
-      "name": "deepseek-harness-terminal-fast-run",
-      "displayName": "deepseek-harness-terminal-fast-run",
-      "description": "Unofficial convenience launcher for the DeepSeek Harness Web UI",
+      "name": "dsh-cost-log",
+      "displayName": "dsh-cost-log",
+      "description": "DSH 原生插件：按 DeepSeek 峰谷价格表实时计算当前对话花费，并显示在输入框旁",
       "source": "npm",
-      "pkg": "deepseek-harness-terminal-fast-run",
-      "repo": "git+https://github.com/Wgj24/deepseek-harness-terminal-fast-run.git"
+      "pkg": "dsh-cost-log",
+      "repo": "git+https://github.com/kami-mura/dsh-cost.git"
     },
     {
-      "name": "dsh-compaction-instant",
-      "displayName": "dsh-compaction-instant",
-      "description": "VCC-style instant, near-lossless deterministic compaction engine for the DeepSeek Harness — a drop-in replacement for @deepseek-ai/dsh-compaction-basic",
+      "name": "@deepseek-ai/dsh-headless",
+      "displayName": "@deepseek-ai/dsh-headless",
+      "description": "The dsh one-shot bundle: a direct core Agent/Session runner over dsh-base with no Host, HTTP, or browser layer",
       "source": "npm",
-      "pkg": "dsh-compaction-instant",
-      "repo": "git+https://github.com/KitDoesIt/dsh-compaction-instant.git"
+      "pkg": "@deepseek-ai/dsh-headless",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
     },
     {
-      "name": "dsh-plugin-product-subagents",
-      "displayName": "dsh-plugin-product-subagents",
-      "description": "Role-based Codex / Claude Code / ACP subagent providers for the DeepSeek Harness: continuable children, durable session recovery, per-role product permissions, delegation with a permission ceiling, and a declarative role library.",
+      "name": "@deepseek-ai/dsh-skill-badge",
+      "displayName": "@deepseek-ai/dsh-skill-badge",
+      "description": "Bundled dsh badge skill provider for DeepSeek Harness",
       "source": "npm",
-      "pkg": "dsh-plugin-product-subagents",
-      "repo": "git+https://github.com/shaokeyibb/dsh-plugin-product-subagents.git"
+      "pkg": "@deepseek-ai/dsh-skill-badge",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
     },
     {
-      "name": "dsh-plugin-manager",
-      "displayName": "dsh-plugin-manager",
-      "description": "Web plugin manager for DeepSeek Harness (DSH) and Cordis: inspect, enable, disable, group, and manage runtime plugins",
+      "name": "@deepseek-ai/dsh-compaction",
+      "displayName": "@deepseek-ai/dsh-compaction",
+      "description": "Abstract compaction service seam (ctx.compaction) for the DeepSeek Harness",
       "source": "npm",
-      "pkg": "dsh-plugin-manager",
-      "repo": "git+https://github.com/hrhgit/deepseek-harness-plugin-manager.git"
+      "pkg": "@deepseek-ai/dsh-compaction",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
     },
     {
-      "name": "dsh-voice-webspeech",
-      "displayName": "dsh-voice-webspeech",
-      "description": "DSH Web 语音输入插件：零服务端、零密钥、零模型下载，直接使用浏览器内置 Web Speech API（Edge=微软 Azure 语音，Chrome=Google 语音）。",
+      "name": "@deepseek-ai/dsh-web-app",
+      "displayName": "@deepseek-ai/dsh-web-app",
+      "description": "The dsh browser-surface bundle: the web patch layer over dsh-base plus the runtime glue plugin (frontend dist serving, web-surface prompt, bash runtime variables, URL line)",
       "source": "npm",
-      "pkg": "dsh-voice-webspeech",
-      "repo": "git+https://github.com/anweat/dsh-voice-webspeech.git"
+      "pkg": "@deepseek-ai/dsh-web-app",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
     },
     {
-      "name": "dsh-ui-enhance",
-      "displayName": "dsh-ui-enhance",
-      "description": "Optional Web UI enhancements for DeepSeek Harness",
+      "name": "@deepseek-ai/dsh-fs-local",
+      "displayName": "@deepseek-ai/dsh-fs-local",
+      "description": "Local-filesystem implementation of the DeepSeek Harness filesystem seam (ctx.fs)",
       "source": "npm",
-      "pkg": "dsh-ui-enhance",
-      "repo": null
+      "pkg": "@deepseek-ai/dsh-fs-local",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
     },
     {
-      "name": "@dong-victor/dsh-opencodego-usage",
-      "displayName": "@dong-victor/dsh-opencodego-usage",
-      "description": "opencode Go 套餐余额查看插件（DSH Web GUI）：侧边栏直接显示 rolling(5小时)/weekly(周)/monthly(余额) 三档用量进度条、百分比与重置时间，60s 自动刷新，无需点击；点击打开详情面板（倒计时、状态徽章、端点/密钥信息）；agent 工具 opencode_go_balance 可直接回答套餐用量。密钥与端点复用 DSH 已配置的 llm-deepseek 接线（credentials 服务 + settings），无需二次配置。零构建依赖、纯 JS 即装即",
+      "name": "@deepseek-ai/dsh-sandbox",
+      "displayName": "@deepseek-ai/dsh-sandbox",
+      "description": "Abstract process-sandbox seam (ctx.sandbox) for the DeepSeek Harness: same-world confinement vocabulary and the SandboxProvider contract",
       "source": "npm",
-      "pkg": "@dong-victor/dsh-opencodego-usage",
-      "repo": "git+https://github.com/dong-victor/dsh-opencodego-usage.git"
+      "pkg": "@deepseek-ai/dsh-sandbox",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
     },
     {
-      "name": "code-monkey-ui",
-      "displayName": "code-monkey-ui",
-      "description": "A Component Library for Vue 3",
+      "name": "@deepseek-ai/dsh-fs-sandbox",
+      "displayName": "@deepseek-ai/dsh-fs-sandbox",
+      "description": "Sandbox-enforcing implementation of the DeepSeek Harness filesystem seam: fences write/edit by the per-call sandbox mode (read-only denies mutation, workspace-write contains it to the workspace + temp roots) while reads pass through",
       "source": "npm",
-      "pkg": "code-monkey-ui",
-      "repo": "git+https://github.com/element-plus/element-plus.git"
+      "pkg": "@deepseek-ai/dsh-fs-sandbox",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
     },
     {
-      "name": "a4phone",
-      "displayName": "a4phone",
-      "description": "Claude Code / Codex / DSH 远程手机交互：任务完成通知（含 AI 最后输出）、提问/权限请求手机点选或文字作答、远程续聊（ntfy.sh，含 DSH 会话续聊）",
+      "name": "@deepseek-ai/dsh-fs",
+      "displayName": "@deepseek-ai/dsh-fs",
+      "description": "Abstract filesystem capability seam (ctx.fs) for the DeepSeek Harness — vocabulary types, the FileSystem service (text IO + optional version-guarded atomic mutations), and the fs/* policy event vocabulary",
       "source": "npm",
-      "pkg": "a4phone",
-      "repo": null
+      "pkg": "@deepseek-ai/dsh-fs",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-brand",
+      "displayName": "@deepseek-ai/dsh-brand",
+      "description": "Type-only Branded<B> nominal-typing primitive for the DeepSeek Harness",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-brand",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-command-goal",
+      "displayName": "@deepseek-ai/dsh-command-goal",
+      "description": "Human-facing slash command for persisted same-session goals",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-command-goal",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-bash-sandbox",
+      "displayName": "@deepseek-ai/dsh-bash-sandbox",
+      "description": "Sandbox-consuming implementation of the DeepSeek Harness bash executor seam (confines every command via ctx.sandbox, reports denial/enforcement result facts)",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-bash-sandbox",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-subprocess-local",
+      "displayName": "@deepseek-ai/dsh-subprocess-local",
+      "description": "Local-subprocess implementation of the DeepSeek Harness subprocess seam",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-subprocess-local",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-telemetry-otel",
+      "displayName": "@deepseek-ai/dsh-session-telemetry-otel",
+      "description": "OpenTelemetry backend for the DeepSeek Harness telemetry seam: hands captured session records to the OTel JS SDK's log pipeline",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-session-telemetry-otel",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-attachment-local",
+      "displayName": "@deepseek-ai/dsh-attachment-local",
+      "description": "Private content-addressed DSH_HOME attachment storage",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-attachment-local",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-pwsh-local",
+      "displayName": "@deepseek-ai/dsh-pwsh-local",
+      "description": "Local PowerShell implementation of the DeepSeek Harness bash executor seam",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-pwsh-local",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-home-paths",
+      "displayName": "@deepseek-ai/dsh-home-paths",
+      "description": "Shared filesystem path helpers for the DeepSeek Harness",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-home-paths",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-command-feedback",
+      "displayName": "@deepseek-ai/dsh-command-feedback",
+      "description": "Log-only session feedback producer and human-facing slash command",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-command-feedback",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-bash",
+      "displayName": "@deepseek-ai/dsh-tool-bash",
+      "description": "Model-facing bash tool with optional generic background-task and sandbox-escalation support",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-tool-bash",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-output-retention",
+      "displayName": "@deepseek-ai/dsh-output-retention",
+      "description": "Zero-dependency bounded-retention primitive: ItemRetainer/TextRetainer + neutral notice helpers (what did we keep, what did we omit)",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-output-retention",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
+    },
+    {
+      "name": "@deepseek-ai/dsh-session",
+      "displayName": "@deepseek-ai/dsh-session",
+      "description": "Event-sourced session store for the DeepSeek Harness",
+      "source": "npm",
+      "pkg": "@deepseek-ai/dsh-session",
+      "repo": "git+https://github.com/deepseek-ai/deepseek-harness.git"
     }
   ]
 }

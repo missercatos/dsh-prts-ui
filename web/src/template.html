@@ -203,6 +203,7 @@
               </div>
             </div>
           </div>
+          <div class="dockStats" id="statsDock" hidden></div>
         </div>
       </div>
     </div>
@@ -252,9 +253,11 @@
           <span class="sSecTitle eyebrow" data-i18n="settings.modelConfig">Model configuration</span>
           <button class="toggleBtn" id="modelCfgToggle" type="button" aria-expanded="false" data-i18n-title="settings.modelConfig.toggle"><span class="tgDiamond"></span></button>
         </div>
-        <div class="sCollapse" id="modelCfgBody" hidden>
-          <div class="hint" data-i18n="settings.modelConfig.hint">API keys are written to the dsh harness home (~/.dsh) — exactly where dsh keeps them. Only models whose provider has a key can be picked.</div>
-          <div id="cfgProviders"></div>
+        <div class="sCollapse collapseAnim" id="modelCfgBody">
+          <div class="collapseInner">
+            <div class="hint" data-i18n="settings.modelConfig.hint">API keys are written to the dsh harness home (~/.dsh) — exactly where dsh keeps them. Only models whose provider has a key can be picked.</div>
+            <div id="cfgProviders"></div>
+          </div>
         </div>
       </div>
 
@@ -322,6 +325,21 @@
     </div>
     <div class="hint" data-i18n="market.hint" style="margin-bottom:14px;">Install dsh plugins from npm into the profile. Installed plugins are marked.</div>
     <div id="marketList"></div>
+  </div>
+</div>
+
+<div class="overlay" id="logOverlay">
+  <div class="settingsCard logCard">
+    <div class="settingsHead">
+      <span class="title" data-i18n="log.title">Session log</span>
+      <span class="sRow">
+        <button class="sBtn" id="logExport" type="button" data-i18n="log.export">Export</button>
+        <button class="iconBtn" id="logClose" type="button" title="Close">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </button>
+      </span>
+    </div>
+    <div class="logBody" id="logBody"></div>
   </div>
 </div>
 

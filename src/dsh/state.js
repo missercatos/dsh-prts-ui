@@ -28,6 +28,7 @@
     presets: [],            // agentPreset.list
     events: [],             // raw events of the current session (recent window)
     permissions: null,      // { options: [{value,name}], currentValue } projection
+    liveProjections: {},    // sessionId -> { key: value } from session/projection frames
   };
 
   function dshUrl() {
@@ -97,6 +98,15 @@
       options: (p.options || []).map((o) => ({ value: o.value, name: o.name || o.value })),
       currentValue: p.currentValue || null,
     };
+  }
+
+  /** Merged projection values for a session: session.list snapshot overlaid
+   *  with the live `session/projection` mux frames. */
+  function projectionValues(sessionId) {
+    const s = sessionSummary(sessionId);
+    const base = (s && s.projections && s.projections.values) || {};
+    const live = S.liveProjections[sessionId] || {};
+    return Object.assign({}, base, live);
   }
 
   async function listModels() {
@@ -315,6 +325,7 @@
   S.sessionSummary = sessionSummary;
   S.isSessionBlank = isSessionBlank;
   S.permissionState = permissionState;
+  S.projectionValues = projectionValues;
   S.listModels = listModels;
   S.listProviders = listProviders;
   S.listPresets = listPresets;

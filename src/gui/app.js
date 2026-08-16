@@ -32,6 +32,8 @@
     document.querySelectorAll('[data-i18n-placeholder]').forEach((n) => { n.placeholder = A.t(n.dataset.i18nPlaceholder); });
     document.querySelectorAll('[data-i18n-title]').forEach((n) => { n.title = A.t(n.dataset.i18nTitle); });
     document.documentElement.lang = A.locale === 'zh' ? 'zh-CN' : 'en';
+    if (A.renderStatsDock) A.renderStatsDock();
+    if (P.asr && P.asr.setLocale) P.asr.setLocale(A.locale);
   }
 
   /* ---------- theme ---------- */
@@ -51,14 +53,15 @@
   /* ---------- PRTS modal (replaces window.prompt / window.confirm, which
      Electron disables) ---------- */
   let modalResolve = null;
-  function openModal(kind, title, placeholder) {
+  function openModal(kind, title, placeholder, labels) {
     const ov = $('modalOverlay');
     $('modalTitle').textContent = title;
     const input = $('modalInput');
     input.value = '';
     input.placeholder = placeholder || '';
     input.hidden = kind !== 'prompt';
-    $('modalOk').textContent = A.t('common.ok');
+    $('modalOk').textContent = (labels && labels.ok) || A.t('common.ok');
+    $('modalCancel').textContent = (labels && labels.cancel) || A.t('common.cancel');
     $('modalCancel').hidden = kind === 'alert';
     ov.classList.add('open');
     if (kind === 'prompt') setTimeout(() => input.focus(), 40);
@@ -71,7 +74,7 @@
     if (r) r(value);
   }
   A.askPrompt = (title, placeholder) => openModal('prompt', title, placeholder);
-  A.askConfirm = (title) => openModal('confirm', title);
+  A.askConfirm = (title, labels) => openModal('confirm', title, '', labels);
   A.alert = (title) => openModal('alert', title);
 
   /* ---------- sidebar: workspaces + sessions (dsh) ---------- */
@@ -260,6 +263,7 @@
     await P.chat.loadHistory(id);
     renderSessions();
     updateMeter();
+    renderStatsDock();
     updateCrumb();
   }
 
@@ -319,6 +323,7 @@
     if (A.refreshModePop) A.refreshModePop();
     if (A.refreshWorkspacePop) A.refreshWorkspacePop();
     updateMeter();
+    renderStatsDock();
     updateCrumb();
   }
 
@@ -385,6 +390,70 @@
     label.textContent = cur ? (cur.name || cur.value) : (st.currentValue || '—');
     chip.title = A.t('permission.title');
   }
+
+  /* ---------- session stats dock (turns · steps / LLM · tools / TTFT · tok/s / cache / tokens) ---------- */
+  function fmtDur(ms) {
+    const n = Number(ms);
+    if (!isFinite(n) || n <= 0) return '—';
+    const s = Math.round(n / 1000);
+    if (s < 60) return s + 's';
+    return Math.floor(s / 60) + 'm' + String(s % 60).padStart(2, '0') + 's';
+  }
+  function fmtTok(n) {
+    if (n === undefined || n === null || !isFinite(Number(n))) return '—';
+    const v = Number(n);
+    if (v >= 1e9) return (v / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+    if (v >= 1e6) return (v / 1e6).toFixed(v >= 10e6 ? 0 : 1).replace(/\.0$/, '') + 'M';
+    if (v >= 1e3) return (v / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+    return String(Math.round(v));
+  }
+  function renderStatsDock() {
+    const dock = $('statsDock');
+    if (!dock) return;
+    const v = P.dshState.projectionValues(P.dshState.currentSessionId);
+    const st = v && v.sessionStats ? v.sessionStats : {};
+    const tu = v && v.tokenUsage ? v.tokenUsage : {};
+    const parts = [];
+    if (st.turns !== undefined || st.steps !== undefined) {
+      parts.push(A.t('stats.turnsSteps', { turns: st.turns || 0, steps: st.steps || 0 }));
+    }
+    if (st.llmMs || st.toolMs) {
+      parts.push(A.t('stats.llmTool', { llm: fmtDur(st.llmMs), tool: fmtDur(st.toolMs) }));
+    }
+    if (st.ttftMs && st.ttftSteps) {
+      const ttft = (st.ttftMs / st.ttftSteps / 1000).toFixed(1) + 's';
+      const tps = st.decodeMs ? Math.round(st.decodeTokens / (st.decodeMs / 1000)) : 0;
+      parts.push(A.t('stats.ttft', { ttft, tps }));
+    }
+    const cacheRead = tu.cacheReadTokens || 0;
+    const uncached = tu.uncachedInputTokens || 0;
+    if (cacheRead + uncached > 0) {
+      const pct = Math.round((cacheRead / (cacheRead + uncached)) * 100);
+      parts.push(A.t('stats.cache', { pct }));
+    }
+    if (tu.outputTokens !== undefined || (cacheRead + uncached) > 0) {
+      parts.push(A.t('stats.io', { input: fmtTok(cacheRead + uncached), output: fmtTok(tu.outputTokens) }));
+    }
+    dock.hidden = parts.length === 0;
+    dock.textContent = '';
+    parts.forEach((text, i) => {
+      if (i > 0) dock.appendChild(elSpan(' · '));
+      dock.appendChild(elB(text));
+    });
+  }
+  function elSpan(text) {
+    const s = document.createElement('span');
+    s.className = 'statSep';
+    s.textContent = text;
+    return s;
+  }
+  function elB(text) {
+    const b = document.createElement('span');
+    b.className = 'stat';
+    b.textContent = text;
+    return b;
+  }
+  A.renderStatsDock = renderStatsDock;
 
   /* ---------- context meter (composer ring) ---------- */
   function sessionUsage(sessionId) {
@@ -714,7 +783,7 @@
       chat.hidden = true;
       traj.hidden = false;
       composer.style.display = 'none';
-      P.chat.renderTraj();
+      P.chat.renderTimeline();
     } else {
       chat.hidden = false;
       traj.hidden = true;
@@ -1180,15 +1249,15 @@
     let phase = 0;
     const tick = () => {
       if (A.introDone) return;
-      // Enter as soon as dsh is ready and one wordmark phase has played —
-      // the minimum full cycle was the slowest part of startup.
-      if (A.ready && A.phaseCount >= 1) { finish(); return; }
+      // Play the full three-wordmark cycle at least once (welcome → banner →
+      // diamond mark); a click skips at any moment. Each phase lingers 3.2 s.
+      if (A.ready && A.phaseCount >= 3) { finish(); return; }
       if (phase === 0) { A.introEngine.showIntro(9000); tag.classList.add('show'); }
       else if (phase === 1) { A.introEngine.showPp(10000); tag.classList.remove('show'); }
       else { A.introEngine.showMark(1.05, 9000); tag.classList.remove('show'); }
       A.phaseCount++;
       phase = (phase + 1) % 3;
-      A.introTimer = setTimeout(tick, 2400);
+      A.introTimer = setTimeout(tick, 3200);
     };
     A.introTimer = setTimeout(tick, 500);
   }
@@ -1278,10 +1347,27 @@
         btn.classList.remove('on', 'recognizing');
         return;
       }
-      const ok = await P.asr.start();
-      if (ok !== 'ok') { A.toast(A.t('voice.unsupported')); return; }
-      A.voiceOn = true;
-      btn.classList.add('on');
+      // First enable asks for microphone consent (in-app; the OS prompt also
+      // appears on first getUserMedia).
+      if (!(A.config.ui && A.config.ui.voiceConsent)) {
+        const ok = await A.askConfirm(A.t('voice.consent.body'), {
+          ok: A.t('voice.consent.allow'),
+          cancel: A.t('voice.consent.deny'),
+        });
+        if (!ok) return;
+        A.config.ui = A.config.ui || {};
+        A.config.ui.voiceConsent = true;
+        P.store.saveConfig(A.config).catch(() => { /* noop */ });
+      }
+      const res = await P.asr.start();
+      if (res === 'ok') {
+        A.voiceOn = true;
+        btn.classList.add('on');
+      } else if (res === 'not-allowed') {
+        A.toast(A.t('voice.noMic'));
+      } else {
+        A.toast(A.t('voice.unsupported'));
+      }
     });
     P.asr.onFrame((frame) => {
       btn.classList.toggle('recognizing', A.voiceOn && frame.state === 'recognizing');
@@ -1295,6 +1381,9 @@
       input.value += text;
       P.chat.updateSend();
       P.chat.scrollInputBottom();
+    });
+    P.asr.onError((err) => {
+      A.toast(A.t('voice.error', { msg: String(err === 'not-allowed' ? 'permission denied' : err || '') }));
     });
   }
 
@@ -1403,8 +1492,7 @@
     $('modelCfgToggle').addEventListener('click', () => {
       const btn = $('modelCfgToggle');
       const body = $('modelCfgBody');
-      const open = !!body.hidden;
-      body.hidden = !open;
+      const open = body.classList.toggle('open');
       btn.setAttribute('aria-expanded', String(open));
       btn.classList.toggle('open', open);
     });
@@ -1441,7 +1529,13 @@
     document.querySelectorAll('.tab').forEach((b) => {
       b.addEventListener('click', () => switchView(b.dataset.view));
     });
-    $('logBtn').addEventListener('click', () => switchView('trajectory'));
+    // Session log: a separate raw-event overlay (distinct from the tab).
+    $('logBtn').addEventListener('click', () => {
+      P.chat.renderLog();
+      $('logOverlay').classList.add('open');
+    });
+    $('logClose').addEventListener('click', () => $('logOverlay').classList.remove('open'));
+    $('logExport').addEventListener('click', () => P.chat.exportLog());
 
     // Modal (prompt / confirm).
     $('modalOk').addEventListener('click', () => {
@@ -1510,6 +1604,31 @@
     runIntro();
 
     P.dsh.on('connect', () => { refreshAll().catch(() => { /* dsh may still be warming up */ }); });
+    // Live projection frames → stats dock, permission chip and meter.
+    P.dsh.on('session/projection', (frame) => {
+      const pl = frame.payload || {};
+      if (!pl.sessionId) return;
+      const bucket = P.dshState.liveProjections[pl.sessionId] || (P.dshState.liveProjections[pl.sessionId] = {});
+      bucket[pl.key] = pl.value;
+      if (pl.sessionId !== P.dshState.currentSessionId) return;
+      if (pl.key === 'sessionStats' || pl.key === 'tokenUsage' || pl.key === 'contextPressure') renderStatsDock();
+      if (pl.key === 'contextPressure') updateMeter();
+      if (pl.key === 'permissions') {
+        P.dshState.permissions = P.dshState.permissionState(pl.sessionId);
+        updatePermissionChip();
+        if (A.refreshPermissionPop) A.refreshPermissionPop();
+      }
+    });
+    // Periodic session-list refresh keeps summaries (titles, stats, running
+    // flags, permissions) fresh even when the mux is quiet.
+    setInterval(() => {
+      if (!P.dshState.currentSessionId) return;
+      P.dshState.listSessions().then(() => {
+        renderSessions();
+        renderStatsDock();
+        updateMeter();
+      }).catch(() => { /* noop */ });
+    }, 8000);
     (async () => {
       try {
         await P.dshState.connect();
