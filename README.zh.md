@@ -117,7 +117,7 @@ sh scripts/make-dist.sh     # 生成 dist/：tgz + .run + .sh + .exe + .zip + SH
 ```
 
 - Windows exe 用 mingw-w64 编译的自解压 stub（`dist-tools/sfx.c`）+ 追加 payload zip，Linux 上也能直接产出；没有 mingw 时退化为 zip + `build-exe.bat`（Windows 自带 IExpress）。
-- 官网文件在 `web-site/`：粒子特效中英文文字（“欢迎使用PRTS / 这里是dsh-prts官网”…）+ 四个平台下载按钮 + PWA（Android 可安装为应用）。部署说明见 `web-site/README.txt`。
+- 官网文件在 `docs/`：粒子特效中英文文字（“欢迎使用PRTS / 这里是dsh-prts官网”…）+ 四个平台下载按钮 + PWA（Android 可安装为应用）。部署说明见 `docs/README.txt`。
 
 ## 开发与自测
 

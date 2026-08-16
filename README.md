@@ -98,7 +98,7 @@ sh scripts/make-dist.sh     # dist/: tgz + .run + .sh + .exe + .zip + SHA256SUMS
 ```
 
 - The Windows exe is a mingw-w64 self-extracting stub (`dist-tools/sfx.c`) with the payload zip appended — buildable on Linux. Without mingw it falls back to the zip + `build-exe.bat` (Windows IExpress).
-- The site lives in `web-site/`: particle-text zh/en intro ("Welcome to PRTS / This is the dsh-prts official site" …) + four platform download buttons + PWA (installable on Android). See `web-site/README.txt`.
+- The site lives in `docs/`: particle-text zh/en intro ("Welcome to PRTS / This is the dsh-prts official site" …) + four platform download buttons + PWA (installable on Android). See `docs/README.txt`.
 
 ## Development & self-tests
 
