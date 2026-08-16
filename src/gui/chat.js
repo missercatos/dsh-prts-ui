@@ -562,27 +562,41 @@
     return row;
   }
 
+  // Each renderFlow call owns a token; waiters resolve per token so a newer
+  // render superseding an older one can never strand an await (the 0.6.1
+  // "stuck on the particle intro" bug: the single resolver got overwritten).
   let flowRenderToken = 0;
-  let flowDoneResolve = null;
+  const flowWaiters = new Map();   // token -> resolve
+  function releaseFlowWaiters() {
+    for (const r of flowWaiters.values()) { try { r(); } catch (e) { /* noop */ } }
+    flowWaiters.clear();
+  }
   function renderFlow() {
+    releaseFlowWaiters();           // superseded renders finish immediately
     const flow = $('flow');
-    C.flowDone = new Promise((r) => { flowDoneResolve = r; });
-    if (!flow) {
-      if (flowDoneResolve) { flowDoneResolve(); flowDoneResolve = null; }
-      return;
-    }
     const token = ++flowRenderToken;
+    C.flowDone = new Promise((r) => { flowWaiters.set(token, r); });
+    const finish = () => {
+      scrollBottom();
+      const r = flowWaiters.get(token);
+      if (r) { flowWaiters.delete(token); r(); }
+    };
+    if (!flow) { finish(); return; }
     flow.textContent = '';
     if (!C.messages.length) {
       flow.appendChild(el('div', 'emptyChat', t('chat.empty')));
-      scrollBottom();
-      if (flowDoneResolve) { flowDoneResolve(); flowDoneResolve = null; }
+      finish();
       return;
     }
     const CHUNK = 60;   // messages per frame — big histories stop janking switches
     let i = 0;
     const step = () => {
-      if (token !== flowRenderToken) return;
+      if (token !== flowRenderToken) {
+        // superseded: resolve this token's waiter so nobody waits on it
+        const r = flowWaiters.get(token);
+        if (r) { flowWaiters.delete(token); r(); }
+        return;
+      }
       const end = Math.min(i + CHUNK, C.messages.length);
       for (; i < end; i++) {
         const m = C.messages[i];
@@ -594,8 +608,7 @@
       if (i < C.messages.length) {
         requestAnimationFrame(step);
       } else {
-        scrollBottom();
-        if (flowDoneResolve) { flowDoneResolve(); flowDoneResolve = null; }
+        finish();
       }
     };
     step();
@@ -836,7 +849,9 @@
     if (C.onStatus) { try { C.onStatus(null); } catch (e) { /* noop */ } }
     // If the tail was mid-stream, keep the composer in the streaming state.
     renderFlow();
-    try { await C.flowDone; } catch (e) { /* render never resolves? */ }
+    // Wait for the render pass, but with a hard ceiling: the intro gate must
+    // never hang on a stuck animation frame.
+    await Promise.race([C.flowDone, new Promise((r) => setTimeout(r, 5000))]);
   }
 
   /* ---------- attachments ---------- */

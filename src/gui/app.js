@@ -1908,8 +1908,18 @@
         A._loadOnIntro = false;
       } catch (e) {
         A.toast(A.t('dsh.connectFail', { msg: e.message }));
+        // Never trap the Doctor on the particle intro: release the gate even
+        // when a preload step fails.
+        A.ready = true;
       }
     }
+    // Hard fuse: whatever happens, the intro must become enterable.
+    setTimeout(() => {
+      if (!A.ready) {
+        A.ready = true;
+        A.toast(A.t('dsh.connectFail', { msg: 'preload timeout' }));
+      }
+    }, 30000);
     A.afterIntro = function () {
       if (A.ready) {
         A.ensureSession().catch(() => { /* session load is best-effort */ });
