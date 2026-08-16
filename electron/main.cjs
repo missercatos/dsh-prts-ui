@@ -574,6 +574,13 @@ ipcMain.handle('prts:readFileB64', async (_e, p) => {
   return buf.toString('base64')
 })
 
+ipcMain.handle('prts:prtsLogo', async () => {
+  try {
+    const buf = await fs.promises.readFile(path.join(__dirname, '..', 'assets', 'prts.png'))
+    return buf.toString('base64')
+  } catch (e) { return '' }
+})
+
 ipcMain.handle('prts:writeFileB64', async (_e, p, b64) => {
   const buf = Buffer.from(String(b64 || ''), 'base64')
   await fs.promises.writeFile(String(p), buf)

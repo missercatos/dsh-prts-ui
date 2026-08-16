@@ -145,7 +145,9 @@
 .overlay.open { opacity: 1; pointer-events: auto; }
 .settingsCard {
   width: min(460px, calc(100vw - 48px)); max-height: calc(100vh - 80px); overflow-y: auto;
-  background: var(--prts-panel); border: 1px solid var(--prts-hairline); border-radius: 12px;
+  background: color-mix(in srgb, var(--prts-panel) 82%, transparent);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--prts-hairline); border-radius: 12px;
   box-shadow: var(--prts-shadow); padding: 20px 22px;
   transform: translateY(10px); transition: transform 0.2s var(--prts-ease-out);
 }
@@ -157,7 +159,9 @@
 .sField .hint { font-size: 11px; line-height: 18px; color: var(--prts-ink-faint); margin-top: 4px; }
 .sInput {
   width: 100%; height: 34px; padding: 0 10px; border: 1px solid var(--prts-hairline); border-radius: 6px;
-  background: var(--prts-surface); color: var(--prts-ink); font-size: 13px; outline: none;
+  background: color-mix(in srgb, var(--prts-surface) 72%, transparent);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  color: var(--prts-ink); font-size: 13px; outline: none;
   transition: border-color 0.15s var(--prts-ease);
 }
 .sInput:focus { border-color: var(--prts-hairline-strong); }
@@ -165,8 +169,11 @@
 .sRow { display: flex; gap: 8px; align-items: center; }
 .sBtn {
   display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 14px;
-  border: 1px solid var(--prts-hairline); border-radius: 6px; background: transparent;
+  border: 1px solid var(--prts-hairline); border-radius: 6px;
+  background: color-mix(in srgb, var(--prts-surface) 72%, transparent);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   color: var(--prts-ink-dim); font-size: 13px; line-height: 20px; cursor: pointer;
+  white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
   transition: border-color 0.15s var(--prts-ease), color 0.15s var(--prts-ease);
 }
 .sBtn:hover { border-color: var(--prts-hairline-strong); color: var(--prts-ink); }

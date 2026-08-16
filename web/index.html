@@ -253,7 +253,9 @@
 .overlay.open { opacity: 1; pointer-events: auto; }
 .settingsCard {
   width: min(460px, calc(100vw - 48px)); max-height: calc(100vh - 80px); overflow-y: auto;
-  background: var(--prts-panel); border: 1px solid var(--prts-hairline); border-radius: 12px;
+  background: color-mix(in srgb, var(--prts-panel) 82%, transparent);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--prts-hairline); border-radius: 12px;
   box-shadow: var(--prts-shadow); padding: 20px 22px;
   transform: translateY(10px); transition: transform 0.2s var(--prts-ease-out);
 }
@@ -265,7 +267,9 @@
 .sField .hint { font-size: 11px; line-height: 18px; color: var(--prts-ink-faint); margin-top: 4px; }
 .sInput {
   width: 100%; height: 34px; padding: 0 10px; border: 1px solid var(--prts-hairline); border-radius: 6px;
-  background: var(--prts-surface); color: var(--prts-ink); font-size: 13px; outline: none;
+  background: color-mix(in srgb, var(--prts-surface) 72%, transparent);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  color: var(--prts-ink); font-size: 13px; outline: none;
   transition: border-color 0.15s var(--prts-ease);
 }
 .sInput:focus { border-color: var(--prts-hairline-strong); }
@@ -273,8 +277,11 @@
 .sRow { display: flex; gap: 8px; align-items: center; }
 .sBtn {
   display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 14px;
-  border: 1px solid var(--prts-hairline); border-radius: 6px; background: transparent;
+  border: 1px solid var(--prts-hairline); border-radius: 6px;
+  background: color-mix(in srgb, var(--prts-surface) 72%, transparent);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   color: var(--prts-ink-dim); font-size: 13px; line-height: 20px; cursor: pointer;
+  white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
   transition: border-color 0.15s var(--prts-ease), color 0.15s var(--prts-ease);
 }
 .sBtn:hover { border-color: var(--prts-hairline-strong); color: var(--prts-ink); }
@@ -789,6 +796,26 @@
   .sysBlock:last-child { border-top: 1px solid var(--prts-hairline); margin-top: 12px; padding-top: 10px; }
 }
 
+/* 0.5.0 system panel: 3D logo + restructured stats */
+.sysVisual { perspective: 900px; }
+.sys3d {
+  width: 148px; height: 148px; object-fit: contain; transform-style: preserve-3d;
+  filter: drop-shadow(0 8px 28px rgba(0, 0, 0, 0.55));
+  will-change: transform;
+}
+.sysOverlay .sysCard {
+  background: color-mix(in srgb, var(--prts-panel) 82%, transparent);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+}
+.sysStats { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
+@media (max-width: 760px) { .sysStats { grid-template-columns: 1fr; } }
+.sysRows { display: flex; flex-direction: column; gap: 6px; }
+.sysRow { display: grid; grid-template-columns: 92px minmax(0, 1fr) 110px; align-items: center; gap: 8px; }
+.sysK { font-size: 11px; color: var(--prts-ink-faint); letter-spacing: 0.06em; }
+.sysV { font-size: 12px; color: var(--prts-ink); font-family: var(--prts-mono); text-align: right; }
+.sysBar { height: 4px; border-radius: 2px; background: var(--prts-hairline); overflow: hidden; }
+.sysBarFill { height: 100%; width: 0; background: var(--prts-accent); transition: width 0.2s var(--prts-ease); }
+
 /* PRTS frame layout: sidebar / main / details, all hairline-divided. */
 html, body { height: 100%; }
 /* Author CSS sets display on many components; make the hidden attribute
@@ -1125,6 +1152,119 @@ button:focus:not(:focus-visible) { outline: none; }
 .skEditor { padding: 10px 12px 12px; border-top: 1px solid var(--prts-hairline); background: var(--prts-surface); }
 .skEditor .sTextarea { min-height: 200px; }
 .skEditor .sRow { justify-content: flex-end; }
+
+/* ---------- 0.5.0: liquid glass + fixed-height scrolling ---------- */
+/* Glass on the composer, chips, popovers and the message/trajectory surfaces */
+.composerCard {
+  background: color-mix(in srgb, var(--prts-panel) 70%, transparent) !important;
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+}
+.chip, .pop, .modalCard, .reqCard, .mTabs, .mSearch, .mGh, .skCard, .pCard, .mCat, .skChip {
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.pop { background: color-mix(in srgb, var(--prts-panel) 85%, transparent); }
+.disclosure, .dBody, .assistantItem, .userBubble {
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+/* Wallpaper active: the sidebar and details columns turn translucent glass */
+body[data-wallpaper='on'] .sbCol,
+body[data-wallpaper='on'] .dtCol {
+  background: color-mix(in srgb, var(--prts-panel) 55%, transparent);
+  backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px);
+}
+body[data-wallpaper='on'] .sysCard,
+body[data-wallpaper='on'] .settingsCard {
+  background: color-mix(in srgb, var(--prts-panel) 68%, transparent);
+}
+/* Market keeps its size no matter how many plugins: inner scroll only */
+.marketCard {
+  width: min(760px, calc(100vw - 48px));
+  height: min(680px, calc(100vh - 80px));
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.marketCard .settingsHead { flex: none; }
+#marketList { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+#marketList .mGrid { overflow: visible; }
+/* Skills: space wins over text — long labels truncate, never overflow */
+.skActions .sBtn { max-width: 132px; }
+.skRow .skItemMeta { min-width: 0; flex: 1; }
+.skNameLine .skItemName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.sNavItem span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- 0.5.0: message meta/actions, path links, tool body ---------- */
+.assistantItem { position: relative; }
+.msgMeta {
+  display: flex; gap: 6px; font-size: 10px; color: var(--prts-ink-faint);
+  font-family: var(--prts-mono); opacity: 0; transition: opacity 0.16s var(--prts-ease);
+  margin-top: 4px;
+}
+.assistantItem:hover .msgMeta { opacity: 1; }
+.msgActions {
+  position: absolute; top: 4px; right: 4px; display: flex; gap: 4px;
+  opacity: 0; transform: translateY(-3px);
+  transition: opacity 0.16s var(--prts-ease), transform 0.16s var(--prts-ease);
+  padding: 2px; border-radius: 8px;
+  background: color-mix(in srgb, var(--prts-panel) 78%, transparent);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.assistantItem:hover .msgActions { opacity: 1; transform: none; }
+.maBtn {
+  width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--prts-hairline); border-radius: 6px; background: transparent;
+  color: var(--prts-ink-dim); cursor: pointer;
+  transition: color 0.12s var(--prts-ease), border-color 0.12s var(--prts-ease);
+}
+.maBtn:hover { color: var(--prts-accent); border-color: var(--prts-hairline-strong); }
+.maBtn.on { color: var(--prts-accent); border-color: var(--prts-accent); }
+.maBtn svg { width: 13px; height: 13px; }
+.pathLink { text-decoration: underline; text-underline-offset: 2px; cursor: pointer; color: var(--prts-accent); }
+.pathLink:hover { filter: brightness(1.25); }
+.toolBody { max-height: 260px; overflow-y: auto; }
+.toolItem .dRow:hover { border-color: var(--prts-hairline-strong); }
+
+/* ---------- 0.5.0: trajectory (colored blocks + search) ---------- */
+.trajView { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; padding: 10px 14px 18px; }
+.tlSearch {
+  position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 8px;
+  height: 34px; padding: 0 10px; margin-bottom: 8px;
+  border: 1px solid var(--prts-hairline); border-radius: 8px;
+  background: color-mix(in srgb, var(--prts-panel) 82%, transparent);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  color: var(--prts-ink-faint);
+}
+.tlSearch input { flex: 1; min-width: 0; border: none; background: transparent; color: var(--prts-ink); font-size: 13px; outline: none; }
+.tlHead {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-top: 10px; padding: 4px 6px 4px 10px;
+  border-left: 2px solid var(--prts-hairline-strong);
+}
+.tlLabel { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+.tlRow {
+  display: flex; align-items: center; gap: 8px; min-height: 26px; padding: 3px 8px 3px 10px;
+  border-radius: 6px;
+}
+.tlRow:hover { background: var(--prts-surface-2); }
+.tlBar { flex: none; width: 3px; height: 16px; border-radius: 2px; }
+.tlType { flex: none; font-size: 10px; letter-spacing: 0.08em; font-family: var(--prts-mono); opacity: 0.9; min-width: 62px; }
+.tlBrief {
+  flex: 1; min-width: 0; font-size: 11px; color: var(--prts-ink-dim);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--prts-mono);
+}
+.tlMeta { flex: none; display: flex; gap: 6px; font-size: 10px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+
+/* ---------- 0.5.0: presets rows + full inventory list ---------- */
+.sPresetRow {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border: 1px solid var(--prts-hairline); border-radius: 10px;
+  background: color-mix(in srgb, var(--prts-surface) 60%, transparent);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.sPresetRow.current { border-color: var(--prts-accent); }
+.invList {
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 430px; overflow-y: auto; padding-right: 4px;
+}
+.invList .pmeta { font-size: 10px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
 
 /* PRTS design tokens — pure black/white. Dark is the default surface; light
    inverts the pair. Every component derives from these tokens only. */
@@ -2819,6 +2959,37 @@ window.PRTS_MARKET = {
       'market.cat.fx': '特效设计',
       'market.cat.text': '文本设计',
       'market.pluginGh': 'GitHub 插件：粘贴仓库地址直接安装',
+      // —— 0.5.0: message actions & trajectory ——
+      'chat.copy': 'Copy',
+      'chat.copied': 'Copied',
+      'chat.copyFail': 'Copy failed',
+      'chat.good': 'Good answer',
+      'chat.bad': 'Bad answer',
+      'chat.branch': 'Branch in a new conversation',
+      'chat.branched': 'Branched into a new conversation',
+      'chat.branchFail': 'Branch failed: {msg}',
+      'chat.feedbackSent': 'Feedback recorded',
+      'chat.feedbackFail': 'Feedback failed',
+      'traj.search': 'Search events…',
+      'traj.none': 'No matching events.',
+      'traj.user': 'User input',
+      'traj.output': 'Output',
+      'traj.think': 'Think',
+      'traj.tool': 'Tool',
+      'traj.toolCall': 'Tool call',
+      'traj.toolResult': 'Tool result',
+      'traj.command': 'Command',
+      'traj.stepStart': 'Step start',
+      'traj.stepEnd': 'Step end',
+      'traj.usage': 'TOKEN',
+      'traj.stream': 'Stream',
+      'settings.plugins.allList': 'Plugin list',
+      'settings.plugins.allList.hint': 'Every plugin dsh loaded (same pluginInventory/list source as dsh web). Disabling core plugins can break the system — be careful.',
+      'settings.plugins.allCount': '{n} plugins',
+      'settings.presets.current': 'Current',
+      'sys.back': 'Back',
+      'sys.tokensIn': 'IN tokens',
+      'sys.tokensOut': 'OUT tokens',
     },
 
     zh: {
@@ -3363,6 +3534,37 @@ window.PRTS_MARKET = {
       'market.cat.fx': '特效设计',
       'market.cat.text': '文本设计',
       'market.pluginGh': 'GitHub 插件：粘贴仓库地址直接安装',
+      // —— 0.5.0: 消息动作与轨迹 ——
+      'chat.copy': '复制',
+      'chat.copied': '已复制',
+      'chat.copyFail': '复制失败',
+      'chat.good': '回答得好',
+      'chat.bad': '回答有问题',
+      'chat.branch': '在新对话中分支',
+      'chat.branched': '已分支到新对话',
+      'chat.branchFail': '分支失败：{msg}',
+      'chat.feedbackSent': '反馈已记录',
+      'chat.feedbackFail': '反馈失败',
+      'traj.search': '搜索事件…',
+      'traj.none': '没有匹配的事件。',
+      'traj.user': '用户输入',
+      'traj.output': '输出',
+      'traj.think': '思考',
+      'traj.tool': '工具',
+      'traj.toolCall': '工具调用',
+      'traj.toolResult': '工具结果',
+      'traj.command': '指令',
+      'traj.stepStart': '步骤开始',
+      'traj.stepEnd': '步骤结束',
+      'traj.usage': 'TOKEN',
+      'traj.stream': '流式',
+      'settings.plugins.allList': '插件列表',
+      'settings.plugins.allList.hint': 'dsh 加载的全部插件（与 dsh web 同源 pluginInventory/list）。禁用核心插件可能导致系统异常，请谨慎。',
+      'settings.plugins.allCount': '{n} 个插件',
+      'settings.presets.current': '当前',
+      'sys.back': '返回',
+      'sys.tokensIn': '输入 Token',
+      'sys.tokensOut': '输出 Token',
     },
   };
 
@@ -4376,6 +4578,15 @@ window.PRTS_MARKET = {
     return { ok: false, error: 'run-cli unavailable in this mode' };
   }
 
+  /** Full plugin inventory — the same 159-entry list the dsh web Plugins
+   *  page renders (pluginInventory/list). */
+  async function pluginInventoryList() {
+    try {
+      const r = await P.dsh.request('pluginInventory/list', { args: {} });
+      return (r && r.entries) || [];
+    } catch (e) { return []; }
+  }
+
   async function pluginsList() {
     const profiles = await profilesList();
     // Keep the legacy flat shape for existing consumers: { name, version, profile }.
@@ -4432,6 +4643,7 @@ window.PRTS_MARKET = {
   };
   S.hostDescribe = hostDescribe;
   S.pluginsList = pluginsList;
+  S.pluginInventoryList = pluginInventoryList;
   S.profilesList = profilesList;
   S.cliPlugins = cliPlugins;
   S.runCliPlugin = runCliPlugin;
@@ -4829,6 +5041,11 @@ window.PRTS_MARKET = {
     'ma.branch': S('<circle cx="3.2" cy="2.4" r="1" stroke="currentColor" stroke-width="1.1"/><circle cx="3.2" cy="11.6" r="1" stroke="currentColor" stroke-width="1.1"/><circle cx="10.8" cy="7" r="1" stroke="currentColor" stroke-width="1.1"/><path d="M3.2 3.4v4.2a2 2 0 0 0 2 2h3.6M3.2 10.6V8.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>'),
     'ma.trash': S('<path d="M2.5 4h9M5 4V2.6h4V4M4 4l.6 7.4h4.8L10 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>'),
     'ma.clear': S('<path d="M3 2.2 5.4 4 3 5.8M9.2 2.2 6.8 4l2.4 1.8M3 8.4 5.4 10.2 3 12M9.2 8.4 6.8 10.2l2.4 1.8" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>'),
+    // Edit / Think / Read marks — abstract PRTS glyphs for message actions
+    'ma.think': S('<path d="' + D + '" stroke="currentColor" stroke-width="1.15"/><circle cx="5.6" cy="7" r="0.9" fill="currentColor"/><circle cx="8.4" cy="7" r="0.9" fill="currentColor"/><circle cx="7" cy="4.2" r="0.9" fill="currentColor"/>'),
+    'ma.tool': S('<path d="M4.4 9.6 8 6l2.6 2.6-3.6 3.6a2.4 2.4 0 0 1-3.4-3.4L5 7.4" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M8.8 5.2l1.6-1.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>'),
+    'ma.edit': S('<path d="M8.4 2.2 11.8 5.6 5.2 12.2 1.8 12.2l.2-3.4Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M7.4 3.2 10.8 6.6" stroke="currentColor" stroke-width="1.15"/>'),
+    'ma.read': S('<path d="M7 2.4c-1.8 0-3.5.7-4.8 1.8L7 8.6l4.8-4.4A6.8 6.8 0 0 0 7 2.4Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M2.2 8v2.6c0 .6.5 1 1 1h7.6a1 1 0 0 0 1-1V8" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
 
     // —— chrome ——
     'settings': S('<path d="M7 9.6a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2Z" stroke="currentColor" stroke-width="1.15"/><path d="M13.2 7v.9l-1.7.3a4 4 0 0 1-.5 1.2l1 1.4-.9.9-1.4-1a4 4 0 0 1-1.2.5L8 12.9h-.9L6.8 11.2a4 4 0 0 1-1.2-.5l-1.4 1-.9-.9 1-1.4a4 4 0 0 1-.5-1.2L2.1 6.9V6l1.7-.3a4 4 0 0 1 .5-1.2l-1-1.4.9-.9 1.4 1a4 4 0 0 1 1.2-.5L7.1 1.1H8l.3 1.7a4 4 0 0 1 1.2.5l1.4-1 .9.9-1 1.4a4 4 0 0 1 .5 1.2l1.7.3Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>'),
@@ -5584,7 +5801,9 @@ window.PRTS_MARKET = {
     box.textContent = '';
     const add = (key, label, hasBar) => addRow(box, key, label, hasBar);
     add('model', t('sys.model'), false);
-    add('tokUsed', t('sys.tokensUsed'), false);
+    add('mode', t('sys.mode'), false);
+    add('tokIn', t('sys.tokensIn'), true);
+    add('tokOut', t('sys.tokensOut'), true);
     add('sessions', t('sys.sessions'), false);
     add('messages', t('sys.messages'), false);
     add('updated', t('sys.updated'), false);
@@ -5640,6 +5859,7 @@ window.PRTS_MARKET = {
       cpuPower: info ? info.cpuPowerW : null,
       temps,
       model: agent.model,
+      mode: (P.app && P.app.currentPreset) ? String(P.app.currentPreset) : t('sys.unknown'),
       tokUsed: agent.used,
       tokUsedIn: agent.usedIn,
       tokUsedOut: agent.usedOut,
@@ -5690,7 +5910,7 @@ window.PRTS_MARKET = {
 
   function paintStatic() {
     const byKey = { os: targets.os, host: targets.host, cpu: targets.cpu, gpu: targets.gpu,
-      model: targets.model, sessions: targets.sessions, messages: targets.messages };
+      model: targets.model, mode: targets.mode, sessions: targets.sessions, messages: targets.messages };
     for (const k in byKey) {
       if (refs[k] && refs[k].val) refs[k].val.textContent = byKey[k];
     }
@@ -5710,13 +5930,60 @@ window.PRTS_MARKET = {
     if (targets.diskTotal) set('disk', fmtBytes(disp.diskUsed) + ' / ' + fmtBytes(targets.diskTotal), disp.diskPct);
     set('cpuLoad', fmt0(disp.cpuLoad) + '%', disp.cpuLoad);
     set('cpuPower', fmt1(disp.cpuPower) + ' W');
-    set('tokUsed', fmt0(disp.tokUsed) + ' · ' + targets.tokUsedIn + ' in / ' + targets.tokUsedOut + ' out', null);
+    const tokTotal = Math.max(1, targets.tokUsedIn + targets.tokUsedOut);
+    set('tokIn', fmt0(targets.tokUsedIn), (targets.tokUsedIn / tokTotal) * 100);
+    set('tokOut', fmt0(targets.tokUsedOut), (targets.tokUsedOut / tokTotal) * 100);
 
     const tempNames = Object.keys(targets.temps);
     if (tempNames.length && R.temps && R.temps.val) {
       R.temps.val.textContent = tempNames.map((name) => name + ' ' + fmt1(disp.temps[name]) + '°C').join('  ');
     }
     if (R.updated && R.updated.val) R.updated.val.textContent = t('sys.updated', { t: targets.now });
+  }
+
+  /* ---------- 3D logo: tilts toward the cursor, keeps rolling ---------- */
+  let logoImg = null;
+  let tiltX = 0, tiltY = 0, curX = 0, curY = 0;
+  async function loadLogo() {
+    const vis = $('sysVisual');
+    if (!vis) return;
+    let src = '';
+    try {
+      const b = (typeof window !== 'undefined' && window.prts && window.prts.bridge) || null;
+      if (b && b.prtsLogo) src = 'data:image/png;base64,' + (await b.prtsLogo());
+      else {
+        const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+        const res = await fetch(origin + '/prts/api/logo');
+        const data = await res.json();
+        if (data && data.b64) src = 'data:image/png;base64,' + data.b64;
+      }
+    } catch (e) { src = ''; }
+    if (src) {
+      if (!logoImg) {
+        logoImg = document.createElement('img');
+        logoImg.className = 'sys3d';
+        vis.appendChild(logoImg);
+      }
+      logoImg.src = src;
+    }
+  }
+  function bindTilt() {
+    const vis = $('sysVisual');
+    if (!vis || vis._tiltBound) return;
+    vis._tiltBound = true;
+    vis.addEventListener('pointermove', (e) => {
+      const r = vis.getBoundingClientRect();
+      tiltX = ((e.clientX - r.left) / Math.max(1, r.width) - 0.5) * 2;
+      tiltY = ((e.clientY - r.top) / Math.max(1, r.height) - 0.5) * 2;
+    });
+    vis.addEventListener('pointerleave', () => { tiltX = 0; tiltY = 0; });
+  }
+  function drawLogo3D(ts) {
+    if (!logoImg) return;
+    curX += (tiltX - curX) * 0.08;
+    curY += (tiltY - curY) * 0.08;
+    const roll = ts / 1000 * 0.35;
+    logoImg.style.transform = 'rotateY(' + (roll + curX * 0.9).toFixed(4) + 'rad) rotateX(' + (-curY * 0.7).toFixed(4) + 'rad)';
   }
 
   /* ---------- 30fps loop ---------- */
@@ -5728,13 +5995,16 @@ window.PRTS_MARKET = {
       easeDisplay();
       paintDynamic();
     }
-    drawRing();
+    if (logoImg) drawLogo3D(ts);
+    else drawRing();
   }
 
   function startPanel() {
     ringCanvas = $('sysRing');
     if (ringCanvas) ringCtx = ringCanvas.getContext('2d');
     if (reducedMotion) drawRing();
+    loadLogo();
+    bindTilt();
     lastTick = 0;
     raf = requestAnimationFrame(loop);
     refreshSnapshot();
@@ -6153,10 +6423,13 @@ window.PRTS_MARKET = {
         existing.streaming = false;
         existing._live = false;
       } else {
+        const prevUser = [...C.messages].reverse().find((m) => m.role === 'user');
+        const durMs = prevUser && ev.time ? Math.max(0, ev.time - prevUser.ts) : null;
         C.messages.push({
           id: id || ('a' + ev.seq), _seq: ev.seq, role: 'assistant',
           content: parts.text, reasoning: parts.reasoning, images: parts.images,
           ts: ev.time, usage: parts.usage, model: parts.model, streaming: false,
+          durMs,
         });
       }
       if (P.cost && parts.usage) {
@@ -6244,6 +6517,106 @@ window.PRTS_MARKET = {
     return img;
   }
 
+  /* ---------- message actions (dsh-web parity, PRTS marks) ---------- */
+
+  const TL_COLORS = {
+    'user/message': '#9C9CA1',
+    'assistant/message': '#9ece6a',
+    'assistant/chunk': '#7aa2f7',
+    'tool/call': '#e0af68',
+    'tool/result': '#e0af68',
+    'command/run': '#bb9af7',
+    'permission/preset': '#bb9af7',
+    'sandbox/mode': '#bb9af7',
+    'approval/policy': '#bb9af7',
+    'step/start': '#626266',
+    'step/end': '#626266',
+  };
+  function chunkColor(ev) {
+    const t = ev && ev.data && ev.data.chunk && ev.data.chunk.type;
+    if (t === 'reasoning-delta') return '#9d7cd8'; // think
+    if (t === 'text-delta') return '#9ece6a';      // output
+    if (t === 'usage') return '#7aa2f7';           // tokens
+    if (t === 'tool-call-delta') return '#e0af68'; // tool
+    return TL_COLORS['assistant/chunk'] || '#7aa2f7';
+  }
+  function colorOf(ev) {
+    if (ev.type === 'assistant/chunk') return chunkColor(ev);
+    return TL_COLORS[ev.type] || '#7aa2f7';
+  }
+  function roleNameOf(ev) {
+    switch (ev.type) {
+      case 'user/message': return t('traj.user');
+      case 'assistant/message': return t('traj.output');
+      case 'assistant/chunk': {
+        const c = ev.data && ev.data.chunk && ev.data.chunk.type;
+        if (c === 'reasoning-delta') return t('traj.think');
+        if (c === 'tool-call-delta') return t('traj.tool');
+        if (c === 'usage') return t('traj.usage');
+        return t('traj.stream');
+      }
+      case 'tool/call': return t('traj.toolCall');
+      case 'tool/result': return t('traj.toolResult');
+      case 'command/run': return t('traj.command');
+      case 'step/start': return t('traj.stepStart');
+      case 'step/end': return t('traj.stepEnd');
+      default: return String(ev.type);
+    }
+  }
+
+  /** Open a path in the file manager/system editor (dsh-web underline parity). */
+  function openFilePath(path) {
+    const b = (typeof window !== 'undefined' && window.prts && window.prts.bridge) || null;
+    if (b && b.openPath) { b.openPath(path).catch(() => {}); return; }
+    try {
+      const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+      fetch(origin + '/prts/api/open-path', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path }),
+      }).catch(() => {});
+    } catch (e) { /* noop */ }
+  }
+  /** Absolute paths get an underline link (click opens the file). */
+  function linkifyPaths(html) {
+    return String(html || '').replace(/([\s("'])(\/(?:home|workspace|workspaces|tmp|var|usr|etc|opt|srv|root|mnt|media|run|data)\/[^\s<>"']+)/g, (m, pre, path) => {
+      const clean = path.replace(/[),.;，。；：]+$/, '');
+      return pre + '<a class="pathLink" data-path="' + esc(clean) + '">' + esc(clean) + '</a>';
+    });
+  }
+
+  async function sendFeedback(msg, value) {
+    try {
+      if (value) await P.dsh.request('messageFeedback.put', { messageId: msg.id, value });
+      else await P.dsh.request('messageFeedback.delete', { messageId: msg.id });
+      C.msgFeedback = C.msgFeedback || {};
+      if (value) C.msgFeedback[msg.id] = value;
+      else delete C.msgFeedback[msg.id];
+      renderFlow();
+      if (P.app && P.app.toast) P.app.toast(t('chat.feedbackSent'));
+    } catch (e) {
+      if (P.app && P.app.toast) P.app.toast(t('chat.feedbackFail'));
+    }
+  }
+
+  async function branchFrom(msg) {
+    try {
+      let r = null;
+      try { r = await P.dsh.request('session.fork', { sessionId: C.sessionId, boundary: msg._seq }); } catch (e1) { r = null; }
+      if (!r || !r.sessionId) r = await P.dsh.request('session.fork', { sourceSessionId: C.sessionId, boundary: msg._seq });
+      const child = r && r.sessionId;
+      if (!child) throw new Error('no child session');
+      P.dshState.currentSessionId = child;
+      await P.dshState.listSessions();
+      if (P.app && P.app.renderSessions) P.app.renderSessions();
+      if (P.app && P.app.selectSession) await P.app.selectSession(child);
+      else await C.loadHistory(child);
+      if (P.app && P.app.toast) P.app.toast(t('chat.branched'));
+    } catch (e) {
+      if (P.app && P.app.toast) P.app.toast(t('chat.branchFail', { msg: (e && e.message) || e }));
+    }
+  }
+
   function renderAssistant(msg) {
     const item = el('div', 'assistantItem');
     item.dataset.msg = msg.id;
@@ -6251,47 +6624,81 @@ window.PRTS_MARKET = {
       const d = el('div', 'disclosure');
       const row = el('button', 'dRow');
       row.type = 'button';
-      row.innerHTML = '<svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.2 2.7a.6.6 0 0 1 0 .9L6.7 6l-2.5 2.4a.6.6 0 1 0 .9.9l3-2.9a.6.6 0 0 0 0-.9l-3-2.9a.6.6 0 0 0-.9 0Z" fill="currentColor"/></svg>';
+      row.innerHTML = P.icons['ma.think'] || '';
       row.appendChild(el('span', 'dTitle', t('chat.thinking')));
       const body = el('div', 'dBody');
-      body.appendChild(el('div', 'thinkBody', msg.reasoning));
+      const tb = el('div', 'thinkBody');
+      tb.textContent = msg.reasoning;
+      body.appendChild(tb);
       row.addEventListener('click', () => d.classList.toggle('open'));
       d.appendChild(row); d.appendChild(body);
       item.appendChild(d);
     }
     if (msg.content) {
       const p = el('p', 'para');
-      p.innerHTML = mdToHtml(msg.content);
+      p.innerHTML = linkifyPaths(mdToHtml(msg.content));
       if (msg.streaming) p.appendChild(el('span', 'caret'));
       item.appendChild(p);
     }
     for (const img of msg.images || []) item.appendChild(imageEl(img));
+    // meta: 完成时间 · 用时 · token (appears on hover)
+    const meta = el('div', 'msgMeta');
+    meta.appendChild(el('span', '', clock(msg.ts)));
+    if (msg.durMs) meta.appendChild(el('span', '', ' · ' + fmtDurShort(msg.durMs)));
     if (msg.usage && (msg.usage.prompt_tokens || msg.usage.completion_tokens)) {
-      item.appendChild(el('div', 'statsLine', '· ' + t('chat.tokens', { in: msg.usage.prompt_tokens || 0, out: msg.usage.completion_tokens || 0 })));
+      meta.appendChild(el('span', '', ' · ' + t('chat.tokens', { in: msg.usage.prompt_tokens || 0, out: msg.usage.completion_tokens || 0 })));
     }
+    item.appendChild(meta);
+    // actions: 复制 / 好 / 坏 / 分支
+    const actions = el('div', 'msgActions');
+    const mk = (icon, label, fn) => {
+      const b = el('button', 'maBtn');
+      b.type = 'button';
+      b.title = label;
+      b.innerHTML = P.icons[icon] || icon;
+      b.addEventListener('click', (e) => { e.stopPropagation(); fn(); });
+      return b;
+    };
+    actions.appendChild(mk('ma.copy', t('chat.copy'), () => {
+      const txt = [msg.reasoning ? msg.reasoning : '', msg.content || ''].filter(Boolean).join('\n');
+      const p = navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject(new Error('no clipboard'));
+      p.then(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copied')); })
+        .catch(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copyFail')); });
+    }));
+    const fb = C.msgFeedback || {};
+    const up = mk('ma.like', t('chat.good'), () => sendFeedback(msg, fb[msg.id] === 'good' ? null : 'good'));
+    if (fb[msg.id] === 'good') up.classList.add('on');
+    const dn = mk('ma.dislike', t('chat.bad'), () => sendFeedback(msg, fb[msg.id] === 'bad' ? null : 'bad'));
+    if (fb[msg.id] === 'bad') dn.classList.add('on');
+    actions.appendChild(up); actions.appendChild(dn);
+    actions.appendChild(mk('ma.branch', t('chat.branch'), () => branchFrom(msg)));
+    item.appendChild(actions);
     return item;
   }
 
   function renderTool(msg) {
-    const item = el('div', 'assistantItem');
+    const item = el('div', 'assistantItem toolItem');
     item.dataset.msg = msg.id;
     const head = el('button', 'dRow');
     head.type = 'button';
-    head.innerHTML = '<svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.2 2.7a.6.6 0 0 1 0 .9L6.7 6l-2.5 2.4a.6.6 0 1 0 .9.9l3-2.9a.6.6 0 0 0 0-.9l-3-2.9a.6.6 0 0 0-.9 0Z" fill="currentColor"/></svg>';
-    head.appendChild(el('span', 'dTitle', '⟳ ' + msg.name));
+    head.innerHTML = P.icons['ma.tool'] || '⟳';
+    head.appendChild(el('span', 'dTitle', msg.name));
     item.appendChild(head);
     if (msg.args) {
       const argsBody = el('div', 'dBody');
-      argsBody.appendChild(el('div', 'thinkBody', String(msg.args).slice(0, 1200)));
+      const pre = el('div', 'thinkBody');
+      pre.textContent = String(msg.args).slice(0, 1200);
+      argsBody.appendChild(pre);
       item.appendChild(argsBody);
       head.addEventListener('click', () => item.classList.toggle('openArgs'));
       item.classList.add('openArgs');
     }
     if (msg.content) {
       const d = el('div', 'disclosure open');
-      const body = el('div', 'dBody');
-      body.style.display = 'block';
-      body.appendChild(el('div', 'thinkBody', String(msg.content).slice(0, 4000)));
+      const body = el('div', 'dBody toolBody');
+      const pre = el('div', 'thinkBody');
+      pre.innerHTML = linkifyPaths(mdToHtml(String(msg.content).slice(0, 20000)));
+      body.appendChild(pre);
       d.appendChild(body);
       item.appendChild(d);
     }
@@ -6325,56 +6732,75 @@ window.PRTS_MARKET = {
     requestAnimationFrame(() => { const s = $('chatScroll'); if (s) s.scrollTop = s.scrollHeight; });
   }
 
-  /* ---------- trajectory (step timeline) ---------- */
+  /* ---------- trajectory (dsh-web parity: colored blocks, per-node time &
+     token cost, search — no black box) ---------- */
+  let tlQuery = '';
   function renderTimeline() {
     const box = $('trajView');
     if (!box) return;
     box.textContent = '';
+    const searchRow = el('div', 'tlSearch');
+    searchRow.innerHTML = P.icons.search || '';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = t('traj.search');
+    input.spellcheck = false;
+    input.value = tlQuery;
+    input.addEventListener('input', () => { tlQuery = input.value; renderTimeline(); });
+    searchRow.appendChild(input);
+    box.appendChild(searchRow);
     if (!C.rawEvents.length) {
       box.appendChild(el('div', 'trajEmpty', t('traj.empty')));
       return;
     }
-    // Group events by (turn, step) in log order.
-    const steps = new Map();   // key -> { turn, step, start, end, items }
-    const order = [];
-    for (const ev of C.rawEvents) {
+    const q = tlQuery.trim().toLowerCase();
+    const rows = [];
+    for (let i = 0; i < C.rawEvents.length; i++) {
+      const ev = C.rawEvents[i];
       const d = ev.data || {};
       let turn = d.turn, step = d.step;
       if (ev.type === 'step/start' || ev.type === 'step/end') { turn = d.turn; step = d.step; }
-      if (step === undefined && turn === undefined) continue;   // session-level rows stay out of the timeline
-      const key = (turn === undefined ? '?' : turn) + '/' + step;
-      let rec = steps.get(key);
-      if (!rec) { rec = { turn, step, start: null, end: null, items: [] }; steps.set(key, rec); order.push(key); }
-      if (ev.type === 'step/start') rec.start = ev.time;
-      else if (ev.type === 'step/end') rec.end = ev.time;
-      else rec.items.push(ev);
+      if (step === undefined && turn === undefined) continue;
+      const brief = summaryOf(ev);
+      const role = roleNameOf(ev);
+      if (q && !(String(ev.type).toLowerCase().indexOf(q) >= 0 || String(brief || '').toLowerCase().indexOf(q) >= 0 || String(role).toLowerCase().indexOf(q) >= 0)) continue;
+      const next = C.rawEvents[i + 1];
+      const dur = next && next.time && ev.time && next.time > ev.time ? next.time - ev.time : null;
+      rows.push({ ev, brief, dur, turn, step, role });
     }
-    for (const key of order) {
-      const rec = steps.get(key);
-      const block = el('div', 'tlStep');
-      const head = el('div', 'tlHead');
-      const label = t('traj.stepHeader', { turn: rec.turn === undefined ? '?' : rec.turn, step: rec.step === undefined ? '?' : rec.step });
-      head.appendChild(el('span', 'tlLabel', label));
-      if (rec.start && rec.end && rec.end > rec.start) {
-        head.appendChild(el('span', 'tlDur', t('traj.duration', { d: fmtDurShort(rec.end - rec.start) })));
+    let lastKey = null;
+    for (const r of rows) {
+      const key = r.turn + '/' + r.step;
+      if (key !== lastKey) {
+        const head = el('div', 'tlHead');
+        head.appendChild(el('span', 'tlLabel', t('traj.stepHeader', { turn: r.turn === undefined ? '?' : r.turn, step: r.step === undefined ? '?' : r.step })));
+        box.appendChild(head);
+        lastKey = key;
       }
-      block.appendChild(head);
-      let usage = null;
-      for (const ev of rec.items) {
-        const row = el('div', 'tlItem');
-        row.appendChild(el('span', 'tlType', String(ev.type)));
-        const brief = summaryOf(ev);
-        if (brief) row.appendChild(el('span', 'tlBrief', brief));
-        block.appendChild(row);
-        if (ev.type === 'assistant/chunk' && ev.data && ev.data.chunk && ev.data.chunk.type === 'usage') {
-          usage = ev.data.chunk.usage || ev.data.chunk;
-        }
+      const row = el('div', 'tlRow');
+      const bar = el('span', 'tlBar');
+      bar.style.background = colorOf(r.ev);
+      row.appendChild(bar);
+      const badge = el('span', 'tlType', r.role);
+      badge.style.color = colorOf(r.ev);
+      row.appendChild(badge);
+      if (r.brief) {
+        const bf = el('span', 'tlBrief');
+        bf.textContent = String(r.brief).slice(0, 240);
+        bf.title = r.brief;
+        row.appendChild(bf);
       }
+      const meta = el('span', 'tlMeta');
+      if (r.dur !== null && r.dur >= 0 && r.dur < 300000) meta.appendChild(el('span', '', fmtDurShort(r.dur)));
+      const usage = r.ev.type === 'assistant/chunk' && r.ev.data && r.ev.data.chunk && r.ev.data.chunk.type === 'usage'
+        ? (r.ev.data.chunk.usage || r.ev.data.chunk) : null;
       if (usage && (usage.prompt_tokens || usage.completion_tokens)) {
-        block.appendChild(el('div', 'tlUsage', t('chat.tokens', { in: usage.prompt_tokens || 0, out: usage.completion_tokens || 0 })));
+        meta.appendChild(el('span', '', t('chat.tokens', { in: usage.prompt_tokens || 0, out: usage.completion_tokens || 0 })));
       }
-      box.appendChild(block);
+      row.appendChild(meta);
+      box.appendChild(row);
     }
+    if (!rows.length) box.appendChild(el('div', 'trajEmpty', t('traj.none')));
   }
   function fmtDurShort(ms) {
     const s = Math.round(ms / 1000);
@@ -6637,6 +7063,14 @@ window.PRTS_MARKET = {
   }
 
   function init() {
+    const flowEl = $('flow');
+    if (flowEl) {
+      flowEl.addEventListener('click', (e) => {
+        const link = e.target.closest('.pathLink');
+        if (link && link.dataset.path) openFilePath(link.dataset.path);
+      });
+    }
+
     const input = $('composerInput');
     input.addEventListener('input', () => { updateSend(); scrollInputBottom(); onComposeChange(); });
     input.addEventListener('keydown', (e) => {
@@ -6897,6 +7331,7 @@ window.PRTS_MARKET = {
     if (!w || !w.file) {
       layer.innerHTML = '';
       layer.style.display = 'none';
+      delete document.body.dataset.wallpaper;
       return;
     }
     let dataUrl = '';
@@ -6915,6 +7350,8 @@ window.PRTS_MARKET = {
     layer.innerHTML = '';
     layer.style.display = '';
     layer.style.opacity = String(w.opacity !== undefined ? w.opacity : 0.35);
+    // wallpapered surfaces (sidebar/details/panels) turn liquid-glass
+    document.body.dataset.wallpaper = 'on';
     if (!dataUrl) return;
     let media;
     if (w.type === 'video') {
@@ -8134,6 +8571,9 @@ window.PRTS_MARKET = {
       $('intro').classList.add('done');
       setTimeout(() => { $('intro').style.display = 'none'; A.introEngine.stop(); }, 800);
       if (!$('cvt').dataset.phase || $('cvt').dataset.phase === 'hero') startHeroAmbient();
+      // Data loading is deliberately parked until the intro is over: the
+      // particle effect runs free while dsh boots in the background.
+      if (A.afterIntro) { try { A.afterIntro(); } catch (e) { /* noop */ } }
     };
     A.finishIntro = finish;
 
@@ -8556,6 +8996,24 @@ window.PRTS_MARKET = {
         updateMeter();
       }).catch(() => { /* noop */ });
     }, 8000);
+    // Session data loads only after the intro finishes (or once dsh is up,
+    // whichever is later) so the particle intro never competes with big DOM
+    // renders — the backend boots in the background while the effect runs.
+    let postIntroStarted = false;
+    async function startSessionLoad() {
+      if (postIntroStarted) return;
+      postIntroStarted = true;
+      try {
+        await refreshAll();
+        await A.ensureSession();
+      } catch (e) {
+        A.toast(A.t('dsh.connectFail', { msg: e.message }));
+      }
+    }
+    A.afterIntro = function () {
+      if (A._dshUp) startSessionLoad();
+      else A._loadOnIntro = true;
+    };
     (async () => {
       // dsh may still be booting in the background (PRTS spawns it silently).
       // Keep polling until it answers — the particle intro keeps looping the
@@ -8568,12 +9026,8 @@ window.PRTS_MARKET = {
           await new Promise((r) => setTimeout(r, delay));
           delay = Math.min(4000, Math.round(delay * 1.25));
         }
-        try {
-          await refreshAll();
-          await A.ensureSession();
-        } catch (e) {
-          A.toast(A.t('dsh.connectFail', { msg: e.message }));
-        }
+        A._dshUp = true;
+        if (A.introDone) startSessionLoad();
       } catch (e) {
         A.toast(A.t('dsh.connectFail', { msg: e.message }));
       }
@@ -10205,7 +10659,10 @@ window.PRTS_MARKET = {
       theme.appendChild(o);
     });
     theme.addEventListener('change', async () => {
-      const ok = await nsUpdate('ui-theme', { preference: theme.value });
+      // ui-theme only accepts system/light/dark; PRTS keeps 'custom' in its
+      // own config and stores the base appearance (dark) in the official ns.
+      const nsPref = theme.value === 'custom' ? 'dark' : theme.value;
+      const ok = await nsUpdate('ui-theme', { preference: nsPref });
       if (ok) {
         config.ui = config.ui || {};
         config.ui.theme = theme.value === 'system' ? 'dark' : theme.value;
@@ -10940,8 +11397,13 @@ window.PRTS_MARKET = {
       { key: 'maxUses', labelKey: 'settings.plugins.webSearchMaxUses', type: 'number' },
     ], nsSchemaDefaults['web-search-deepseek']));
 
+    // 插件列表 button (the full 159-plugin inventory page)
+    const invBtn = el('button', 'sBtn primary', t('settings.plugins.allList'));
+    invBtn.type = 'button';
+    invBtn.addEventListener('click', () => renderPluginInventory(box));
+    left.appendChild(invBtn);
     // 第三方插件 button (below the config cards)
-    const thirdBtn = el('button', 'sBtn primary', t('settings.plugins.thirdParty'));
+    const thirdBtn = el('button', 'sBtn', t('settings.plugins.thirdParty'));
     thirdBtn.type = 'button';
     thirdBtn.addEventListener('click', () => { rightTab = 'third'; renderRight(); });
     left.appendChild(thirdBtn);
@@ -11029,6 +11491,78 @@ window.PRTS_MARKET = {
     box.appendChild(grid);
   }
 
+  /** Full plugin inventory page — the same 159-entry list dsh web shows.
+   *  Scrollable, searchable, every row toggles on/off (profile patch). */
+  async function renderPluginInventory(box) {
+    box.textContent = '';
+    const host = el('div', 'sSection');
+    const head = el('div', 'sSecRow');
+    const back = el('button', 'sBtn', '← ' + t('settings.plugins.config'));
+    back.type = 'button';
+    back.addEventListener('click', () => renderPlugins(box));
+    head.appendChild(back);
+    head.appendChild(el('span', 'sSecTitle eyebrow', t('settings.plugins.allList')));
+    host.appendChild(head);
+    host.appendChild(el('div', 'hint', t('settings.plugins.allList.hint')));
+
+    const search = el('div', 'mSearch');
+    search.innerHTML = P.icons.search || '';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = t('market.searchPlaceholder');
+    input.spellcheck = false;
+    let query = '';
+    input.addEventListener('input', () => { query = input.value; renderList(); });
+    search.appendChild(input);
+    host.appendChild(search);
+
+    let entries = [];
+    try { entries = await P.dshState.pluginInventoryList(); } catch (e) { entries = []; }
+    const listBox = el('div', 'invList');
+    host.appendChild(listBox);
+
+    config.ui = config.ui || {};
+    if (!Array.isArray(config.ui.pluginDisabled)) config.ui.pluginDisabled = [];
+    const disabled = new Set(config.ui.pluginDisabled);
+
+    async function toggleEntry(entryId) {
+      if (disabled.has(entryId)) disabled.delete(entryId);
+      else disabled.add(entryId);
+      config.ui.pluginDisabled = [...disabled];
+      await P.store.saveConfig(config);
+      await writePluginToggles([...disabled]);
+      renderList();
+    }
+    function renderList() {
+      listBox.textContent = '';
+      const q = query.trim().toLowerCase();
+      const items = entries.filter((e) => !q || String(e.moduleName || '').toLowerCase().indexOf(q) >= 0 || String(e.entryId || '').toLowerCase().indexOf(q) >= 0);
+      const count = el('div', 'pmeta', t('settings.plugins.allCount', { n: items.length }));
+      listBox.appendChild(count);
+      for (const e of items) {
+        const row = el('div', 'sPluginRow');
+        const meta = el('div', 'sPluginMeta');
+        const nameLine = el('div', 'skNameLine');
+        nameLine.appendChild(el('span', 'skItemName', e.moduleName || e.entryId));
+        const phase = el('span', 'pState', e.fiberPhase === 'active' ? 'ACTIVE' : e.fiberPhase === 'ready' ? 'READY' : '—');
+        phase.dataset.state = e.fiberPhase === 'active' ? 'ok' : 'none';
+        nameLine.appendChild(phase);
+        meta.appendChild(nameLine);
+        meta.appendChild(el('div', 'pmeta', e.entryId || ''));
+        row.appendChild(meta);
+        const on = !disabled.has(e.entryId) && e.enabled !== false;
+        const sw = el('button', 'mSwitch' + (on ? ' on' : ''), on ? 'ON' : 'OFF');
+        sw.type = 'button';
+        sw.title = t(on ? 'settings.plugins.disable' : 'settings.plugins.enable');
+        sw.addEventListener('click', () => toggleEntry(e.entryId));
+        row.appendChild(sw);
+        listBox.appendChild(row);
+      }
+    }
+    renderList();
+    box.appendChild(host);
+  }
+
   async function renderPresets(box) {
     box.textContent = '';
     const sec = el('div', 'sSection');
@@ -11039,22 +11573,31 @@ window.PRTS_MARKET = {
     if (!presets.length) sec.appendChild(el('div', 'hint', t('mode.none')));
     for (const p of presets) {
       const id = p.id || p.agentPreset;
-      const card = el('div', 'pCard');
-      const head = el('div', 'pCardHead');
-      head.appendChild(el('span', 'pName', p.name || id));
-      const tags = el('span');
-      const trust = el('span', 'pState', p.trust === 'system' ? 'SYSTEM' : 'USER');
-      trust.dataset.state = p.trust === 'system' ? 'none' : 'ok';
-      tags.appendChild(trust);
+      const row = el('div', 'sPresetRow' + (P.app.currentPreset === id ? ' current' : ''));
+      const mark = el('span', 'skMark');
+      mark.innerHTML = P.icons.diamond || '';
+      row.appendChild(mark);
+      const meta = el('div', 'skItemMeta');
+      const nameLine = el('div', 'skNameLine');
+      nameLine.appendChild(el('span', 'skItemName', p.name || id));
+      const tag = el('span', 'pState', p.trust === 'system' ? 'SYSTEM' : 'USER');
+      tag.dataset.state = p.trust === 'system' ? 'none' : 'ok';
+      nameLine.appendChild(tag);
       if (p.isDefault) {
         const d = el('span', 'pState', 'DEFAULT');
         d.dataset.state = 'ok';
-        tags.appendChild(d);
+        nameLine.appendChild(d);
       }
-      head.appendChild(tags);
-      card.appendChild(head);
-      const body = el('div', 'pCardBody');
-      body.appendChild(el('div', 'pModels', p.description || ''));
+      if (P.app.currentPreset === id) {
+        const c = el('span', 'pState', t('settings.presets.current'));
+        c.dataset.state = 'ok';
+        nameLine.appendChild(c);
+      }
+      meta.appendChild(nameLine);
+      const desc = el('div', 'skDesc', p.description || '');
+      desc.title = p.description || '';
+      meta.appendChild(desc);
+      row.appendChild(meta);
       const useBtn = el('button', 'sBtn primary', t('settings.presets.use'));
       useBtn.type = 'button';
       useBtn.addEventListener('click', async () => {
@@ -11069,6 +11612,7 @@ window.PRTS_MARKET = {
               P.app.setModeLabel(P.app.presetLabel(id));
             }
             P.app.toast(t('settings.presets.used', { name: p.name || id }));
+            renderPresets(box);
           } else {
             const ok = await P.app.askConfirm(t('mode.locked', { preset: p.name || id }));
             if (ok) {
@@ -11078,9 +11622,8 @@ window.PRTS_MARKET = {
           }
         } catch (e) { P.app.toast(e.message); }
       });
-      body.appendChild(useBtn);
-      card.appendChild(body);
-      sec.appendChild(card);
+      row.appendChild(useBtn);
+      sec.appendChild(row);
     }
     box.appendChild(sec);
   }

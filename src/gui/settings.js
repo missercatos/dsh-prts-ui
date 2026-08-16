@@ -235,7 +235,10 @@
       theme.appendChild(o);
     });
     theme.addEventListener('change', async () => {
-      const ok = await nsUpdate('ui-theme', { preference: theme.value });
+      // ui-theme only accepts system/light/dark; PRTS keeps 'custom' in its
+      // own config and stores the base appearance (dark) in the official ns.
+      const nsPref = theme.value === 'custom' ? 'dark' : theme.value;
+      const ok = await nsUpdate('ui-theme', { preference: nsPref });
       if (ok) {
         config.ui = config.ui || {};
         config.ui.theme = theme.value === 'system' ? 'dark' : theme.value;
@@ -970,8 +973,13 @@
       { key: 'maxUses', labelKey: 'settings.plugins.webSearchMaxUses', type: 'number' },
     ], nsSchemaDefaults['web-search-deepseek']));
 
+    // 插件列表 button (the full 159-plugin inventory page)
+    const invBtn = el('button', 'sBtn primary', t('settings.plugins.allList'));
+    invBtn.type = 'button';
+    invBtn.addEventListener('click', () => renderPluginInventory(box));
+    left.appendChild(invBtn);
     // 第三方插件 button (below the config cards)
-    const thirdBtn = el('button', 'sBtn primary', t('settings.plugins.thirdParty'));
+    const thirdBtn = el('button', 'sBtn', t('settings.plugins.thirdParty'));
     thirdBtn.type = 'button';
     thirdBtn.addEventListener('click', () => { rightTab = 'third'; renderRight(); });
     left.appendChild(thirdBtn);
@@ -1059,6 +1067,78 @@
     box.appendChild(grid);
   }
 
+  /** Full plugin inventory page — the same 159-entry list dsh web shows.
+   *  Scrollable, searchable, every row toggles on/off (profile patch). */
+  async function renderPluginInventory(box) {
+    box.textContent = '';
+    const host = el('div', 'sSection');
+    const head = el('div', 'sSecRow');
+    const back = el('button', 'sBtn', '← ' + t('settings.plugins.config'));
+    back.type = 'button';
+    back.addEventListener('click', () => renderPlugins(box));
+    head.appendChild(back);
+    head.appendChild(el('span', 'sSecTitle eyebrow', t('settings.plugins.allList')));
+    host.appendChild(head);
+    host.appendChild(el('div', 'hint', t('settings.plugins.allList.hint')));
+
+    const search = el('div', 'mSearch');
+    search.innerHTML = P.icons.search || '';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = t('market.searchPlaceholder');
+    input.spellcheck = false;
+    let query = '';
+    input.addEventListener('input', () => { query = input.value; renderList(); });
+    search.appendChild(input);
+    host.appendChild(search);
+
+    let entries = [];
+    try { entries = await P.dshState.pluginInventoryList(); } catch (e) { entries = []; }
+    const listBox = el('div', 'invList');
+    host.appendChild(listBox);
+
+    config.ui = config.ui || {};
+    if (!Array.isArray(config.ui.pluginDisabled)) config.ui.pluginDisabled = [];
+    const disabled = new Set(config.ui.pluginDisabled);
+
+    async function toggleEntry(entryId) {
+      if (disabled.has(entryId)) disabled.delete(entryId);
+      else disabled.add(entryId);
+      config.ui.pluginDisabled = [...disabled];
+      await P.store.saveConfig(config);
+      await writePluginToggles([...disabled]);
+      renderList();
+    }
+    function renderList() {
+      listBox.textContent = '';
+      const q = query.trim().toLowerCase();
+      const items = entries.filter((e) => !q || String(e.moduleName || '').toLowerCase().indexOf(q) >= 0 || String(e.entryId || '').toLowerCase().indexOf(q) >= 0);
+      const count = el('div', 'pmeta', t('settings.plugins.allCount', { n: items.length }));
+      listBox.appendChild(count);
+      for (const e of items) {
+        const row = el('div', 'sPluginRow');
+        const meta = el('div', 'sPluginMeta');
+        const nameLine = el('div', 'skNameLine');
+        nameLine.appendChild(el('span', 'skItemName', e.moduleName || e.entryId));
+        const phase = el('span', 'pState', e.fiberPhase === 'active' ? 'ACTIVE' : e.fiberPhase === 'ready' ? 'READY' : '—');
+        phase.dataset.state = e.fiberPhase === 'active' ? 'ok' : 'none';
+        nameLine.appendChild(phase);
+        meta.appendChild(nameLine);
+        meta.appendChild(el('div', 'pmeta', e.entryId || ''));
+        row.appendChild(meta);
+        const on = !disabled.has(e.entryId) && e.enabled !== false;
+        const sw = el('button', 'mSwitch' + (on ? ' on' : ''), on ? 'ON' : 'OFF');
+        sw.type = 'button';
+        sw.title = t(on ? 'settings.plugins.disable' : 'settings.plugins.enable');
+        sw.addEventListener('click', () => toggleEntry(e.entryId));
+        row.appendChild(sw);
+        listBox.appendChild(row);
+      }
+    }
+    renderList();
+    box.appendChild(host);
+  }
+
   async function renderPresets(box) {
     box.textContent = '';
     const sec = el('div', 'sSection');
@@ -1069,22 +1149,31 @@
     if (!presets.length) sec.appendChild(el('div', 'hint', t('mode.none')));
     for (const p of presets) {
       const id = p.id || p.agentPreset;
-      const card = el('div', 'pCard');
-      const head = el('div', 'pCardHead');
-      head.appendChild(el('span', 'pName', p.name || id));
-      const tags = el('span');
-      const trust = el('span', 'pState', p.trust === 'system' ? 'SYSTEM' : 'USER');
-      trust.dataset.state = p.trust === 'system' ? 'none' : 'ok';
-      tags.appendChild(trust);
+      const row = el('div', 'sPresetRow' + (P.app.currentPreset === id ? ' current' : ''));
+      const mark = el('span', 'skMark');
+      mark.innerHTML = P.icons.diamond || '';
+      row.appendChild(mark);
+      const meta = el('div', 'skItemMeta');
+      const nameLine = el('div', 'skNameLine');
+      nameLine.appendChild(el('span', 'skItemName', p.name || id));
+      const tag = el('span', 'pState', p.trust === 'system' ? 'SYSTEM' : 'USER');
+      tag.dataset.state = p.trust === 'system' ? 'none' : 'ok';
+      nameLine.appendChild(tag);
       if (p.isDefault) {
         const d = el('span', 'pState', 'DEFAULT');
         d.dataset.state = 'ok';
-        tags.appendChild(d);
+        nameLine.appendChild(d);
       }
-      head.appendChild(tags);
-      card.appendChild(head);
-      const body = el('div', 'pCardBody');
-      body.appendChild(el('div', 'pModels', p.description || ''));
+      if (P.app.currentPreset === id) {
+        const c = el('span', 'pState', t('settings.presets.current'));
+        c.dataset.state = 'ok';
+        nameLine.appendChild(c);
+      }
+      meta.appendChild(nameLine);
+      const desc = el('div', 'skDesc', p.description || '');
+      desc.title = p.description || '';
+      meta.appendChild(desc);
+      row.appendChild(meta);
       const useBtn = el('button', 'sBtn primary', t('settings.presets.use'));
       useBtn.type = 'button';
       useBtn.addEventListener('click', async () => {
@@ -1099,6 +1188,7 @@
               P.app.setModeLabel(P.app.presetLabel(id));
             }
             P.app.toast(t('settings.presets.used', { name: p.name || id }));
+            renderPresets(box);
           } else {
             const ok = await P.app.askConfirm(t('mode.locked', { preset: p.name || id }));
             if (ok) {
@@ -1108,9 +1198,8 @@
           }
         } catch (e) { P.app.toast(e.message); }
       });
-      body.appendChild(useBtn);
-      card.appendChild(body);
-      sec.appendChild(card);
+      row.appendChild(useBtn);
+      sec.appendChild(row);
     }
     box.appendChild(sec);
   }

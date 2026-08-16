@@ -259,6 +259,20 @@ return {
       }
     }
 
+    // PRTS logo (browser form): serves assets/prts.png as base64
+    const logoHandler = async (req, res) => {
+      try {
+        const fsService = ctx.get('fs')
+        const target = await fsService.resolve(GUI_PATH.replace(/web[\/]index\.html$/, 'assets/prts.png'))
+        const bytes = await fsService.readBytes(target, undefined, 8 * 1024 * 1024)
+        let bin = ''
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i])
+        json(res, 200, { b64: btoa(bin) })
+      } catch (e) {
+        json(res, 404, { ok: false, error: String(e && e.message ? e.message : e) })
+      }
+    }
+
     // open a file in the system editor (browser form; xdg-open)
     const openPathHandler = async (req, res) => {
       try {
@@ -357,12 +371,13 @@ return {
       webServer.register({ kind: 'exact', path: '/prts/api/skill-install', handler: skillInstallHandler }),
       webServer.register({ kind: 'prefix', path: '/prts/api/wallpaper', handler: wallpaperHandler }),
       webServer.register({ kind: 'exact', path: '/prts/api/open-path', handler: openPathHandler }),
+      webServer.register({ kind: 'exact', path: '/prts/api/logo', handler: logoHandler }),
       webServer.register({ kind: 'exact', path: '/prts/api/profiles', handler: profilesHandler }),
       webServer.register({ kind: 'exact', path: '/prts/api/http', handler: httpProxyHandler }),
       webServer.register({ kind: 'exact', path: '/prts/api/run-cli', handler: runCliHandler }),
     )
     ctx.effect(() => () => { for (const d of disposers) d() })
 
-    harness.handle('prts-version', () => ({ version: '0.4.0', path: GUI_PATH }))
+    harness.handle('prts-version', () => ({ version: '0.5.0', path: GUI_PATH }))
   },
 }

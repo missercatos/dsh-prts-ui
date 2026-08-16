@@ -482,6 +482,15 @@
     return { ok: false, error: 'run-cli unavailable in this mode' };
   }
 
+  /** Full plugin inventory — the same 159-entry list the dsh web Plugins
+   *  page renders (pluginInventory/list). */
+  async function pluginInventoryList() {
+    try {
+      const r = await P.dsh.request('pluginInventory/list', { args: {} });
+      return (r && r.entries) || [];
+    } catch (e) { return []; }
+  }
+
   async function pluginsList() {
     const profiles = await profilesList();
     // Keep the legacy flat shape for existing consumers: { name, version, profile }.
@@ -538,6 +547,7 @@
   };
   S.hostDescribe = hostDescribe;
   S.pluginsList = pluginsList;
+  S.pluginInventoryList = pluginInventoryList;
   S.profilesList = profilesList;
   S.cliPlugins = cliPlugins;
   S.runCliPlugin = runCliPlugin;

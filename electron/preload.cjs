@@ -47,6 +47,7 @@ contextBridge.exposeInMainWorld('prts', {
     openPath: (p) => ipcRenderer.invoke('prts:openPath', p),
     readFileB64: (p) => ipcRenderer.invoke('prts:readFileB64', p),
     writeFileB64: (p, b64) => ipcRenderer.invoke('prts:writeFileB64', p, b64),
+    prtsLogo: () => ipcRenderer.invoke('prts:prtsLogo'),
     loginDeepseek: () => ipcRenderer.invoke('prts:loginDeepseek'),
     loginGithub: () => ipcRenderer.invoke('prts:loginGithub'),
     update: () => ipcRenderer.invoke('prts:update'),

@@ -251,10 +251,13 @@
         existing.streaming = false;
         existing._live = false;
       } else {
+        const prevUser = [...C.messages].reverse().find((m) => m.role === 'user');
+        const durMs = prevUser && ev.time ? Math.max(0, ev.time - prevUser.ts) : null;
         C.messages.push({
           id: id || ('a' + ev.seq), _seq: ev.seq, role: 'assistant',
           content: parts.text, reasoning: parts.reasoning, images: parts.images,
           ts: ev.time, usage: parts.usage, model: parts.model, streaming: false,
+          durMs,
         });
       }
       if (P.cost && parts.usage) {
@@ -342,6 +345,106 @@
     return img;
   }
 
+  /* ---------- message actions (dsh-web parity, PRTS marks) ---------- */
+
+  const TL_COLORS = {
+    'user/message': '#9C9CA1',
+    'assistant/message': '#9ece6a',
+    'assistant/chunk': '#7aa2f7',
+    'tool/call': '#e0af68',
+    'tool/result': '#e0af68',
+    'command/run': '#bb9af7',
+    'permission/preset': '#bb9af7',
+    'sandbox/mode': '#bb9af7',
+    'approval/policy': '#bb9af7',
+    'step/start': '#626266',
+    'step/end': '#626266',
+  };
+  function chunkColor(ev) {
+    const t = ev && ev.data && ev.data.chunk && ev.data.chunk.type;
+    if (t === 'reasoning-delta') return '#9d7cd8'; // think
+    if (t === 'text-delta') return '#9ece6a';      // output
+    if (t === 'usage') return '#7aa2f7';           // tokens
+    if (t === 'tool-call-delta') return '#e0af68'; // tool
+    return TL_COLORS['assistant/chunk'] || '#7aa2f7';
+  }
+  function colorOf(ev) {
+    if (ev.type === 'assistant/chunk') return chunkColor(ev);
+    return TL_COLORS[ev.type] || '#7aa2f7';
+  }
+  function roleNameOf(ev) {
+    switch (ev.type) {
+      case 'user/message': return t('traj.user');
+      case 'assistant/message': return t('traj.output');
+      case 'assistant/chunk': {
+        const c = ev.data && ev.data.chunk && ev.data.chunk.type;
+        if (c === 'reasoning-delta') return t('traj.think');
+        if (c === 'tool-call-delta') return t('traj.tool');
+        if (c === 'usage') return t('traj.usage');
+        return t('traj.stream');
+      }
+      case 'tool/call': return t('traj.toolCall');
+      case 'tool/result': return t('traj.toolResult');
+      case 'command/run': return t('traj.command');
+      case 'step/start': return t('traj.stepStart');
+      case 'step/end': return t('traj.stepEnd');
+      default: return String(ev.type);
+    }
+  }
+
+  /** Open a path in the file manager/system editor (dsh-web underline parity). */
+  function openFilePath(path) {
+    const b = (typeof window !== 'undefined' && window.prts && window.prts.bridge) || null;
+    if (b && b.openPath) { b.openPath(path).catch(() => {}); return; }
+    try {
+      const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+      fetch(origin + '/prts/api/open-path', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path }),
+      }).catch(() => {});
+    } catch (e) { /* noop */ }
+  }
+  /** Absolute paths get an underline link (click opens the file). */
+  function linkifyPaths(html) {
+    return String(html || '').replace(/([\s("'])(\/(?:home|workspace|workspaces|tmp|var|usr|etc|opt|srv|root|mnt|media|run|data)\/[^\s<>"']+)/g, (m, pre, path) => {
+      const clean = path.replace(/[),.;，。；：]+$/, '');
+      return pre + '<a class="pathLink" data-path="' + esc(clean) + '">' + esc(clean) + '</a>';
+    });
+  }
+
+  async function sendFeedback(msg, value) {
+    try {
+      if (value) await P.dsh.request('messageFeedback.put', { messageId: msg.id, value });
+      else await P.dsh.request('messageFeedback.delete', { messageId: msg.id });
+      C.msgFeedback = C.msgFeedback || {};
+      if (value) C.msgFeedback[msg.id] = value;
+      else delete C.msgFeedback[msg.id];
+      renderFlow();
+      if (P.app && P.app.toast) P.app.toast(t('chat.feedbackSent'));
+    } catch (e) {
+      if (P.app && P.app.toast) P.app.toast(t('chat.feedbackFail'));
+    }
+  }
+
+  async function branchFrom(msg) {
+    try {
+      let r = null;
+      try { r = await P.dsh.request('session.fork', { sessionId: C.sessionId, boundary: msg._seq }); } catch (e1) { r = null; }
+      if (!r || !r.sessionId) r = await P.dsh.request('session.fork', { sourceSessionId: C.sessionId, boundary: msg._seq });
+      const child = r && r.sessionId;
+      if (!child) throw new Error('no child session');
+      P.dshState.currentSessionId = child;
+      await P.dshState.listSessions();
+      if (P.app && P.app.renderSessions) P.app.renderSessions();
+      if (P.app && P.app.selectSession) await P.app.selectSession(child);
+      else await C.loadHistory(child);
+      if (P.app && P.app.toast) P.app.toast(t('chat.branched'));
+    } catch (e) {
+      if (P.app && P.app.toast) P.app.toast(t('chat.branchFail', { msg: (e && e.message) || e }));
+    }
+  }
+
   function renderAssistant(msg) {
     const item = el('div', 'assistantItem');
     item.dataset.msg = msg.id;
@@ -349,47 +452,81 @@
       const d = el('div', 'disclosure');
       const row = el('button', 'dRow');
       row.type = 'button';
-      row.innerHTML = '<svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.2 2.7a.6.6 0 0 1 0 .9L6.7 6l-2.5 2.4a.6.6 0 1 0 .9.9l3-2.9a.6.6 0 0 0 0-.9l-3-2.9a.6.6 0 0 0-.9 0Z" fill="currentColor"/></svg>';
+      row.innerHTML = P.icons['ma.think'] || '';
       row.appendChild(el('span', 'dTitle', t('chat.thinking')));
       const body = el('div', 'dBody');
-      body.appendChild(el('div', 'thinkBody', msg.reasoning));
+      const tb = el('div', 'thinkBody');
+      tb.textContent = msg.reasoning;
+      body.appendChild(tb);
       row.addEventListener('click', () => d.classList.toggle('open'));
       d.appendChild(row); d.appendChild(body);
       item.appendChild(d);
     }
     if (msg.content) {
       const p = el('p', 'para');
-      p.innerHTML = mdToHtml(msg.content);
+      p.innerHTML = linkifyPaths(mdToHtml(msg.content));
       if (msg.streaming) p.appendChild(el('span', 'caret'));
       item.appendChild(p);
     }
     for (const img of msg.images || []) item.appendChild(imageEl(img));
+    // meta: 完成时间 · 用时 · token (appears on hover)
+    const meta = el('div', 'msgMeta');
+    meta.appendChild(el('span', '', clock(msg.ts)));
+    if (msg.durMs) meta.appendChild(el('span', '', ' · ' + fmtDurShort(msg.durMs)));
     if (msg.usage && (msg.usage.prompt_tokens || msg.usage.completion_tokens)) {
-      item.appendChild(el('div', 'statsLine', '· ' + t('chat.tokens', { in: msg.usage.prompt_tokens || 0, out: msg.usage.completion_tokens || 0 })));
+      meta.appendChild(el('span', '', ' · ' + t('chat.tokens', { in: msg.usage.prompt_tokens || 0, out: msg.usage.completion_tokens || 0 })));
     }
+    item.appendChild(meta);
+    // actions: 复制 / 好 / 坏 / 分支
+    const actions = el('div', 'msgActions');
+    const mk = (icon, label, fn) => {
+      const b = el('button', 'maBtn');
+      b.type = 'button';
+      b.title = label;
+      b.innerHTML = P.icons[icon] || icon;
+      b.addEventListener('click', (e) => { e.stopPropagation(); fn(); });
+      return b;
+    };
+    actions.appendChild(mk('ma.copy', t('chat.copy'), () => {
+      const txt = [msg.reasoning ? msg.reasoning : '', msg.content || ''].filter(Boolean).join('\n');
+      const p = navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject(new Error('no clipboard'));
+      p.then(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copied')); })
+        .catch(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copyFail')); });
+    }));
+    const fb = C.msgFeedback || {};
+    const up = mk('ma.like', t('chat.good'), () => sendFeedback(msg, fb[msg.id] === 'good' ? null : 'good'));
+    if (fb[msg.id] === 'good') up.classList.add('on');
+    const dn = mk('ma.dislike', t('chat.bad'), () => sendFeedback(msg, fb[msg.id] === 'bad' ? null : 'bad'));
+    if (fb[msg.id] === 'bad') dn.classList.add('on');
+    actions.appendChild(up); actions.appendChild(dn);
+    actions.appendChild(mk('ma.branch', t('chat.branch'), () => branchFrom(msg)));
+    item.appendChild(actions);
     return item;
   }
 
   function renderTool(msg) {
-    const item = el('div', 'assistantItem');
+    const item = el('div', 'assistantItem toolItem');
     item.dataset.msg = msg.id;
     const head = el('button', 'dRow');
     head.type = 'button';
-    head.innerHTML = '<svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.2 2.7a.6.6 0 0 1 0 .9L6.7 6l-2.5 2.4a.6.6 0 1 0 .9.9l3-2.9a.6.6 0 0 0 0-.9l-3-2.9a.6.6 0 0 0-.9 0Z" fill="currentColor"/></svg>';
-    head.appendChild(el('span', 'dTitle', '⟳ ' + msg.name));
+    head.innerHTML = P.icons['ma.tool'] || '⟳';
+    head.appendChild(el('span', 'dTitle', msg.name));
     item.appendChild(head);
     if (msg.args) {
       const argsBody = el('div', 'dBody');
-      argsBody.appendChild(el('div', 'thinkBody', String(msg.args).slice(0, 1200)));
+      const pre = el('div', 'thinkBody');
+      pre.textContent = String(msg.args).slice(0, 1200);
+      argsBody.appendChild(pre);
       item.appendChild(argsBody);
       head.addEventListener('click', () => item.classList.toggle('openArgs'));
       item.classList.add('openArgs');
     }
     if (msg.content) {
       const d = el('div', 'disclosure open');
-      const body = el('div', 'dBody');
-      body.style.display = 'block';
-      body.appendChild(el('div', 'thinkBody', String(msg.content).slice(0, 4000)));
+      const body = el('div', 'dBody toolBody');
+      const pre = el('div', 'thinkBody');
+      pre.innerHTML = linkifyPaths(mdToHtml(String(msg.content).slice(0, 20000)));
+      body.appendChild(pre);
       d.appendChild(body);
       item.appendChild(d);
     }
@@ -423,56 +560,75 @@
     requestAnimationFrame(() => { const s = $('chatScroll'); if (s) s.scrollTop = s.scrollHeight; });
   }
 
-  /* ---------- trajectory (step timeline) ---------- */
+  /* ---------- trajectory (dsh-web parity: colored blocks, per-node time &
+     token cost, search — no black box) ---------- */
+  let tlQuery = '';
   function renderTimeline() {
     const box = $('trajView');
     if (!box) return;
     box.textContent = '';
+    const searchRow = el('div', 'tlSearch');
+    searchRow.innerHTML = P.icons.search || '';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = t('traj.search');
+    input.spellcheck = false;
+    input.value = tlQuery;
+    input.addEventListener('input', () => { tlQuery = input.value; renderTimeline(); });
+    searchRow.appendChild(input);
+    box.appendChild(searchRow);
     if (!C.rawEvents.length) {
       box.appendChild(el('div', 'trajEmpty', t('traj.empty')));
       return;
     }
-    // Group events by (turn, step) in log order.
-    const steps = new Map();   // key -> { turn, step, start, end, items }
-    const order = [];
-    for (const ev of C.rawEvents) {
+    const q = tlQuery.trim().toLowerCase();
+    const rows = [];
+    for (let i = 0; i < C.rawEvents.length; i++) {
+      const ev = C.rawEvents[i];
       const d = ev.data || {};
       let turn = d.turn, step = d.step;
       if (ev.type === 'step/start' || ev.type === 'step/end') { turn = d.turn; step = d.step; }
-      if (step === undefined && turn === undefined) continue;   // session-level rows stay out of the timeline
-      const key = (turn === undefined ? '?' : turn) + '/' + step;
-      let rec = steps.get(key);
-      if (!rec) { rec = { turn, step, start: null, end: null, items: [] }; steps.set(key, rec); order.push(key); }
-      if (ev.type === 'step/start') rec.start = ev.time;
-      else if (ev.type === 'step/end') rec.end = ev.time;
-      else rec.items.push(ev);
+      if (step === undefined && turn === undefined) continue;
+      const brief = summaryOf(ev);
+      const role = roleNameOf(ev);
+      if (q && !(String(ev.type).toLowerCase().indexOf(q) >= 0 || String(brief || '').toLowerCase().indexOf(q) >= 0 || String(role).toLowerCase().indexOf(q) >= 0)) continue;
+      const next = C.rawEvents[i + 1];
+      const dur = next && next.time && ev.time && next.time > ev.time ? next.time - ev.time : null;
+      rows.push({ ev, brief, dur, turn, step, role });
     }
-    for (const key of order) {
-      const rec = steps.get(key);
-      const block = el('div', 'tlStep');
-      const head = el('div', 'tlHead');
-      const label = t('traj.stepHeader', { turn: rec.turn === undefined ? '?' : rec.turn, step: rec.step === undefined ? '?' : rec.step });
-      head.appendChild(el('span', 'tlLabel', label));
-      if (rec.start && rec.end && rec.end > rec.start) {
-        head.appendChild(el('span', 'tlDur', t('traj.duration', { d: fmtDurShort(rec.end - rec.start) })));
+    let lastKey = null;
+    for (const r of rows) {
+      const key = r.turn + '/' + r.step;
+      if (key !== lastKey) {
+        const head = el('div', 'tlHead');
+        head.appendChild(el('span', 'tlLabel', t('traj.stepHeader', { turn: r.turn === undefined ? '?' : r.turn, step: r.step === undefined ? '?' : r.step })));
+        box.appendChild(head);
+        lastKey = key;
       }
-      block.appendChild(head);
-      let usage = null;
-      for (const ev of rec.items) {
-        const row = el('div', 'tlItem');
-        row.appendChild(el('span', 'tlType', String(ev.type)));
-        const brief = summaryOf(ev);
-        if (brief) row.appendChild(el('span', 'tlBrief', brief));
-        block.appendChild(row);
-        if (ev.type === 'assistant/chunk' && ev.data && ev.data.chunk && ev.data.chunk.type === 'usage') {
-          usage = ev.data.chunk.usage || ev.data.chunk;
-        }
+      const row = el('div', 'tlRow');
+      const bar = el('span', 'tlBar');
+      bar.style.background = colorOf(r.ev);
+      row.appendChild(bar);
+      const badge = el('span', 'tlType', r.role);
+      badge.style.color = colorOf(r.ev);
+      row.appendChild(badge);
+      if (r.brief) {
+        const bf = el('span', 'tlBrief');
+        bf.textContent = String(r.brief).slice(0, 240);
+        bf.title = r.brief;
+        row.appendChild(bf);
       }
+      const meta = el('span', 'tlMeta');
+      if (r.dur !== null && r.dur >= 0 && r.dur < 300000) meta.appendChild(el('span', '', fmtDurShort(r.dur)));
+      const usage = r.ev.type === 'assistant/chunk' && r.ev.data && r.ev.data.chunk && r.ev.data.chunk.type === 'usage'
+        ? (r.ev.data.chunk.usage || r.ev.data.chunk) : null;
       if (usage && (usage.prompt_tokens || usage.completion_tokens)) {
-        block.appendChild(el('div', 'tlUsage', t('chat.tokens', { in: usage.prompt_tokens || 0, out: usage.completion_tokens || 0 })));
+        meta.appendChild(el('span', '', t('chat.tokens', { in: usage.prompt_tokens || 0, out: usage.completion_tokens || 0 })));
       }
-      box.appendChild(block);
+      row.appendChild(meta);
+      box.appendChild(row);
     }
+    if (!rows.length) box.appendChild(el('div', 'trajEmpty', t('traj.none')));
   }
   function fmtDurShort(ms) {
     const s = Math.round(ms / 1000);
@@ -735,6 +891,14 @@
   }
 
   function init() {
+    const flowEl = $('flow');
+    if (flowEl) {
+      flowEl.addEventListener('click', (e) => {
+        const link = e.target.closest('.pathLink');
+        if (link && link.dataset.path) openFilePath(link.dataset.path);
+      });
+    }
+
     const input = $('composerInput');
     input.addEventListener('input', () => { updateSend(); scrollInputBottom(); onComposeChange(); });
     input.addEventListener('keydown', (e) => {

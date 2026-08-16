@@ -153,7 +153,9 @@
     box.textContent = '';
     const add = (key, label, hasBar) => addRow(box, key, label, hasBar);
     add('model', t('sys.model'), false);
-    add('tokUsed', t('sys.tokensUsed'), false);
+    add('mode', t('sys.mode'), false);
+    add('tokIn', t('sys.tokensIn'), true);
+    add('tokOut', t('sys.tokensOut'), true);
     add('sessions', t('sys.sessions'), false);
     add('messages', t('sys.messages'), false);
     add('updated', t('sys.updated'), false);
@@ -209,6 +211,7 @@
       cpuPower: info ? info.cpuPowerW : null,
       temps,
       model: agent.model,
+      mode: (P.app && P.app.currentPreset) ? String(P.app.currentPreset) : t('sys.unknown'),
       tokUsed: agent.used,
       tokUsedIn: agent.usedIn,
       tokUsedOut: agent.usedOut,
@@ -259,7 +262,7 @@
 
   function paintStatic() {
     const byKey = { os: targets.os, host: targets.host, cpu: targets.cpu, gpu: targets.gpu,
-      model: targets.model, sessions: targets.sessions, messages: targets.messages };
+      model: targets.model, mode: targets.mode, sessions: targets.sessions, messages: targets.messages };
     for (const k in byKey) {
       if (refs[k] && refs[k].val) refs[k].val.textContent = byKey[k];
     }
@@ -279,13 +282,60 @@
     if (targets.diskTotal) set('disk', fmtBytes(disp.diskUsed) + ' / ' + fmtBytes(targets.diskTotal), disp.diskPct);
     set('cpuLoad', fmt0(disp.cpuLoad) + '%', disp.cpuLoad);
     set('cpuPower', fmt1(disp.cpuPower) + ' W');
-    set('tokUsed', fmt0(disp.tokUsed) + ' · ' + targets.tokUsedIn + ' in / ' + targets.tokUsedOut + ' out', null);
+    const tokTotal = Math.max(1, targets.tokUsedIn + targets.tokUsedOut);
+    set('tokIn', fmt0(targets.tokUsedIn), (targets.tokUsedIn / tokTotal) * 100);
+    set('tokOut', fmt0(targets.tokUsedOut), (targets.tokUsedOut / tokTotal) * 100);
 
     const tempNames = Object.keys(targets.temps);
     if (tempNames.length && R.temps && R.temps.val) {
       R.temps.val.textContent = tempNames.map((name) => name + ' ' + fmt1(disp.temps[name]) + '°C').join('  ');
     }
     if (R.updated && R.updated.val) R.updated.val.textContent = t('sys.updated', { t: targets.now });
+  }
+
+  /* ---------- 3D logo: tilts toward the cursor, keeps rolling ---------- */
+  let logoImg = null;
+  let tiltX = 0, tiltY = 0, curX = 0, curY = 0;
+  async function loadLogo() {
+    const vis = $('sysVisual');
+    if (!vis) return;
+    let src = '';
+    try {
+      const b = (typeof window !== 'undefined' && window.prts && window.prts.bridge) || null;
+      if (b && b.prtsLogo) src = 'data:image/png;base64,' + (await b.prtsLogo());
+      else {
+        const origin = (typeof window !== 'undefined' && window.location && window.location.origin) || '';
+        const res = await fetch(origin + '/prts/api/logo');
+        const data = await res.json();
+        if (data && data.b64) src = 'data:image/png;base64,' + data.b64;
+      }
+    } catch (e) { src = ''; }
+    if (src) {
+      if (!logoImg) {
+        logoImg = document.createElement('img');
+        logoImg.className = 'sys3d';
+        vis.appendChild(logoImg);
+      }
+      logoImg.src = src;
+    }
+  }
+  function bindTilt() {
+    const vis = $('sysVisual');
+    if (!vis || vis._tiltBound) return;
+    vis._tiltBound = true;
+    vis.addEventListener('pointermove', (e) => {
+      const r = vis.getBoundingClientRect();
+      tiltX = ((e.clientX - r.left) / Math.max(1, r.width) - 0.5) * 2;
+      tiltY = ((e.clientY - r.top) / Math.max(1, r.height) - 0.5) * 2;
+    });
+    vis.addEventListener('pointerleave', () => { tiltX = 0; tiltY = 0; });
+  }
+  function drawLogo3D(ts) {
+    if (!logoImg) return;
+    curX += (tiltX - curX) * 0.08;
+    curY += (tiltY - curY) * 0.08;
+    const roll = ts / 1000 * 0.35;
+    logoImg.style.transform = 'rotateY(' + (roll + curX * 0.9).toFixed(4) + 'rad) rotateX(' + (-curY * 0.7).toFixed(4) + 'rad)';
   }
 
   /* ---------- 30fps loop ---------- */
@@ -297,13 +347,16 @@
       easeDisplay();
       paintDynamic();
     }
-    drawRing();
+    if (logoImg) drawLogo3D(ts);
+    else drawRing();
   }
 
   function startPanel() {
     ringCanvas = $('sysRing');
     if (ringCanvas) ringCtx = ringCanvas.getContext('2d');
     if (reducedMotion) drawRing();
+    loadLogo();
+    bindTilt();
     lastTick = 0;
     raf = requestAnimationFrame(loop);
     refreshSnapshot();

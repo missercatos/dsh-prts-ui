@@ -219,3 +219,116 @@
 .skEditor { padding: 10px 12px 12px; border-top: 1px solid var(--prts-hairline); background: var(--prts-surface); }
 .skEditor .sTextarea { min-height: 200px; }
 .skEditor .sRow { justify-content: flex-end; }
+
+/* ---------- 0.5.0: liquid glass + fixed-height scrolling ---------- */
+/* Glass on the composer, chips, popovers and the message/trajectory surfaces */
+.composerCard {
+  background: color-mix(in srgb, var(--prts-panel) 70%, transparent) !important;
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+}
+.chip, .pop, .modalCard, .reqCard, .mTabs, .mSearch, .mGh, .skCard, .pCard, .mCat, .skChip {
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.pop { background: color-mix(in srgb, var(--prts-panel) 85%, transparent); }
+.disclosure, .dBody, .assistantItem, .userBubble {
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+/* Wallpaper active: the sidebar and details columns turn translucent glass */
+body[data-wallpaper='on'] .sbCol,
+body[data-wallpaper='on'] .dtCol {
+  background: color-mix(in srgb, var(--prts-panel) 55%, transparent);
+  backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px);
+}
+body[data-wallpaper='on'] .sysCard,
+body[data-wallpaper='on'] .settingsCard {
+  background: color-mix(in srgb, var(--prts-panel) 68%, transparent);
+}
+/* Market keeps its size no matter how many plugins: inner scroll only */
+.marketCard {
+  width: min(760px, calc(100vw - 48px));
+  height: min(680px, calc(100vh - 80px));
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.marketCard .settingsHead { flex: none; }
+#marketList { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+#marketList .mGrid { overflow: visible; }
+/* Skills: space wins over text — long labels truncate, never overflow */
+.skActions .sBtn { max-width: 132px; }
+.skRow .skItemMeta { min-width: 0; flex: 1; }
+.skNameLine .skItemName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.sNavItem span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- 0.5.0: message meta/actions, path links, tool body ---------- */
+.assistantItem { position: relative; }
+.msgMeta {
+  display: flex; gap: 6px; font-size: 10px; color: var(--prts-ink-faint);
+  font-family: var(--prts-mono); opacity: 0; transition: opacity 0.16s var(--prts-ease);
+  margin-top: 4px;
+}
+.assistantItem:hover .msgMeta { opacity: 1; }
+.msgActions {
+  position: absolute; top: 4px; right: 4px; display: flex; gap: 4px;
+  opacity: 0; transform: translateY(-3px);
+  transition: opacity 0.16s var(--prts-ease), transform 0.16s var(--prts-ease);
+  padding: 2px; border-radius: 8px;
+  background: color-mix(in srgb, var(--prts-panel) 78%, transparent);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.assistantItem:hover .msgActions { opacity: 1; transform: none; }
+.maBtn {
+  width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--prts-hairline); border-radius: 6px; background: transparent;
+  color: var(--prts-ink-dim); cursor: pointer;
+  transition: color 0.12s var(--prts-ease), border-color 0.12s var(--prts-ease);
+}
+.maBtn:hover { color: var(--prts-accent); border-color: var(--prts-hairline-strong); }
+.maBtn.on { color: var(--prts-accent); border-color: var(--prts-accent); }
+.maBtn svg { width: 13px; height: 13px; }
+.pathLink { text-decoration: underline; text-underline-offset: 2px; cursor: pointer; color: var(--prts-accent); }
+.pathLink:hover { filter: brightness(1.25); }
+.toolBody { max-height: 260px; overflow-y: auto; }
+.toolItem .dRow:hover { border-color: var(--prts-hairline-strong); }
+
+/* ---------- 0.5.0: trajectory (colored blocks + search) ---------- */
+.trajView { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; padding: 10px 14px 18px; }
+.tlSearch {
+  position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 8px;
+  height: 34px; padding: 0 10px; margin-bottom: 8px;
+  border: 1px solid var(--prts-hairline); border-radius: 8px;
+  background: color-mix(in srgb, var(--prts-panel) 82%, transparent);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  color: var(--prts-ink-faint);
+}
+.tlSearch input { flex: 1; min-width: 0; border: none; background: transparent; color: var(--prts-ink); font-size: 13px; outline: none; }
+.tlHead {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-top: 10px; padding: 4px 6px 4px 10px;
+  border-left: 2px solid var(--prts-hairline-strong);
+}
+.tlLabel { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+.tlRow {
+  display: flex; align-items: center; gap: 8px; min-height: 26px; padding: 3px 8px 3px 10px;
+  border-radius: 6px;
+}
+.tlRow:hover { background: var(--prts-surface-2); }
+.tlBar { flex: none; width: 3px; height: 16px; border-radius: 2px; }
+.tlType { flex: none; font-size: 10px; letter-spacing: 0.08em; font-family: var(--prts-mono); opacity: 0.9; min-width: 62px; }
+.tlBrief {
+  flex: 1; min-width: 0; font-size: 11px; color: var(--prts-ink-dim);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--prts-mono);
+}
+.tlMeta { flex: none; display: flex; gap: 6px; font-size: 10px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+
+/* ---------- 0.5.0: presets rows + full inventory list ---------- */
+.sPresetRow {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border: 1px solid var(--prts-hairline); border-radius: 10px;
+  background: color-mix(in srgb, var(--prts-surface) 60%, transparent);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.sPresetRow.current { border-color: var(--prts-accent); }
+.invList {
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 430px; overflow-y: auto; padding-right: 4px;
+}
+.invList .pmeta { font-size: 10px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }

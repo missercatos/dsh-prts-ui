@@ -445,3 +445,23 @@
   .sysBlock { padding: 0; }
   .sysBlock:last-child { border-top: 1px solid var(--prts-hairline); margin-top: 12px; padding-top: 10px; }
 }
+
+/* 0.5.0 system panel: 3D logo + restructured stats */
+.sysVisual { perspective: 900px; }
+.sys3d {
+  width: 148px; height: 148px; object-fit: contain; transform-style: preserve-3d;
+  filter: drop-shadow(0 8px 28px rgba(0, 0, 0, 0.55));
+  will-change: transform;
+}
+.sysOverlay .sysCard {
+  background: color-mix(in srgb, var(--prts-panel) 82%, transparent);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+}
+.sysStats { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
+@media (max-width: 760px) { .sysStats { grid-template-columns: 1fr; } }
+.sysRows { display: flex; flex-direction: column; gap: 6px; }
+.sysRow { display: grid; grid-template-columns: 92px minmax(0, 1fr) 110px; align-items: center; gap: 8px; }
+.sysK { font-size: 11px; color: var(--prts-ink-faint); letter-spacing: 0.06em; }
+.sysV { font-size: 12px; color: var(--prts-ink); font-family: var(--prts-mono); text-align: right; }
+.sysBar { height: 4px; border-radius: 2px; background: var(--prts-hairline); overflow: hidden; }
+.sysBarFill { height: 100%; width: 0; background: var(--prts-accent); transition: width 0.2s var(--prts-ease); }

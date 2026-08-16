@@ -75,6 +75,7 @@
     if (!w || !w.file) {
       layer.innerHTML = '';
       layer.style.display = 'none';
+      delete document.body.dataset.wallpaper;
       return;
     }
     let dataUrl = '';
@@ -93,6 +94,8 @@
     layer.innerHTML = '';
     layer.style.display = '';
     layer.style.opacity = String(w.opacity !== undefined ? w.opacity : 0.35);
+    // wallpapered surfaces (sidebar/details/panels) turn liquid-glass
+    document.body.dataset.wallpaper = 'on';
     if (!dataUrl) return;
     let media;
     if (w.type === 'video') {
@@ -1312,6 +1315,9 @@
       $('intro').classList.add('done');
       setTimeout(() => { $('intro').style.display = 'none'; A.introEngine.stop(); }, 800);
       if (!$('cvt').dataset.phase || $('cvt').dataset.phase === 'hero') startHeroAmbient();
+      // Data loading is deliberately parked until the intro is over: the
+      // particle effect runs free while dsh boots in the background.
+      if (A.afterIntro) { try { A.afterIntro(); } catch (e) { /* noop */ } }
     };
     A.finishIntro = finish;
 
@@ -1734,6 +1740,24 @@
         updateMeter();
       }).catch(() => { /* noop */ });
     }, 8000);
+    // Session data loads only after the intro finishes (or once dsh is up,
+    // whichever is later) so the particle intro never competes with big DOM
+    // renders — the backend boots in the background while the effect runs.
+    let postIntroStarted = false;
+    async function startSessionLoad() {
+      if (postIntroStarted) return;
+      postIntroStarted = true;
+      try {
+        await refreshAll();
+        await A.ensureSession();
+      } catch (e) {
+        A.toast(A.t('dsh.connectFail', { msg: e.message }));
+      }
+    }
+    A.afterIntro = function () {
+      if (A._dshUp) startSessionLoad();
+      else A._loadOnIntro = true;
+    };
     (async () => {
       // dsh may still be booting in the background (PRTS spawns it silently).
       // Keep polling until it answers — the particle intro keeps looping the
@@ -1746,12 +1770,8 @@
           await new Promise((r) => setTimeout(r, delay));
           delay = Math.min(4000, Math.round(delay * 1.25));
         }
-        try {
-          await refreshAll();
-          await A.ensureSession();
-        } catch (e) {
-          A.toast(A.t('dsh.connectFail', { msg: e.message }));
-        }
+        A._dshUp = true;
+        if (A.introDone) startSessionLoad();
       } catch (e) {
         A.toast(A.t('dsh.connectFail', { msg: e.message }));
       }

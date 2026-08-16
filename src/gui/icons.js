@@ -29,6 +29,11 @@
     'ma.branch': S('<circle cx="3.2" cy="2.4" r="1" stroke="currentColor" stroke-width="1.1"/><circle cx="3.2" cy="11.6" r="1" stroke="currentColor" stroke-width="1.1"/><circle cx="10.8" cy="7" r="1" stroke="currentColor" stroke-width="1.1"/><path d="M3.2 3.4v4.2a2 2 0 0 0 2 2h3.6M3.2 10.6V8.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>'),
     'ma.trash': S('<path d="M2.5 4h9M5 4V2.6h4V4M4 4l.6 7.4h4.8L10 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>'),
     'ma.clear': S('<path d="M3 2.2 5.4 4 3 5.8M9.2 2.2 6.8 4l2.4 1.8M3 8.4 5.4 10.2 3 12M9.2 8.4 6.8 10.2l2.4 1.8" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>'),
+    // Edit / Think / Read marks — abstract PRTS glyphs for message actions
+    'ma.think': S('<path d="' + D + '" stroke="currentColor" stroke-width="1.15"/><circle cx="5.6" cy="7" r="0.9" fill="currentColor"/><circle cx="8.4" cy="7" r="0.9" fill="currentColor"/><circle cx="7" cy="4.2" r="0.9" fill="currentColor"/>'),
+    'ma.tool': S('<path d="M4.4 9.6 8 6l2.6 2.6-3.6 3.6a2.4 2.4 0 0 1-3.4-3.4L5 7.4" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M8.8 5.2l1.6-1.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>'),
+    'ma.edit': S('<path d="M8.4 2.2 11.8 5.6 5.2 12.2 1.8 12.2l.2-3.4Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M7.4 3.2 10.8 6.6" stroke="currentColor" stroke-width="1.15"/>'),
+    'ma.read': S('<path d="M7 2.4c-1.8 0-3.5.7-4.8 1.8L7 8.6l4.8-4.4A6.8 6.8 0 0 0 7 2.4Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M2.2 8v2.6c0 .6.5 1 1 1h7.6a1 1 0 0 0 1-1V8" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
 
     // —— chrome ——
     'settings': S('<path d="M7 9.6a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2Z" stroke="currentColor" stroke-width="1.15"/><path d="M13.2 7v.9l-1.7.3a4 4 0 0 1-.5 1.2l1 1.4-.9.9-1.4-1a4 4 0 0 1-1.2.5L8 12.9h-.9L6.8 11.2a4 4 0 0 1-1.2-.5l-1.4 1-.9-.9 1-1.4a4 4 0 0 1-.5-1.2L2.1 6.9V6l1.7-.3a4 4 0 0 1 .5-1.2l-1-1.4.9-.9 1.4 1a4 4 0 0 1 1.2-.5L7.1 1.1H8l.3 1.7a4 4 0 0 1 1.2.5l1.4-1 .9.9-1 1.4a4 4 0 0 1 .5 1.2l1.7.3Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>'),
