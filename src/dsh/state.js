@@ -124,6 +124,11 @@
     return P.dsh.request('credentials.unset', { ref });
   }
 
+  async function commandsList(sessionId) {
+    const r = await P.dsh.request('commands.list', { sessionId });
+    return (r && Array.isArray(r)) ? r : (Array.isArray(r) ? r : []);
+  }
+
   S.connect = connect;
   S.listWorkspaces = listWorkspaces;
   S.listSessions = listSessions;
@@ -144,4 +149,5 @@
   S.credentialsDescribe = credentialsDescribe;
   S.credentialsSet = credentialsSet;
   S.credentialsUnset = credentialsUnset;
+  S.commandsList = commandsList;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

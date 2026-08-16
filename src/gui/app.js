@@ -169,10 +169,11 @@
     renderWorkspaces();
     renderSessions();
     updateModelChip();
+    if (A.refreshModelPop) A.refreshModelPop();
     updateCrumb();
   }
 
-  /* ---------- model chip (dsh model selection) ---------- */
+  /* ---------- model chip (dsh provider + model selection) ---------- */
   function currentModel() {
     const g = P.dshState.models;
     if (!g || !g.length) return null;
@@ -186,14 +187,71 @@
     if (label) label.textContent = m ? m.model.id : '—';
   }
 
-  function buildModelPop() {
-    const items = [];
-    for (const grp of P.dshState.models) {
-      for (const m of (grp.models || [])) {
-        items.push('<div class="popItem" data-provider="' + grp.id + '" data-model="' + m.id + '"><span class="label">' + m.id + '</span><span class="tick">&#10003;</span></div>');
-      }
+  /** Provider -> credential ref, by the dsh convention (e.g. deepseek -> DEEPSEEK_API_KEY). */
+  function providerRef(provider) {
+    const base = String(provider || '').replace(/^llm-/, '').toUpperCase().replace(/-/g, '_');
+    return base + '_API_KEY';
+  }
+
+  // model popover currently shows the provider picker; after a provider is
+  // chosen (and its key confirmed) it is replaced by that provider's models.
+  let currentModelProvider = null;
+
+  async function modelsForProvider(provider) {
+    const groups = P.dshState.models;
+    return groups.find((g) => g.id === provider) || null;
+  }
+
+  async function pickProvider(provider) {
+    currentModelProvider = provider;
+    const ref = providerRef(provider);
+    let creds = {};
+    try { creds = await P.dshState.credentialsDescribe([ref]); } catch (e) { /* ignore */ }
+    const configured = creds[ref] && creds[ref].configured;
+    const box = A.modelPop;
+    if (!configured) {
+      // Ask for the API key first.
+      box.innerHTML =
+        '<div class="popMeta">' + ref + ' — ' + A.t('model.needKey') + '</div>' +
+        '<div class="inlineForm" id="modelKeyForm"><input id="modelKeyInput" type="password" placeholder="sk-…" spellcheck="false"><button class="sBtn" id="modelKeySave">' + A.t('settings.provider.save') + '</button></div>';
+      const input = $('modelKeyInput');
+      const save = $('modelKeySave');
+      if (input) input.focus();
+      if (save) save.addEventListener('click', async () => {
+        const value = input.value.trim();
+        if (!value) return;
+        try {
+          await P.dshState.credentialsSet(ref, value);
+          await P.dshState.listModels();
+          A.toast(A.t('settings.provider.saved', { ref }));
+          renderModelsPicker();
+        } catch (e) { A.toast(e.message); }
+      });
+      if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save.click(); });
+      return;
     }
-    return items.join('') || '<div class="popMeta">' + A.t('model.refreshFail') + '</div>';
+    renderModelsPicker();
+  }
+
+  function renderModelsPicker() {
+    const box = A.modelPop;
+    const grp = P.dshState.models.find((g) => g.id === currentModelProvider);
+    if (!grp || !grp.models || !grp.models.length) {
+      box.innerHTML = '<div class="popItem" data-back="1"><span class="label">← ' + A.t('model.back') + '</span></div><div class="popMeta">' + A.t('model.none') + '</div>';
+      return;
+    }
+    box.innerHTML =
+      '<div class="popItem" data-back="1"><span class="label">← ' + A.t('model.back') + '</span></div>' +
+      grp.models.map((m) => '<div class="popItem" data-model="' + m.id + '"><span class="label">' + m.id + '</span><span class="tick">&#10003;</span></div>').join('');
+  }
+
+  function buildModelPop() {
+    // Provider picker (two levels: provider -> model). No provider chosen yet.
+    if (!currentModelProvider) {
+      return P.dshState.providers.map((p) => '<div class="popItem" data-provider="' + p.provider + '"><span class="label">' + (p.displayName || p.provider) + '</span></div>').join('') ||
+        '<div class="popMeta">' + A.t('model.refreshFail') + '</div>';
+    }
+    return '<div class="popMeta">' + (currentModelProvider) + '</div>';
   }
 
   function openSettings() {
@@ -202,12 +260,6 @@
     renderProviders();
   }
   function closeSettings() { $('settingsOverlay').classList.remove('open'); }
-
-  /** Provider -> credential ref, by the dsh convention (e.g. deepseek -> DEEPSEEK_API_KEY). */
-  function providerRef(provider) {
-    const base = String(provider || '').replace(/^llm-/, '').toUpperCase().replace(/-/g, '_');
-    return base + '_API_KEY';
-  }
 
   async function renderProviders() {
     const box = $('cfgProviders');
@@ -375,11 +427,17 @@
   function bindPopovers() {
     const modelPop = attachPop($('modelChip'), buildModelPop(), async (item) => {
       if (!P.dshState.currentSessionId) { A.toast(A.t('session.selectFirst')); return; }
-      const provider = item.dataset.provider, model = item.dataset.model;
-      try {
-        await P.dshState.selectModel(P.dshState.currentSessionId, provider, model);
-        updateModelChip();
-      } catch (e) { A.toast(e.message); }
+      // Back to provider list.
+      if (item.dataset.back === '1') { currentModelProvider = null; A.refreshModelPop(); return; }
+      // Provider picked -> key check, then its models.
+      if (item.dataset.provider) { await pickProvider(item.dataset.provider); return; }
+      // Model picked -> select.
+      if (item.dataset.model) {
+        try {
+          await P.dshState.selectModel(P.dshState.currentSessionId, currentModelProvider, item.dataset.model);
+          updateModelChip();
+        } catch (e) { A.toast(e.message); }
+      }
     });
     A.modelPop = modelPop;
     A.refreshModelPop = () => { modelPop.innerHTML = buildModelPop(); };
@@ -391,6 +449,29 @@
         if (item.dataset.value === '__add') { await newWorkspace(); return; }
         await selectWorkspace(item.dataset.value);
       });
+
+    // Commands chip — lists dsh's installed commands (e.g. givemyflag's).
+    const cmdPop = attachPop($('commandsChip'), '<div class="popMeta">' + A.t('commands.loading') + '</div>', async (item) => {
+      const input = $('composerInput');
+      if (input) {
+        input.value = '/' + (item.dataset.name || '') + ' ';
+        input.focus();
+        P.chat.updateSend();
+      }
+    });
+    A.cmdPop = cmdPop;
+    A.refreshCmdPop = async () => {
+      if (!P.dshState.currentSessionId) { cmdPop.innerHTML = '<div class="popMeta">' + A.t('session.selectFirst') + '</div>'; return; }
+      try {
+        const cmds = await P.dshState.commandsList(P.dshState.currentSessionId);
+        cmdPop.innerHTML = cmds.length
+          ? cmds.map((c) => '<div class="popItem" data-name="' + c.name + '"><span class="label">/' + c.name + '</span><span class="desc">' + (c.description || '') + '</span></div>').join('')
+          : '<div class="popMeta">' + A.t('commands.none') + '</div>';
+      } catch (e) {
+        cmdPop.innerHTML = '<div class="popMeta">' + A.t('commands.none') + '</div>';
+      }
+    };
+    $('commandsChip').addEventListener('click', () => { A.refreshCmdPop(); });
   }
 
   /* ---------- particles: intro + hero ---------- */

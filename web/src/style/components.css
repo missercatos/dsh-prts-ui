@@ -164,6 +164,12 @@
 .popItem .desc { font-size: 11px; color: var(--prts-ink-faint); }
 .popMeta { padding: 8px 10px; font-size: 11px; line-height: 18px; color: var(--prts-ink-faint); border-top: 1px solid var(--prts-hairline); margin-top: 4px; }
 
+/* Slash-command completion dropdown above the composer. */
+.cmdCompletion {
+  position: absolute; z-index: 80; margin: 0 16px; left: 0; right: 0;
+  max-height: 240px; overflow-y: auto;
+}
+
 /* ===== Brand waveform (voice input line effect on the PRTS mark) ===== */
 .brandFx { width: 48px; height: 16px; opacity: 0; transition: opacity 0.2s var(--prts-ease); pointer-events: none; }
 .brandFx.on { opacity: 1; }

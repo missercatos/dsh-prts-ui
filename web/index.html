@@ -324,6 +324,12 @@
 .popItem .desc { font-size: 11px; color: var(--prts-ink-faint); }
 .popMeta { padding: 8px 10px; font-size: 11px; line-height: 18px; color: var(--prts-ink-faint); border-top: 1px solid var(--prts-hairline); margin-top: 4px; }
 
+/* Slash-command completion dropdown above the composer. */
+.cmdCompletion {
+  position: absolute; z-index: 80; margin: 0 16px; left: 0; right: 0;
+  max-height: 240px; overflow-y: auto;
+}
+
 /* ===== Brand waveform (voice input line effect on the PRTS mark) ===== */
 .brandFx { width: 48px; height: 16px; opacity: 0; transition: opacity 0.2s var(--prts-ease); pointer-events: none; }
 .brandFx.on { opacity: 1; }
@@ -706,7 +712,7 @@ button:focus:not(:focus-visible) { outline: none; }
               </svg>
             </button>
           </div>
-          <div class="composerCard">
+          <div class="composerCard" id="composerCard">
             <textarea class="composerInput" id="composerInput" rows="1" spellcheck="false" data-i18n-placeholder="composer.placeholder"></textarea>
             <div class="composerToolbar">
               <div class="toolGroup">
@@ -1006,6 +1012,11 @@ button:focus:not(:focus-visible) { outline: none; }
       'model.hint': 'Detected from the configured endpoint (/models).',
       'model.refreshed': 'Models refreshed',
       'model.refreshFail': 'Could not list models from this endpoint',
+      'model.needKey': 'No API key for this provider yet — enter it to unlock its models.',
+      'model.back': 'Providers',
+      'model.none': 'No models for this provider.',
+      'commands.loading': 'Loading commands…',
+      'commands.none': 'No commands available.',
       'workspace.add': '+ Add workspace',
       'workspace.hint': 'A workspace is a project: its own history and settings.',
       'chips.context': '{pct}% of context used',
@@ -1211,6 +1222,11 @@ button:focus:not(:focus-visible) { outline: none; }
       'model.hint': '从配置的接口(/models)自动探测。',
       'model.refreshed': '模型已刷新',
       'model.refreshFail': '无法从此接口获取模型列表',
+      'model.needKey': '该厂家尚未配置 API Key —— 填写后即可解锁其模型。',
+      'model.back': '厂家列表',
+      'model.none': '该厂家暂无模型。',
+      'commands.loading': '正在加载指令…',
+      'commands.none': '暂无可用指令。',
       'workspace.add': '+ 添加工作区',
       'workspace.hint': '工作区即项目：拥有独立的历史记录与设置。',
       'chips.context': '上下文已用 {pct}%',
@@ -1854,6 +1870,11 @@ button:focus:not(:focus-visible) { outline: none; }
     return P.dsh.request('credentials.unset', { ref });
   }
 
+  async function commandsList(sessionId) {
+    const r = await P.dsh.request('commands.list', { sessionId });
+    return (r && Array.isArray(r)) ? r : (Array.isArray(r) ? r : []);
+  }
+
   S.connect = connect;
   S.listWorkspaces = listWorkspaces;
   S.listSessions = listSessions;
@@ -1874,6 +1895,7 @@ button:focus:not(:focus-visible) { outline: none; }
   S.credentialsDescribe = credentialsDescribe;
   S.credentialsSet = credentialsSet;
   S.credentialsUnset = credentialsUnset;
+  S.commandsList = commandsList;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
 
 
@@ -3147,20 +3169,89 @@ button:focus:not(:focus-visible) { outline: none; }
   }
 
   function init() {
-    $('composerInput').addEventListener('input', () => { updateSend(); scrollInputBottom(); });
-    $('composerInput').addEventListener('keydown', (e) => {
+    const input = $('composerInput');
+    input.addEventListener('input', () => { updateSend(); scrollInputBottom(); onComposeChange(); });
+    input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+        // If a command completion is open and the input starts with '/',
+        // Tab/Enter completes the command name first.
+        if (input.value.indexOf('/') === 0 && cmdCompletion) {
+          e.preventDefault();
+          completeCommand();
+          return;
+        }
         e.preventDefault();
-        const v = $('composerInput').value.trim();
+        const v = input.value.trim();
         if (v) send(v);
+      } else if (e.key === 'Tab' && cmdCompletion) {
+        e.preventDefault();
+        completeCommand();
       }
     });
     $('composerExpand').addEventListener('click', toggleExpand);
     $('sendBtn').addEventListener('click', () => {
       if ($('sendBtn').dataset.state === 'stop') stop();
-      else { const v = $('composerInput').value.trim(); if (v) send(v); }
+      else { const v = input.value.trim(); if (v) send(v); }
     });
     bindEvents();
+  }
+
+  /* ---------- slash-command auto-detection ---------- */
+  let cmdCompletion = null;   // [{name, description}]
+  let composeToken = 0;
+  function onComposeChange() {
+    const token = ++composeToken;
+    const input = $('composerInput');
+    const v = input.value;
+    // Only when the very first char is '/', with no space yet.
+    if (v.length > 1 && v[0] === '/' && v.indexOf(' ') === -1) {
+      const partial = v.slice(1).toLowerCase();
+      if (!P.dshState.currentSessionId) return;
+      P.dshState.commandsList(P.dshState.currentSessionId).then((cmds) => {
+        if (token !== composeToken) return;   // stale keystroke
+        const matches = cmds.filter((c) => c.name.toLowerCase().indexOf(partial) === 0);
+        if (matches.length) {
+          cmdCompletion = matches;
+          showCompletion(matches);
+        } else { cmdCompletion = null; hideCompletion(); }
+      }).catch(() => { if (token === composeToken) { cmdCompletion = null; hideCompletion(); } });
+    } else {
+      cmdCompletion = null;
+      hideCompletion();
+    }
+  }
+  function showCompletion(matches) {
+    let pop = $('cmdCompletionPop');
+    if (!pop) {
+      pop = document.createElement('div');
+      pop.id = 'cmdCompletionPop';
+      pop.className = 'pop cmdCompletion';
+      $('composerArea').appendChild(pop);
+    }
+    pop.innerHTML = matches.slice(0, 6).map((c) => '<div class="popItem" data-name="' + c.name + '"><span class="label">/' + c.name + '</span></div>').join('');
+    pop.style.display = 'block';
+    pop.style.bottom = '';
+    const composer = $('composerCard');
+    const r = composer.getBoundingClientRect();
+    pop.style.bottom = (window.innerHeight - r.top + 8) + 'px';
+    pop.style.left = '0';
+    pop.style.right = '0';
+    pop.style.maxWidth = '420px';
+  }
+  function hideCompletion() {
+    const pop = $('cmdCompletionPop');
+    if (pop) { pop.classList.remove('open'); pop.style.display = 'none'; }
+  }
+  function completeCommand() {
+    const input = $('composerInput');
+    if (!cmdCompletion || !cmdCompletion.length) return;
+    const first = cmdCompletion[0];
+    input.value = '/' + first.name + ' ';
+    cmdCompletion = null;
+    hideCompletion();
+    input.focus();
+    updateSend();
+    scrollInputBottom();
   }
 
   C.send = send;
@@ -3349,10 +3440,11 @@ button:focus:not(:focus-visible) { outline: none; }
     renderWorkspaces();
     renderSessions();
     updateModelChip();
+    if (A.refreshModelPop) A.refreshModelPop();
     updateCrumb();
   }
 
-  /* ---------- model chip (dsh model selection) ---------- */
+  /* ---------- model chip (dsh provider + model selection) ---------- */
   function currentModel() {
     const g = P.dshState.models;
     if (!g || !g.length) return null;
@@ -3366,14 +3458,71 @@ button:focus:not(:focus-visible) { outline: none; }
     if (label) label.textContent = m ? m.model.id : '—';
   }
 
-  function buildModelPop() {
-    const items = [];
-    for (const grp of P.dshState.models) {
-      for (const m of (grp.models || [])) {
-        items.push('<div class="popItem" data-provider="' + grp.id + '" data-model="' + m.id + '"><span class="label">' + m.id + '</span><span class="tick">&#10003;</span></div>');
-      }
+  /** Provider -> credential ref, by the dsh convention (e.g. deepseek -> DEEPSEEK_API_KEY). */
+  function providerRef(provider) {
+    const base = String(provider || '').replace(/^llm-/, '').toUpperCase().replace(/-/g, '_');
+    return base + '_API_KEY';
+  }
+
+  // model popover currently shows the provider picker; after a provider is
+  // chosen (and its key confirmed) it is replaced by that provider's models.
+  let currentModelProvider = null;
+
+  async function modelsForProvider(provider) {
+    const groups = P.dshState.models;
+    return groups.find((g) => g.id === provider) || null;
+  }
+
+  async function pickProvider(provider) {
+    currentModelProvider = provider;
+    const ref = providerRef(provider);
+    let creds = {};
+    try { creds = await P.dshState.credentialsDescribe([ref]); } catch (e) { /* ignore */ }
+    const configured = creds[ref] && creds[ref].configured;
+    const box = A.modelPop;
+    if (!configured) {
+      // Ask for the API key first.
+      box.innerHTML =
+        '<div class="popMeta">' + ref + ' — ' + A.t('model.needKey') + '</div>' +
+        '<div class="inlineForm" id="modelKeyForm"><input id="modelKeyInput" type="password" placeholder="sk-…" spellcheck="false"><button class="sBtn" id="modelKeySave">' + A.t('settings.provider.save') + '</button></div>';
+      const input = $('modelKeyInput');
+      const save = $('modelKeySave');
+      if (input) input.focus();
+      if (save) save.addEventListener('click', async () => {
+        const value = input.value.trim();
+        if (!value) return;
+        try {
+          await P.dshState.credentialsSet(ref, value);
+          await P.dshState.listModels();
+          A.toast(A.t('settings.provider.saved', { ref }));
+          renderModelsPicker();
+        } catch (e) { A.toast(e.message); }
+      });
+      if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save.click(); });
+      return;
     }
-    return items.join('') || '<div class="popMeta">' + A.t('model.refreshFail') + '</div>';
+    renderModelsPicker();
+  }
+
+  function renderModelsPicker() {
+    const box = A.modelPop;
+    const grp = P.dshState.models.find((g) => g.id === currentModelProvider);
+    if (!grp || !grp.models || !grp.models.length) {
+      box.innerHTML = '<div class="popItem" data-back="1"><span class="label">← ' + A.t('model.back') + '</span></div><div class="popMeta">' + A.t('model.none') + '</div>';
+      return;
+    }
+    box.innerHTML =
+      '<div class="popItem" data-back="1"><span class="label">← ' + A.t('model.back') + '</span></div>' +
+      grp.models.map((m) => '<div class="popItem" data-model="' + m.id + '"><span class="label">' + m.id + '</span><span class="tick">&#10003;</span></div>').join('');
+  }
+
+  function buildModelPop() {
+    // Provider picker (two levels: provider -> model). No provider chosen yet.
+    if (!currentModelProvider) {
+      return P.dshState.providers.map((p) => '<div class="popItem" data-provider="' + p.provider + '"><span class="label">' + (p.displayName || p.provider) + '</span></div>').join('') ||
+        '<div class="popMeta">' + A.t('model.refreshFail') + '</div>';
+    }
+    return '<div class="popMeta">' + (currentModelProvider) + '</div>';
   }
 
   function openSettings() {
@@ -3382,12 +3531,6 @@ button:focus:not(:focus-visible) { outline: none; }
     renderProviders();
   }
   function closeSettings() { $('settingsOverlay').classList.remove('open'); }
-
-  /** Provider -> credential ref, by the dsh convention (e.g. deepseek -> DEEPSEEK_API_KEY). */
-  function providerRef(provider) {
-    const base = String(provider || '').replace(/^llm-/, '').toUpperCase().replace(/-/g, '_');
-    return base + '_API_KEY';
-  }
 
   async function renderProviders() {
     const box = $('cfgProviders');
@@ -3555,11 +3698,17 @@ button:focus:not(:focus-visible) { outline: none; }
   function bindPopovers() {
     const modelPop = attachPop($('modelChip'), buildModelPop(), async (item) => {
       if (!P.dshState.currentSessionId) { A.toast(A.t('session.selectFirst')); return; }
-      const provider = item.dataset.provider, model = item.dataset.model;
-      try {
-        await P.dshState.selectModel(P.dshState.currentSessionId, provider, model);
-        updateModelChip();
-      } catch (e) { A.toast(e.message); }
+      // Back to provider list.
+      if (item.dataset.back === '1') { currentModelProvider = null; A.refreshModelPop(); return; }
+      // Provider picked -> key check, then its models.
+      if (item.dataset.provider) { await pickProvider(item.dataset.provider); return; }
+      // Model picked -> select.
+      if (item.dataset.model) {
+        try {
+          await P.dshState.selectModel(P.dshState.currentSessionId, currentModelProvider, item.dataset.model);
+          updateModelChip();
+        } catch (e) { A.toast(e.message); }
+      }
     });
     A.modelPop = modelPop;
     A.refreshModelPop = () => { modelPop.innerHTML = buildModelPop(); };
@@ -3571,6 +3720,29 @@ button:focus:not(:focus-visible) { outline: none; }
         if (item.dataset.value === '__add') { await newWorkspace(); return; }
         await selectWorkspace(item.dataset.value);
       });
+
+    // Commands chip — lists dsh's installed commands (e.g. givemyflag's).
+    const cmdPop = attachPop($('commandsChip'), '<div class="popMeta">' + A.t('commands.loading') + '</div>', async (item) => {
+      const input = $('composerInput');
+      if (input) {
+        input.value = '/' + (item.dataset.name || '') + ' ';
+        input.focus();
+        P.chat.updateSend();
+      }
+    });
+    A.cmdPop = cmdPop;
+    A.refreshCmdPop = async () => {
+      if (!P.dshState.currentSessionId) { cmdPop.innerHTML = '<div class="popMeta">' + A.t('session.selectFirst') + '</div>'; return; }
+      try {
+        const cmds = await P.dshState.commandsList(P.dshState.currentSessionId);
+        cmdPop.innerHTML = cmds.length
+          ? cmds.map((c) => '<div class="popItem" data-name="' + c.name + '"><span class="label">/' + c.name + '</span><span class="desc">' + (c.description || '') + '</span></div>').join('')
+          : '<div class="popMeta">' + A.t('commands.none') + '</div>';
+      } catch (e) {
+        cmdPop.innerHTML = '<div class="popMeta">' + A.t('commands.none') + '</div>';
+      }
+    };
+    $('commandsChip').addEventListener('click', () => { A.refreshCmdPop(); });
   }
 
   /* ---------- particles: intro + hero ---------- */

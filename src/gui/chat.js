@@ -230,20 +230,89 @@
   }
 
   function init() {
-    $('composerInput').addEventListener('input', () => { updateSend(); scrollInputBottom(); });
-    $('composerInput').addEventListener('keydown', (e) => {
+    const input = $('composerInput');
+    input.addEventListener('input', () => { updateSend(); scrollInputBottom(); onComposeChange(); });
+    input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+        // If a command completion is open and the input starts with '/',
+        // Tab/Enter completes the command name first.
+        if (input.value.indexOf('/') === 0 && cmdCompletion) {
+          e.preventDefault();
+          completeCommand();
+          return;
+        }
         e.preventDefault();
-        const v = $('composerInput').value.trim();
+        const v = input.value.trim();
         if (v) send(v);
+      } else if (e.key === 'Tab' && cmdCompletion) {
+        e.preventDefault();
+        completeCommand();
       }
     });
     $('composerExpand').addEventListener('click', toggleExpand);
     $('sendBtn').addEventListener('click', () => {
       if ($('sendBtn').dataset.state === 'stop') stop();
-      else { const v = $('composerInput').value.trim(); if (v) send(v); }
+      else { const v = input.value.trim(); if (v) send(v); }
     });
     bindEvents();
+  }
+
+  /* ---------- slash-command auto-detection ---------- */
+  let cmdCompletion = null;   // [{name, description}]
+  let composeToken = 0;
+  function onComposeChange() {
+    const token = ++composeToken;
+    const input = $('composerInput');
+    const v = input.value;
+    // Only when the very first char is '/', with no space yet.
+    if (v.length > 1 && v[0] === '/' && v.indexOf(' ') === -1) {
+      const partial = v.slice(1).toLowerCase();
+      if (!P.dshState.currentSessionId) return;
+      P.dshState.commandsList(P.dshState.currentSessionId).then((cmds) => {
+        if (token !== composeToken) return;   // stale keystroke
+        const matches = cmds.filter((c) => c.name.toLowerCase().indexOf(partial) === 0);
+        if (matches.length) {
+          cmdCompletion = matches;
+          showCompletion(matches);
+        } else { cmdCompletion = null; hideCompletion(); }
+      }).catch(() => { if (token === composeToken) { cmdCompletion = null; hideCompletion(); } });
+    } else {
+      cmdCompletion = null;
+      hideCompletion();
+    }
+  }
+  function showCompletion(matches) {
+    let pop = $('cmdCompletionPop');
+    if (!pop) {
+      pop = document.createElement('div');
+      pop.id = 'cmdCompletionPop';
+      pop.className = 'pop cmdCompletion';
+      $('composerArea').appendChild(pop);
+    }
+    pop.innerHTML = matches.slice(0, 6).map((c) => '<div class="popItem" data-name="' + c.name + '"><span class="label">/' + c.name + '</span></div>').join('');
+    pop.style.display = 'block';
+    pop.style.bottom = '';
+    const composer = $('composerCard');
+    const r = composer.getBoundingClientRect();
+    pop.style.bottom = (window.innerHeight - r.top + 8) + 'px';
+    pop.style.left = '0';
+    pop.style.right = '0';
+    pop.style.maxWidth = '420px';
+  }
+  function hideCompletion() {
+    const pop = $('cmdCompletionPop');
+    if (pop) { pop.classList.remove('open'); pop.style.display = 'none'; }
+  }
+  function completeCommand() {
+    const input = $('composerInput');
+    if (!cmdCompletion || !cmdCompletion.length) return;
+    const first = cmdCompletion[0];
+    input.value = '/' + first.name + ' ';
+    cmdCompletion = null;
+    hideCompletion();
+    input.focus();
+    updateSend();
+    scrollInputBottom();
   }
 
   C.send = send;

@@ -122,7 +122,13 @@ PRTS keeps **only its own window chrome** (theme, locale) in `~/.dsh/profiles/pr
 
 ### Settings → Providers & API keys
 
-The Settings panel lists dsh's providers (`llm.providers`) and, for each, a field to set its API key. Saving calls dsh's `credentials.set`, which writes the key into the dsh harness home (`~/.dsh/`) — the same store dsh reads at runtime, so the key works for every dsh surface, not just PRTS. It is never stored by this plugin. The model chip lists the full dsh model catalog (`llm.models`) and selects via `session.selectModel`, so different providers/models are all usable from the PRTS window.
+The Settings panel lists dsh's providers (`llm.providers`) and, for each, a field to set its API key. Saving calls dsh's `credentials.set`, which writes the key into the dsh harness home (`~/.dsh/.credentials.yaml`) — the same store dsh reads at runtime, so the key works for every dsh surface, not just PRTS. It is never stored by this plugin.
+
+### Models, commands and the `/` palette
+
+- **Models**: the model chip is provider-first — pick a provider, enter its API key if missing, then pick one of that provider's models (all from `llm.models`), selected via `session.selectModel`. The composer chip switches models too.
+- **Commands**: the Commands button lists dsh's installed commands (`commands.list`) — e.g. `givemyflag` if that plugin is mounted. Clicking one drops `/name ` into the composer.
+- **Slash detection**: when the composer starts with `/`, dsh's commands are matched live and shown in a completion dropdown; Enter/Tab completes the command name, and submitting runs it through dsh (`session.prompt` parses slash commands host-side).
 
 ### Environment variables
 

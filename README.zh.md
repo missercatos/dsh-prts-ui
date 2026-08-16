@@ -120,7 +120,13 @@ PRTS **只保存自己的窗口外观**（主题、语言）在 `~/.dsh/profiles
 
 ### 设置 → 提供商与 API Key
 
-设置面板会列出 dsh 的提供商（`llm.providers`），并为每个提供商提供输入 API Key 的字段。保存时调用 dsh 的 `credentials.set`，把 Key 写入 dsh 主目录（`~/.dsh/`）—— 与 dsh 运行时所读的是同一个存储，因此该 Key 对 dsh 的所有界面都生效，而不仅限于 PRTS；本插件绝不保存它。模型芯片会列出 dsh 完整模型目录（`llm.models`），并通过 `session.selectModel` 选择，因此不同提供商/模型都可在 PRTS 窗口中使用。
+设置面板会列出 dsh 的提供商（`llm.providers`），并为每个提供商提供输入 API Key 的字段。保存时调用 dsh 的 `credentials.set`，把 Key 写入 dsh 主目录（`~/.dsh/.credentials.yaml`）—— 与 dsh 运行时所读的是同一个存储，因此该 Key 对 dsh 的所有界面都生效，而不仅限于 PRTS；本插件绝不保存它。
+
+### 模型、指令与 `/` 面板
+
+- **模型**：模型芯片采用"先选厂家"流程 —— 选厂家 → 若未配 Key 则先填写 → 再选该厂家的模型（全部来自 `llm.models`），通过 `session.selectModel` 选择；对话框下方的模型按钮同样可切换。
+- **指令**：Commands 按钮列出 dsh 已装指令（`commands.list`），例如安装了 givemyflag 就会显示 `/givemyflag`。点击后把 `/名称 ` 填入输入框。
+- **`/` 识别**：输入框首个字符为 `/` 时，实时匹配 dsh 指令并弹出补全下拉；Enter/Tab 补全指令名，提交后由 dsh 在宿主侧解析并执行（`session.prompt` 识别斜杠指令）。
 
 ### 平台支持
 
