@@ -1,44 +1,44 @@
 {
   "product": "dsh-prts-ui",
-  "version": "0.6.3",
-  "releasedAt": "2026-08-16T15:09:13.395Z",
+  "version": "0.8.0",
+  "releasedAt": "2026-08-16T16:11:43.976Z",
   "files": [
     {
-      "file": "PRTS-0.6.3-android.zip",
-      "sha256": "d3c1567dfc5972805aaea296a2e22f1c5f23af4e1877c36c1678b96071173898",
-      "url": "https://missercatos.github.io/dsh-prts-ui/releases/PRTS-0.6.3-android.zip"
+      "file": "PRTS-0.8.0-android.zip",
+      "sha256": "cefb1157b4765ae484f5e53c056a5b1f626ec5eabd13f49e6535a822a6b57b77",
+      "url": "https://missercatos.github.io/dsh-prts-ui/releases/PRTS-0.8.0-android.zip"
     },
     {
-      "file": "PRTS-0.6.3-linux-x64.run",
-      "sha256": "961e8dc40291e5258e854e3a8f0ae4aaee289dfd4bf11ad778631ed3b0cfd7b5",
-      "url": "https://missercatos.github.io/dsh-prts-ui/releases/PRTS-0.6.3-linux-x64.run"
+      "file": "PRTS-0.8.0-linux-x64.run",
+      "sha256": "c73b2de0ebd43d4a008a5173bab0462702637a91215ae04b960cb9d78ddc9d92",
+      "url": "https://missercatos.github.io/dsh-prts-ui/releases/PRTS-0.8.0-linux-x64.run"
     },
     {
-      "file": "PRTS-0.6.3-macos.sh",
-      "sha256": "be9132abe4927d7d0e2ca00b22371b07e62526299493ec313bb7a826e05993ae",
-      "url": "https://missercatos.github.io/dsh-prts-ui/releases/PRTS-0.6.3-macos.sh"
+      "file": "PRTS-0.8.0-macos.sh",
+      "sha256": "0d537d467eb0d124efd73dffba8834602df6a06caade906f0b9b8a1dda153881",
+      "url": "https://missercatos.github.io/dsh-prts-ui/releases/PRTS-0.8.0-macos.sh"
     },
     {
-      "file": "PRTS-Setup-0.6.3-windows-x64.exe",
-      "sha256": "8d6af76780d8e3b767ae378f7b641e3085908f396b7be7f0c8c545c5f81f5744",
-      "url": "https://missercatos.github.io/dsh-prts-ui/releases/PRTS-Setup-0.6.3-windows-x64.exe"
+      "file": "PRTS-Setup-0.8.0-windows-x64.exe",
+      "sha256": "2fe58c0d2940b9193a3dcab02afdf64835f40cfc67d02a6ebd486979d7ff933e",
+      "url": "https://missercatos.github.io/dsh-prts-ui/releases/PRTS-Setup-0.8.0-windows-x64.exe"
     },
     {
-      "file": "PRTS-Setup-0.6.3-windows-x64.zip",
-      "sha256": "c4bebff655d7e7f80e4410f5ed545000fcc603d9b5032dbeb6602d1820d97e2f",
-      "url": "https://missercatos.github.io/dsh-prts-ui/releases/PRTS-Setup-0.6.3-windows-x64.zip"
+      "file": "PRTS-Setup-0.8.0-windows-x64.zip",
+      "sha256": "47f1f5493489e430a594772abc4902d227a2d898886c8a29bcbf056b7a4aba14",
+      "url": "https://missercatos.github.io/dsh-prts-ui/releases/PRTS-Setup-0.8.0-windows-x64.zip"
     },
     {
-      "file": "dsh-prts-ui-0.6.3.tgz",
-      "sha256": "a856818bc2e9c873c96657b93ced8ec8f96af12b789a0894a02f3fd6feed7ec9",
-      "url": "https://missercatos.github.io/dsh-prts-ui/releases/dsh-prts-ui-0.6.3.tgz"
+      "file": "dsh-prts-ui-0.8.0.tgz",
+      "sha256": "913c54fce157b8cb421d05138f47231dffeb682b3f344fb48ca738be413150ef",
+      "url": "https://missercatos.github.io/dsh-prts-ui/releases/dsh-prts-ui-0.8.0.tgz"
     }
   ],
   "downloads": {
-    "windows": "PRTS-Setup-0.6.3-windows-x64.exe",
-    "linux": "PRTS-0.6.3-linux-x64.run",
-    "macos": "PRTS-0.6.3-macos.sh",
-    "android": "PRTS-0.6.3-android.zip",
-    "tarball": "dsh-prts-ui-0.6.3.tgz"
+    "windows": "PRTS-Setup-0.8.0-windows-x64.exe",
+    "linux": "PRTS-0.8.0-linux-x64.run",
+    "macos": "PRTS-0.8.0-macos.sh",
+    "android": "PRTS-0.8.0-android.zip",
+    "tarball": "dsh-prts-ui-0.8.0.tgz"
   }
 }

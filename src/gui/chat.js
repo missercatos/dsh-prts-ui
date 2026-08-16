@@ -570,19 +570,78 @@
     return P.icons[map[name]] || P.icons['ma.tool'] || '⟳';
   }
 
-  /** One tool-call block: icon + name, folded args, folded result (Bash/Read…). */
-  function renderToolBlock(blk) {
-    const item = el('div', 'toolBlock');
-    const head = el('button', 'dRow');
+  /** Collapsible block row: glyph → chevron on hover, summary line, hidden
+   *  body. Shared by think / bash / read / edit blocks (webUI interaction). */
+  function blkRow(kind, title, summary, bodyHtml, rawText) {
+    const item = el('div', 'toolBlock blkRow');
+    const head = el('button', 'dRow blkHead');
     head.type = 'button';
-    head.innerHTML = toolIcon(blk.name || 'tool');
-    head.appendChild(el('span', 'dTitle', String(blk.name || 'tool')));
+    const glyph = el('span', 'blkGlyph');
+    glyph.innerHTML = toolIcon(kind) || P.icons['ma.tool'] || '⟳';
+    const chev = el('span', 'blkChev');
+    chev.innerHTML = P.icons.chev || '›';
+    const copyBtn = el('button', 'blkCopy');
+    copyBtn.type = 'button';
+    copyBtn.title = t('chat.copy');
+    copyBtn.innerHTML = P.icons['ma.copy'] || '';
+    copyBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const p = navigator.clipboard ? navigator.clipboard.writeText(rawText || '') : Promise.reject(new Error('no clipboard'));
+      p.then(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copied')); })
+        .catch(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copyFail')); });
+    });
+    head.appendChild(glyph);
+    head.appendChild(chev);
+    head.appendChild(el('span', 'dTitle', title));
+    head.appendChild(copyBtn);
     item.appendChild(head);
+    if (summary) {
+      const s = el('div', 'blkSummary');
+      s.textContent = summary;
+      s.title = summary;
+      item.appendChild(s);
+    }
+    const body = el('div', 'dBody');
+    body.style.display = 'none';
+    if (bodyHtml) body.appendChild(bodyHtml);
+    item.appendChild(body);
+    head.addEventListener('click', (e) => {
+      if (e.target.closest('.blkCopy')) return;
+      const open = body.style.display !== 'none';
+      body.style.display = open ? 'none' : '';
+      item.classList.toggle('open', !open);
+    });
+    return item;
+  }
+
+  function toolSummary(name, args) {
+    const a = String(args || '').trim();
+    if (name === 'read' || name === 'read_file') {
+      let p = '';
+      try { p = (JSON.parse(a).file_path || JSON.parse(a).path) || ''; } catch (e) { p = ''; }
+      return p ? '读取 ' + p : '读取文件';
+    }
+    if (name === 'bash' || name === 'terminal') {
+      const line = a.replace(/\n/g, ' ').slice(0, 100);
+      return line || '执行命令';
+    }
+    if (name === 'edit' || name === 'str_replace_editor' || name === 'str_replace' || name === 'write') {
+      let p = '';
+      try { p = (JSON.parse(a).file_path || JSON.parse(a).path) || ''; } catch (e) { p = ''; }
+      return p ? '编辑 ' + p : '编辑文件';
+    }
+    return a.slice(0, 100) || String(name);
+  }
+
+  /** One tool-call block: Bash/Read/Edit card — collapsed by default. */
+  function renderToolBlock(blk) {
+    const name = String(blk.name || 'tool');
+    const argsText = String(blk.arguments || '').slice(0, 1200);
+    const body = el('div');
     if (blk.arguments) {
-      const argsBody = el('div', 'dBody');
+      const argsBody = el('div');
       const pre = el('div', 'thinkBody');
-      pre.textContent = String(blk.arguments).slice(0, 1200);
-      // paths inside args get clickable underlines
+      pre.textContent = argsText;
       const paths = extractPaths(String(blk.arguments));
       const pathRow = el('div', 'dlvChips');
       for (const p of paths.slice(0, 6)) {
@@ -592,24 +651,26 @@
         chip.addEventListener('click', (e) => { e.stopPropagation(); openFilePath(p); });
         pathRow.appendChild(chip);
       }
-      if (pathRow.childNodes.length) argsBody.appendChild(pathRow);
-      argsBody.appendChild(pre);
-      item.appendChild(argsBody);
-      head.addEventListener('click', () => item.classList.toggle('openArgs'));
-      item.classList.add('openArgs');
+      if (pathRow.childNodes.length) body.appendChild(pathRow);
+      body.appendChild(argsBody.appendChild(pre));
     }
     if (blk.result) {
-      const d = el('div', 'disclosure open');
-      const body = el('div', 'dBody toolBody');
+      const d = el('div');
       const pre = el('div', 'thinkBody');
       const err = /(^|\n)(error|failed|stderr|not allowed|denied)/i.test(String(blk.result).slice(0, 400));
       if (err) pre.classList.add('errText');
       pre.innerHTML = linkifyPaths(mdToHtml(String(blk.result).slice(0, 20000)));
-      body.appendChild(pre);
-      d.appendChild(body);
-      item.appendChild(d);
+      d.appendChild(pre);
+      body.appendChild(d);
     }
-    return item;
+    return blkRow(name, name, toolSummary(name, blk.arguments), body, [argsText, blk.result || ''].filter(Boolean).join('\n'));
+  }
+
+  /** Think block row — collapsed, summary line shows the gist. */
+  function renderThinkBlock(text) {
+    const pre = el('div', 'thinkBody');
+    pre.textContent = String(text || '');
+    return blkRow('ma.think', t('chat.thinking'), String(text || '').replace(/\n/g, ' ').slice(0, 100), pre, text || '');
   }
 
   function renderAssistant(msg) {
@@ -621,18 +682,7 @@
     if (blocks) {
       for (const blk of blocks) {
         if (blk.kind === 'reasoning') {
-          const d = el('div', 'disclosure');
-          const row = el('button', 'dRow');
-          row.type = 'button';
-          row.innerHTML = P.icons['ma.think'] || '';
-          row.appendChild(el('span', 'dTitle', t('chat.thinking')));
-          const body = el('div', 'dBody');
-          const tb = el('div', 'thinkBody');
-          tb.textContent = blk.text;
-          body.appendChild(tb);
-          row.addEventListener('click', () => d.classList.toggle('open'));
-          d.appendChild(row); d.appendChild(body);
-          item.appendChild(d);
+          item.appendChild(renderThinkBlock(blk.text));
         } else if (blk.kind === 'text') {
           const p = el('p', 'para');
           p.innerHTML = linkifyPaths(mdToHtml(blk.text));
@@ -647,18 +697,7 @@
     } else {
       // legacy fallback (no block info)
       if (msg.reasoning) {
-        const d = el('div', 'disclosure');
-        const row = el('button', 'dRow');
-        row.type = 'button';
-        row.innerHTML = P.icons['ma.think'] || '';
-        row.appendChild(el('span', 'dTitle', t('chat.thinking')));
-        const body = el('div', 'dBody');
-        const tb = el('div', 'thinkBody');
-        tb.textContent = msg.reasoning;
-        body.appendChild(tb);
-        row.addEventListener('click', () => d.classList.toggle('open'));
-        d.appendChild(row); d.appendChild(body);
-        item.appendChild(d);
+        item.appendChild(renderThinkBlock(msg.reasoning));
       }
       if (msg.content) {
         const p = el('p', 'para');
@@ -804,139 +843,339 @@
 
   /* ---------- trajectory (dsh-web parity: colored blocks, per-node time &
      token cost, search — no black box) ---------- */
-  /** Waveform above the trajectory: color = activity kind (think/output/tool),
-   *  direction/area = token spend (in = up, out = down). */
-  function renderWave() {
-    const box = $('trajView');
-    if (!box) return;
-    const holder = el('div', 'tlWave');
-    const events = C.rawEvents.filter((ev) => {
-      const d = ev.data || {};
-      return d.turn !== undefined || d.step !== undefined;
-    });
-    if (!events.length) { box.appendChild(holder); return; }
-    const W = 900, H = 74;
-    const cols = [];
-    let pending = { in: 0, out: 0 };
-    for (const ev of events) {
-      const d = ev.data || {};
-      const c = d.chunk || {};
-      if (ev.type === 'assistant/chunk' && c.type === 'usage') {
-        const u = c.usage || c;
-        pending.in += u.prompt_tokens || 0;
-        pending.out += u.completion_tokens || 0;
-        cols.push({ kind: 'usage', color: '#7aa2f7', in: u.prompt_tokens || 0, out: u.completion_tokens || 0 });
-      } else if (ev.type === 'assistant/chunk' && c.type === 'reasoning-delta') {
-        cols.push({ kind: 'think', color: '#9d7cd8' });
-      } else if (ev.type === 'assistant/chunk' && c.type === 'text-delta') {
-        cols.push({ kind: 'output', color: '#9ece6a' });
-      } else if (ev.type === 'tool/call' || ev.type === 'tool/result' || (ev.type === 'assistant/chunk' && c.type === 'tool-call-delta')) {
-        cols.push({ kind: 'tool', color: '#e0af68' });
-      } else if (ev.type === 'user/message') {
-        cols.push({ kind: 'user', color: '#9C9CA1' });
-      } else {
-        cols.push({ kind: 'sys', color: '#626266' });
-      }
+  /* ============================================================
+     Trajectory (webUI parity): 4-lane waveform, click-to-jump,
+     SUMMARY/PREVIEW/RAW details, Duration/Turns/Calls grouping,
+     and a live task view while the agent is running.
+     ============================================================ */
+  let trajQuery = '';
+  let trajSort = 'duration';       // duration | turns | calls
+  let trajSelected = null;         // node index
+  let trajDetailTab = 'summary';   // summary | preview | raw
+  let trajNodesCache = null;
+  let trajTickTimer = null;
+
+  const TRAJ_COLORS_DEFAULT = { user: '#7aa2f7', assistant: '#9d7cd8', tool: '#e0af68', error: '#f7768e' };
+  function trajColor(kind) {
+    if (document.documentElement.dataset.theme === 'custom') {
+      const cs = getComputedStyle(document.documentElement);
+      const get = (k) => (cs.getPropertyValue(k) || '').trim();
+      const map = { user: get('--prts-accent'), assistant: get('--prts-diamond'), tool: get('--prts-square'), error: '#f7768e' };
+      return (map[kind] && map[kind].indexOf('#') === 0) ? map[kind] : TRAJ_COLORS_DEFAULT[kind];
     }
-    const n = Math.max(cols.length, 1);
-    const bw = Math.max(2, Math.floor(W / n) - 1);
-    let svg = '';
-    const maxTok = Math.max(1, Math.max(...cols.map((c) => Math.max(c.in || 0, c.out || 0))));
-    cols.forEach((c, i) => {
-      const x = i * (bw + 1);
-      if (c.kind === 'usage') {
-        const up = Math.max(2, Math.round((c.in / maxTok) * (H / 2 - 4)));
-        const down = Math.max(2, Math.round((c.out / maxTok) * (H / 2 - 4)));
-        svg += '<rect x="' + x + '" y="' + (H / 2 - up) + '" width="' + bw + '" height="' + up + '" fill="' + c.color + '" opacity="0.9"/>';
-        svg += '<rect x="' + x + '" y="' + (H / 2 + 1) + '" width="' + bw + '" height="' + down + '" fill="' + c.color + '" opacity="0.45"/>';
-      } else {
-        const h = c.kind === 'sys' ? 3 : 8;
-        svg += '<rect x="' + x + '" y="' + (H / 2 - h / 2) + '" width="' + bw + '" height="' + h + '" fill="' + c.color + '" opacity="0.75"/>';
-      }
-    });
-    const legend = el('div', 'tlWaveLegend');
-    [['#9d7cd8', t('traj.think')], ['#9ece6a', t('traj.output')], ['#e0af68', t('traj.tool')], ['#7aa2f7', t('traj.tokenUpDown')]].forEach(([c, l]) => {
-      const s = el('span', 'tlWaveKey');
-      const dot = el('span', 'tlWaveDot');
-      dot.style.background = c;
-      s.appendChild(dot);
-      s.appendChild(el('span', '', l));
-      legend.appendChild(s);
-    });
-    holder.appendChild(legend);
-    holder.innerHTML += '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:74px">' + svg + '</svg>';
-    box.appendChild(holder);
+    return TRAJ_COLORS_DEFAULT[kind];
+  }
+  function trajResultText(ev) {
+    const d = ev.data || {};
+    const msg = d.message || {};
+    if (Array.isArray(msg.content)) {
+      return msg.content.map((b) => {
+        if (Array.isArray(b.content)) return b.content.map((bb) => bb.text || '').join('');
+        return b.text || '';
+      }).join('\n');
+    }
+    return d.text || d.output || '';
+  }
+  function trajKindOf(ev) {
+    if (ev.type === 'user/message') return 'user';
+    if (ev.type === 'tool/result') {
+      return /(^|\n)(error|failed|stderr|not allowed|denied)/i.test(trajResultText(ev).slice(0, 400)) ? 'error' : 'tool';
+    }
+    if (ev.type === 'tool/call' || (ev.type === 'assistant/chunk' && ev.data && ev.data.chunk && ev.data.chunk.type === 'tool-call-delta')) return 'tool';
+    if (/error|failed|turn-error/i.test(ev.type)) return 'error';
+    return 'assistant';
+  }
+  function trajNodes() {
+    if (trajNodesCache) return trajNodesCache;
+    const nodes = [];
+    for (let i = 0; i < C.rawEvents.length; i++) {
+      const ev = C.rawEvents[i];
+      const d = ev.data || {};
+      if (d.turn === undefined && d.step === undefined && ev.type !== 'tool/result' && ev.type !== 'tool/call') continue;
+      const next = C.rawEvents[i + 1];
+      const dur = next && next.time && ev.time && next.time > ev.time ? next.time - ev.time : null;
+      let usage = null;
+      if (ev.type === 'assistant/chunk' && d.chunk && d.chunk.type === 'usage') usage = d.chunk.usage || d.chunk;
+      nodes.push({ ev, kind: trajKindOf(ev), brief: summaryOf(ev), dur, time: ev.time, turn: d.turn, step: d.step, usage, seq: ev.seq });
+    }
+    trajNodesCache = nodes;
+    return nodes;
   }
 
-  let tlQuery = '';
-  function renderTimeline() {
-    const box = $('trajView');
-    if (!box) return;
-    box.textContent = '';
-    renderWave();
+  /** 4-lane waveform: USER top, ASSISTANT below, TOOL under it, ERROR bottom.
+   *  Height = activity density (count in a window), alpha = intensity. */
+  function trajWaveSvg(nodes, onPick) {
+    const W = 900, H = 80, LANE = 19;
+    const lanes = { user: 0, assistant: 1, tool: 2, error: 3 };
+    const bw = nodes.length ? Math.max(2, Math.floor(W / nodes.length) - 1) : 2;
+    const win = 7;
+    const counts = nodes.map((n, i) => {
+      const c = { user: 0, assistant: 0, tool: 0, error: 0 };
+      for (let j = Math.max(0, i - win); j <= Math.min(nodes.length - 1, i + win); j++) c[nodes[j].kind]++;
+      return c;
+    });
+    const maxC = Math.max(1, ...counts.map((c) => Math.max(c.user, c.assistant, c.tool, c.error)));
+    let svg = '';
+    nodes.forEach((n, i) => {
+      const x = i * (bw + 1);
+      const lane = lanes[n.kind];
+      const cy = lane * LANE + LANE / 2 + 4;
+      const c = counts[i][n.kind];
+      const h = 4 + 13 * (c / maxC);
+      const alpha = 0.3 + 0.65 * (c / maxC);
+      svg += '<rect x="' + x + '" y="' + (cy - h / 2) + '" width="' + bw + '" height="' + h + '" fill="' + trajColor(n.kind) + '" opacity="' + alpha.toFixed(2) + '"/>';
+    });
+    const legend = ['user', 'assistant', 'tool', 'error'].map((k) =>
+      '<span class="tlWaveKey"><span class="tlWaveDot" style="background:' + trajColor(k) + '"></span><span>' + t('traj.lane.' + k) + '</span></span>').join('');
+    const svgEl = '<div class="trajWaveLegend">' + legend + '</div>' +
+      '<svg class="trajWave" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:80px;cursor:pointer">' + svg + '</svg>';
+    const wrap = el('div', 'trajWaveWrap');
+    wrap.innerHTML = svgEl;
+    const s = wrap.querySelector('svg.trajWave');
+    s.addEventListener('click', (e) => {
+      const r = s.getBoundingClientRect();
+      const x = (e.clientX - r.left) / Math.max(1, r.width);
+      const idx = Math.min(nodes.length - 1, Math.max(0, Math.floor(x * nodes.length)));
+      if (onPick) onPick(idx);
+    });
+    return wrap;
+  }
+
+  function trajNodeRow(node, idx) {
+    const row = el('div', 'tlRow' + (trajSelected === idx ? ' sel' : ''));
+    row.dataset.trajIdx = String(idx);
+    const bar = el('span', 'tlBar');
+    bar.style.background = trajColor(node.kind);
+    row.appendChild(bar);
+    const badge = el('span', 'tlType', t('traj.lane.' + node.kind));
+    badge.style.color = trajColor(node.kind);
+    row.appendChild(badge);
+    if (node.brief) {
+      const bf = el('span', 'tlBrief');
+      bf.textContent = String(node.brief).slice(0, 200);
+      bf.title = node.brief;
+      row.appendChild(bf);
+    }
+    const meta = el('span', 'tlMeta');
+    if (node.dur !== null && node.dur >= 0 && node.dur < 300000) meta.appendChild(el('span', '', fmtDurShort(node.dur)));
+    if (node.usage && (node.usage.prompt_tokens || node.usage.completion_tokens)) {
+      meta.appendChild(el('span', '', t('chat.tokens', { in: node.usage.prompt_tokens || 0, out: node.usage.completion_tokens || 0 })));
+    }
+    row.appendChild(meta);
+    row.addEventListener('click', () => {
+      trajSelected = idx;
+      renderTrajectory();
+    });
+    return row;
+  }
+
+  function trajGroupHead(label) {
+    const head = el('div', 'tlHead');
+    head.appendChild(el('span', 'tlLabel', label));
+    return head;
+  }
+
+  function renderTrajLeft(left) {
+    left.textContent = '';
     const searchRow = el('div', 'tlSearch');
     searchRow.innerHTML = P.icons.search || '';
     const input = document.createElement('input');
     input.type = 'text';
     input.placeholder = t('traj.search');
     input.spellcheck = false;
-    input.value = tlQuery;
-    input.addEventListener('input', () => { tlQuery = input.value; renderTimeline(); });
+    input.value = trajQuery;
+    input.addEventListener('input', () => { trajQuery = input.value; trajNodesCache = null; renderTrajectory(); });
     searchRow.appendChild(input);
-    box.appendChild(searchRow);
+    left.appendChild(searchRow);
+
+    // sorting: Duration / Turns / Calls
+    const sorts = el('div', 'mTabs');
+    [['duration', 'traj.sort.duration'], ['turns', 'traj.sort.turns'], ['calls', 'traj.sort.calls']].forEach(([v, k]) => {
+      const b = el('button', 'mTab' + (trajSort === v ? ' on' : ''), t(k));
+      b.type = 'button';
+      b.addEventListener('click', () => { trajSort = v; renderTrajectory(); });
+      sorts.appendChild(b);
+    });
+    left.appendChild(sorts);
+
+    const nodes = trajNodes();
+    if (!nodes.length) {
+      left.appendChild(el('div', 'trajEmpty', t('traj.empty')));
+      return;
+    }
+    left.appendChild(trajWaveSvg(nodes, (idx) => {
+      trajSelected = idx;
+      renderTrajectory();
+      const row = left.querySelector('[data-traj-idx="' + idx + '"]');
+      if (row) row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }));
+
+    const q = trajQuery.trim().toLowerCase();
+    const rows = el('div', 'trajRows');
+    let lastKey = null;
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      const role = t('traj.lane.' + node.kind);
+      if (q && !(String(node.ev.type).toLowerCase().indexOf(q) >= 0 || String(node.brief || '').toLowerCase().indexOf(q) >= 0 || String(role).toLowerCase().indexOf(q) >= 0)) continue;
+      let key;
+      if (trajSort === 'turns') key = 'turn:' + (node.turn === undefined ? '?' : node.turn);
+      else if (trajSort === 'calls') key = node.kind === 'tool' ? 'call:' + (node.brief || node.seq) : 'step:' + node.step;
+      else key = 'step:' + (node.turn === undefined ? '?' : node.turn) + '/' + node.step;
+      if (key !== lastKey) {
+        rows.appendChild(trajGroupHead(trajSort === 'turns' ? t('traj.turn', { n: node.turn === undefined ? '?' : node.turn })
+          : trajSort === 'calls' ? t('traj.callGroup', { k: node.kind === 'tool' ? (node.brief || '') : ('step ' + node.step) })
+          : t('traj.stepHeader', { turn: node.turn === undefined ? '?' : node.turn, step: node.step === undefined ? '?' : node.step })));
+        lastKey = key;
+      }
+      rows.appendChild(trajNodeRow(node, i));
+    }
+    left.appendChild(rows);
+  }
+
+  function renderTrajDetail(right) {
+    right.textContent = '';
+    const nodes = trajNodes();
+    const node = nodes[trajSelected];
+    if (!node) {
+      right.appendChild(el('div', 'trajEmpty', t('traj.pickHint')));
+      return;
+    }
+    const tabs = el('div', 'mTabs');
+    [['summary', 'traj.tab.summary'], ['preview', 'traj.tab.preview'], ['raw', 'traj.tab.raw']].forEach(([v, k]) => {
+      const b = el('button', 'mTab' + (trajDetailTab === v ? ' on' : ''), t(k));
+      b.type = 'button';
+      b.addEventListener('click', () => { trajDetailTab = v; renderTrajectory(); });
+      tabs.appendChild(b);
+    });
+    right.appendChild(tabs);
+    const body = el('div', 'trajDetailBody');
+    const tok = node.usage ? (node.usage.prompt_tokens || 0) + ' in / ' + (node.usage.completion_tokens || 0) + ' out' : t('traj.na');
+    if (trajDetailTab === 'summary') {
+      const rows = [
+        [t('traj.lane.' + node.kind), ''],
+        [t('traj.time'), node.time ? clock(node.time) : t('traj.na')],
+        [t('traj.dur'), node.dur !== null ? fmtDurShort(node.dur) : t('traj.na')],
+        [t('traj.tokens'), tok],
+      ];
+      for (const [k, v] of rows) {
+        const r = el('div', 'dtField');
+        r.appendChild(el('div', 'k', k));
+        r.appendChild(el('div', 'v', v));
+        body.appendChild(r);
+      }
+      body.appendChild(el('div', 'hint', String(node.brief || '').slice(0, 600)));
+    } else if (trajDetailTab === 'preview') {
+      const p = el('div', 'thinkBody');
+      p.innerHTML = linkifyPaths(mdToHtml(String(node.brief || '').slice(0, 4000)));
+      body.appendChild(p);
+      // thinking inside preview stays collapsed with its own chevron
+      const d = ev2reasoning(node);
+      if (d) body.appendChild(renderThinkBlock(d));
+    } else {
+      const pre = el('pre', 'rawPre');
+      pre.textContent = JSON.stringify(node.ev, null, 2).slice(0, 4000);
+      body.appendChild(pre);
+    }
+    right.appendChild(body);
+  }
+
+  function ev2reasoning(node) {
+    const d = node.ev && node.ev.data;
+    const chunk = d && d.chunk;
+    if (chunk && chunk.type === 'reasoning-delta') return chunk.text;
+    return null;
+  }
+
+  /** Live task view while running: completed above, current marked with an
+   *  arrow + live elapsed seconds, upcoming below. */
+  function renderTaskView(right) {
+    right.textContent = '';
+    right.appendChild(el('div', 'sSecTitle eyebrow', t('traj.tasks')));
+    const cur = [...C.messages].reverse().find((m) => m.role === 'assistant' && m.streaming !== false);
+    const blocks = (cur && cur.blocks) || [];
+    const done = blocks.filter((b) => b.kind === 'toolcall' && b.result);
+    const running = blocks.filter((b) => b.kind === 'toolcall' && !b.result);
+    const jobs = (P.dshState && P.dshState.liveJobs && P.dshState.liveJobs[C.sessionId]) || [];
+    const jobsDone = jobs.filter((j) => j.status === 'completed');
+    const jobsRun = jobs.filter((j) => j.status === 'running' || j.status === 'starting');
+    const jobsPending = jobs.filter((j) => j.status !== 'completed' && j.status !== 'running' && j.status !== 'starting');
+    const list = el('div', 'trajTaskList');
+    const mk = (label, name, cls, extra) => {
+      const row = el('div', 'trajTask ' + cls);
+      row.appendChild(el('span', 'trajTaskMark'));
+      const meta = el('div', 'skItemMeta');
+      const nl = el('div', 'skNameLine');
+      nl.appendChild(el('span', 'skItemName', name));
+      meta.appendChild(nl);
+      if (label) meta.appendChild(el('div', 'pmeta', label));
+      row.appendChild(meta);
+      if (extra) row.appendChild(extra);
+      list.appendChild(row);
+    };
+    for (const j of jobsDone) mk(t('traj.taskDoneAt', { t: j.finishedAt ? clock(j.finishedAt) : '—' }), j.name || j.id, 'done');
+    for (const b of done) mk('', toolSummary(b.name, b.arguments), 'done');
+    if (running.length) {
+      for (const b of running) {
+        const timer = el('span', 'trajTaskTimer', '0s');
+        mk(t('traj.taskRunning'), toolSummary(b.name, b.arguments), 'running', timer);
+      }
+    }
+    for (const j of jobsRun) {
+      const timer = el('span', 'trajTaskTimer', '0s');
+      mk(t('traj.taskRunning'), j.name || j.id, 'running', timer);
+    }
+    for (const j of jobsPending) mk(t('traj.taskPending'), j.name || j.id, 'pending');
+    if (!done.length && !running.length && !jobs.length) {
+      list.appendChild(el('div', 'hint', t('jobs.none')));
+    }
+    right.appendChild(list);
+    // live elapsed seconds for running tasks
+    if (trajTickTimer) clearInterval(trajTickTimer);
+    const tick = () => {
+      const timers = right.querySelectorAll('.trajTaskTimer');
+      const s = C.workStartAt ? Math.round((Date.now() - C.workStartAt) / 1000) : 0;
+      for (const t of timers) t.textContent = s + 's';
+    };
+    tick();
+    trajTickTimer = setInterval(tick, 1000);
+  }
+
+  function renderTrajRight(right) {
+    right.textContent = '';
+    if (C.streaming || (C.workTimer)) {
+      renderTaskView(right);
+    } else if (trajSelected !== null) {
+      renderTrajDetail(right);
+    } else {
+      right.appendChild(el('div', 'trajEmpty', t('traj.pickHint')));
+    }
+  }
+
+  function renderTrajectory() {
+    const box = $('trajView');
+    if (!box) return;
+    if (trajTickTimer) { clearInterval(trajTickTimer); trajTickTimer = null; }
+    box.textContent = '';
     if (!C.rawEvents.length) {
       box.appendChild(el('div', 'trajEmpty', t('traj.empty')));
       return;
     }
-    const q = tlQuery.trim().toLowerCase();
-    const rows = [];
-    for (let i = 0; i < C.rawEvents.length; i++) {
-      const ev = C.rawEvents[i];
-      const d = ev.data || {};
-      let turn = d.turn, step = d.step;
-      if (ev.type === 'step/start' || ev.type === 'step/end') { turn = d.turn; step = d.step; }
-      if (step === undefined && turn === undefined) continue;
-      const brief = summaryOf(ev);
-      const role = roleNameOf(ev);
-      if (q && !(String(ev.type).toLowerCase().indexOf(q) >= 0 || String(brief || '').toLowerCase().indexOf(q) >= 0 || String(role).toLowerCase().indexOf(q) >= 0)) continue;
-      const next = C.rawEvents[i + 1];
-      const dur = next && next.time && ev.time && next.time > ev.time ? next.time - ev.time : null;
-      rows.push({ ev, brief, dur, turn, step, role });
-    }
-    let lastKey = null;
-    for (const r of rows) {
-      const key = r.turn + '/' + r.step;
-      if (key !== lastKey) {
-        const head = el('div', 'tlHead');
-        head.appendChild(el('span', 'tlLabel', t('traj.stepHeader', { turn: r.turn === undefined ? '?' : r.turn, step: r.step === undefined ? '?' : r.step })));
-        box.appendChild(head);
-        lastKey = key;
-      }
-      const row = el('div', 'tlRow');
-      const bar = el('span', 'tlBar');
-      bar.style.background = colorOf(r.ev);
-      row.appendChild(bar);
-      const badge = el('span', 'tlType', r.role);
-      badge.style.color = colorOf(r.ev);
-      row.appendChild(badge);
-      if (r.brief) {
-        const bf = el('span', 'tlBrief');
-        bf.textContent = String(r.brief).slice(0, 240);
-        bf.title = r.brief;
-        row.appendChild(bf);
-      }
-      const meta = el('span', 'tlMeta');
-      if (r.dur !== null && r.dur >= 0 && r.dur < 300000) meta.appendChild(el('span', '', fmtDurShort(r.dur)));
-      const usage = r.ev.type === 'assistant/chunk' && r.ev.data && r.ev.data.chunk && r.ev.data.chunk.type === 'usage'
-        ? (r.ev.data.chunk.usage || r.ev.data.chunk) : null;
-      if (usage && (usage.prompt_tokens || usage.completion_tokens)) {
-        meta.appendChild(el('span', '', t('chat.tokens', { in: usage.prompt_tokens || 0, out: usage.completion_tokens || 0 })));
-      }
-      row.appendChild(meta);
-      box.appendChild(row);
-    }
-    if (!rows.length) box.appendChild(el('div', 'trajEmpty', t('traj.none')));
+    const grid = el('div', 'trajGrid');
+    const left = el('div', 'trajLeft');
+    const right = el('div', 'trajRight');
+    grid.appendChild(left); grid.appendChild(right);
+    box.appendChild(grid);
+    renderTrajLeft(left);
+    renderTrajRight(right);
   }
+
+  // invalidate the node cache whenever raw events change
+  const _origFoldEvent = foldEvent;
+  foldEvent = function (ev) {
+    trajNodesCache = null;
+    return _origFoldEvent(ev);
+  };
+
   function fmtDurShort(ms) {
     const s = Math.round(ms / 1000);
     if (s < 60) return s + 's';
@@ -1398,7 +1637,7 @@
   C.stop = stop;
   C.tryCommandLine = tryCommandLine;
   C.renderFlow = renderFlow;
-  C.renderTimeline = renderTimeline;
+  C.renderTimeline = renderTrajectory;
   C.renderLog = renderLog;
   C.exportLog = exportLog;
   C.loadHistory = loadHistory;
