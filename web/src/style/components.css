@@ -21,15 +21,67 @@
 .sbList { display: flex; flex-direction: column; gap: 2px; max-height: 40%; overflow-y: auto; }
 .sbItem {
   display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px;
-  border: none; border-radius: 6px; background: transparent; cursor: pointer;
+  border: none; border-radius: 8px; background: transparent; cursor: pointer;
   color: var(--prts-ink-dim); font-size: 13px; line-height: 20px; text-align: left;
+  transition: background 0.12s var(--prts-ease), color 0.12s var(--prts-ease);
 }
 .sbItem:hover { background: var(--prts-surface-2); color: var(--prts-ink); }
 .sbItem.active { background: var(--prts-surface-2); color: var(--prts-ink); box-shadow: inset 2px 0 0 var(--prts-ink); }
+.sbItem.checked { background: var(--prts-surface-2); }
 .sbItem .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sbItem .meta { font-size: 11px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
-.sbItem .rowBtn { display: none; width: 22px; height: 22px; }
+/* Modern, quiet archive control: a minimal ghost icon, shown on hover. */
+.sbItem .rowBtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; padding: 0; border: none; border-radius: 6px;
+  background: transparent; color: var(--prts-ink-faint); cursor: pointer;
+  opacity: 0; transform: translateX(3px);
+  transition: opacity 0.12s var(--prts-ease), transform 0.12s var(--prts-ease), background 0.12s var(--prts-ease), color 0.12s var(--prts-ease);
+}
+.sbItem:hover .rowBtn, .sbItem:focus-within .rowBtn { opacity: 1; transform: none; }
+.sbItem .rowBtn:hover { background: var(--prts-surface); color: var(--prts-ink); }
+.sbItem .rowBtn svg { width: 11px; height: 11px; }
 .sbItem:hover .rowBtn { display: inline-flex; }
+/* Selection mode: checkbox cell + section-head toggle + bulk bar. */
+.sbCheck {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 16px; height: 16px; padding: 0; border: 1px solid var(--prts-hairline-strong);
+  border-radius: 5px; background: transparent; color: transparent; cursor: pointer;
+  transition: border-color 0.12s var(--prts-ease), background 0.12s var(--prts-ease), color 0.12s var(--prts-ease);
+}
+.sbCheck:hover { border-color: var(--prts-ink); }
+.sbCheck.on { border-color: var(--prts-ink); background: var(--prts-ink); color: var(--prts-bg); }
+.headBtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; padding: 0; border: none; border-radius: 5px;
+  background: transparent; color: var(--prts-ink-faint); cursor: pointer;
+  transition: color 0.12s var(--prts-ease), background 0.12s var(--prts-ease);
+}
+.headBtn:hover { color: var(--prts-ink); background: var(--prts-surface-2); }
+.headBtn.on { color: var(--prts-ink); background: var(--prts-surface-2); box-shadow: inset 0 0 0 1px var(--prts-hairline-strong); }
+.bulkBar {
+  display: flex; align-items: center; gap: 8px; margin: 4px 2px 0; padding: 6px 8px;
+  border: 1px solid var(--prts-hairline); border-radius: 8px; background: var(--prts-surface);
+}
+.bulkLabel { font-size: 11px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+.bulkBtn {
+  height: 24px; padding: 0 10px; border: 1px solid var(--prts-hairline); border-radius: 12px;
+  background: transparent; color: var(--prts-ink-dim); font-size: 11px; line-height: 22px; cursor: pointer;
+  transition: border-color 0.12s var(--prts-ease), color 0.12s var(--prts-ease);
+}
+.bulkBtn:hover { border-color: var(--prts-hairline-strong); color: var(--prts-ink); }
+.bulkBtn.danger { color: var(--prts-ink); border-color: var(--prts-hairline-strong); }
+.bulkBtn:disabled { opacity: 0.35; cursor: default; }
+/* Floating expand chip for the collapsed sidebar. */
+.sbExpandBtn {
+  position: fixed; left: 10px; top: 50%; transform: translateY(-50%); z-index: 40;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 52px; padding: 0; border: 1px solid var(--prts-hairline);
+  border-radius: 11px; background: var(--prts-panel); color: var(--prts-ink-dim); cursor: pointer;
+  box-shadow: var(--prts-shadow);
+  transition: color 0.12s var(--prts-ease), border-color 0.12s var(--prts-ease);
+}
+.sbExpandBtn:hover { color: var(--prts-ink); border-color: var(--prts-hairline-strong); }
 .sbEmpty { padding: 8px 10px; font-size: 12px; line-height: 18px; color: var(--prts-ink-faint); }
 /* Session search field. */
 .sbSearch {

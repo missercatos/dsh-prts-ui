@@ -107,26 +107,48 @@
     turn: null,
     step: null,
     finished: false,
+    msgRef: null,    // the assistant message object owned by C.messages
   };
 
   function resetLive() {
     live.seq = -1; live.id = null; live.reasoning = ''; live.text = '';
     live.usage = null; live.model = null; live.toolCalls = [];
     live.turn = null; live.step = null; live.finished = false;
+    live.msgRef = null;
+  }
+
+  // Streaming bursts (assistant/chunk) arrive faster than frames — schedule
+  // one render per animation frame, never more often than every 90 ms, so a
+  // heavy turn re-renders the flow a handful of times instead of once per chunk.
+  let renderScheduled = false;
+  let lastRenderAt = 0;
+  function scheduleRender() {
+    if (renderScheduled) return;
+    renderScheduled = true;
+    requestAnimationFrame(() => {
+      renderScheduled = false;
+      const now = performance.now();
+      if (now - lastRenderAt < 90) {
+        setTimeout(scheduleRender, 90 - (now - lastRenderAt));
+        return;
+      }
+      lastRenderAt = now;
+      renderFlow();
+    });
   }
 
   function upsertLive(msg) {
-    // Replace or append the streaming assistant message carrying live state.
-    const existing = C.messages.find((m) => m.role === 'assistant' && (m._live || m._seq === msg._seq));
-    if (existing) {
-      existing.content = msg.content;
-      existing.reasoning = msg.reasoning;
-      existing.usage = msg.usage || existing.usage;
-      existing.model = msg.model || existing.model;
-      existing.streaming = !live.finished;
-    } else {
-      C.messages.push(msg);
+    // The live message is kept by reference — no per-chunk array scan.
+    if (live.msgRef && C.messages.indexOf(live.msgRef) >= 0) {
+      live.msgRef.content = msg.content;
+      live.msgRef.reasoning = msg.reasoning;
+      live.msgRef.usage = msg.usage || live.msgRef.usage;
+      live.msgRef.model = msg.model || live.msgRef.model;
+      live.msgRef.streaming = !live.finished;
+      return;
     }
+    C.messages.push(msg);
+    live.msgRef = msg;
   }
 
   function snapshotLive() {
@@ -216,6 +238,7 @@
     } else if (type === 'assistant/message') {
       const msg = data.message || data;
       const parts = messageParts(msg);
+      if (live.msgRef) { live.msgRef = null; }
       resetLive();
       const id = msg && msg.id;
       const existing = C.messages.find((m) => m._seq === ev.seq || (id && m.id === id));
@@ -472,6 +495,10 @@
     for (const evs of pages) {
       for (const it of evs) foldEvent(it.event || it);
     }
+    // The tail may end mid-step — a folded history must never leave the
+    // "working" status row stuck on.
+    C.activeSteps = 0;
+    if (C.onStatus) { try { C.onStatus(null); } catch (e) { /* noop */ } }
     // If the tail was mid-stream, keep the composer in the streaming state.
     renderFlow();
   }
@@ -599,6 +626,14 @@
   }
 
   /* ---------- mux subscription ---------- */
+  let lastHistoryLoad = 0;
+  function maybeReloadHistory(force) {
+    if (!C.sessionId) return;
+    const now = Date.now();
+    if (!force && now - lastHistoryLoad < 30000) return;   // reconnect storms stay cheap
+    lastHistoryLoad = now;
+    loadHistory(C.sessionId).catch(() => { /* noop */ });
+  }
   function bindEvents() {
     P.dsh.on('session/event', (frame) => {
       const ev = frame.payload && frame.payload.event ? frame.payload.event : frame.payload;
@@ -608,15 +643,13 @@
         if (!ev || !ev.type) return;
       }
       foldEvent(ev);
-      renderFlow();
+      scheduleRender();
     });
     P.dsh.on('session/subscribed', (frame) => {
       // Fresh mux generation: our in-memory fold may be behind — refresh the
-      // open session's history silently.
+      // open session's history silently (throttled against reconnect storms).
       const sid = (frame.payload && frame.payload.sessionId) || frame.sessionId;
-      if (sid === C.sessionId && C.sessionId) {
-        loadHistory(C.sessionId).catch(() => { /* noop */ });
-      }
+      if (sid === C.sessionId) maybeReloadHistory(false);
     });
     P.dsh.on('disconnect', () => {
       C.streaming = false;
@@ -624,7 +657,7 @@
       if (C.onStreaming) { try { C.onStreaming(false); } catch (e) { /* noop */ } }
     });
     P.dsh.on('connect', () => {
-      if (C.sessionId) loadHistory(C.sessionId).catch(() => { /* noop */ });
+      maybeReloadHistory(true);
     });
   }
 

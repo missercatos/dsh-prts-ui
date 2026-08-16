@@ -34,12 +34,12 @@ die() { printf '\033[31merror:\033[0m %s\n' "$*" >&2; exit 1; }
 # ---------- 1. Plugin tarball ----------
 say "Building the dsh-prts-ui tarball ($VERSION)…"
 node scripts/bundle-gui.mjs
-TGZ="$(ls -1 dsh-prts-ui-*.tgz 2>/dev/null | head -1 || true)"
-if [ -z "$TGZ" ]; then
-  npm pack --silent 2>/dev/null || pnpm pack --silent || die "could not pack the tarball"
-  TGZ="$(ls -1 dsh-prts-ui-*.tgz 2>/dev/null | head -1 || true)"
-fi
-[ -n "$TGZ" ] && [ -f "$TGZ" ] || die "tarball missing"
+# Always pack fresh — reusing an older tarball with the same prefix silently
+# ships the previous version (the classic `ls | head -1` trap).
+say "Packing the plugin tarball…"
+npm pack --silent 2>/dev/null || pnpm pack --silent || die "could not pack the tarball"
+TGZ="dsh-prts-ui-$VERSION.tgz"
+[ -f "$TGZ" ] || die "tarball missing: $TGZ"
 cp "$TGZ" "$OUT/dsh-prts-ui-$VERSION.tgz"
 
 # ---------- 2. Payload directory (what every installer extracts) ----------

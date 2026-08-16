@@ -106,7 +106,7 @@ TGZ="${1:-}"
 if [ -z "$TGZ" ]; then
   say "Building the dsh-prts-ui tarball…"
   ( cd "$SRC_DIR" && (node scripts/bundle-gui.mjs 2>/dev/null || true) && (npm pack --silent 2>/dev/null || pnpm pack --silent) )
-  TGZ="$(ls -1 "$SRC_DIR"/dsh-prts-ui-*.tgz 2>/dev/null | head -1 || true)"
+  TGZ="$(ls -1 "$SRC_DIR"/dsh-prts-ui-*.tgz 2>/dev/null | sort -V | tail -1 || true)"
 fi
 [ -n "$TGZ" ] && [ -f "$TGZ" ] || die "plugin tarball not found: $TGZ"
 # dsh plugin add resolves bare names against the npm registry — hand it an
@@ -145,10 +145,16 @@ NODE
 say "Installing plugin into profile 'prts'…"
 if [ -f "$PROFILE_DIR/node_modules/dsh-prts-ui/package.json" ]; then
   V="$(node -e "console.log(require('$PROFILE_DIR/node_modules/dsh-prts-ui/package.json').version)" 2>/dev/null || echo '?')"
-  say "PRTS is already installed (v$V) — skipping re-install. Use \`sh update.sh\` to upgrade."
-else
-  dsh plugin --profile prts add "$TGZ" || warn "pnpm reported a warning; continuing if the package landed."
+  say "PRTS is already installed (v$V) — removing it first so the new tarball overwrites in place."
+  dsh plugin --profile prts remove dsh-prts-ui >/dev/null 2>&1 || warn "could not remove the old install; continuing."
+  # Clear pnpm's file:-tarball cache: it keys by filename, so a rebuilt
+  # tarball with the same name would otherwise serve the stale copy.
+  if command -v pnpm >/dev/null 2>&1; then
+    STORE="$(pnpm store path 2>/dev/null || true)"
+    if [ -n "$STORE" ]; then rm -rf "$STORE"/file+*dsh-prts-ui* 2>/dev/null || true; fi
+  fi
 fi
+dsh plugin --profile prts add "$TGZ" || warn "pnpm reported a warning; continuing if the package landed."
 if [ ! -f "$PROFILE_DIR/node_modules/dsh-prts-ui/package.json" ]; then
   die "plugin did not install into $PROFILE_DIR"
 fi

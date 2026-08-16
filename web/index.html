@@ -307,15 +307,67 @@
 .sbList { display: flex; flex-direction: column; gap: 2px; max-height: 40%; overflow-y: auto; }
 .sbItem {
   display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px;
-  border: none; border-radius: 6px; background: transparent; cursor: pointer;
+  border: none; border-radius: 8px; background: transparent; cursor: pointer;
   color: var(--prts-ink-dim); font-size: 13px; line-height: 20px; text-align: left;
+  transition: background 0.12s var(--prts-ease), color 0.12s var(--prts-ease);
 }
 .sbItem:hover { background: var(--prts-surface-2); color: var(--prts-ink); }
 .sbItem.active { background: var(--prts-surface-2); color: var(--prts-ink); box-shadow: inset 2px 0 0 var(--prts-ink); }
+.sbItem.checked { background: var(--prts-surface-2); }
 .sbItem .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sbItem .meta { font-size: 11px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
-.sbItem .rowBtn { display: none; width: 22px; height: 22px; }
+/* Modern, quiet archive control: a minimal ghost icon, shown on hover. */
+.sbItem .rowBtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; padding: 0; border: none; border-radius: 6px;
+  background: transparent; color: var(--prts-ink-faint); cursor: pointer;
+  opacity: 0; transform: translateX(3px);
+  transition: opacity 0.12s var(--prts-ease), transform 0.12s var(--prts-ease), background 0.12s var(--prts-ease), color 0.12s var(--prts-ease);
+}
+.sbItem:hover .rowBtn, .sbItem:focus-within .rowBtn { opacity: 1; transform: none; }
+.sbItem .rowBtn:hover { background: var(--prts-surface); color: var(--prts-ink); }
+.sbItem .rowBtn svg { width: 11px; height: 11px; }
 .sbItem:hover .rowBtn { display: inline-flex; }
+/* Selection mode: checkbox cell + section-head toggle + bulk bar. */
+.sbCheck {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 16px; height: 16px; padding: 0; border: 1px solid var(--prts-hairline-strong);
+  border-radius: 5px; background: transparent; color: transparent; cursor: pointer;
+  transition: border-color 0.12s var(--prts-ease), background 0.12s var(--prts-ease), color 0.12s var(--prts-ease);
+}
+.sbCheck:hover { border-color: var(--prts-ink); }
+.sbCheck.on { border-color: var(--prts-ink); background: var(--prts-ink); color: var(--prts-bg); }
+.headBtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; padding: 0; border: none; border-radius: 5px;
+  background: transparent; color: var(--prts-ink-faint); cursor: pointer;
+  transition: color 0.12s var(--prts-ease), background 0.12s var(--prts-ease);
+}
+.headBtn:hover { color: var(--prts-ink); background: var(--prts-surface-2); }
+.headBtn.on { color: var(--prts-ink); background: var(--prts-surface-2); box-shadow: inset 0 0 0 1px var(--prts-hairline-strong); }
+.bulkBar {
+  display: flex; align-items: center; gap: 8px; margin: 4px 2px 0; padding: 6px 8px;
+  border: 1px solid var(--prts-hairline); border-radius: 8px; background: var(--prts-surface);
+}
+.bulkLabel { font-size: 11px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
+.bulkBtn {
+  height: 24px; padding: 0 10px; border: 1px solid var(--prts-hairline); border-radius: 12px;
+  background: transparent; color: var(--prts-ink-dim); font-size: 11px; line-height: 22px; cursor: pointer;
+  transition: border-color 0.12s var(--prts-ease), color 0.12s var(--prts-ease);
+}
+.bulkBtn:hover { border-color: var(--prts-hairline-strong); color: var(--prts-ink); }
+.bulkBtn.danger { color: var(--prts-ink); border-color: var(--prts-hairline-strong); }
+.bulkBtn:disabled { opacity: 0.35; cursor: default; }
+/* Floating expand chip for the collapsed sidebar. */
+.sbExpandBtn {
+  position: fixed; left: 10px; top: 50%; transform: translateY(-50%); z-index: 40;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 52px; padding: 0; border: 1px solid var(--prts-hairline);
+  border-radius: 11px; background: var(--prts-panel); color: var(--prts-ink-dim); cursor: pointer;
+  box-shadow: var(--prts-shadow);
+  transition: color 0.12s var(--prts-ease), border-color 0.12s var(--prts-ease);
+}
+.sbExpandBtn:hover { color: var(--prts-ink); border-color: var(--prts-hairline-strong); }
 .sbEmpty { padding: 8px 10px; font-size: 12px; line-height: 18px; color: var(--prts-ink-faint); }
 /* Session search field. */
 .sbSearch {
@@ -627,6 +679,9 @@
 
 /* PRTS frame layout: sidebar / main / details, all hairline-divided. */
 html, body { height: 100%; }
+/* Author CSS sets display on many components; make the hidden attribute
+   authoritative again (settings collapse, attach strip, chips, bulk bar…). */
+[hidden] { display: none !important; }
 body {
   margin: 0;
   font-family: var(--prts-font);
@@ -811,6 +866,9 @@ button:focus:not(:focus-visible) { outline: none; }
       <div class="sbSection" style="flex:1;min-height:0;display:flex;flex-direction:column;">
         <div class="sbSectionHead">
           <span class="eyebrow" data-i18n="sidebar.sessions">Sessions</span>
+          <button class="headBtn" id="sessionSelectBtn" type="button" data-i18n-title="session.selectMode" aria-pressed="false">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1.6" y="1.6" width="8.8" height="8.8" rx="2" stroke="currentColor" stroke-width="1.1"/><path d="M3.6 6.2 5.2 7.8 8.4 4.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
           <span class="count" id="sessionCount"></span>
         </div>
         <div class="sbSearch">
@@ -819,6 +877,13 @@ button:focus:not(:focus-visible) { outline: none; }
           <button class="sbSearchClear" id="sessionSearchClear" type="button" title="Clear">×</button>
         </div>
         <div class="sbList" id="sessionList" style="overflow-y:auto;"></div>
+        <div class="bulkBar" id="sessionBulkBar" hidden>
+          <button class="bulkBtn" id="sessionBulkAll" type="button" data-i18n="session.selectAll">Select all</button>
+          <span class="bulkLabel" id="sessionBulkLabel"></span>
+          <span class="spacer"></span>
+          <button class="bulkBtn" id="sessionBulkCancel" type="button" data-i18n="common.cancel">Cancel</button>
+          <button class="bulkBtn danger" id="sessionBulkArchive" type="button" data-i18n="session.archiveSelected" disabled>Archive</button>
+        </div>
       </div>
       <div class="sbFoot">
         <button class="sbFootItem" id="costBtn" type="button">
@@ -978,6 +1043,10 @@ button:focus:not(:focus-visible) { outline: none; }
   <div class="handle" data-side="details" id="handleDetails"></div>
   <div class="handle" data-side="sidebar" id="handleSidebar"></div>
 </div>
+
+<button class="sbExpandBtn" id="sbExpandBtn" type="button" hidden data-i18n-title="sidebar.expand">
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9.5 1.5 5 7l4.5 5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</button>
 
 <div class="overlay" id="settingsOverlay">
   <div class="settingsCard">
@@ -1791,6 +1860,16 @@ window.PRTS_MARKET = {
       'chat.permissionSet': 'permission preset → {preset}',
       'chat.sandboxMode': 'sandbox mode → {mode}',
       'chat.approvalPolicy': 'approval policy → {policy}',
+
+      'mode.locked': 'This session has already started — its mode is fixed. Create a new session with {preset}?',
+      'session.selectMode': 'Select sessions (bulk archive)',
+      'session.selectAll': 'Select all',
+      'session.unselectAll': 'Unselect all',
+      'session.selected': '{n} selected',
+      'session.archiveSelected': 'Archive',
+      'session.confirmArchiveSelected': 'Archive {n} selected sessions? They will be removed from the workspace.',
+      'session.archivedSelected': 'Archived {n} sessions',
+      'sidebar.expand': 'Show sidebar',
     },
 
     zh: {
@@ -2075,6 +2154,16 @@ window.PRTS_MARKET = {
       'chat.permissionSet': '权限预设 → {preset}',
       'chat.sandboxMode': '沙箱模式 → {mode}',
       'chat.approvalPolicy': '审批策略 → {policy}',
+
+      'mode.locked': '该会话已开始，模式已固定。以 {preset} 新建一个会话？',
+      'session.selectMode': '选择会话（批量归档）',
+      'session.selectAll': '全选',
+      'session.unselectAll': '取消全选',
+      'session.selected': '已选 {n} 个',
+      'session.archiveSelected': '归档',
+      'session.confirmArchiveSelected': '归档选中的 {n} 个会话？它们将从工作区移除。',
+      'session.archivedSelected': '已归档 {n} 个会话',
+      'sidebar.expand': '展开侧栏',
     },
   };
 
@@ -2654,6 +2743,14 @@ window.PRTS_MARKET = {
     return S.sessions.find((s) => s.sessionId === sessionId) || null;
   }
 
+  /** True when the session has not started yet (its agent preset is still
+   *  switchable — `agentPreset.select` rejects started sessions with
+   *  `agent-preset-locked`). */
+  function isSessionBlank(sessionId) {
+    const s = sessionSummary(sessionId);
+    return !s || s.blank === true;
+  }
+
   /** permission projection of one session: { options, currentValue } | null */
   function permissionState(sessionId) {
     const s = sessionSummary(sessionId);
@@ -2754,6 +2851,15 @@ window.PRTS_MARKET = {
   async function archiveSession(sessionId) {
     // dsh has no session.delete — sessions are archived from their workspace.
     await P.dsh.request('workspace.archiveSession', { sessionId });
+  }
+
+  /** Archive several sessions (bulk delete). Returns the first error, if any. */
+  async function archiveSessions(sessionIds) {
+    let firstError = null;
+    for (const id of sessionIds) {
+      try { await archiveSession(id); } catch (e) { if (!firstError) firstError = e; }
+    }
+    if (firstError) throw firstError;
   }
 
   async function deleteWorkspace(workspaceId) {
@@ -2870,6 +2976,7 @@ window.PRTS_MARKET = {
   S.listSessions = listSessions;
   S.sessionTitle = sessionTitle;
   S.sessionSummary = sessionSummary;
+  S.isSessionBlank = isSessionBlank;
   S.permissionState = permissionState;
   S.listModels = listModels;
   S.listProviders = listProviders;
@@ -2883,6 +2990,7 @@ window.PRTS_MARKET = {
   S.cancel = cancel;
   S.renameSession = renameSession;
   S.archiveSession = archiveSession;
+  S.archiveSessions = archiveSessions;
   S.deleteWorkspace = deleteWorkspace;
   S.createWorkspace = createWorkspace;
   S.renameWorkspace = renameWorkspace;
@@ -2941,7 +3049,9 @@ window.PRTS_MARKET = {
     const speedRange = (opts.speedRange || [0.018, 0.05]).map((v) => v * 1.5);
     const ctx = canvas.getContext('2d');
     const scratch = document.createElement('canvas');
-    const sctx = scratch.getContext('2d');
+    // getImageData() is called on every model switch — mark the scratch
+    // context read-frequently so the browser keeps it on the fast path.
+    const sctx = scratch.getContext('2d', { willReadFrequently: true });
     const mouse = { x: 0, y: 0, active: false };
     const state = {
       running: false,
@@ -4179,26 +4289,48 @@ window.PRTS_MARKET = {
     turn: null,
     step: null,
     finished: false,
+    msgRef: null,    // the assistant message object owned by C.messages
   };
 
   function resetLive() {
     live.seq = -1; live.id = null; live.reasoning = ''; live.text = '';
     live.usage = null; live.model = null; live.toolCalls = [];
     live.turn = null; live.step = null; live.finished = false;
+    live.msgRef = null;
+  }
+
+  // Streaming bursts (assistant/chunk) arrive faster than frames — schedule
+  // one render per animation frame, never more often than every 90 ms, so a
+  // heavy turn re-renders the flow a handful of times instead of once per chunk.
+  let renderScheduled = false;
+  let lastRenderAt = 0;
+  function scheduleRender() {
+    if (renderScheduled) return;
+    renderScheduled = true;
+    requestAnimationFrame(() => {
+      renderScheduled = false;
+      const now = performance.now();
+      if (now - lastRenderAt < 90) {
+        setTimeout(scheduleRender, 90 - (now - lastRenderAt));
+        return;
+      }
+      lastRenderAt = now;
+      renderFlow();
+    });
   }
 
   function upsertLive(msg) {
-    // Replace or append the streaming assistant message carrying live state.
-    const existing = C.messages.find((m) => m.role === 'assistant' && (m._live || m._seq === msg._seq));
-    if (existing) {
-      existing.content = msg.content;
-      existing.reasoning = msg.reasoning;
-      existing.usage = msg.usage || existing.usage;
-      existing.model = msg.model || existing.model;
-      existing.streaming = !live.finished;
-    } else {
-      C.messages.push(msg);
+    // The live message is kept by reference — no per-chunk array scan.
+    if (live.msgRef && C.messages.indexOf(live.msgRef) >= 0) {
+      live.msgRef.content = msg.content;
+      live.msgRef.reasoning = msg.reasoning;
+      live.msgRef.usage = msg.usage || live.msgRef.usage;
+      live.msgRef.model = msg.model || live.msgRef.model;
+      live.msgRef.streaming = !live.finished;
+      return;
     }
+    C.messages.push(msg);
+    live.msgRef = msg;
   }
 
   function snapshotLive() {
@@ -4288,6 +4420,7 @@ window.PRTS_MARKET = {
     } else if (type === 'assistant/message') {
       const msg = data.message || data;
       const parts = messageParts(msg);
+      if (live.msgRef) { live.msgRef = null; }
       resetLive();
       const id = msg && msg.id;
       const existing = C.messages.find((m) => m._seq === ev.seq || (id && m.id === id));
@@ -4544,6 +4677,10 @@ window.PRTS_MARKET = {
     for (const evs of pages) {
       for (const it of evs) foldEvent(it.event || it);
     }
+    // The tail may end mid-step — a folded history must never leave the
+    // "working" status row stuck on.
+    C.activeSteps = 0;
+    if (C.onStatus) { try { C.onStatus(null); } catch (e) { /* noop */ } }
     // If the tail was mid-stream, keep the composer in the streaming state.
     renderFlow();
   }
@@ -4671,6 +4808,14 @@ window.PRTS_MARKET = {
   }
 
   /* ---------- mux subscription ---------- */
+  let lastHistoryLoad = 0;
+  function maybeReloadHistory(force) {
+    if (!C.sessionId) return;
+    const now = Date.now();
+    if (!force && now - lastHistoryLoad < 30000) return;   // reconnect storms stay cheap
+    lastHistoryLoad = now;
+    loadHistory(C.sessionId).catch(() => { /* noop */ });
+  }
   function bindEvents() {
     P.dsh.on('session/event', (frame) => {
       const ev = frame.payload && frame.payload.event ? frame.payload.event : frame.payload;
@@ -4680,15 +4825,13 @@ window.PRTS_MARKET = {
         if (!ev || !ev.type) return;
       }
       foldEvent(ev);
-      renderFlow();
+      scheduleRender();
     });
     P.dsh.on('session/subscribed', (frame) => {
       // Fresh mux generation: our in-memory fold may be behind — refresh the
-      // open session's history silently.
+      // open session's history silently (throttled against reconnect storms).
       const sid = (frame.payload && frame.payload.sessionId) || frame.sessionId;
-      if (sid === C.sessionId && C.sessionId) {
-        loadHistory(C.sessionId).catch(() => { /* noop */ });
-      }
+      if (sid === C.sessionId) maybeReloadHistory(false);
     });
     P.dsh.on('disconnect', () => {
       C.streaming = false;
@@ -4696,7 +4839,7 @@ window.PRTS_MARKET = {
       if (C.onStreaming) { try { C.onStreaming(false); } catch (e) { /* noop */ } }
     });
     P.dsh.on('connect', () => {
-      if (C.sessionId) loadHistory(C.sessionId).catch(() => { /* noop */ });
+      maybeReloadHistory(true);
     });
   }
 
@@ -4890,6 +5033,54 @@ window.PRTS_MARKET = {
 
   /* ---------- sidebar: workspaces + sessions (dsh) ---------- */
   let sessionFilter = '';
+  A.selecting = false;
+  A.selectedSessions = new Set();
+
+  function setSelecting(on) {
+    A.selecting = on;
+    if (!on) A.selectedSessions.clear();
+    const btn = $('sessionSelectBtn');
+    if (btn) btn.classList.toggle('on', on);
+    const bar = $('sessionBulkBar');
+    if (bar) bar.hidden = !on;
+    renderSessions();
+  }
+  function toggleSelecting() { setSelecting(!A.selecting); }
+
+  function visibleSessionIds() {
+    return visibleSessions().map((s) => s.sessionId);
+  }
+
+  function updateBulkBar() {
+    const bar = $('sessionBulkBar');
+    if (!bar) return;
+    const label = $('sessionBulkLabel');
+    if (label) label.textContent = A.t('session.selected', { n: A.selectedSessions.size });
+    const btn = $('sessionBulkArchive');
+    if (btn) btn.disabled = A.selectedSessions.size === 0;
+    const all = visibleSessionIds();
+    const allSel = all.length > 0 && all.every((id) => A.selectedSessions.has(id));
+    const allBtn = $('sessionBulkAll');
+    if (allBtn) allBtn.textContent = A.t(allSel ? 'session.unselectAll' : 'session.selectAll');
+  }
+
+  async function archiveSelected() {
+    const ids = [...A.selectedSessions];
+    if (!ids.length) return;
+    const ok = await A.askConfirm(A.t('session.confirmArchiveSelected', { n: ids.length }));
+    if (!ok) return;
+    try {
+      await P.dshState.archiveSessions(ids);
+      A.selectedSessions.clear();
+      await refreshSessions();
+      if (P.dshState.currentSessionId && ids.indexOf(P.dshState.currentSessionId) >= 0) {
+        P.dshState.currentSessionId = null;
+        P.chat.messages = [];
+        P.chat.renderFlow();
+        A.toast(A.t('session.archivedSelected', { n: ids.length }));
+      }
+    } catch (e) { A.toast(e.message); }
+  }
 
   function renderWorkspaces() {
     const list = $('projectList');
@@ -4950,6 +5141,25 @@ window.PRTS_MARKET = {
       row.dataset.session = s.sessionId;
       row.setAttribute('role', 'button');
       row.tabIndex = 0;
+
+      // Selection checkbox (visible in select mode).
+      const box = document.createElement('button');
+      box.type = 'button';
+      box.className = 'sbCheck' + (A.selectedSessions.has(s.sessionId) ? ' on' : '');
+      box.setAttribute('aria-label', 'select');
+      box.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5.2 4 7.6 8.5 2.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      if (A.selecting) box.hidden = false;
+      else box.hidden = true;
+      box.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (A.selectedSessions.has(s.sessionId)) A.selectedSessions.delete(s.sessionId);
+        else A.selectedSessions.add(s.sessionId);
+        row.classList.toggle('checked', A.selectedSessions.has(s.sessionId));
+        box.classList.toggle('on', A.selectedSessions.has(s.sessionId));
+        updateBulkBar();
+      });
+      row.appendChild(box);
+
       const name = document.createElement('span');
       name.className = 'name';
       name.textContent = P.dshState.sessionTitle(s);
@@ -4959,14 +5169,22 @@ window.PRTS_MARKET = {
       del.type = 'button';
       del.className = 'rowBtn';
       del.title = A.t('session.archive');
-      del.innerHTML = P.icons['ma.trash'] || '';
+      del.innerHTML = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2.2 2.2l6.6 6.6M8.8 2.2l-6.6 6.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
       del.addEventListener('click', (e) => { e.stopPropagation(); archiveSession(s.sessionId); });
       row.appendChild(del);
-      row.addEventListener('click', () => selectSession(s.sessionId));
-      row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectSession(s.sessionId); } });
+      const onActivate = () => {
+        if (A.selecting) {
+          box.click();
+          return;
+        }
+        selectSession(s.sessionId);
+      };
+      row.addEventListener('click', onActivate);
+      row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onActivate(); } });
       list.appendChild(row);
     }
     $('sessionCount').textContent = String(ss.length);
+    updateBulkBar();
   }
 
   async function selectWorkspace(id) {
@@ -5538,6 +5756,8 @@ window.PRTS_MARKET = {
   function toggleSidebar() {
     const collapsed = appEl().classList.toggle('sbCollapsed');
     appEl().style.setProperty('--dsh-sb', collapsed ? '0px' : A_.sbWidth + 'px');
+    const expand = $('sbExpandBtn');
+    if (expand) expand.hidden = !collapsed;
     placeHandles();
   }
 
@@ -5669,14 +5889,29 @@ window.PRTS_MARKET = {
     $('permissionChip').addEventListener('click', () => { A.refreshPermissionPop(); });
 
     // Work modes = dsh's own agent presets (the same set dsh web offers).
+    // dsh locks the preset once a session has started (`agent-preset-locked`),
+    // so switching on a non-blank session offers a fresh session instead.
     const modePop = attachPop($('modeChip'), '<div class="popMeta">' + A.t('mode.loading') + '</div>', async (item) => {
       if (!item.dataset.preset) return;
-      if (!P.dshState.currentSessionId) { A.toast(A.t('session.selectFirst')); return; }
       try {
-        await P.dshState.agentPresetSelect(P.dshState.currentSessionId, item.dataset.preset);
-        A.currentPreset = item.dataset.preset;
-        $('headerMode').textContent = presetLabel(item.dataset.preset);
+        if (!P.dshState.currentSessionId || P.dshState.isSessionBlank(P.dshState.currentSessionId)) {
+          if (P.dshState.currentSessionId) {
+            await P.dshState.agentPresetSelect(P.dshState.currentSessionId, item.dataset.preset);
+            A.currentPreset = item.dataset.preset;
+            $('headerMode').textContent = presetLabel(item.dataset.preset);
+          } else {
+            A.currentPreset = item.dataset.preset;
+            $('headerMode').textContent = presetLabel(item.dataset.preset);
+          }
+          closePops();
+          return;
+        }
+        // Started session: the preset is fixed — offer a new session.
+        const ok = await A.askConfirm(A.t('mode.locked', { preset: presetLabel(item.dataset.preset) }));
         closePops();
+        if (!ok) return;
+        A.currentPreset = item.dataset.preset;
+        await newSession();
       } catch (e) { A.toast(e.message); }
     });
     A.modePop = modePop;
@@ -5867,7 +6102,7 @@ window.PRTS_MARKET = {
   /* ---------- particles: intro + hero ---------- */
   function runIntro() {
     const cv = $('introCanvas');
-    A.introEngine = P.particles.create(cv, { count: 10000, speedRange: [0.02, 0.05] });
+    A.introEngine = P.particles.create(cv, { count: 8000, speedRange: [0.02, 0.05] });
     A.introEngine.start();
     const tag = $('introTag');
     tag.textContent = A.t('intro.welcome');
@@ -5902,7 +6137,9 @@ window.PRTS_MARKET = {
     let phase = 0;
     const tick = () => {
       if (A.introDone) return;
-      if (A.ready && A.phaseCount >= 3) { finish(); return; }
+      // Enter as soon as dsh is ready and one wordmark phase has played —
+      // the minimum full cycle was the slowest part of startup.
+      if (A.ready && A.phaseCount >= 1) { finish(); return; }
       if (phase === 0) { A.introEngine.showIntro(9000); tag.classList.add('show'); }
       else if (phase === 1) { A.introEngine.showPp(10000); tag.classList.remove('show'); }
       else { A.introEngine.showMark(1.05, 9000); tag.classList.remove('show'); }
@@ -6077,6 +6314,19 @@ window.PRTS_MARKET = {
     if (P.system && P.system.bind) P.system.bind();
 
     $('themeBtn').addEventListener('click', A.toggleTheme);
+    $('sbCollapseBtn').addEventListener('click', toggleSidebar);
+    $('sbExpandBtn').addEventListener('click', toggleSidebar);
+    $('sessionSelectBtn').addEventListener('click', toggleSelecting);
+    $('sessionBulkArchive').addEventListener('click', archiveSelected);
+    $('sessionBulkAll').addEventListener('click', () => {
+      const all = visibleSessionIds();
+      const allSel = all.length > 0 && all.every((id) => A.selectedSessions.has(id));
+      if (allSel) all.forEach((id) => A.selectedSessions.delete(id));
+      else all.forEach((id) => A.selectedSessions.add(id));
+      renderSessions();
+      updateBulkBar();
+    });
+    $('sessionBulkCancel').addEventListener('click', () => setSelecting(false));
     $('sbCollapseBtn').addEventListener('click', toggleSidebar);
     $('clearHistoryBtn').addEventListener('click', async () => {
       const ok = await A.askConfirm(A.t('session.confirmArchive'));

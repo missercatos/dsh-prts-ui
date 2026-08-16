@@ -1,5 +1,8 @@
 /* PRTS frame layout: sidebar / main / details, all hairline-divided. */
 html, body { height: 100%; }
+/* Author CSS sets display on many components; make the hidden attribute
+   authoritative again (settings collapse, attach strip, chips, bulk bar…). */
+[hidden] { display: none !important; }
 body {
   margin: 0;
   font-family: var(--prts-font);

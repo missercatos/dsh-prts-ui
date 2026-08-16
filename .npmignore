@@ -1,0 +1,11 @@
+# The npm package ships sources + scripts only; built artifacts are
+# distributed through dist/ and the website's releases folder.
+dist/
+dist-tools/
+web-site/releases/
+*.tgz
+node_modules/
+.git/
+.github/
+test/*.png
+plugin/index.b64

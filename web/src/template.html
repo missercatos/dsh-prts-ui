@@ -47,6 +47,9 @@
       <div class="sbSection" style="flex:1;min-height:0;display:flex;flex-direction:column;">
         <div class="sbSectionHead">
           <span class="eyebrow" data-i18n="sidebar.sessions">Sessions</span>
+          <button class="headBtn" id="sessionSelectBtn" type="button" data-i18n-title="session.selectMode" aria-pressed="false">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1.6" y="1.6" width="8.8" height="8.8" rx="2" stroke="currentColor" stroke-width="1.1"/><path d="M3.6 6.2 5.2 7.8 8.4 4.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
           <span class="count" id="sessionCount"></span>
         </div>
         <div class="sbSearch">
@@ -55,6 +58,13 @@
           <button class="sbSearchClear" id="sessionSearchClear" type="button" title="Clear">×</button>
         </div>
         <div class="sbList" id="sessionList" style="overflow-y:auto;"></div>
+        <div class="bulkBar" id="sessionBulkBar" hidden>
+          <button class="bulkBtn" id="sessionBulkAll" type="button" data-i18n="session.selectAll">Select all</button>
+          <span class="bulkLabel" id="sessionBulkLabel"></span>
+          <span class="spacer"></span>
+          <button class="bulkBtn" id="sessionBulkCancel" type="button" data-i18n="common.cancel">Cancel</button>
+          <button class="bulkBtn danger" id="sessionBulkArchive" type="button" data-i18n="session.archiveSelected" disabled>Archive</button>
+        </div>
       </div>
       <div class="sbFoot">
         <button class="sbFootItem" id="costBtn" type="button">
@@ -214,6 +224,10 @@
   <div class="handle" data-side="details" id="handleDetails"></div>
   <div class="handle" data-side="sidebar" id="handleSidebar"></div>
 </div>
+
+<button class="sbExpandBtn" id="sbExpandBtn" type="button" hidden data-i18n-title="sidebar.expand">
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9.5 1.5 5 7l4.5 5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</button>
 
 <div class="overlay" id="settingsOverlay">
   <div class="settingsCard">

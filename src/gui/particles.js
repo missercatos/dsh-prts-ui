@@ -35,7 +35,9 @@
     const speedRange = (opts.speedRange || [0.018, 0.05]).map((v) => v * 1.5);
     const ctx = canvas.getContext('2d');
     const scratch = document.createElement('canvas');
-    const sctx = scratch.getContext('2d');
+    // getImageData() is called on every model switch — mark the scratch
+    // context read-frequently so the browser keeps it on the fast path.
+    const sctx = scratch.getContext('2d', { willReadFrequently: true });
     const mouse = { x: 0, y: 0, active: false };
     const state = {
       running: false,

@@ -289,6 +289,16 @@
       'chat.permissionSet': 'permission preset → {preset}',
       'chat.sandboxMode': 'sandbox mode → {mode}',
       'chat.approvalPolicy': 'approval policy → {policy}',
+
+      'mode.locked': 'This session has already started — its mode is fixed. Create a new session with {preset}?',
+      'session.selectMode': 'Select sessions (bulk archive)',
+      'session.selectAll': 'Select all',
+      'session.unselectAll': 'Unselect all',
+      'session.selected': '{n} selected',
+      'session.archiveSelected': 'Archive',
+      'session.confirmArchiveSelected': 'Archive {n} selected sessions? They will be removed from the workspace.',
+      'session.archivedSelected': 'Archived {n} sessions',
+      'sidebar.expand': 'Show sidebar',
     },
 
     zh: {
@@ -573,6 +583,16 @@
       'chat.permissionSet': '权限预设 → {preset}',
       'chat.sandboxMode': '沙箱模式 → {mode}',
       'chat.approvalPolicy': '审批策略 → {policy}',
+
+      'mode.locked': '该会话已开始，模式已固定。以 {preset} 新建一个会话？',
+      'session.selectMode': '选择会话（批量归档）',
+      'session.selectAll': '全选',
+      'session.unselectAll': '取消全选',
+      'session.selected': '已选 {n} 个',
+      'session.archiveSelected': '归档',
+      'session.confirmArchiveSelected': '归档选中的 {n} 个会话？它们将从工作区移除。',
+      'session.archivedSelected': '已归档 {n} 个会话',
+      'sidebar.expand': '展开侧栏',
     },
   };
 

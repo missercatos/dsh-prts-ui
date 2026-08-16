@@ -76,6 +76,54 @@
 
   /* ---------- sidebar: workspaces + sessions (dsh) ---------- */
   let sessionFilter = '';
+  A.selecting = false;
+  A.selectedSessions = new Set();
+
+  function setSelecting(on) {
+    A.selecting = on;
+    if (!on) A.selectedSessions.clear();
+    const btn = $('sessionSelectBtn');
+    if (btn) btn.classList.toggle('on', on);
+    const bar = $('sessionBulkBar');
+    if (bar) bar.hidden = !on;
+    renderSessions();
+  }
+  function toggleSelecting() { setSelecting(!A.selecting); }
+
+  function visibleSessionIds() {
+    return visibleSessions().map((s) => s.sessionId);
+  }
+
+  function updateBulkBar() {
+    const bar = $('sessionBulkBar');
+    if (!bar) return;
+    const label = $('sessionBulkLabel');
+    if (label) label.textContent = A.t('session.selected', { n: A.selectedSessions.size });
+    const btn = $('sessionBulkArchive');
+    if (btn) btn.disabled = A.selectedSessions.size === 0;
+    const all = visibleSessionIds();
+    const allSel = all.length > 0 && all.every((id) => A.selectedSessions.has(id));
+    const allBtn = $('sessionBulkAll');
+    if (allBtn) allBtn.textContent = A.t(allSel ? 'session.unselectAll' : 'session.selectAll');
+  }
+
+  async function archiveSelected() {
+    const ids = [...A.selectedSessions];
+    if (!ids.length) return;
+    const ok = await A.askConfirm(A.t('session.confirmArchiveSelected', { n: ids.length }));
+    if (!ok) return;
+    try {
+      await P.dshState.archiveSessions(ids);
+      A.selectedSessions.clear();
+      await refreshSessions();
+      if (P.dshState.currentSessionId && ids.indexOf(P.dshState.currentSessionId) >= 0) {
+        P.dshState.currentSessionId = null;
+        P.chat.messages = [];
+        P.chat.renderFlow();
+        A.toast(A.t('session.archivedSelected', { n: ids.length }));
+      }
+    } catch (e) { A.toast(e.message); }
+  }
 
   function renderWorkspaces() {
     const list = $('projectList');
@@ -136,6 +184,25 @@
       row.dataset.session = s.sessionId;
       row.setAttribute('role', 'button');
       row.tabIndex = 0;
+
+      // Selection checkbox (visible in select mode).
+      const box = document.createElement('button');
+      box.type = 'button';
+      box.className = 'sbCheck' + (A.selectedSessions.has(s.sessionId) ? ' on' : '');
+      box.setAttribute('aria-label', 'select');
+      box.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5.2 4 7.6 8.5 2.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      if (A.selecting) box.hidden = false;
+      else box.hidden = true;
+      box.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (A.selectedSessions.has(s.sessionId)) A.selectedSessions.delete(s.sessionId);
+        else A.selectedSessions.add(s.sessionId);
+        row.classList.toggle('checked', A.selectedSessions.has(s.sessionId));
+        box.classList.toggle('on', A.selectedSessions.has(s.sessionId));
+        updateBulkBar();
+      });
+      row.appendChild(box);
+
       const name = document.createElement('span');
       name.className = 'name';
       name.textContent = P.dshState.sessionTitle(s);
@@ -145,14 +212,22 @@
       del.type = 'button';
       del.className = 'rowBtn';
       del.title = A.t('session.archive');
-      del.innerHTML = P.icons['ma.trash'] || '';
+      del.innerHTML = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2.2 2.2l6.6 6.6M8.8 2.2l-6.6 6.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
       del.addEventListener('click', (e) => { e.stopPropagation(); archiveSession(s.sessionId); });
       row.appendChild(del);
-      row.addEventListener('click', () => selectSession(s.sessionId));
-      row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectSession(s.sessionId); } });
+      const onActivate = () => {
+        if (A.selecting) {
+          box.click();
+          return;
+        }
+        selectSession(s.sessionId);
+      };
+      row.addEventListener('click', onActivate);
+      row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onActivate(); } });
       list.appendChild(row);
     }
     $('sessionCount').textContent = String(ss.length);
+    updateBulkBar();
   }
 
   async function selectWorkspace(id) {
@@ -724,6 +799,8 @@
   function toggleSidebar() {
     const collapsed = appEl().classList.toggle('sbCollapsed');
     appEl().style.setProperty('--dsh-sb', collapsed ? '0px' : A_.sbWidth + 'px');
+    const expand = $('sbExpandBtn');
+    if (expand) expand.hidden = !collapsed;
     placeHandles();
   }
 
@@ -855,14 +932,29 @@
     $('permissionChip').addEventListener('click', () => { A.refreshPermissionPop(); });
 
     // Work modes = dsh's own agent presets (the same set dsh web offers).
+    // dsh locks the preset once a session has started (`agent-preset-locked`),
+    // so switching on a non-blank session offers a fresh session instead.
     const modePop = attachPop($('modeChip'), '<div class="popMeta">' + A.t('mode.loading') + '</div>', async (item) => {
       if (!item.dataset.preset) return;
-      if (!P.dshState.currentSessionId) { A.toast(A.t('session.selectFirst')); return; }
       try {
-        await P.dshState.agentPresetSelect(P.dshState.currentSessionId, item.dataset.preset);
-        A.currentPreset = item.dataset.preset;
-        $('headerMode').textContent = presetLabel(item.dataset.preset);
+        if (!P.dshState.currentSessionId || P.dshState.isSessionBlank(P.dshState.currentSessionId)) {
+          if (P.dshState.currentSessionId) {
+            await P.dshState.agentPresetSelect(P.dshState.currentSessionId, item.dataset.preset);
+            A.currentPreset = item.dataset.preset;
+            $('headerMode').textContent = presetLabel(item.dataset.preset);
+          } else {
+            A.currentPreset = item.dataset.preset;
+            $('headerMode').textContent = presetLabel(item.dataset.preset);
+          }
+          closePops();
+          return;
+        }
+        // Started session: the preset is fixed — offer a new session.
+        const ok = await A.askConfirm(A.t('mode.locked', { preset: presetLabel(item.dataset.preset) }));
         closePops();
+        if (!ok) return;
+        A.currentPreset = item.dataset.preset;
+        await newSession();
       } catch (e) { A.toast(e.message); }
     });
     A.modePop = modePop;
@@ -1053,7 +1145,7 @@
   /* ---------- particles: intro + hero ---------- */
   function runIntro() {
     const cv = $('introCanvas');
-    A.introEngine = P.particles.create(cv, { count: 10000, speedRange: [0.02, 0.05] });
+    A.introEngine = P.particles.create(cv, { count: 8000, speedRange: [0.02, 0.05] });
     A.introEngine.start();
     const tag = $('introTag');
     tag.textContent = A.t('intro.welcome');
@@ -1088,7 +1180,9 @@
     let phase = 0;
     const tick = () => {
       if (A.introDone) return;
-      if (A.ready && A.phaseCount >= 3) { finish(); return; }
+      // Enter as soon as dsh is ready and one wordmark phase has played —
+      // the minimum full cycle was the slowest part of startup.
+      if (A.ready && A.phaseCount >= 1) { finish(); return; }
       if (phase === 0) { A.introEngine.showIntro(9000); tag.classList.add('show'); }
       else if (phase === 1) { A.introEngine.showPp(10000); tag.classList.remove('show'); }
       else { A.introEngine.showMark(1.05, 9000); tag.classList.remove('show'); }
@@ -1263,6 +1357,19 @@
     if (P.system && P.system.bind) P.system.bind();
 
     $('themeBtn').addEventListener('click', A.toggleTheme);
+    $('sbCollapseBtn').addEventListener('click', toggleSidebar);
+    $('sbExpandBtn').addEventListener('click', toggleSidebar);
+    $('sessionSelectBtn').addEventListener('click', toggleSelecting);
+    $('sessionBulkArchive').addEventListener('click', archiveSelected);
+    $('sessionBulkAll').addEventListener('click', () => {
+      const all = visibleSessionIds();
+      const allSel = all.length > 0 && all.every((id) => A.selectedSessions.has(id));
+      if (allSel) all.forEach((id) => A.selectedSessions.delete(id));
+      else all.forEach((id) => A.selectedSessions.add(id));
+      renderSessions();
+      updateBulkBar();
+    });
+    $('sessionBulkCancel').addEventListener('click', () => setSelecting(false));
     $('sbCollapseBtn').addEventListener('click', toggleSidebar);
     $('clearHistoryBtn').addEventListener('click', async () => {
       const ok = await A.askConfirm(A.t('session.confirmArchive'));

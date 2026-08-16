@@ -9,8 +9,8 @@ Version 0.2.0 has been fixed and tested against the **current dsh core (v4-gener
 ## Features (mirroring dsh's capabilities)
 
 - **Workspaces**: sidebar list, create/delete, header crumb switcher
-- **Sessions**: new, archive, **session search** (local filter + dsh `session.search`)
-- **Mode**: dsh's own agent presets (`agentPreset.list/select`)
+- **Sessions**: new, archive, **session search** (local filter + dsh `session.search`), **bulk archive** (select mode + select-all, combines with search)
+- **Mode**: dsh's own agent presets. Blank sessions switch directly; **started sessions are preset-locked** (dsh constraint) — switching offers a new session with that preset
 - **Model**: provider → model picker (live `session.models`)
 - **Reasoning level**: per-model reasoning efforts via `session.selectModel` `reasoningEffort`
 - **Permission level**: permission presets from the session projection (applied via the `/permission` command)
@@ -30,7 +30,9 @@ Version 0.2.0 has been fixed and tested against the **current dsh core (v4-gener
 - `window.prompt()`/`window.confirm()` replaced with PRTS-styled modals (Electron disables `prompt()` — this was the "buttons do nothing" bug)
 - Approval/question answers wrapped correctly as `{ok:true,value:{...}}`
 - Header popovers open downward when the trigger is near the top edge
-- Dead controls wired: sidebar collapse, chat/trajectory tabs, session log, context meter
+- Dead controls wired: sidebar collapse (a floating expand chip reappears when collapsed), chat/trajectory tabs, session log, context meter
+- Settings "Model configuration" collapse fixed (`[hidden]{display:none!important}` — CSS display was overriding the attribute; same fix for the attach strip and status row)
+- Streaming renders are batched per animation frame + throttled to 90 ms (a 9 s live turn rewrites the DOM ~16 times instead of once per chunk); intro particle count trimmed; history reloads cooldown 30 s
 - Streaming state no longer sticks on "stop" after a mux drop
 
 ## Install (one click, CN-network friendly)

@@ -123,7 +123,7 @@ if [ -z "$TGZ" ]; then
   if [ -z "$TGZ" ]; then
     say "Rebuilding the dsh-prts-ui tarball…"
     ( cd "$SRC_DIR" && (node scripts/bundle-gui.mjs 2>/dev/null || true) && (npm pack --silent 2>/dev/null || pnpm pack --silent) )
-    TGZ="$(ls -1 "$SRC_DIR"/dsh-prts-ui-*.tgz 2>/dev/null | head -1 || true)"
+    TGZ="$(ls -1 "$SRC_DIR"/dsh-prts-ui-*.tgz 2>/dev/null | sort -V | tail -1 || true)"
   fi
 fi
 [ -n "$TGZ" ] && [ -f "$TGZ" ] || die "tarball not found: $TGZ"
@@ -134,6 +134,9 @@ esac
 
 # ---------- 4. Install the tarball into the profile ----------
 say "Updating the plugin in profile 'prts'…"
+# Remove the old install first so the same version (or a downgrade) also
+# overwrites in place — `pnpm add` alone would keep the existing copy.
+dsh plugin --profile prts remove dsh-prts-ui >/dev/null 2>&1 || true
 node - "$PROFILE_DIR" <<'NODE'
 const fs = require('fs')
 const path = require('path')
@@ -160,9 +163,11 @@ fs.writeFileSync(file, 'allowBuilds:\n' + keys.map(([k, v]) => '  ' + q(k) + ': 
 NODE
 # Clear any stale file:-tarball cache for dsh-prts-ui (pnpm caches file: deps
 # by filename, so a changed tarball with the same name can serve a stale copy).
-STORE="$(pnpm store path 2>/dev/null || true)"
-if [ -n "$STORE" ]; then
-  rm -rf "$STORE"/file+*dsh-prts-ui* 2>/dev/null || true
+if command -v pnpm >/dev/null 2>&1; then
+  STORE="$(pnpm store path 2>/dev/null || true)"
+  if [ -n "$STORE" ]; then
+    rm -rf "$STORE"/file+*dsh-prts-ui* 2>/dev/null || true
+  fi
 fi
 dsh plugin --profile prts add "$TGZ"
 [ -f "$PROFILE_DIR/node_modules/dsh-prts-ui/package.json" ] || die "plugin not present after update."

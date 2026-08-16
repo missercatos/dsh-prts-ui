@@ -76,6 +76,8 @@ if "%TGZ%"=="" (
 
 REM ---------- 4. Install the tarball into the profile ----------
 echo Updating the plugin in profile 'prts'...
+REM Remove the old install first so the same version also overwrites in place.
+dsh plugin --profile prts remove dsh-prts-ui >nul 2>nul
 dsh plugin --profile prts add "%TGZ%"
 if errorlevel 1 (
   echo [ERROR] plugin update failed.

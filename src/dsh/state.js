@@ -80,6 +80,14 @@
     return S.sessions.find((s) => s.sessionId === sessionId) || null;
   }
 
+  /** True when the session has not started yet (its agent preset is still
+   *  switchable — `agentPreset.select` rejects started sessions with
+   *  `agent-preset-locked`). */
+  function isSessionBlank(sessionId) {
+    const s = sessionSummary(sessionId);
+    return !s || s.blank === true;
+  }
+
   /** permission projection of one session: { options, currentValue } | null */
   function permissionState(sessionId) {
     const s = sessionSummary(sessionId);
@@ -180,6 +188,15 @@
   async function archiveSession(sessionId) {
     // dsh has no session.delete — sessions are archived from their workspace.
     await P.dsh.request('workspace.archiveSession', { sessionId });
+  }
+
+  /** Archive several sessions (bulk delete). Returns the first error, if any. */
+  async function archiveSessions(sessionIds) {
+    let firstError = null;
+    for (const id of sessionIds) {
+      try { await archiveSession(id); } catch (e) { if (!firstError) firstError = e; }
+    }
+    if (firstError) throw firstError;
   }
 
   async function deleteWorkspace(workspaceId) {
@@ -296,6 +313,7 @@
   S.listSessions = listSessions;
   S.sessionTitle = sessionTitle;
   S.sessionSummary = sessionSummary;
+  S.isSessionBlank = isSessionBlank;
   S.permissionState = permissionState;
   S.listModels = listModels;
   S.listProviders = listProviders;
@@ -309,6 +327,7 @@
   S.cancel = cancel;
   S.renameSession = renameSession;
   S.archiveSession = archiveSession;
+  S.archiveSessions = archiveSessions;
   S.deleteWorkspace = deleteWorkspace;
   S.createWorkspace = createWorkspace;
   S.renameWorkspace = renameWorkspace;
