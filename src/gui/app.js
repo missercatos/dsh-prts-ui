@@ -380,9 +380,8 @@
     updatePermissionChip();
     if (A.refreshPermissionPop) A.refreshPermissionPop();
     A.enterChat();
-    try { await P.dshState.sessionModels(id); } catch (e) { /* model catalog may be warming up */ }
-    updateModelChip();
-    updateReasoningChip();
+    // background: model details must never block the session switch
+    P.dshState.sessionModels(id).then(() => { updateModelChip(); updateReasoningChip(); }).catch(() => { /* catalog warming up */ });
     await P.chat.loadHistory(id);
     renderSessions();
     updateMeter();
@@ -1890,35 +1889,30 @@
     async function preloadData() {
       if (preloadStarted) return;
       preloadStarted = true;
-      try {
-        await P.dshState.listWorkspaces().catch(() => {});
-        await rafYield();
-        await P.dshState.listSessions().catch(() => {});
-        await rafYield();
-        await Promise.allSettled([P.dshState.listModels(), P.dshState.listProviders(), P.dshState.listPresets()]);
-        await rafYield();
-        renderWorkspaces();
-        renderSessions();
-        await rafYield();
-        // "Loaded" means everything: the session is open AND its messages
-        // finished rendering. Until then the intro stays NOT READY.
-        await A.ensureSession();
-        await rafYield();
-        A.ready = true;
-        A._loadOnIntro = false;
-      } catch (e) {
-        A.toast(A.t('dsh.connectFail', { msg: e.message }));
-        // Never trap the Doctor on the particle intro: release the gate even
-        // when a preload step fails.
-        A.ready = true;
-      }
+      const dbg = (stage, e) => {
+        if (typeof process === 'undefined') return;
+        try { if (window.prts && window.prts.env) console.error('[prts-preload] ' + stage + ':', e && e.message ? e.message : e); } catch (err) { /* noop */ }
+      };
+      try { await P.dshState.listWorkspaces(); } catch (e) { dbg('workspaces', e); }
+      await rafYield();
+      try { await P.dshState.listSessions(); } catch (e) { dbg('sessions', e); }
+      await rafYield();
+      await Promise.allSettled([P.dshState.listModels(), P.dshState.listProviders(), P.dshState.listPresets()]);
+      await rafYield();
+      try { renderWorkspaces(); } catch (e) { dbg('renderWorkspaces', e); }
+      try { renderSessions(); } catch (e) { dbg('renderSessions', e); }
+      await rafYield();
+      // "Loaded" means everything: the session is open AND its messages
+      // finished rendering. Until then the intro stays NOT READY. A failing
+      // step never toasts "无法连接" — only the ping loop does that.
+      try { await A.ensureSession(); } catch (e) { dbg('ensureSession', e); }
+      await rafYield();
+      A.ready = true;
+      A._loadOnIntro = false;
     }
-    // Hard fuse: whatever happens, the intro must become enterable.
+    // Hard fuse: whatever happens, the intro must become enterable (silent).
     setTimeout(() => {
-      if (!A.ready) {
-        A.ready = true;
-        A.toast(A.t('dsh.connectFail', { msg: 'preload timeout' }));
-      }
+      if (!A.ready) A.ready = true;
     }, 30000);
     A.afterIntro = function () {
       if (A.ready) {

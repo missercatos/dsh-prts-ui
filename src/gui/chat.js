@@ -175,7 +175,9 @@
       live.seq = ev.seq;
       live.turn = d.turn;
       live.step = d.step;
-      live.id = null;
+      // carry the message id when the wire provides one (text/reasoning
+      // chunks share the assistant message's id on current dsh builds)
+      live.id = d.messageId || d.message || chunk.messageId || null;
     }
     switch (chunk.type) {
       case 'reasoning-delta':
@@ -215,6 +217,7 @@
   function finishStreaming() {
     if (!C.streaming) return;
     C.streaming = false;
+    swapSendStop(false);
     if (C.onStreaming) { try { C.onStreaming(false); } catch (e) { /* noop */ } }
   }
 
@@ -238,10 +241,17 @@
     } else if (type === 'assistant/message') {
       const msg = data.message || data;
       const parts = messageParts(msg);
-      if (live.msgRef) { live.msgRef = null; }
-      resetLive();
       const id = msg && msg.id;
       const existing = C.messages.find((m) => m._seq === ev.seq || (id && m.id === id));
+      const liveMsg = live.msgRef;
+      if (liveMsg) {
+        // drop the streamed copy unless it IS the deduped target — this is
+        // the "agent replies twice" bug: live + final used to coexist.
+        const idx = C.messages.indexOf(liveMsg);
+        if (idx >= 0 && existing !== liveMsg) C.messages.splice(idx, 1);
+        live.msgRef = null;
+      }
+      resetLive();
       if (existing) {
         existing.content = parts.text;
         if (parts.reasoning) existing.reasoning = parts.reasoning;
@@ -851,7 +861,7 @@
     renderFlow();
     // Wait for the render pass, but with a hard ceiling: the intro gate must
     // never hang on a stuck animation frame.
-    await Promise.race([C.flowDone, new Promise((r) => setTimeout(r, 5000))]);
+    await Promise.race([C.flowDone, new Promise((r) => setTimeout(r, 2000))]);
   }
 
   /* ---------- attachments ---------- */
