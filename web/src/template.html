@@ -57,8 +57,11 @@
           <span data-i18n="sidebar.newSession">New session</span>
         </button>
       </div>
-      <div class="sbSection">
+      <div class="sbSection sbSectionWorkspaces">
         <div class="sbSectionHead">
+          <button class="headBtn sbViewIcon" id="viewToggleBtn" type="button" data-i18n-title="sidebar.viewToggle" title="Switch view">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M5.2 2H2.1a.8.8 0 0 0-.8.8v6.4a.8.8 0 0 0 .8.8h7.8a.8.8 0 0 0 .8-.8V4.3a.8.8 0 0 0-.8-.8H6L5.2 2Z" fill="currentColor"/></svg>
+          </button>
           <span class="eyebrow" data-i18n="sidebar.workspaces">Workspaces</span>
           <span class="count" id="projectCount"></span>
         </div>
@@ -69,7 +72,7 @@
         </button>
         <div class="sbList" id="projectList"></div>
       </div>
-      <div class="sbSection" style="flex:1;min-height:0;display:flex;flex-direction:column;">
+      <div class="sbSection sbSectionSessions" style="flex:1;min-height:0;display:flex;flex-direction:column;">
         <div class="sbSectionHead">
           <span class="eyebrow" data-i18n="sidebar.sessions">Sessions</span>
           <button class="headBtn" id="sessionSelectBtn" type="button" data-i18n-title="session.selectMode" aria-pressed="false">
@@ -126,12 +129,12 @@
               <span id="crumbProjectLabel">dsh</span>
               <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
             </button>
-            <button class="chip modeChip" id="modeChip" type="button">
+            <button class="chip modeChip static" id="modeChip" type="button">
               <span class="modeChipIcon" id="modeChipIcon"></span>
               <span class="headerMode" id="headerMode" data-i18n="header.mode">STANDARD</span>
               <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
             </button>
-            <button class="chip modeChip permissionChip" id="permissionChip" type="button" hidden data-i18n-title="permission.title">
+            <button class="chip modeChip permissionChip static" id="permissionChip" type="button" hidden data-i18n-title="permission.title">
               <span class="headerMode" id="permissionChipLabel">—</span>
               <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
             </button>

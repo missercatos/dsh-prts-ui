@@ -430,3 +430,47 @@ body[data-wallpaper='on'] .settingsCard {
 .sysRow { grid-template-columns: 110px minmax(0, 1fr) 150px; }
 .sysK { font-size: 12px; white-space: nowrap; }
 .sysV { font-size: 12px; white-space: nowrap; }
+
+/* ---------- 0.6.1: polish round ---------- */
+/* composer expand toggle: accent + self-shifting gradient */
+.expandBtn { color: var(--prts-accent); }
+.expandBtn .expandIcon path { stroke: var(--prts-accent); }
+@keyframes accentShift {
+  0%, 100% { color: var(--prts-accent); }
+  50% { color: var(--prts-diamond); }
+}
+.expandBtn svg { animation: accentShift 5s ease-in-out infinite; }
+.expandBtn .edot { animation: accentShift 5s ease-in-out infinite; }
+/* selected session/workspace: right stroke + glow (no diamond) */
+.sbItem.active::before { display: none; }
+.sbItem.active {
+  background: var(--prts-surface-2);
+  box-shadow: inset 2px 0 0 var(--prts-accent),
+    inset 0 0 14px color-mix(in srgb, var(--prts-accent) 10%, transparent);
+}
+.sbItem.active .name { color: var(--prts-ink); }
+/* static header chips: no chevron, no hover glow */
+.chip.static { cursor: default; }
+.chip.static:hover { background: transparent; border-color: var(--prts-hairline); color: inherit; }
+.chip.static .chev { display: none; }
+/* theme toggle: make it visible, accent-tinted */
+.themeBtn {
+  border: 1px solid var(--prts-hairline); border-radius: 8px; color: var(--prts-accent);
+  background: color-mix(in srgb, var(--prts-surface) 55%, transparent);
+}
+.themeBtn:hover { border-color: var(--prts-accent); }
+/* sidebar footer: overflow hides into a row that pops open on hover */
+.sbFoot {
+  flex-wrap: wrap; max-height: 46px; overflow: hidden;
+  transition: max-height 0.22s var(--prts-ease-out);
+}
+.sbFoot:hover { max-height: 260px; }
+/* skill rows: name wins the space, nothing can cover the buttons */
+.skRow { align-items: center; }
+.skItemMeta { overflow: hidden; }
+.skNameLine { overflow: hidden; flex-wrap: nowrap; }
+.skNameLine .pState { flex: none; }
+/* sidebar view toggle (dsh-web parity) */
+.sbViewIcon svg { width: 12px; height: 12px; }
+.frame[data-sbview='workspaces'] .sbSectionSessions { display: none; }
+.frame[data-sbview='sessions'] .sbSectionWorkspaces { display: none; }

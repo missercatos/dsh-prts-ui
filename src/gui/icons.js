@@ -60,10 +60,11 @@
     // —— feedback (non-heart), modes, permission shields ——
     'ma.good': S('<path d="M7 2.2 12.4 7 7 11.8 1.6 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M7 9.2V4.8M4.6 7.2 7 4.8l2.4 2.4" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>'),
     'ma.bad': S('<path d="M7 2.2 12.4 7 7 11.8 1.6 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M7 4.8v4.4M4.6 6.8 7 9.2l2.4-2.4" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>'),
-    'mode.standard': S('<path d="M7 1.8 12.2 7 7 12.2 1.8 7Z" stroke="currentColor" stroke-width="1.2"/>'),
-    'mode.code': S('<path d="M7 1.8 12.2 7 7 12.2 1.8 7Z" stroke="currentColor" stroke-width="1.2"/><path d="M4.8 8.6 6 7 4.8 5.4M7.4 5.4l1.2 1.6-1.2 1.6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>'),
-    'mode.minimal': S('<path d="M7 3.2 10.8 7 7 10.8 3.2 7Z" stroke="currentColor" stroke-width="1.2"/>'),
-    'mode.cordis': S('<path d="M7 1.6 12.4 7 7 12.4 1.6 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M7 3.8 10.2 7 7 10.2 3.8 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M7 5.6 8.4 7 7 8.4 5.6 7Z" fill="currentColor"/>'),
+    // mode marks: characteristic glyphs, not diamonds
+    'mode.standard': S('<circle cx="7" cy="7" r="4.7" stroke="currentColor" stroke-width="1.15"/><path d="M7 1.1v2.1M7 10.8v2.1M1.1 7h2.1M10.8 7h2.1" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+    'mode.code': S('<path d="M4.7 3.2 1.9 7l2.8 3.8M9.3 3.2 12.1 7l-2.8 3.8M7.7 2.4 6.3 11.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>'),
+    'mode.minimal': S('<circle cx="7" cy="7" r="1.3" fill="currentColor"/><path d="M7 2.6v2.2M7 9.2v2.2M2.6 7h2.2M9.2 7h2.2" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+    'mode.cordis': S('<path d="M7 1.4v2M7 10.6v2M1.4 7h2M10.6 7h2M3 3l1.4 1.4M9.6 9.6 11 11M11 3 9.6 4.4M4.4 9.6 3 11" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/><circle cx="7" cy="7" r="1.1" fill="currentColor"/>'),
     'perm.readonly': S('<path d="M7 1.4 12.2 3.6v3.6c0 3-2.2 4.9-5.2 6-3-1.1-5.2-3-5.2-6V3.6Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><circle cx="7" cy="7.4" r="1.7" stroke="currentColor" stroke-width="1.15"/>'),
     'perm.workspacewrite': S('<path d="M7 1.4 12.2 3.6v3.6c0 3-2.2 4.9-5.2 6-3-1.1-5.2-3-5.2-6V3.6Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M7 3.4 9.6 7 7 10.6 4.4 7Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/>'),
     'perm.danger': S('<path d="M7 1.4 12.2 3.6v3.6c0 3-2.2 4.9-5.2 6-3-1.1-5.2-3-5.2-6V3.6Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M7 3.2 9.8 7 7 10.8 4.2 7Z" fill="currentColor"/>'),

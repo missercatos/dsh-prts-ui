@@ -1364,6 +1364,50 @@ body[data-wallpaper='on'] .settingsCard {
 .sysK { font-size: 12px; white-space: nowrap; }
 .sysV { font-size: 12px; white-space: nowrap; }
 
+/* ---------- 0.6.1: polish round ---------- */
+/* composer expand toggle: accent + self-shifting gradient */
+.expandBtn { color: var(--prts-accent); }
+.expandBtn .expandIcon path { stroke: var(--prts-accent); }
+@keyframes accentShift {
+  0%, 100% { color: var(--prts-accent); }
+  50% { color: var(--prts-diamond); }
+}
+.expandBtn svg { animation: accentShift 5s ease-in-out infinite; }
+.expandBtn .edot { animation: accentShift 5s ease-in-out infinite; }
+/* selected session/workspace: right stroke + glow (no diamond) */
+.sbItem.active::before { display: none; }
+.sbItem.active {
+  background: var(--prts-surface-2);
+  box-shadow: inset 2px 0 0 var(--prts-accent),
+    inset 0 0 14px color-mix(in srgb, var(--prts-accent) 10%, transparent);
+}
+.sbItem.active .name { color: var(--prts-ink); }
+/* static header chips: no chevron, no hover glow */
+.chip.static { cursor: default; }
+.chip.static:hover { background: transparent; border-color: var(--prts-hairline); color: inherit; }
+.chip.static .chev { display: none; }
+/* theme toggle: make it visible, accent-tinted */
+.themeBtn {
+  border: 1px solid var(--prts-hairline); border-radius: 8px; color: var(--prts-accent);
+  background: color-mix(in srgb, var(--prts-surface) 55%, transparent);
+}
+.themeBtn:hover { border-color: var(--prts-accent); }
+/* sidebar footer: overflow hides into a row that pops open on hover */
+.sbFoot {
+  flex-wrap: wrap; max-height: 46px; overflow: hidden;
+  transition: max-height 0.22s var(--prts-ease-out);
+}
+.sbFoot:hover { max-height: 260px; }
+/* skill rows: name wins the space, nothing can cover the buttons */
+.skRow { align-items: center; }
+.skItemMeta { overflow: hidden; }
+.skNameLine { overflow: hidden; flex-wrap: nowrap; }
+.skNameLine .pState { flex: none; }
+/* sidebar view toggle (dsh-web parity) */
+.sbViewIcon svg { width: 12px; height: 12px; }
+.frame[data-sbview='workspaces'] .sbSectionSessions { display: none; }
+.frame[data-sbview='sessions'] .sbSectionWorkspaces { display: none; }
+
 /* PRTS design tokens — pure black/white. Dark is the default surface; light
    inverts the pair. Every component derives from these tokens only. */
 :root {
@@ -1466,8 +1510,11 @@ body[data-glass='off'] { --prts-glass: 0px; --prts-glass-strong: 0px; }
           <span data-i18n="sidebar.newSession">New session</span>
         </button>
       </div>
-      <div class="sbSection">
+      <div class="sbSection sbSectionWorkspaces">
         <div class="sbSectionHead">
+          <button class="headBtn sbViewIcon" id="viewToggleBtn" type="button" data-i18n-title="sidebar.viewToggle" title="Switch view">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M5.2 2H2.1a.8.8 0 0 0-.8.8v6.4a.8.8 0 0 0 .8.8h7.8a.8.8 0 0 0 .8-.8V4.3a.8.8 0 0 0-.8-.8H6L5.2 2Z" fill="currentColor"/></svg>
+          </button>
           <span class="eyebrow" data-i18n="sidebar.workspaces">Workspaces</span>
           <span class="count" id="projectCount"></span>
         </div>
@@ -1478,7 +1525,7 @@ body[data-glass='off'] { --prts-glass: 0px; --prts-glass-strong: 0px; }
         </button>
         <div class="sbList" id="projectList"></div>
       </div>
-      <div class="sbSection" style="flex:1;min-height:0;display:flex;flex-direction:column;">
+      <div class="sbSection sbSectionSessions" style="flex:1;min-height:0;display:flex;flex-direction:column;">
         <div class="sbSectionHead">
           <span class="eyebrow" data-i18n="sidebar.sessions">Sessions</span>
           <button class="headBtn" id="sessionSelectBtn" type="button" data-i18n-title="session.selectMode" aria-pressed="false">
@@ -1535,12 +1582,12 @@ body[data-glass='off'] { --prts-glass: 0px; --prts-glass-strong: 0px; }
               <span id="crumbProjectLabel">dsh</span>
               <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
             </button>
-            <button class="chip modeChip" id="modeChip" type="button">
+            <button class="chip modeChip static" id="modeChip" type="button">
               <span class="modeChipIcon" id="modeChipIcon"></span>
               <span class="headerMode" id="headerMode" data-i18n="header.mode">STANDARD</span>
               <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
             </button>
-            <button class="chip modeChip permissionChip" id="permissionChip" type="button" hidden data-i18n-title="permission.title">
+            <button class="chip modeChip permissionChip static" id="permissionChip" type="button" hidden data-i18n-title="permission.title">
               <span class="headerMode" id="permissionChipLabel">—</span>
               <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
             </button>
@@ -3110,6 +3157,13 @@ window.PRTS_MARKET = {
       'sys.tokensIn': 'IN tokens',
       'sys.tokensOut': 'OUT tokens',
       'header.jobs': 'jobs',
+      'header.jobs.title': '{n} jobs · {running} running · {done} done',
+      'header.jobs.progress': 'TASK {i}/{n} · {done} done',
+      'sidebar.viewToggle': '切换视图 / Switch view',
+      'sidebar.view.both': '工作区与会话 / Workspaces & sessions',
+      'sidebar.view.workspaces': '只显示工作区 / Workspaces only',
+      'sidebar.view.sessions': '只显示会话 / Sessions only',
+
       'jobs.none': '没有后台任务 / No background jobs',
       'settings.general.glass': '液态玻璃 / Liquid glass',
       'settings.general.glass.on': '开启 backdrop 模糊（关闭后界面完全实体）',
@@ -3700,6 +3754,13 @@ window.PRTS_MARKET = {
       'sys.tokensIn': '输入 Token',
       'sys.tokensOut': '输出 Token',
       'header.jobs': '任务',
+      'header.jobs.title': '{n} 个任务 · 运行 {running} · 完成 {done}',
+      'header.jobs.progress': '任务 {i}/{n} · 已完成 {done}',
+      'sidebar.viewToggle': '切换视图',
+      'sidebar.view.both': '工作区与会话',
+      'sidebar.view.workspaces': '只显示工作区',
+      'sidebar.view.sessions': '只显示会话',
+
       'jobs.none': '没有后台任务',
       'settings.general.glass': '液态玻璃',
       'settings.general.glass.on': '开启背景模糊（关闭后界面完全实体）',
@@ -5221,10 +5282,11 @@ window.PRTS_MARKET = {
     // —— feedback (non-heart), modes, permission shields ——
     'ma.good': S('<path d="M7 2.2 12.4 7 7 11.8 1.6 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M7 9.2V4.8M4.6 7.2 7 4.8l2.4 2.4" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>'),
     'ma.bad': S('<path d="M7 2.2 12.4 7 7 11.8 1.6 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M7 4.8v4.4M4.6 6.8 7 9.2l2.4-2.4" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>'),
-    'mode.standard': S('<path d="M7 1.8 12.2 7 7 12.2 1.8 7Z" stroke="currentColor" stroke-width="1.2"/>'),
-    'mode.code': S('<path d="M7 1.8 12.2 7 7 12.2 1.8 7Z" stroke="currentColor" stroke-width="1.2"/><path d="M4.8 8.6 6 7 4.8 5.4M7.4 5.4l1.2 1.6-1.2 1.6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>'),
-    'mode.minimal': S('<path d="M7 3.2 10.8 7 7 10.8 3.2 7Z" stroke="currentColor" stroke-width="1.2"/>'),
-    'mode.cordis': S('<path d="M7 1.6 12.4 7 7 12.4 1.6 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M7 3.8 10.2 7 7 10.2 3.8 7Z" stroke="currentColor" stroke-width="1.15"/><path d="M7 5.6 8.4 7 7 8.4 5.6 7Z" fill="currentColor"/>'),
+    // mode marks: characteristic glyphs, not diamonds
+    'mode.standard': S('<circle cx="7" cy="7" r="4.7" stroke="currentColor" stroke-width="1.15"/><path d="M7 1.1v2.1M7 10.8v2.1M1.1 7h2.1M10.8 7h2.1" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+    'mode.code': S('<path d="M4.7 3.2 1.9 7l2.8 3.8M9.3 3.2 12.1 7l-2.8 3.8M7.7 2.4 6.3 11.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>'),
+    'mode.minimal': S('<circle cx="7" cy="7" r="1.3" fill="currentColor"/><path d="M7 2.6v2.2M7 9.2v2.2M2.6 7h2.2M9.2 7h2.2" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/>'),
+    'mode.cordis': S('<path d="M7 1.4v2M7 10.6v2M1.4 7h2M10.6 7h2M3 3l1.4 1.4M9.6 9.6 11 11M11 3 9.6 4.4M4.4 9.6 3 11" stroke="currentColor" stroke-width="1.15" stroke-linecap="round"/><circle cx="7" cy="7" r="1.1" fill="currentColor"/>'),
     'perm.readonly': S('<path d="M7 1.4 12.2 3.6v3.6c0 3-2.2 4.9-5.2 6-3-1.1-5.2-3-5.2-6V3.6Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><circle cx="7" cy="7.4" r="1.7" stroke="currentColor" stroke-width="1.15"/>'),
     'perm.workspacewrite': S('<path d="M7 1.4 12.2 3.6v3.6c0 3-2.2 4.9-5.2 6-3-1.1-5.2-3-5.2-6V3.6Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M7 3.4 9.6 7 7 10.6 4.4 7Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/>'),
     'perm.danger': S('<path d="M7 1.4 12.2 3.6v3.6c0 3-2.2 4.9-5.2 6-3-1.1-5.2-3-5.2-6V3.6Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/><path d="M7 3.2 9.8 7 7 10.8 4.2 7Z" fill="currentColor"/>'),
@@ -6895,14 +6957,20 @@ window.PRTS_MARKET = {
   }
 
   let flowRenderToken = 0;
+  let flowDoneResolve = null;
   function renderFlow() {
     const flow = $('flow');
-    if (!flow) return;
+    C.flowDone = new Promise((r) => { flowDoneResolve = r; });
+    if (!flow) {
+      if (flowDoneResolve) { flowDoneResolve(); flowDoneResolve = null; }
+      return;
+    }
     const token = ++flowRenderToken;
     flow.textContent = '';
     if (!C.messages.length) {
       flow.appendChild(el('div', 'emptyChat', t('chat.empty')));
       scrollBottom();
+      if (flowDoneResolve) { flowDoneResolve(); flowDoneResolve = null; }
       return;
     }
     const CHUNK = 60;   // messages per frame — big histories stop janking switches
@@ -6921,6 +6989,7 @@ window.PRTS_MARKET = {
         requestAnimationFrame(step);
       } else {
         scrollBottom();
+        if (flowDoneResolve) { flowDoneResolve(); flowDoneResolve = null; }
       }
     };
     step();
@@ -7161,6 +7230,7 @@ window.PRTS_MARKET = {
     if (C.onStatus) { try { C.onStatus(null); } catch (e) { /* noop */ } }
     // If the tail was mid-stream, keep the composer in the streaming state.
     renderFlow();
+    try { await C.flowDone; } catch (e) { /* render never resolves? */ }
   }
 
   /* ---------- attachments ---------- */
@@ -7583,7 +7653,9 @@ window.PRTS_MARKET = {
 
   /** Left sidebar buttons are configurable (and extensible): the settings
    *  page toggles them; every id in SIDEBAR_BUTTONS can show/hide. */
-  const SIDEBAR_BUTTONS = ['themeBtn', 'gitBtn', 'skillBtn', 'marketBtn', 'detailsBtn', 'settingsBtn'];
+  // The settings button is deliberately NOT in this list: settings must
+  // always stay reachable in the bottom-left corner.
+  const SIDEBAR_BUTTONS = ['themeBtn', 'gitBtn', 'skillBtn', 'marketBtn', 'detailsBtn'];
   A.SIDEBAR_BUTTONS = SIDEBAR_BUTTONS;
   function applySidebarButtons(cfg) {
     const on = (cfg && cfg.ui && cfg.ui.sidebarButtons) || {};
@@ -9139,6 +9211,22 @@ window.PRTS_MARKET = {
     if (P.system && P.system.bind) P.system.bind();
 
     $('themeBtn').addEventListener('click', A.toggleTheme);
+    // dsh-web parity: switch the left column between workspace / session views.
+    A.sidebarView = 'both';
+    $('viewToggleBtn').addEventListener('click', () => {
+      const seq = ['both', 'workspaces', 'sessions'];
+      A.sidebarView = seq[(seq.indexOf(A.sidebarView) + 1) % seq.length];
+      appEl().dataset.sbview = A.sidebarView;
+      const icons = {
+        both: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M5.2 2H2.1a.8.8 0 0 0-.8.8v6.4a.8.8 0 0 0 .8.8h7.8a.8.8 0 0 0 .8-.8V4.3a.8.8 0 0 0-.8-.8H6L5.2 2Z" fill="currentColor"/></svg>',
+        workspaces: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M5.2 2H2.1a.8.8 0 0 0-.8.8v6.4a.8.8 0 0 0 .8.8h7.8a.8.8 0 0 0 .8-.8V4.3a.8.8 0 0 0-.8-.8H6L5.2 2Z" stroke="currentColor" stroke-width="1.1"/></svg>',
+        sessions: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1.8" y="2" width="8.4" height="8" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M3.4 4.6h5.2M3.4 7.2h5.2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>',
+      };
+      const btn = $('viewToggleBtn');
+      if (btn) { btn.innerHTML = icons[A.sidebarView]; btn.title = A.t('sidebar.view.' + A.sidebarView); }
+      placeHandles();
+    });
+    appEl().dataset.sbview = A.sidebarView;
     $('sbToggleBtn').addEventListener('click', toggleSidebar);
     $('sessionSelectBtn').addEventListener('click', toggleSelecting);
     $('sessionBulkArchive').addEventListener('click', archiveSelected);
@@ -9176,9 +9264,23 @@ window.PRTS_MARKET = {
       const btn = $('jobsBtn');
       if (!btn) return;
       const jobs = P.dshState.liveJobs[P.dshState.currentSessionId] || [];
+      const running = jobs.filter((j) => j.status === 'running' || j.status === 'starting');
+      const done = jobs.filter((j) => j.status === 'completed');
       const label = btn.querySelector('.jobsCount');
       if (label) label.textContent = String(jobs.length);
-      btn.hidden = jobs.length === 0;
+      btn.hidden = false;
+      btn.title = A.t('header.jobs.title', { n: jobs.length, running: running.length, done: done.length });
+      // live pop keeps itself fresh while open
+      if (jobsPop && jobsPop.classList.contains('open')) {
+        jobsPop.innerHTML = jobs.length
+          ? jobs.map((j, i) => '<div class="popItem" style="cursor:default"><span class="label">' + (i + 1) + '/' + jobs.length + ' ' + esc2(j.name || j.id || 'job') + '</span><span class="desc">' + esc2(j.status || '') + '</span></div>').join('')
+          : '<div class="popMeta">' + A.t('jobs.none') + '</div>';
+      }
+      // streaming: show task progress on the status row (x/y, done count)
+      if (P.chat && P.chat.streaming && jobs.length) {
+        const idx = running.length ? jobs.indexOf(running[0]) + 1 : 1;
+        if (P.chat.onStatus) P.chat.onStatus(A.t('header.jobs.progress', { i: idx, n: jobs.length, done: done.length }));
+      }
     }
     A.updateJobsChip = updateJobsChip;
     P.dsh.on('session/jobs', (frame) => {
@@ -9393,13 +9495,12 @@ window.PRTS_MARKET = {
         renderWorkspaces();
         renderSessions();
         await rafYield();
+        // "Loaded" means everything: the session is open AND its messages
+        // finished rendering. Until then the intro stays NOT READY.
+        await A.ensureSession();
+        await rafYield();
         A.ready = true;
-        if (A.introDone) {
-          await rafYield();
-          await A.ensureSession();
-        } else {
-          A._loadOnIntro = true;
-        }
+        A._loadOnIntro = false;
       } catch (e) {
         A.toast(A.t('dsh.connectFail', { msg: e.message }));
       }

@@ -58,7 +58,9 @@
 
   /** Left sidebar buttons are configurable (and extensible): the settings
    *  page toggles them; every id in SIDEBAR_BUTTONS can show/hide. */
-  const SIDEBAR_BUTTONS = ['themeBtn', 'gitBtn', 'skillBtn', 'marketBtn', 'detailsBtn', 'settingsBtn'];
+  // The settings button is deliberately NOT in this list: settings must
+  // always stay reachable in the bottom-left corner.
+  const SIDEBAR_BUTTONS = ['themeBtn', 'gitBtn', 'skillBtn', 'marketBtn', 'detailsBtn'];
   A.SIDEBAR_BUTTONS = SIDEBAR_BUTTONS;
   function applySidebarButtons(cfg) {
     const on = (cfg && cfg.ui && cfg.ui.sidebarButtons) || {};
@@ -1614,6 +1616,22 @@
     if (P.system && P.system.bind) P.system.bind();
 
     $('themeBtn').addEventListener('click', A.toggleTheme);
+    // dsh-web parity: switch the left column between workspace / session views.
+    A.sidebarView = 'both';
+    $('viewToggleBtn').addEventListener('click', () => {
+      const seq = ['both', 'workspaces', 'sessions'];
+      A.sidebarView = seq[(seq.indexOf(A.sidebarView) + 1) % seq.length];
+      appEl().dataset.sbview = A.sidebarView;
+      const icons = {
+        both: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M5.2 2H2.1a.8.8 0 0 0-.8.8v6.4a.8.8 0 0 0 .8.8h7.8a.8.8 0 0 0 .8-.8V4.3a.8.8 0 0 0-.8-.8H6L5.2 2Z" fill="currentColor"/></svg>',
+        workspaces: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M5.2 2H2.1a.8.8 0 0 0-.8.8v6.4a.8.8 0 0 0 .8.8h7.8a.8.8 0 0 0 .8-.8V4.3a.8.8 0 0 0-.8-.8H6L5.2 2Z" stroke="currentColor" stroke-width="1.1"/></svg>',
+        sessions: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1.8" y="2" width="8.4" height="8" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M3.4 4.6h5.2M3.4 7.2h5.2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>',
+      };
+      const btn = $('viewToggleBtn');
+      if (btn) { btn.innerHTML = icons[A.sidebarView]; btn.title = A.t('sidebar.view.' + A.sidebarView); }
+      placeHandles();
+    });
+    appEl().dataset.sbview = A.sidebarView;
     $('sbToggleBtn').addEventListener('click', toggleSidebar);
     $('sessionSelectBtn').addEventListener('click', toggleSelecting);
     $('sessionBulkArchive').addEventListener('click', archiveSelected);
@@ -1651,9 +1669,23 @@
       const btn = $('jobsBtn');
       if (!btn) return;
       const jobs = P.dshState.liveJobs[P.dshState.currentSessionId] || [];
+      const running = jobs.filter((j) => j.status === 'running' || j.status === 'starting');
+      const done = jobs.filter((j) => j.status === 'completed');
       const label = btn.querySelector('.jobsCount');
       if (label) label.textContent = String(jobs.length);
-      btn.hidden = jobs.length === 0;
+      btn.hidden = false;
+      btn.title = A.t('header.jobs.title', { n: jobs.length, running: running.length, done: done.length });
+      // live pop keeps itself fresh while open
+      if (jobsPop && jobsPop.classList.contains('open')) {
+        jobsPop.innerHTML = jobs.length
+          ? jobs.map((j, i) => '<div class="popItem" style="cursor:default"><span class="label">' + (i + 1) + '/' + jobs.length + ' ' + esc2(j.name || j.id || 'job') + '</span><span class="desc">' + esc2(j.status || '') + '</span></div>').join('')
+          : '<div class="popMeta">' + A.t('jobs.none') + '</div>';
+      }
+      // streaming: show task progress on the status row (x/y, done count)
+      if (P.chat && P.chat.streaming && jobs.length) {
+        const idx = running.length ? jobs.indexOf(running[0]) + 1 : 1;
+        if (P.chat.onStatus) P.chat.onStatus(A.t('header.jobs.progress', { i: idx, n: jobs.length, done: done.length }));
+      }
     }
     A.updateJobsChip = updateJobsChip;
     P.dsh.on('session/jobs', (frame) => {
@@ -1868,13 +1900,12 @@
         renderWorkspaces();
         renderSessions();
         await rafYield();
+        // "Loaded" means everything: the session is open AND its messages
+        // finished rendering. Until then the intro stays NOT READY.
+        await A.ensureSession();
+        await rafYield();
         A.ready = true;
-        if (A.introDone) {
-          await rafYield();
-          await A.ensureSession();
-        } else {
-          A._loadOnIntro = true;
-        }
+        A._loadOnIntro = false;
       } catch (e) {
         A.toast(A.t('dsh.connectFail', { msg: e.message }));
       }

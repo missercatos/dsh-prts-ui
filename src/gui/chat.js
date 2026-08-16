@@ -563,14 +563,20 @@
   }
 
   let flowRenderToken = 0;
+  let flowDoneResolve = null;
   function renderFlow() {
     const flow = $('flow');
-    if (!flow) return;
+    C.flowDone = new Promise((r) => { flowDoneResolve = r; });
+    if (!flow) {
+      if (flowDoneResolve) { flowDoneResolve(); flowDoneResolve = null; }
+      return;
+    }
     const token = ++flowRenderToken;
     flow.textContent = '';
     if (!C.messages.length) {
       flow.appendChild(el('div', 'emptyChat', t('chat.empty')));
       scrollBottom();
+      if (flowDoneResolve) { flowDoneResolve(); flowDoneResolve = null; }
       return;
     }
     const CHUNK = 60;   // messages per frame — big histories stop janking switches
@@ -589,6 +595,7 @@
         requestAnimationFrame(step);
       } else {
         scrollBottom();
+        if (flowDoneResolve) { flowDoneResolve(); flowDoneResolve = null; }
       }
     };
     step();
@@ -829,6 +836,7 @@
     if (C.onStatus) { try { C.onStatus(null); } catch (e) { /* noop */ } }
     // If the tail was mid-stream, keep the composer in the streaming state.
     renderFlow();
+    try { await C.flowDone; } catch (e) { /* render never resolves? */ }
   }
 
   /* ---------- attachments ---------- */
