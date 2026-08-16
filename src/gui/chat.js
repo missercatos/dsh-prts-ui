@@ -575,6 +575,7 @@
   // Each renderFlow call owns a token; waiters resolve per token so a newer
   // render superseding an older one can never strand an await (the 0.6.1
   // "stuck on the particle intro" bug: the single resolver got overwritten).
+  C.historyToken = C.historyToken || 0;
   let flowRenderToken = 0;
   const flowWaiters = new Map();   // token -> resolve
   function releaseFlowWaiters() {
@@ -594,11 +595,11 @@
     if (!flow) { finish(); return; }
     flow.textContent = '';
     if (!C.messages.length) {
-      flow.appendChild(el('div', 'emptyChat', t('chat.empty')));
+      flow.appendChild(el('div', 'emptyChat', C._loading ? t('chat.loading') : t('chat.empty')));
       finish();
       return;
     }
-    const CHUNK = 60;   // messages per frame — big histories stop janking switches
+    const CHUNK = 24;   // messages per frame — big histories stop janking switches
     let i = 0;
     const step = () => {
       if (token !== flowRenderToken) {
@@ -819,11 +820,16 @@
   /* ---------- history (paged backwards over the tail) ---------- */
   async function loadHistory(sessionId) {
     C.sessionId = sessionId;
+    const token = ++C.historyToken;
     C.messages = [];
     C.rawEvents = [];
     C.streaming = false;
     resetLive();
     if (P.cost) P.cost.reset();
+    // Instantly clear the previous session's DOM and show a loading state —
+    // the switch must feel immediate, history arrives in background frames.
+    C._loading = true;
+    renderFlow();
     const MAX_PAGES = 14, MAX_EVENTS = 6000, MAX_ANCHORS = 100;
     const pages = [];
     let beforeSeq;
@@ -849,19 +855,30 @@
       if (!isFinite(minSeq) || minSeq <= 0) break;
       beforeSeq = minSeq - 1;
       if (anchors >= MAX_ANCHORS || total >= MAX_EVENTS) break;
+      // a faster switch supersedes this load — stop early
+      if (token !== C.historyToken) return;
+      await new Promise((r) => requestAnimationFrame(r));
     }
+    // Fold in frame-sized slices so paging/folding never janks the UI.
+    let folded = 0;
     for (const evs of pages) {
-      for (const it of evs) foldEvent(it.event || it);
+      if (token !== C.historyToken) return;
+      for (const it of evs) {
+        foldEvent(it.event || it);
+        if (++folded % 300 === 0) await new Promise((r) => requestAnimationFrame(r));
+      }
+      await new Promise((r) => requestAnimationFrame(r));
     }
     // The tail may end mid-step — a folded history must never leave the
     // "working" status row stuck on.
     C.activeSteps = 0;
     if (C.onStatus) { try { C.onStatus(null); } catch (e) { /* noop */ } }
     // If the tail was mid-stream, keep the composer in the streaming state.
+    C._loading = false;
     renderFlow();
     // Wait for the render pass, but with a hard ceiling: the intro gate must
     // never hang on a stuck animation frame.
-    await Promise.race([C.flowDone, new Promise((r) => setTimeout(r, 2000))]);
+    await Promise.race([C.flowDone, new Promise((r) => setTimeout(r, 8000))]);
   }
 
   /* ---------- attachments ---------- */

@@ -251,37 +251,62 @@
     } catch (e) { A.toast(e.message); }
   }
 
+  function buildWorkspaceRow(w) {
+    const row = document.createElement('div');
+    row.className = 'sbItem' + (w.workspaceId === P.dshState.currentWorkspaceId ? ' active' : '');
+    row.dataset.workspace = w.workspaceId;
+    row.setAttribute('role', 'button');
+    row.tabIndex = 0;
+    const name = document.createElement('span');
+    name.className = 'name';
+    name.textContent = w.title || w.workspaceId;
+    row.appendChild(name);
+    const meta = document.createElement('span');
+    meta.className = 'meta';
+    meta.textContent = String(w.sessionIds ? w.sessionIds.length : 0);
+    row.appendChild(meta);
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'rowBtn';
+    del.title = A.t('common.delete');
+    del.innerHTML = P.icons['ma.trash'] || '';
+    del.addEventListener('click', (e) => { e.stopPropagation(); deleteWorkspace(w.workspaceId); });
+    row.appendChild(del);
+    row.addEventListener('click', () => selectWorkspace(w.workspaceId));
+    row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectWorkspace(w.workspaceId); } });
+    return row;
+  }
+
+  // Chunked DOM renders: every call yields to the animation frame between
+  // batches so switching sessions/workspaces (and the intro) never jank.
+  let wsRenderToken = 0;
   function renderWorkspaces() {
     const list = $('projectList');
+    const done = new Promise((r) => { wsDoneResolve = r; });
+    const token = ++wsRenderToken;
     list.textContent = '';
     const ws = P.dshState.workspaces;
-    for (const w of ws) {
-      const row = document.createElement('div');
-      row.className = 'sbItem' + (w.workspaceId === P.dshState.currentWorkspaceId ? ' active' : '');
-      row.dataset.workspace = w.workspaceId;
-      row.setAttribute('role', 'button');
-      row.tabIndex = 0;
-      const name = document.createElement('span');
-      name.className = 'name';
-      name.textContent = w.title || w.workspaceId;
-      row.appendChild(name);
-      const meta = document.createElement('span');
-      meta.className = 'meta';
-      meta.textContent = String(w.sessionIds ? w.sessionIds.length : 0);
-      row.appendChild(meta);
-      const del = document.createElement('button');
-      del.type = 'button';
-      del.className = 'rowBtn';
-      del.title = A.t('common.delete');
-      del.innerHTML = P.icons['ma.trash'] || '';
-      del.addEventListener('click', (e) => { e.stopPropagation(); deleteWorkspace(w.workspaceId); });
-      row.appendChild(del);
-      row.addEventListener('click', () => selectWorkspace(w.workspaceId));
-      row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectWorkspace(w.workspaceId); } });
-      list.appendChild(row);
+    if (!ws.length) {
+      $('projectCount').textContent = '0';
+      if (wsDoneResolve) { wsDoneResolve(); wsDoneResolve = null; }
+      return done;
     }
-    $('projectCount').textContent = String(ws.length);
+    let i = 0;
+    const CHUNK = 20;
+    const step = () => {
+      if (token !== wsRenderToken) { if (wsDoneResolve) { wsDoneResolve(); wsDoneResolve = null; } return done; }
+      const end = Math.min(i + CHUNK, ws.length);
+      for (; i < end; i++) list.appendChild(buildWorkspaceRow(ws[i]));
+      if (i < ws.length) requestAnimationFrame(step);
+      else {
+        $('projectCount').textContent = String(ws.length);
+        if (wsDoneResolve) { wsDoneResolve(); wsDoneResolve = null; }
+      }
+    };
+    step();
+    return done;
   }
+  let wsDoneResolve = null;
 
   function visibleSessions() {
     const ss = P.dshState.sessions;
@@ -294,74 +319,112 @@
     });
   }
 
+  function buildSessionRow(s) {
+    const row = document.createElement('div');
+    row.className = 'sbItem' + (s.sessionId === P.dshState.currentSessionId ? ' active' : '');
+    row.dataset.session = s.sessionId;
+    row.setAttribute('role', 'button');
+    row.tabIndex = 0;
+
+    const box = document.createElement('button');
+    box.type = 'button';
+    box.className = 'sbCheck' + (A.selectedSessions.has(s.sessionId) ? ' on' : '');
+    box.setAttribute('aria-label', 'select');
+    box.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5.2 4 7.6 8.5 2.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    box.hidden = !A.selecting;
+    box.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (A.selectedSessions.has(s.sessionId)) A.selectedSessions.delete(s.sessionId);
+      else A.selectedSessions.add(s.sessionId);
+      row.classList.toggle('checked', A.selectedSessions.has(s.sessionId));
+      box.classList.toggle('on', A.selectedSessions.has(s.sessionId));
+      updateBulkBar();
+    });
+    row.appendChild(box);
+
+    const name = document.createElement('span');
+    name.className = 'name';
+    name.textContent = P.dshState.sessionTitle(s);
+    if (s.running) name.textContent += ' …';
+    row.appendChild(name);
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'rowBtn';
+    del.title = A.t('session.archive');
+    del.innerHTML = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2.2 2.2l6.6 6.6M8.8 2.2l-6.6 6.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
+    del.addEventListener('click', (e) => { e.stopPropagation(); archiveSession(s.sessionId); });
+    row.appendChild(del);
+    const onActivate = () => {
+      if (A.selecting) { box.click(); return; }
+      selectSession(s.sessionId);
+    };
+    row.addEventListener('click', onActivate);
+    row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onActivate(); } });
+    return row;
+  }
+
+  let sessionsRenderToken = 0;
+  let sessionsDoneResolve = null;
   function renderSessions() {
     const list = $('sessionList');
-    list.textContent = '';
+    const done = new Promise((r) => { sessionsDoneResolve = r; });
+    const token = ++sessionsRenderToken;
     const ss = visibleSessions();
+    list.textContent = '';
+    const finish = () => {
+      $('sessionCount').textContent = String(ss.length);
+      updateBulkBar();
+      if (sessionsDoneResolve) { sessionsDoneResolve(); sessionsDoneResolve = null; }
+    };
     if (!ss.length) {
       const empty = document.createElement('div');
       empty.className = 'sbEmpty';
       empty.textContent = A.t(sessionFilter ? 'sidebar.searchNone' : 'sidebar.sessionsEmpty');
       list.appendChild(empty);
+      finish();
+      return done;
     }
-    for (const s of ss) {
-      const row = document.createElement('div');
-      row.className = 'sbItem' + (s.sessionId === P.dshState.currentSessionId ? ' active' : '');
-      row.dataset.session = s.sessionId;
-      row.setAttribute('role', 'button');
-      row.tabIndex = 0;
+    let i = 0;
+    const CHUNK = 40;
+    const step = () => {
+      if (token !== sessionsRenderToken) {
+        if (sessionsDoneResolve) { sessionsDoneResolve(); sessionsDoneResolve = null; }
+        return done;
+      }
+      const end = Math.min(i + CHUNK, ss.length);
+      for (; i < end; i++) list.appendChild(buildSessionRow(ss[i]));
+      if (i < ss.length) requestAnimationFrame(step);
+      else finish();
+    };
+    step();
+    return done;
+  }
 
-      // Selection checkbox (visible in select mode).
-      const box = document.createElement('button');
-      box.type = 'button';
-      box.className = 'sbCheck' + (A.selectedSessions.has(s.sessionId) ? ' on' : '');
-      box.setAttribute('aria-label', 'select');
-      box.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5.2 4 7.6 8.5 2.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-      if (A.selecting) box.hidden = false;
-      else box.hidden = true;
-      box.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (A.selectedSessions.has(s.sessionId)) A.selectedSessions.delete(s.sessionId);
-        else A.selectedSessions.add(s.sessionId);
-        row.classList.toggle('checked', A.selectedSessions.has(s.sessionId));
-        box.classList.toggle('on', A.selectedSessions.has(s.sessionId));
-        updateBulkBar();
-      });
-      row.appendChild(box);
-
-      const name = document.createElement('span');
-      name.className = 'name';
-      name.textContent = P.dshState.sessionTitle(s);
-      if (s.running) name.textContent += ' …';
-      row.appendChild(name);
-      const del = document.createElement('button');
-      del.type = 'button';
-      del.className = 'rowBtn';
-      del.title = A.t('session.archive');
-      del.innerHTML = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2.2 2.2l6.6 6.6M8.8 2.2l-6.6 6.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
-      del.addEventListener('click', (e) => { e.stopPropagation(); archiveSession(s.sessionId); });
-      row.appendChild(del);
-      const onActivate = () => {
-        if (A.selecting) {
-          box.click();
-          return;
-        }
-        selectSession(s.sessionId);
-      };
-      row.addEventListener('click', onActivate);
-      row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onActivate(); } });
-      list.appendChild(row);
+  /** Cheap re-highlight: only the active classes change, zero DOM rebuild. */
+  function highlightSessions() {
+    const list = $('sessionList');
+    if (!list) return;
+    for (const row of list.children) {
+      if (!row.dataset || !row.dataset.session) continue;
+      row.classList.toggle('active', row.dataset.session === P.dshState.currentSessionId);
     }
-    $('sessionCount').textContent = String(ss.length);
-    updateBulkBar();
+  }
+  function highlightWorkspaces() {
+    const list = $('projectList');
+    if (!list) return;
+    for (const row of list.children) {
+      if (!row.dataset || !row.dataset.workspace) continue;
+      row.classList.toggle('active', row.dataset.workspace === P.dshState.currentWorkspaceId);
+    }
   }
 
   async function selectWorkspace(id) {
     P.dshState.currentWorkspaceId = id;
-    await refreshSessions();
-    renderWorkspaces();
+    const loading = refreshSessions();   // list refresh + chunked rebuild
+    highlightWorkspaces();               // instant feedback on the current rows
     updateCrumb();
     refreshWorkspacePop();
+    await loading;
   }
 
   async function refreshSessions() {
@@ -369,7 +432,7 @@
     renderSessions();
   }
 
-  async function selectSession(id) {
+  async function selectSession(id, opts) {
     P.dshState.currentSessionId = id;
     const summary = P.dshState.sessionSummary(id);
     if (summary && summary.agentPreset) {
@@ -380,13 +443,16 @@
     updatePermissionChip();
     if (A.refreshPermissionPop) A.refreshPermissionPop();
     A.enterChat();
-    // background: model details must never block the session switch
+    // The switch itself returns immediately: model details, history paging,
+    // folding and the chunked render all happen in the background.
     P.dshState.sessionModels(id).then(() => { updateModelChip(); updateReasoningChip(); }).catch(() => { /* catalog warming up */ });
-    await P.chat.loadHistory(id);
-    renderSessions();
+    const hist = P.chat.loadHistory(id);
+    highlightSessions();      // cheap: only the active class flips
+    highlightWorkspaces();
     updateMeter();
     renderStatsDock();
     updateCrumb();
+    if (opts && opts.waitHistory) await hist;
   }
 
   async function newSession() {
@@ -1874,8 +1940,10 @@
     // flags, permissions) fresh even when the mux is quiet.
     setInterval(() => {
       if (!P.dshState.currentSessionId) return;
+      const before = P.dshState.sessions.length;
       P.dshState.listSessions().then(() => {
-        renderSessions();
+        if (P.dshState.sessions.length !== before) renderSessions();
+        else highlightSessions();   // titles/stats live in projections
         renderStatsDock();
         updateMeter();
       }).catch(() => { /* noop */ });
@@ -1899,8 +1967,8 @@
       await rafYield();
       await Promise.allSettled([P.dshState.listModels(), P.dshState.listProviders(), P.dshState.listPresets()]);
       await rafYield();
-      try { renderWorkspaces(); } catch (e) { dbg('renderWorkspaces', e); }
-      try { renderSessions(); } catch (e) { dbg('renderSessions', e); }
+      try { await renderWorkspaces(); } catch (e) { dbg('renderWorkspaces', e); }
+      try { await renderSessions(); } catch (e) { dbg('renderSessions', e); }
       await rafYield();
       // "Loaded" means everything: the session is open AND its messages
       // finished rendering. Until then the intro stays NOT READY. A failing
@@ -1950,7 +2018,7 @@
       P.dshState.currentWorkspaceId = P.dshState.workspaces[0].workspaceId;
     }
     if (P.dshState.sessions.length) {
-      await selectSession(P.dshState.sessions[0].sessionId);
+      await selectSession(P.dshState.sessions[0].sessionId, { waitHistory: true });
       return P.dshState.currentSessionId;
     }
     const id = await P.dshState.createSession(P.dshState.currentWorkspaceId || undefined);
