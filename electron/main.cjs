@@ -46,7 +46,10 @@ function createWindow() {
   })
   win.once('ready-to-show', () => win.show())
   win.removeMenu()
-  win.loadURL('http://127.0.0.1:' + guiPort + '/index.html')
+  // PRTS = dsh-web + the PRTS client plugin: the window loads dsh web itself,
+  // so settings/plugins/panels are the official ones and every plugin the
+  // market installs appears exactly where dsh-web puts it.
+  win.loadURL(DSH_WEB_URL.replace(/\/+$/, '') + '/')
 }
 
 /* ---------- filesystem bridge ---------- */

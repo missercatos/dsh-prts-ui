@@ -25,7 +25,7 @@ warn() { printf '%b\n' "${RED}warning:${NC} $*"; }
 die() { printf '%b\n' "${RED}error:${NC} $*" >&2; exit 1; }
 
 DSH_HOME_DIR="${DSH_HOME:-$HOME/.dsh}"
-PROFILE_DIR="$DSH_HOME_DIR/profiles/prts"
+PROFILE_DIR="$DSH_HOME_DIR/profiles/web"
 CONFIG_FILE="$PROFILE_DIR/prts.config.json"
 
 # ---------- config (prts.config.json in the profile, example as template) ----------
@@ -95,7 +95,7 @@ if [ -n "$PLUGINS_JSON" ]; then
   if [ -n "$PLUGINS" ]; then
     say "Installing dsh plugins…"
     for p in $PLUGINS; do
-      dsh plugin --profile prts add "$p" || warn "plugin '$p' failed to install (may not exist on npm)."
+      dsh plugin --profile web add "$p" || warn "plugin '$p' failed to install (may not exist on npm)."
     done
   fi
 fi
@@ -146,7 +146,7 @@ say "Installing plugin into profile 'prts'…"
 if [ -f "$PROFILE_DIR/node_modules/dsh-prts-ui/package.json" ]; then
   V="$(node -e "console.log(require('$PROFILE_DIR/node_modules/dsh-prts-ui/package.json').version)" 2>/dev/null || echo '?')"
   say "PRTS is already installed (v$V) — removing it first so the new tarball overwrites in place."
-  dsh plugin --profile prts remove dsh-prts-ui >/dev/null 2>&1 || warn "could not remove the old install; continuing."
+  dsh plugin --profile web remove dsh-prts-ui >/dev/null 2>&1 || warn "could not remove the old install; continuing."
   # Clear pnpm's file:-tarball cache: it keys by filename, so a rebuilt
   # tarball with the same name would otherwise serve the stale copy.
   if command -v pnpm >/dev/null 2>&1; then
@@ -154,7 +154,7 @@ if [ -f "$PROFILE_DIR/node_modules/dsh-prts-ui/package.json" ]; then
     if [ -n "$STORE" ]; then rm -rf "$STORE"/file+*dsh-prts-ui* 2>/dev/null || true; fi
   fi
 fi
-dsh plugin --profile prts add "$TGZ" || warn "pnpm reported a warning; continuing if the package landed."
+dsh plugin --profile web add "$TGZ" || warn "pnpm reported a warning; continuing if the package landed."
 if [ ! -f "$PROFILE_DIR/node_modules/dsh-prts-ui/package.json" ]; then
   die "plugin did not install into $PROFILE_DIR"
 fi
@@ -178,10 +178,10 @@ dsh --profile prts --shortcut || warn "shortcut step failed (you can run \`dsh -
 say "Installing the 'prts' command…"
 BIN_DIR="$HOME/.local/bin"
 mkdir -p "$BIN_DIR"
-cat > "$BIN_DIR/prts" <<'EOF'
+cat > "$BIN_DIR/prts" <<EOF
 #!/bin/sh
-# PRTS launcher — the GUI window is the default surface (dsh --profile prts).
-exec dsh --profile prts "$@"
+# PRTS launcher — the GUI window is the default surface.
+exec node "$PROFILE_DIR/node_modules/dsh-prts-ui/bin/dsh-prts-ui.js" "\$@"
 EOF
 chmod +x "$BIN_DIR/prts"
 case ":$PATH:" in

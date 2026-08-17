@@ -5,14 +5,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/missercatos/dsh-prts-ui/releases"><img src="https://img.shields.io/badge/version-v0.8.2-7aa2f7?style=flat-square" alt="v0.8.2"></a>
+  <a href="https://github.com/missercatos/dsh-prts-ui/releases"><img src="https://img.shields.io/badge/version-v0.9.0-7aa2f7?style=flat-square" alt="v0.9.0"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-9ece6a?style=flat-square" alt="MIT"></a>
-  <a href="https://github.com/missercatos/dsh-prts-ui/releases"><img src="https://img.shields.io/badge/release-0.8.2-bb9af7?style=flat-square" alt="release"></a>
+  <a href="https://github.com/missercatos/dsh-prts-ui/releases"><img src="https://img.shields.io/badge/release-0.9.0-bb9af7?style=flat-square" alt="release"></a>
 </p>
 
 > [中文](./README.zh.md)
 
-**v0.8.2** · PRTS is a **GUI shell for dsh (DeepSeek Harness)** — not a standalone app. It mirrors dsh's real state (workspaces, sessions, models, credentials, tools, plugins) over dsh's stable `/api` RPC + WebSocket protocol; PRTS adds only the look and the control surface. Because it depends on the stable `/api` contract, dsh upgrades do not break it.
+**v0.9.0** · PRTS is a **GUI shell for dsh (DeepSeek Harness)** — not a standalone app. It mirrors dsh's real state (workspaces, sessions, models, credentials, tools, plugins) over dsh's stable `/api` RPC + WebSocket protocol; PRTS adds only the look and the control surface. Because it depends on the stable `/api` contract, dsh upgrades do not break it.
 
 Version 0.6.x is fixed and tested against the **current dsh core (v4-generation wire: `session.list`→`items`, `/api/events.mux` as a WebSocket)**.
 
@@ -72,7 +72,7 @@ prts                        # open the PRTS window immediately (particle intro =
                             # closing the window kills the dsh web it spawned)
 dsh --profile prts          # equivalent
 dsh --profile prts --lang zh
-dsh --profile prts --shortcut   # refresh desktop shortcuts
+dsh --profile web --shortcut   # refresh desktop shortcuts
 ```
 
 **Config**: first install provisions `~/.dsh/profiles/prts/prts.config.json` (template: `prts.config.example.json`) — npm/Electron mirrors, plugin list, release URL. Updates preserve it.

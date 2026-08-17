@@ -9,7 +9,7 @@ import { existsSync, mkdirSync, writeFileSync, chmodSync } from 'node:fs'
 import { join } from 'node:path'
 import { pkgRoot } from './root.js'
 
-const PROFILE = process.env.DSH_PRTS_PROFILE || 'prts'
+const PROFILE = process.env.DSH_PRTS_PROFILE || 'web'
 
 /** Absolute path of the packaged PRTS icon (diamond mark). */
 export const iconPath = join(pkgRoot, 'assets', 'prts.png')
@@ -42,7 +42,7 @@ async function installLinux(desktop) {
     'Type=Application',
     'Name=PRTS',
     'Comment=PRTS — monochrome DeepSeek client for dsh',
-    'Exec=dsh --profile ' + PROFILE,
+    'Exec=node ' + join(pkgRoot, 'bin', 'dsh-prts-ui.js'),
     'Icon=' + iconPath,
     'Terminal=false',
     'Categories=Utility;Chat;',
@@ -64,7 +64,7 @@ async function installLinux(desktop) {
 
 async function installMac(desktop) {
   const target = join(desktop, 'PRTS.command')
-  const content = '#!/bin/bash\nexec dsh --profile ' + PROFILE + '\n'
+  const content = '#!/bin/bash\nexec node ' + join(pkgRoot, 'bin', 'dsh-prts-ui.js') + '\n'
   writeFileSync(target, content, 'utf8')
   chmodSync(target, 0o755)
   return target
@@ -77,7 +77,7 @@ async function installWindows(desktop) {
     : join(homedir(), '.prts')
   mkdirSync(configDir, { recursive: true })
   const vbs = join(configDir, 'prts.vbs')
-  writeFileSync(vbs, 'CreateObject("WScript.Shell").Run "dsh --profile ' + PROFILE + '", 0, False\n')
+  writeFileSync(vbs, 'CreateObject("WScript.Shell").Run "node ""' + join(pkgRoot, 'bin', 'dsh-prts-ui.js').replace(/\\/g, '/') + '""", 0, False\n')
   const icon = iconPath.replace(/\.png$/, '.ico')
   const targets = [
     join(desktop, 'PRTS.lnk'),

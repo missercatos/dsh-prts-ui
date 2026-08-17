@@ -19,7 +19,7 @@ warn() { printf '%b\n' "${RED}warning:${NC} $*"; }
 die() { printf '%b\n' "${RED}error:${NC} $*" >&2; exit 1; }
 
 DSH_HOME_DIR="${DSH_HOME:-$HOME/.dsh}"
-PROFILE_DIR="$DSH_HOME_DIR/profiles/prts"
+PROFILE_DIR="$DSH_HOME_DIR/profiles/web"
 CONFIG_FILE="$PROFILE_DIR/prts.config.json"
 SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -76,7 +76,7 @@ PLUGINS="$(node -e '
 if [ -n "$PLUGINS" ]; then
   say "Updating dsh plugins…"
   for p in $PLUGINS; do
-    dsh plugin --profile prts add "$p" || warn "plugin '$p' failed to update (may not exist on npm)."
+    dsh plugin --profile web add "$p" || warn "plugin '$p' failed to update (may not exist on npm)."
   done
 fi
 
@@ -148,7 +148,7 @@ esac
 say "Updating the plugin in profile 'prts'…"
 # Remove the old install first so the same version (or a downgrade) also
 # overwrites in place — `pnpm add` alone would keep the existing copy.
-dsh plugin --profile prts remove dsh-prts-ui >/dev/null 2>&1 || true
+dsh plugin --profile web remove dsh-prts-ui >/dev/null 2>&1 || true
 node - "$PROFILE_DIR" <<'NODE'
 const fs = require('fs')
 const path = require('path')
@@ -181,7 +181,7 @@ if command -v pnpm >/dev/null 2>&1; then
     rm -rf "$STORE"/file+*dsh-prts-ui* 2>/dev/null || true
   fi
 fi
-dsh plugin --profile prts add "$TGZ"
+dsh plugin --profile web add "$TGZ"
 [ -f "$PROFILE_DIR/node_modules/dsh-prts-ui/package.json" ] || die "plugin not present after update."
 
 # Keep the profile config (mirrors / plugins / release URL) if the package
@@ -193,7 +193,7 @@ fi
 # ---------- 5. Shortcuts + market catalog ----------
 say "Refreshing desktop + app-menu shortcuts…"
 rm -f "${XDG_CONFIG_HOME:-$HOME/.config}/prts/.shortcut-done" 2>/dev/null || true
-dsh --profile prts --shortcut || warn "shortcut refresh failed (run it later)."
+dsh --profile web --shortcut || warn "shortcut refresh failed (run it later)."
 
 say "Refreshing the plugin-market catalog (best-effort)…"
 if [ -f "$SRC_DIR/scripts/scan-market.mjs" ]; then

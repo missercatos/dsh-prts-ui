@@ -59,7 +59,7 @@
 
   /** The prts profile directory under the dsh home. */
   function prtsProfileDir() {
-    const profile = env().DSH_PRTS_PROFILE || 'prts';
+    const profile = env().DSH_PRTS_PROFILE || 'web';
     return dshHome() + '/profiles/' + profile;
   }
 

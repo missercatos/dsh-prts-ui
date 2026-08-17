@@ -1,6 +1,6 @@
 {
   "name": "dsh-prts-ui",
-  "version": "0.8.2",
+  "version": "0.9.0",
   "description": "PRTS — the monochrome GUI shell for dsh (DeepSeek Harness): particle intro, workspaces/sessions with search, mode/model/reasoning/permission selectors, image attachments, approvals & questions, cost + system panels, voice input. Ships one-click installers for Windows/Linux/macOS/Android and the particle download site.",
   "type": "module",
   "main": "./src/runner.js",
@@ -11,7 +11,9 @@
   "exports": {
     "./startup": "./src/startup.js",
     "./runner": "./src/runner.js",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./client": "./lib/client.js",
+    "./host": "./lib/host.js"
   },
   "files": [
     "bin",
@@ -30,7 +32,8 @@
     "update.sh",
     "update.bat",
     "build-exe.bat",
-    "prts.config.example.json"
+    "prts.config.example.json",
+    "lib"
   ],
   "scripts": {
     "bundle": "node scripts/bundle-gui.mjs",
@@ -48,7 +51,9 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "commander": "^15.0.0"
+    "commander": "^15.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "peerDependencies": {
     "@deepseek-ai/dsh-cmdline": "^0.1.0-rc.6"
@@ -59,6 +64,19 @@
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-ui-theme"
+      ],
+      "platform": "web"
     }
   }
 }

@@ -47,3 +47,15 @@ const html = readFileSync(TEMPLATE, 'utf8')
 
 writeFileSync(OUT, html)
 console.log('bundle ->', OUT, html.length, 'bytes')
+
+// lib/ for the dsh bundle faces: client plugin + host plugin (ESM copies).
+const LIB_DIR = join(pkgRoot, 'lib')
+import { mkdirSync } from 'node:fs'
+mkdirSync(LIB_DIR, { recursive: true })
+const catalog = JSON.parse(existsSync(join(pkgRoot, 'web', 'skills-catalog.json'))
+  ? readFileSync(join(pkgRoot, 'web', 'skills-catalog.json'), 'utf8') : '{"skills":[]}').skills
+const clientSrc = readFileSync(join(pkgRoot, 'src', 'prts-client.js'), 'utf8')
+  .replace("'__SKILL_CATALOG__'", JSON.stringify(catalog))
+writeFileSync(join(LIB_DIR, 'client.js'), clientSrc)
+writeFileSync(join(LIB_DIR, 'host.js'), readFileSync(join(pkgRoot, 'src', 'host.js'), 'utf8'))
+console.log('lib -> client.js + host.js')

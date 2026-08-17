@@ -10,7 +10,7 @@ Add-Type -AssemblyName System.Drawing
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Tgz  = Get-ChildItem -Path $Root -Filter 'dsh-prts-ui-*.tgz' | Sort-Object Name | Select-Object -Last 1
 $Home = $env:USERPROFILE
-$ProfileDir = Join-Path $Home '.dsh\profiles\prts'
+$ProfileDir = Join-Path $Home '.dsh\profiles\web'
 $AppDir = Join-Path $env:APPDATA 'prts'
 
 $NPM_FALLBACK = 'https://registry.npmmirror.com'
@@ -174,18 +174,20 @@ function Install-Run {
     }
     # 3. 可选插件
     if ($CkMarket.Checked) {
-      Invoke-Step '安装 dsh 插件市场 (dshmarket)' { Run-Cmd 'dsh plugin --profile prts add dshmarket' }
+      Invoke-Step '安装 dsh 插件市场 (dshmarket)' { Run-Cmd 'dsh plugin --profile web add dshmarket' }
     }
     if ($CkModlens.Checked) {
-      Invoke-Step '安装第三方插件 ModLens' { Run-Cmd 'dsh plugin --profile prts add @liustack/modlens' }
+      Invoke-Step '安装第三方插件 ModLens' { Run-Cmd 'dsh plugin --profile web add @liustack/modlens' }
     }
     if ($CkSidebar.Checked) {
-      Invoke-Step '安装第三方插件 Better Sidebar' { Run-Cmd 'dsh plugin --profile prts add dsh-better-sidebar' }
+      Invoke-Step '安装第三方插件 Better Sidebar' { Run-Cmd 'dsh plugin --profile web add dsh-better-sidebar' }
     }
     # 4. PRTS 界面
     Invoke-Step '安装 PRTS 图形界面' {
       if (-not $Tgz) { throw '安装包缺少 dsh-prts-ui-*.tgz' }
-      Run-Cmd ('dsh plugin --profile prts add "' + $Tgz.FullName + '"')
+      Run-Cmd ('dsh plugin --profile web add "' + $Tgz.FullName + '"')
+      $pin = 'const fs=require("fs");const p=process.argv[1];const m=JSON.parse(fs.readFileSync(p,"utf8"));m.dsh=m.dsh||{};const e=(m.dsh.profile&&m.dsh.profile.bundles)||[];m.dsh.profile={bundles:Array.from(new Set(["dsh-prts-ui"].concat(e)))};fs.writeFileSync(p,JSON.stringify(m,null,2));'
+      Run-Cmd ('node -e "' + $pin + '" "' + (Join-Path $ProfileDir 'package.json') + '"')
     }
     # 5. 配置文件
     Invoke-Step '写入 PRTS 配置' {
@@ -209,7 +211,7 @@ function Install-Run {
     Invoke-Step '创建桌面与开始菜单快捷方式' {
       New-Item -ItemType Directory -Force -Path $AppDir | Out-Null
       $vbs = Join-Path $AppDir 'prts.vbs'
-      'CreateObject("WScript.Shell").Run "dsh --profile prts", 0, False' | Set-Content -Path $vbs -Encoding ASCII
+      'CreateObject("WScript.Shell").Run "node """ + (Join-Path $ProfileDir 'node_modules\dsh-prts-ui\bin\dsh-prts-ui.js') + """", 0, False' | Set-Content -Path $vbs -Encoding ASCII
       $ws = New-Object -ComObject WScript.Shell
       $desktop = [Environment]::GetFolderPath('Desktop')
       $startMenu = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'

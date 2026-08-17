@@ -6,7 +6,7 @@ echo   PRTS installer (Windows)
 echo ============================================
 echo.
 
-set "PROFILE_DIR=%USERPROFILE%\.dsh\profiles\prts"
+set "PROFILE_DIR=%USERPROFILE%\.dsh\profiles\web"
 set "CONFIG_FILE=%PROFILE_DIR%\prts.config.json"
 if not exist "%PROFILE_DIR%" mkdir "%PROFILE_DIR%"
 
@@ -62,7 +62,7 @@ if errorlevel 1 (
 REM ---------- 3. dsh plugins from prts.config.json ----------
 for /f "usebackq delims=" %%p in (`node -e "try{var c=require(process.argv[1]);(c.plugins||[]).forEach(function(p){console.log(p)})}catch(e){}" "%CONFIG_FILE%" 2^>nul`) do (
   echo Installing plugin %%p...
-  dsh plugin --profile prts add %%p
+  dsh plugin --profile web add %%p
   if errorlevel 1 echo [WARN] plugin %%p failed to install ^(may not exist on npm^).
 )
 
@@ -89,7 +89,7 @@ echo Installing plugin into profile 'prts'...
 if exist "%PROFILE_DIR%\node_modules\dsh-prts-ui\package.json" (
   echo PRTS is already installed - skipping re-install. Use update.bat to upgrade.
 ) else (
-  dsh plugin --profile prts add "%SRC%%TGZ%"
+  dsh plugin --profile web add "%SRC%%TGZ%"
   if errorlevel 1 (
     echo [ERROR] plugin install failed.
     exit /b 1
@@ -103,7 +103,7 @@ node -e "var fs=require('fs'),p=process.argv[1],m=JSON.parse(fs.readFileSync(p,'
 REM ---------- 7. Shortcut ----------
 echo Creating the desktop shortcut...
 del "%APPDATA%\prts\.shortcut-done" >nul 2>nul
-dsh --profile prts --shortcut
+dsh --profile web --shortcut
 
 REM ---------- 8. prts command on PATH ----------
 echo Installing the 'prts' command...

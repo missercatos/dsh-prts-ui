@@ -14,3 +14,7 @@
   - id: prts-runner
     name: 'dsh-prts-ui/runner'
     inject: [prtsStartup]
+
+  # PRTS panel APIs for the client plugin (/prts/api/* on every port).
+  - id: prts-host
+    name: 'dsh-prts-ui/host'

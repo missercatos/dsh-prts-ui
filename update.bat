@@ -39,7 +39,7 @@ if errorlevel 1 (
 REM ---------- 2. dsh plugins from prts.config.json ----------
 for /f "usebackq delims=" %%p in (`node -e "try{var c=require(process.argv[1]);(c.plugins||[]).forEach(function(p){console.log(p)})}catch(e){}" "%CONFIG_FILE%" 2^>nul`) do (
   echo Updating plugin %%p...
-  dsh plugin --profile prts add %%p
+  dsh plugin --profile web add %%p
   if errorlevel 1 echo [WARN] plugin %%p failed to update.
 )
 
@@ -77,8 +77,8 @@ if "%TGZ%"=="" (
 REM ---------- 4. Install the tarball into the profile ----------
 echo Updating the plugin in profile 'prts'...
 REM Remove the old install first so the same version also overwrites in place.
-dsh plugin --profile prts remove dsh-prts-ui >nul 2>nul
-dsh plugin --profile prts add "%TGZ%"
+dsh plugin --profile web remove dsh-prts-ui >nul 2>nul
+dsh plugin --profile web add "%TGZ%"
 if errorlevel 1 (
   echo [ERROR] plugin update failed.
   exit /b 1
@@ -87,7 +87,7 @@ if errorlevel 1 (
 REM ---------- 5. Shortcut ----------
 echo Refreshing the desktop shortcut...
 del "%APPDATA%\prts\.shortcut-done" >nul 2>nul
-dsh --profile prts --shortcut
+dsh --profile web --shortcut
 
 echo.
 echo Done - PRTS is up to date.

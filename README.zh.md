@@ -5,12 +5,12 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/missercatos/dsh-prts-ui/releases"><img src="https://img.shields.io/badge/版本-v0.8.2-7aa2f7?style=flat-square" alt="v0.8.2"></a>
+  <a href="https://github.com/missercatos/dsh-prts-ui/releases"><img src="https://img.shields.io/badge/版本-v0.9.0-7aa2f7?style=flat-square" alt="v0.9.0"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/许可-MIT-9ece6a?style=flat-square" alt="MIT"></a>
-  <a href="https://github.com/missercatos/dsh-prts-ui/releases"><img src="https://img.shields.io/badge/发布-0.8.2-bb9af7?style=flat-square" alt="release"></a>
+  <a href="https://github.com/missercatos/dsh-prts-ui/releases"><img src="https://img.shields.io/badge/发布-0.9.0-bb9af7?style=flat-square" alt="release"></a>
 </p>
 
-**v0.8.2** · PRTS 是 **dsh（DeepSeek Harness）的 GUI 外壳**，不是独立软件。它复用 dsh 的 `/api` RPC + WebSocket 协议镜像 dsh 的真实状态：工作区、会话、模型、凭证、工具、插件都来自 dsh；PRTS 只提供外观与操作面板。因为只依赖 dsh 稳定的 `/api` 协议，dsh 升级不会让它失效。
+**v0.9.0** · PRTS 是 **dsh（DeepSeek Harness）的 GUI 外壳**，不是独立软件。它复用 dsh 的 `/api` RPC + WebSocket 协议镜像 dsh 的真实状态：工作区、会话、模型、凭证、工具、插件都来自 dsh；PRTS 只提供外观与操作面板。因为只依赖 dsh 稳定的 `/api` 协议，dsh 升级不会让它失效。
 
 本版（0.6.x）已针对**当前 dsh 内核（v4 代 / `session.list`→`items`、`/api/events.mux` 为 WebSocket）**逐项修正并实测。
 
@@ -91,7 +91,7 @@ prts                       # 打开 PRTS 窗口（窗口立即出现，粒子开
                            # 关闭 PRTS 窗口时自动关闭它自己拉起的 dsh web）
 dsh --profile prts         # 等价写法
 dsh --profile prts --lang zh
-dsh --profile prts --shortcut   # 刷新桌面快捷方式
+dsh --profile web --shortcut   # 刷新桌面快捷方式
 ```
 
 **配置**：首次安装会生成 `~/.dsh/profiles/prts/prts.config.json`（模板 `prts.config.example.json`），里面可改 npm 镜像、Electron 镜像、插件列表、发布地址。更新时保留你的配置。
