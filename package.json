@@ -1,6 +1,6 @@
 {
   "name": "dsh-prts-ui",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "PRTS — the monochrome GUI shell for dsh (DeepSeek Harness): particle intro, workspaces/sessions with search, mode/model/reasoning/permission selectors, image attachments, approvals & questions, cost + system panels, voice input. Ships one-click installers for Windows/Linux/macOS/Android and the particle download site.",
   "type": "module",
   "main": "./src/runner.js",
@@ -69,14 +69,14 @@
       "inject": [
         "@deepseek-ai/dsh-client-connection",
         "@deepseek-ai/dsh-client-runtime",
-        "@deepseek-ai/dsh-client-ui-settings",
         "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings",
         "@deepseek-ai/dsh-api-remotes",
         "@deepseek-ai/dsh-client-ui-sidebar",
-        "@deepseek-ai/dsh-client-ui-slots",
         "@deepseek-ai/dsh-client-ui-theme"
       ],
-      "platform": "web"
+      "platform": "web",
+      "immediately": true
     }
   }
 }

@@ -22,7 +22,6 @@ const SILL = '__SKILL_CATALOG__'
 export function apply(ctx) {
   const slots = ctx.get('slots')
   const theme = ctx.get('theme')
-  if (slots === undefined || theme === undefined) return
 
   const R = React
   const { useState, useEffect, useRef, useCallback } = React
@@ -77,7 +76,7 @@ export function apply(ctx) {
   let appliedAccent = null
   async function applySkin(cfg) {
     // monochrome base tokens (light + dark)
-    try { theme.overrideTokens('prts', PRTS_TOKENS) } catch (e) { /* token API may reject */ }
+    if (theme) { try { theme.overrideTokens('prts', PRTS_TOKENS) } catch (e) { /* token API may reject */ } }
     // custom accent (buttons/brand) + wallpaper + glass as CSS variables
     const ui = (cfg && cfg.ui) || {}
     const accent = ui.accent || {}
@@ -92,7 +91,7 @@ export function apply(ctx) {
     setVar('--prts-square', custom && accent.square ? accent.square : '')
     if (custom) {
       // the brand token follows the custom primary
-      try { theme.overrideTokens('prts-accent', { dark: { '--dsw-alias-brand-primary': accent.primary || '#7aa2f7' }, light: { '--dsw-alias-brand-primary': accent.primary || '#7aa2f7' } }) } catch (e) { /* noop */ }
+      if (theme) { try { theme.overrideTokens('prts-accent', { dark: { '--dsw-alias-brand-primary': accent.primary || '#7aa2f7' }, light: { '--dsw-alias-brand-primary': accent.primary || '#7aa2f7' } }) } catch (e) { /* noop */ } }
     }
     appliedAccent = custom
     // glass master switch
@@ -484,6 +483,9 @@ export function apply(ctx) {
   let openPanel = null
   let overlayKey = 0
 
+  // slot registrations are best-effort: the skin layer above runs regardless
+  if (slots === undefined) return
+
   // sidebar actions
   const sidebarEntries = [
     ['prts-git', 'Git', 'git', 'git'],
@@ -550,8 +552,12 @@ export function apply(ctx) {
      ============================================================ */
 
   const SKIN_CSS = `
-  /* PRTS-styled controls on dsh-web */
-  button { border-radius: 8px !important; }
+  /* PRTS-styled controls on dsh-web — every plugin button lands here */
+  button, [role='button'], [class*='btn'], [class*='button'], [class*='Button'] {
+    border-radius: 8px !important;
+    border-color: var(--dsw-alias-border-l2) !important;
+  }
+  button:hover, [role='button']:hover { filter: brightness(1.12); }
   textarea { border-radius: 10px !important; }
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-thumb { background: var(--dsw-alias-border-l2); border-radius: 4px; }
@@ -636,7 +642,7 @@ export function apply(ctx) {
       }
       return out
     }
-    const acts = [['欢迎使用PRTS', 52], ['PRTS', 84]]
+    const acts = [['欢迎使用PRTS', 50], ['PRTS · DEEPSEEK', 36], ['◆', 120]]
     let act = 0
     const play = () => {
       const [text, font] = acts[act]
@@ -806,3 +812,5 @@ export function apply(ctx) {
 
   ctx.effect(() => () => { if (styleEl) { styleEl.remove(); styleEl = null } })
 }
+
+export default { apply }

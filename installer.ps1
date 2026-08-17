@@ -95,6 +95,14 @@ $CkMarket = New-Check $P2 'dsh 插件市场（dshmarket）— 图形界面浏览
 $CkGivemyflag = New-Check $P2 'givemyflag — CTF 解题工具（web 安全挑战自动打 FLAG）' 44 158 $false $true
 $CkModlens = New-Check $P2 'ModLens — 视觉增强：给纯文本模型增加图片理解能力' 44 186 $true $true
 $CkSidebar = New-Check $P2 'Better Sidebar — 类 VSCode 侧栏（资源管理器/编辑器/终端/Git）' 44 214 $true $true
+$CkMessageEdit = New-Check $P2 'dsh-message-edit — 消息编辑：历史消息一键重写重新发送' 44 242 $true $true
+$CkContextVista = New-Check $P2 'context-vista — 上下文可视化：token 占用与上下文窗口一目了然' 44 270 $true $true
+$CkSpend = New-Check $P2 'dsh-spend — 花费统计：每次会话的 token 消耗与费用明细' 44 298 $true $true
+$CkGenui = New-Check $P2 'dsh-genui — 界面生成（若 npm 未发布则自动跳过）' 44 326 $true $true
+$CkTurnRewind = New-Check $P2 'dsh-turn-rewind — 回合回溯：回到对话的任意一步重来' 44 354 $true $true
+$CkMneme = New-Check $P2 'dsh-mneme — 记忆插件（若 npm 未发布则自动跳过）' 44 382 $true $true
+$CkAgentTeams = New-Check $P2 'dsh-agent-teams — 多智能体协作（若 npm 未发布则自动跳过）' 44 410 $true $true
+$CkPlanExecute = New-Check $P2 'dsh-plan-execute — 计划-执行工作流（若 npm 未发布则自动跳过）' 44 438 $true $true
 $CkPrts = New-Check $P2 'PRTS 图形界面（必装）' 44 220 $true $false
 $Back2 = New-Object System.Windows.Forms.Button
 $Back2.Text = '‹ 上一步'; $Back2.Size = New-Object System.Drawing.Size(110, 36)
@@ -185,6 +193,24 @@ function Install-Run {
     }
     if ($CkSidebar.Checked) {
       Invoke-Step '安装第三方插件 Better Sidebar' { Run-Cmd 'dsh plugin --profile web add dsh-better-sidebar' }
+    }
+    $optionalPlugins = @(
+      @($CkMessageEdit, 'dsh-message-edit', '消息编辑'),
+      @($CkContextVista, 'context-vista', '上下文可视化'),
+      @($CkSpend, 'dsh-spend', '花费统计'),
+      @($CkGenui, 'dsh-genui', '界面生成'),
+      @($CkTurnRewind, 'dsh-turn-rewind', '回合回溯'),
+      @($CkMneme, 'dsh-mneme', '记忆'),
+      @($CkAgentTeams, 'dsh-agent-teams', '多智能体'),
+      @($CkPlanExecute, 'dsh-plan-execute', '计划执行')
+    )
+    foreach ($op in $optionalPlugins) {
+      if ($op[0].Checked) {
+        Invoke-Step ('安装可选插件 ' + $op[2] + ' (' + $op[1] + ')') {
+          try { Run-Cmd ('dsh plugin --profile web add ' + $op[1]) }
+          catch { Write-Log ('    跳过：' + $op[1] + ' 未在仓库中找到（不影响安装）') }
+        }
+      }
     }
     # 4. PRTS 界面
     Invoke-Step '安装 PRTS 图形界面' {

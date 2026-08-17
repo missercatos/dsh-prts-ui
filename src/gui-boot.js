@@ -116,7 +116,9 @@ async function startBackend(url) {
     writePid();
     child.on('exit', () => {
       if (state.child === child) state.child = null;
-      if (!state.stopped) state.spawnTimer = setTimeout(trySpawn, 2000);
+      // Only retry once the previous process is really gone — never stack
+      // several dsh-web instances racing for the port.
+      if (!state.stopped) state.spawnTimer = setTimeout(trySpawn, 3000);
     });
   };
   trySpawn();

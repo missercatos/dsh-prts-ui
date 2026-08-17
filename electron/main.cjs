@@ -23,6 +23,20 @@ protocol.registerSchemesAsPrivileged([
 let win = null
 const controllers = new Map()
 
+// One PRTS window at a time: a second launch focuses the existing window
+// instead of stacking another dsh-web shell.
+const gotLock = app.requestSingleInstanceLock()
+if (!gotLock) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    if (win) {
+      if (win.isMinimized()) win.restore()
+      win.focus()
+    }
+  })
+}
+
 // The dsh web URL is passed as the first argv (launcher) or via DSH_WEB_URL.
 const DSH_WEB_URL = process.argv.find((a) => /^https?:\/\//.test(a)) || process.env.DSH_WEB_URL || 'http://127.0.0.1:3085'
 
