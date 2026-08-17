@@ -601,7 +601,8 @@ export function apply(ctx) {
     document.head.appendChild(s)
   }
 
-  /** Particle intro (canvas dot-cloud, two acts, click to skip). */
+  /** Particle intro: the three acts loop while dsh loads in the background;
+   *  only when the page is fully rendered does it play through and enter. */
   function particleIntro(onDone) {
     const box = document.createElement('div')
     box.className = 'prtsIntro'
@@ -669,39 +670,63 @@ export function apply(ctx) {
       raf = requestAnimationFrame(frame)
     }
     raf = requestAnimationFrame(frame)
+    // status line under the particles: loading until the page is fully ready
+    const status = document.createElement('div')
+    status.style.cssText = 'position:absolute;bottom:18%;left:0;right:0;text-align:center;color:#9C9CA1;font-size:12px;letter-spacing:0.18em;z-index:3;'
+    status.textContent = '后台加载中…'
+    box.appendChild(status)
     play()
-    const next = setInterval(() => {
-      act++
-      if (act >= acts.length) { clearInterval(next); finish() }
+    let ready = false
+    let actTimer = null
+    const actLoop = () => {
+      act = (act + 1) % acts.length
+      if (!ready) play()
+      else if (act === 0) { finish() }
       else play()
-    }, 1900)
+      actTimer = setTimeout(actLoop, 1900)
+    }
+    actTimer = setTimeout(actLoop, 1900)
     let done = false
     function finish() {
       if (done) return
       done = true
-      clearInterval(next)
+      clearTimeout(actTimer)
       cancelAnimationFrame(raf)
       box.classList.add('done')
       setTimeout(() => { box.remove(); if (onDone) onDone() }, 700)
     }
-    box.addEventListener('click', finish)
-    setTimeout(finish, 4600)
+    // "fully loaded" = document complete + the first real UI is on screen
+    const waitReady = async () => {
+      const t0 = Date.now()
+      while (Date.now() - t0 < 20000) {
+        const complete = document.readyState === 'complete'
+        const uiUp = !!(document.querySelector('textarea') || document.querySelector('button') || document.querySelector('[class*="sidebar"]'))
+        if (complete && uiUp) break
+        await new Promise((r) => setTimeout(r, 300))
+      }
+      ready = true
+      status.textContent = 'READY · 进入中…'
+    }
+    waitReady()
+    box.addEventListener('click', () => { if (ready) finish() })
     return finish
   }
 
-  /** Replace the DeepSeek whale brand with PRTS. */
+  /** Remove every DeepSeek element → PRTS (brand text, whale, title, favicon). */
   function swapBrand() {
+    document.title = 'PRTS'
     const walk = () => {
-      // sidebar top area: find svg-like brand marks and text "DeepSeek"
       const tree = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
       const textNodes = []
       let n
       while ((n = tree.nextNode())) {
-        if (/deepseek|dsh/i.test((n.textContent || '').trim()) && n.textContent.trim().length < 30) textNodes.push(n)
+        const t = (n.textContent || '').trim()
+        if (/deepseek|deepseek harness/i.test(t) && t.length < 40) textNodes.push(n)
       }
-      for (const node of textNodes.slice(0, 4)) {
+      for (const node of textNodes.slice(0, 10)) {
         const parent = node.parentElement
-        if (!parent || parent.querySelector('.prtsBrand')) continue
+        if (!parent) continue
+        if (parent.querySelector('.prtsBrand')) continue
         const el = document.createElement('span')
         el.className = 'prtsBrand'
         el.innerHTML = '<span class="rhombus" style="position:relative;display:inline-block"></span>PRTS'
@@ -710,6 +735,19 @@ export function apply(ctx) {
     }
     walk()
     setTimeout(walk, 1500)
+    setTimeout(walk, 4000)
+    // favicon → PRTS mark (served by the host plugin)
+    if (!document.getElementById('prts-favicon')) {
+      fetch(origin() + '/prts/api/logo').then((r) => r.json()).then((d) => {
+        if (!d || !d.b64) return
+        const link = document.createElement('link')
+        link.id = 'prts-favicon'
+        link.rel = 'icon'
+        link.type = 'image/png'
+        link.href = 'data:image/png;base64,' + d.b64
+        document.head.appendChild(link)
+      }).catch(() => {})
+    }
   }
 
   /** Hero (blank conversation): diamond + italic PRTS + 欢迎回归，博士. */

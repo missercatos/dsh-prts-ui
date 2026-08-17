@@ -60,10 +60,10 @@ function createWindow() {
   })
   win.once('ready-to-show', () => win.show())
   win.removeMenu()
-  // PRTS = dsh-web + the PRTS client plugin: the window loads dsh web itself,
-  // so settings/plugins/panels are the official ones and every plugin the
-  // market installs appears exactly where dsh-web puts it.
-  win.loadURL(DSH_WEB_URL.replace(/\/+$/, '') + '/')
+  // The window opens INSTANTLY on a local splash page: particles play while
+  // dsh boots in the background ("后台加载中"), and once dsh web answers the
+  // splash redirects into it. No black screen, no retry gap.
+  win.loadURL('http://127.0.0.1:' + guiPort + '/splash.html')
 }
 
 /* ---------- filesystem bridge ---------- */
@@ -741,6 +741,55 @@ ipcMain.handle('prts:loginGithub', () => {
   )
 })
 
+function splashHtml() {
+  return `<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>PRTS</title><style>
+  html,body{margin:0;height:100%;background:#0A0A0B;overflow:hidden;font-family:sans-serif}
+  #cv{position:fixed;inset:0}
+  .stack{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;pointer-events:none}
+  .d{width:44px;height:44px;border:1.5px solid #FAFAFA;transform:rotate(45deg);animation:pulse 1.6s ease-in-out infinite;box-shadow:0 0 26px rgba(250,250,250,.35)}
+  @keyframes pulse{0%,100%{opacity:.55;transform:rotate(45deg) scale(1)}50%{opacity:1;transform:rotate(45deg) scale(1.12)}}
+  .word{color:#FAFAFA;font-style:italic;letter-spacing:.3em;font-size:26px;font-weight:600}
+  .status{color:#9C9CA1;font-size:12px;letter-spacing:.18em}
+</style></head><body>
+<canvas id="cv"></canvas>
+<div class="stack"><span class="d"></span><span class="word">PRTS</span><span class="status" id="st">后台加载中…</span></div>
+<script>
+(function(){
+  var DSH='__DSH_WEB_URL__';
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+  var N=2200,pts=[];
+  function resize(){cv.width=innerWidth;cv.height=innerHeight}
+  resize();addEventListener('resize',resize);
+  for(var i=0;i<N;i++)pts.push({x:Math.random()*1e4,y:Math.random()*1e4,s:.5+Math.random()*1.4,v:.04+Math.random()*.3});
+  function frame(){
+    ctx.clearRect(0,0,cv.width,cv.height);ctx.fillStyle='#FAFAFA';
+    for(var i=0;i<N;i++){var p=pts[i];p.y-=p.v;if(p.y<0){p.y=cv.height;p.x=Math.random()*cv.width}
+      ctx.globalAlpha=.5;ctx.fillRect(p.x%cv.width,p.y,p.s,p.s)}
+    ctx.globalAlpha=1;requestAnimationFrame(frame)
+  }
+  requestAnimationFrame(frame);
+  var st=document.getElementById('st'),ok=false;
+  async function probe(){
+    try{
+      var r=await fetch(DSH+'/api/workspace.list',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'client-request',rpcId:'splash-probe',method:'workspace.list',payload:{}})});
+      if(r.status===200){var j=await r.json().catch(function(){return null});return !!(j&&j.type==='server-response'&&j.result&&j.result.ok===true)}
+    }catch(e){}
+    return false
+  }
+  (async function(){
+    var delay=600;
+    while(true){
+      if(await probe()){ok=true;break}
+      await new Promise(function(r){setTimeout(r,delay)});
+      delay=Math.min(3000,delay+250);
+    }
+    if(ok){st.textContent='READY · 进入中…';setTimeout(function(){location.replace(DSH+'/')},600)}
+  })();
+})();
+</script></body></html>`.replace('__DSH_WEB_URL__', DSH_WEB_URL)
+}
+
 /* Loopback-only HTTP server: serves the single-file GUI plus the speech
  * engine files and the whisper model from the shared cache. Everything stays
  * on http(s) so transformers.js's XHR/module loading works untouched. */
@@ -751,6 +800,11 @@ function startGuiServer() {
   guiServer = http.createServer(async (req, res) => {
     const urlPath = decodeURIComponent(String(req.url || '/').split('?')[0])
     try {
+      if (urlPath === '/splash.html') {
+        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' })
+        res.end(splashHtml())
+        return
+      }
       if (urlPath === '/' || urlPath === '/index.html') {
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' })
         res.end(guiHtml)
