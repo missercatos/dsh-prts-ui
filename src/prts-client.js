@@ -542,5 +542,267 @@ export function apply(ctx) {
     if (root && root.render) root.render(el)
   }).catch(() => {})
 
+  /* ============================================================
+     PRTS skin layer — everything visual that makes dsh-web look
+     like PRTS: brand swap (no whale), hero, particle intro,
+     composer expand button, background diamond/square, voice,
+     PRTS-styled controls and the sidebar widget dock.
+     ============================================================ */
+
+  const SKIN_CSS = `
+  /* PRTS-styled controls on dsh-web */
+  button { border-radius: 8px !important; }
+  textarea { border-radius: 10px !important; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: var(--dsw-alias-border-l2); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--dsw-alias-label-secondary); }
+  /* PRTS brand (no whale) */
+  .prtsBrand { display: inline-flex; align-items: center; gap: 8px; font-style: italic; letter-spacing: 0.22em; font-weight: 600; font-size: 15px; color: var(--dsw-alias-label-primary); }
+  .prtsBrand .rhombus { width: 13px; height: 13px; border: 1.5px solid var(--prts-diamond, var(--dsw-alias-brand-primary)); transform: rotate(45deg); box-shadow: 0 0 8px var(--prts-diamond, var(--dsw-alias-brand-primary)); }
+  .prtsBrand .rhombus::after { content: ''; position: absolute; inset: 3px; background: var(--prts-diamond, var(--dsw-alias-brand-primary)); }
+  /* hero: diamond + italic PRTS + 欢迎回归，博士 */
+  .prtsHero { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 40px 0; color: var(--dsw-alias-label-primary); }
+  .prtsHero .big { width: 42px; height: 42px; border: 1.5px solid var(--prts-diamond, var(--dsw-alias-brand-primary)); transform: rotate(45deg); box-shadow: 0 0 26px var(--prts-diamond, var(--dsw-alias-brand-primary)); }
+  .prtsHero .word { font-style: italic; font-weight: 600; letter-spacing: 0.3em; font-size: 30px; }
+  .prtsHero .tag { font-size: 13px; letter-spacing: 0.2em; color: var(--dsw-alias-label-secondary); }
+  /* background diamond & square (behind the conversation) */
+  .prtsBgMarks { position: fixed; left: 50%; top: 50%; z-index: 0; pointer-events: none; }
+  .prtsBgMarks .d { position: absolute; width: 240px; height: 240px; border: 1px solid var(--prts-diamond, var(--dsw-alias-brand-primary)); transform: translate(-50%, -50%) rotate(45deg); opacity: 0.16; background: color-mix(in srgb, var(--prts-diamond, var(--dsw-alias-brand-primary)) 5%, transparent); box-shadow: 0 0 60px color-mix(in srgb, var(--prts-diamond, var(--dsw-alias-brand-primary)) 10%, transparent); }
+  .prtsBgMarks .s { position: absolute; width: 112px; height: 112px; border: 1px solid var(--prts-square, var(--dsw-alias-brand-primary)); transform: translate(-50%, -50%); opacity: 0.14; background: color-mix(in srgb, var(--prts-square, var(--dsw-alias-brand-primary)) 5%, transparent); }
+  .prtsBgMarks.vib .d { animation: prtsVib 0.16s linear infinite; }
+  .prtsBgMarks.vib .s { animation: prtsVibS 0.16s linear infinite; }
+  @keyframes prtsVib { 0% { transform: translate(-50%,-50%) rotate(45deg) scale(1); } 50% { transform: translate(-50%,-50%) rotate(45deg) scale(1.05); } }
+  @keyframes prtsVibS { 0% { transform: translate(-50%,-50%) scale(1); } 50% { transform: translate(-50%,-50%) scale(1.07); } }
+  /* composer expand button (PRTS diamond, hue-flow) */
+  .prtsExpand { position: absolute; right: 10px; top: -34px; width: 30px; height: 30px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 9px; background: var(--dsw-alias-bg-overlay); color: var(--prts-accent, var(--dsw-alias-brand-primary)); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 40; }
+  .prtsExpand .arrow { font-size: 15px; line-height: 1; animation: prtsHueFlow 6s linear infinite; }
+  @keyframes prtsHueFlow { from { filter: hue-rotate(0deg) brightness(1.2); } to { filter: hue-rotate(360deg) brightness(1.2); } }
+  /* particle intro */
+  .prtsIntro { position: fixed; inset: 0; z-index: 1000; background: var(--dsw-alias-bg-base); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: opacity 0.6s ease; }
+  .prtsIntro.done { opacity: 0; pointer-events: none; }
+  .prtsIntro canvas { position: absolute; inset: 0; }
+  .prtsIntro .txt { position: relative; z-index: 2; color: var(--dsw-alias-label-primary); font-style: italic; letter-spacing: 0.24em; font-size: 30px; opacity: 0; transition: opacity 0.5s ease; }
+  .prtsIntro .txt.show { opacity: 1; }
+  /* PRTS sidebar widget buttons */
+  .prtsWbtn { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; background: transparent; color: var(--dsw-alias-label-secondary); font-size: 11px; letter-spacing: 0.08em; cursor: pointer; }
+  .prtsWbtn:hover { color: var(--dsw-alias-label-primary); border-color: var(--prts-accent, var(--dsw-alias-brand-primary)); box-shadow: 0 0 10px color-mix(in srgb, var(--prts-accent, var(--dsw-alias-brand-primary)) 35%, transparent); }
+  `
+  function ensureSkinCss() {
+    if (document.getElementById('prts-skin-css')) return
+    const s = document.createElement('style')
+    s.id = 'prts-skin-css'
+    s.textContent = SKIN_CSS
+    document.head.appendChild(s)
+  }
+
+  /** Particle intro (canvas dot-cloud, two acts, click to skip). */
+  function particleIntro(onDone) {
+    const box = document.createElement('div')
+    box.className = 'prtsIntro'
+    const cv = document.createElement('canvas')
+    const txt = document.createElement('div')
+    txt.className = 'txt'
+    box.appendChild(cv)
+    box.appendChild(txt)
+    document.body.appendChild(box)
+    const ctx = cv.getContext('2d')
+    const N = 2600
+    const pts = []
+    const targets = []
+    const W = () => { cv.width = window.innerWidth; cv.height = window.innerHeight }
+    W()
+    window.addEventListener('resize', W)
+    for (let i = 0; i < N; i++) {
+      pts.push({ x: Math.random() * cv.width, y: Math.random() * cv.height, tx: Math.random() * cv.width, ty: Math.random() * cv.height, s: 0.6 + Math.random() * 1.2 })
+      targets.push(null)
+    }
+    function textPoints(text, fontPx) {
+      ctx.font = 'italic ' + fontPx + 'px sans-serif'
+      const w = ctx.measureText(text).width
+      const off = document.createElement('canvas')
+      off.width = Math.ceil(w) + 40
+      off.height = fontPx * 2
+      const o = off.getContext('2d')
+      o.font = 'italic ' + fontPx + 'px sans-serif'
+      o.fillStyle = '#fff'
+      o.fillText(text, 20, fontPx)
+      const img = o.getImageData(0, 0, off.width, off.height).data
+      const out = []
+      const gap = Math.max(2, Math.floor(N / 6000))
+      for (let y = 0; y < off.height; y += gap) {
+        for (let x = 0; x < off.width; x += gap) {
+          if (img[(y * off.width + x) * 4 + 3] > 128) out.push({ x: x + (cv.width - off.width) / 2, y: y + (cv.height - off.height) / 2 })
+        }
+      }
+      return out
+    }
+    const acts = [['欢迎使用PRTS', 52], ['PRTS', 84]]
+    let act = 0
+    const play = () => {
+      const [text, font] = acts[act]
+      txt.textContent = text
+      txt.classList.add('show')
+      const tp = textPoints(text, font)
+      for (let i = 0; i < N; i++) {
+        const t = tp[i % tp.length]
+        targets[i] = t ? { x: t.x + (Math.random() - 0.5) * 2, y: t.y + (Math.random() - 0.5) * 2 } : null
+      }
+    }
+    let raf = 0
+    const frame = () => {
+      ctx.clearRect(0, 0, cv.width, cv.height)
+      ctx.fillStyle = '#FAFAFA'
+      for (let i = 0; i < N; i++) {
+        const p = pts[i]
+        const t = targets[i]
+        if (t) { p.x += (t.x - p.x) * 0.08; p.y += (t.y - p.y) * 0.08 }
+        ctx.globalAlpha = 0.7
+        ctx.fillRect(p.x, p.y, p.s, p.s)
+      }
+      ctx.globalAlpha = 1
+      raf = requestAnimationFrame(frame)
+    }
+    raf = requestAnimationFrame(frame)
+    play()
+    const next = setInterval(() => {
+      act++
+      if (act >= acts.length) { clearInterval(next); finish() }
+      else play()
+    }, 1900)
+    let done = false
+    function finish() {
+      if (done) return
+      done = true
+      clearInterval(next)
+      cancelAnimationFrame(raf)
+      box.classList.add('done')
+      setTimeout(() => { box.remove(); if (onDone) onDone() }, 700)
+    }
+    box.addEventListener('click', finish)
+    setTimeout(finish, 4600)
+    return finish
+  }
+
+  /** Replace the DeepSeek whale brand with PRTS. */
+  function swapBrand() {
+    const walk = () => {
+      // sidebar top area: find svg-like brand marks and text "DeepSeek"
+      const tree = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+      const textNodes = []
+      let n
+      while ((n = tree.nextNode())) {
+        if (/deepseek|dsh/i.test((n.textContent || '').trim()) && n.textContent.trim().length < 30) textNodes.push(n)
+      }
+      for (const node of textNodes.slice(0, 4)) {
+        const parent = node.parentElement
+        if (!parent || parent.querySelector('.prtsBrand')) continue
+        const el = document.createElement('span')
+        el.className = 'prtsBrand'
+        el.innerHTML = '<span class="rhombus" style="position:relative;display:inline-block"></span>PRTS'
+        node.replaceWith(el)
+      }
+    }
+    walk()
+    setTimeout(walk, 1500)
+  }
+
+  /** Hero (blank conversation): diamond + italic PRTS + 欢迎回归，博士. */
+  function swapHero() {
+    const walk = () => {
+      const cands = [...document.querySelectorAll('div')].filter((d) => /deepseek/i.test((d.textContent || '').slice(0, 120)) && d.children.length <= 3 && d.clientHeight > 80)
+      const target = cands[cands.length - 1]
+      if (!target || target.querySelector('.prtsHero')) return
+      target.innerHTML = ''
+      const hero = document.createElement('div')
+      hero.className = 'prtsHero'
+      hero.innerHTML = '<span class="big"></span><span class="word">PRTS</span><span class="tag">欢迎回归，博士</span>'
+      target.appendChild(hero)
+    }
+    walk()
+    setTimeout(walk, 1500)
+    setTimeout(walk, 3500)
+  }
+
+  /** Composer expand button above the input area. */
+  function composerExpand() {
+    const walk = () => {
+      const ta = document.querySelector('textarea')
+      if (!ta || document.querySelector('.prtsExpand')) return
+      let host = ta.parentElement
+      for (let i = 0; i < 6 && host; i++) {
+        if (getComputedStyle(host).position === 'relative' || getComputedStyle(host).position === 'absolute') break
+        host = host.parentElement
+      }
+      const wrap = ta.closest('form') || ta.parentElement.parentElement
+      if (!wrap) return
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'prtsExpand'
+      btn.title = '展开输入框'
+      btn.innerHTML = '<span class="arrow">▲</span>'
+      let open = false
+      btn.addEventListener('click', () => {
+        open = !open
+        ta.style.minHeight = open ? '180px' : ''
+        btn.innerHTML = '<span class="arrow">' + (open ? '▼' : '▲') + '</span>'
+      })
+      ;(host || wrap).style.position = (host || wrap).style.position || 'relative'
+      ;(host || wrap).appendChild(btn)
+    }
+    walk()
+    setTimeout(walk, 2000)
+  }
+
+  /** Background diamond + square (vibrates while voice is on). */
+  function backgroundMarks() {
+    if (document.getElementById('prtsBgMarks')) return
+    const marks = document.createElement('div')
+    marks.id = 'prtsBgMarks'
+    marks.className = 'prtsBgMarks'
+    marks.innerHTML = '<span class="d"></span><span class="s"></span>'
+    document.body.appendChild(marks)
+    return marks
+  }
+
+  /** Voice button: inserted beside the composer controls; vibrates the marks. */
+  function voiceButton() {
+    const walk = () => {
+      const ta = document.querySelector('textarea')
+      if (!ta || document.querySelector('.prtsVoice')) return
+      const row = ta.parentElement
+      if (!row) return
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'prtsWbtn prtsVoice'
+      btn.title = '语音输入'
+      btn.innerHTML = '<span>🎙</span> VOICE'
+      let on = false
+      btn.addEventListener('click', () => {
+        on = !on
+        const marks = backgroundMarks()
+        marks.classList.toggle('vib', on)
+        btn.style.color = on ? 'var(--prts-accent, var(--dsw-alias-brand-primary))' : ''
+      })
+      row.appendChild(btn)
+    }
+    walk()
+    setTimeout(walk, 2500)
+  }
+
+  /* ---------- mount the skin ---------- */
+  ensureSkinCss()
+  backgroundMarks()
+  const closeIntro = particleIntro(() => {})
+  swapBrand()
+  swapHero()
+  composerExpand()
+  voiceButton()
+  ctx.effect(() => {
+    const int = ctx.get('timer') ? ctx.get('timer').interval(() => {
+      swapBrand(); swapHero(); composerExpand(); voiceButton()
+    }, 6000) : null
+    return () => { if (int) int() }
+  })
+
   ctx.effect(() => () => { if (styleEl) { styleEl.remove(); styleEl = null } })
 }

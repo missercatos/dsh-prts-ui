@@ -91,9 +91,10 @@ $P2 = New-Page
 [void](New-Label $P2 '选择要安装的组件' 28 22 560 16 $Ink)
 [void](New-Label $P2 '必装项已锁定；可选插件可随时在 dsh 插件市场中增删。' 28 60 560 10 $Dim)
 $CkDsh = New-Check $P2 'dsh 本体（必装）' 44 100 $true $false
-$CkMarket = New-Check $P2 'dsh 插件市场（dshmarket — 推荐，图形界面装/卸插件）' 44 130 $true $true
-$CkModlens = New-Check $P2 '第三方插件：ModLens（视觉辅助）' 44 160 $true $true
-$CkSidebar = New-Check $P2 '第三方插件：Better Sidebar（增强侧栏）' 44 190 $true $true
+$CkMarket = New-Check $P2 'dsh 插件市场（dshmarket）— 图形界面浏览、搜索、一键装/卸插件' 44 130 $true $true
+$CkGivemyflag = New-Check $P2 'givemyflag — CTF 解题工具（web 安全挑战自动打 FLAG）' 44 158 $false $true
+$CkModlens = New-Check $P2 'ModLens — 视觉增强：给纯文本模型增加图片理解能力' 44 186 $true $true
+$CkSidebar = New-Check $P2 'Better Sidebar — 类 VSCode 侧栏（资源管理器/编辑器/终端/Git）' 44 214 $true $true
 $CkPrts = New-Check $P2 'PRTS 图形界面（必装）' 44 220 $true $false
 $Back2 = New-Object System.Windows.Forms.Button
 $Back2.Text = '‹ 上一步'; $Back2.Size = New-Object System.Drawing.Size(110, 36)
@@ -175,6 +176,9 @@ function Install-Run {
     # 3. 可选插件
     if ($CkMarket.Checked) {
       Invoke-Step '安装 dsh 插件市场 (dshmarket)' { Run-Cmd 'dsh plugin --profile web add dshmarket' }
+    }
+    if ($CkGivemyflag.Checked) {
+      Invoke-Step '安装第三方插件 givemyflag' { Run-Cmd 'dsh plugin --profile web add dsh-givemyflag' }
     }
     if ($CkModlens.Checked) {
       Invoke-Step '安装第三方插件 ModLens' { Run-Cmd 'dsh plugin --profile web add @liustack/modlens' }
