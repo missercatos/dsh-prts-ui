@@ -855,15 +855,11 @@
   let trajNodesCache = null;
   let trajTickTimer = null;
 
-  const TRAJ_COLORS_DEFAULT = { user: '#7aa2f7', assistant: '#9d7cd8', tool: '#e0af68', error: '#f7768e' };
+  // Fixed quartet on every theme (webUI parity): USER blue on top,
+  // ASSISTANT purple below, TOOL yellow under it, ERROR red at the bottom.
+  const TRAJ_COLORS_DEFAULT = { user: '#7aa2f7', assistant: '#bb9af7', tool: '#e0af68', error: '#f7768e' };
   function trajColor(kind) {
-    if (document.documentElement.dataset.theme === 'custom') {
-      const cs = getComputedStyle(document.documentElement);
-      const get = (k) => (cs.getPropertyValue(k) || '').trim();
-      const map = { user: get('--prts-accent'), assistant: get('--prts-diamond'), tool: get('--prts-square'), error: '#f7768e' };
-      return (map[kind] && map[kind].indexOf('#') === 0) ? map[kind] : TRAJ_COLORS_DEFAULT[kind];
-    }
-    return TRAJ_COLORS_DEFAULT[kind];
+    return TRAJ_COLORS_DEFAULT[kind] || TRAJ_COLORS_DEFAULT.assistant;
   }
   function trajResultText(ev) {
     const d = ev.data || {};

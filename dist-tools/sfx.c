@@ -83,13 +83,10 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR lpCmdLine, int nCmdSh
     "if not exist payload.zip goto missing\r\n"
     "tar -xf payload.zip >nul 2>nul\r\n"
     "if errorlevel 1 powershell -NoProfile -ExecutionPolicy Bypass -Command \"Expand-Archive -Force -LiteralPath 'payload.zip' -DestinationPath '.'\"\r\n"
-    "if not exist install.bat goto missing\r\n"
-    "call install.bat\r\n"
-    "set PRTS_EXIT=%ERRORLEVEL%\r\n"
-    "echo.\r\n"
-    "echo PRTS: installer finished (exit %PRTS_EXIT%). You can delete %~dp0 now.\r\n"
-    "pause\r\n"
-    "exit /b %PRTS_EXIT%\r\n"
+    "if not exist installer.ps1 goto missing\r\n"
+    "if not exist prts-launch.vbs goto missing\r\n"
+    "wscript.exe //B prts-launch.vbs\r\n"
+    "exit /b 0\r\n"
     ":missing\r\n"
     "echo PRTS: extracted files are incomplete. Re-download the installer and retry.\r\n"
     "pause\r\n"
@@ -107,7 +104,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR lpCmdLine, int nCmdSh
   ZeroMemory(&pi, sizeof(pi));
   char cmdline[1024];
   wsprintfA(cmdline, "cmd.exe /c \"\"%s\"\"", batPath);
-  if (!CreateProcessA(NULL, cmdline, NULL, NULL, FALSE, 0, NULL, dir, &si, &pi)) {
+  if (!CreateProcessA(NULL, cmdline, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, dir, &si, &pi)) {
     MessageBoxA(NULL, "PRTS: could not start the installer.", "PRTS Setup", MB_ICONERROR);
     return 1;
   }

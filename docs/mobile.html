@@ -3,13 +3,11 @@
 <head>
 <script>
 // Mobile devices get the lighter dedicated page (same effect, fewer particles).
-if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) && !location.pathname.endsWith('mobile.html')) {
-  location.replace('mobile.html');
-}
+
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>PRTS · dsh-prts 官网</title>
+<title>PRTS · 移动版</title>
 <meta name="description" content="PRTS —— DeepSeek Harness (dsh) 的 GUI 外壳。一键安装包：Windows / Linux / macOS / Android。无需 GitHub 访问。">
 <meta name="theme-color" content="#0A0A0B">
 <link rel="manifest" href="manifest.json">
@@ -56,7 +54,7 @@ if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) && !location.pa
   .brand .rhombus::after {
     content: ''; position: absolute; inset: 4px; background: var(--ink);
   }
-  .brand .word { font-size: 15px; font-weight: 600; letter-spacing: 0.22em; font-style: italic; }
+  .brand .word { font-size: 13px; font-weight: 600; letter-spacing: 0.22em; font-style: italic; }
   .topActions { display: inline-flex; gap: 8px; pointer-events: auto; }
   .iconBtn {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -514,8 +512,8 @@ if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) && !location.pa
     const pureAscii = /^[A-Za-z0-9 .-]+$/.test(text);
     // Font by kind: ASCII headline words (PRTS) big, platform words small,
     // Chinese chunks standard. The welcome line shows complete at once.
-    const fontPx = pureAscii ? (text.length <= 5 ? 60 : 44) : 84;
-    engine.showText(text, fontPx);
+    const fontPx = pureAscii ? (text.length <= 5 ? 44 : 32) : 58;
+    engine.showText(text, Math.round(fontPx * 0.62));
     chunkIndex++;
     if (chunkIndex % chunks.length === 0) { phaseIndex++; chunkIndex = 0; }
     // Short linger per chunk: the phrase reads piece by piece.

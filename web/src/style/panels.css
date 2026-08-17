@@ -562,3 +562,23 @@ body[data-wallpaper='on'] .settingsCard {
 .trajTaskTimer { font-family: var(--prts-mono); font-size: 11px; color: var(--prts-accent); }
 /* status glow (PRTS代理) */
 .statusRow .shimmer { color: var(--prts-accent); text-shadow: 0 0 14px color-mix(in srgb, var(--prts-accent) 60%, transparent); }
+
+/* ---------- 0.8.2: WEB panel (iframe dsh-web) ---------- */
+.webCard {
+  width: min(1120px, calc(100vw - 40px));
+  height: min(760px, calc(100vh - 60px));
+  display: flex; flex-direction: column; overflow: hidden;
+  padding: 16px 18px 0;
+  background: color-mix(in srgb, var(--prts-panel) 88%, transparent);
+}
+.webCard .settingsHead { flex: none; margin-bottom: 10px; }
+#webFrame {
+  flex: 1; width: 100%; border: none; border-radius: 10px;
+  background: #0A0A0B;
+}
+/* block rows: slide-down animation for think/bash/read */
+.blkRow .dBody {
+  max-height: 0; overflow: hidden; padding: 0 10px;
+  transition: max-height 0.28s var(--prts-ease-out), padding 0.28s var(--prts-ease-out);
+}
+.blkRow.open .dBody { max-height: 640px; overflow-y: auto; padding: 10px; }

@@ -1063,7 +1063,7 @@
     left.appendChild(thirdBtn);
     const marketBtn = el('button', 'sBtn', t('settings.plugins.openMarket'));
     marketBtn.type = 'button';
-    marketBtn.addEventListener('click', () => { if (P.market) P.market.open(); });
+    marketBtn.addEventListener('click', () => { if (P.app && P.app.openWeb) P.app.openWeb(); });
     left.appendChild(marketBtn);
 
     /* —— 插件列表 column (searchable, core / third-party) —— */

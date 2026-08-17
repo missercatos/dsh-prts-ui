@@ -60,7 +60,7 @@
    *  page toggles them; every id in SIDEBAR_BUTTONS can show/hide. */
   // The settings button is deliberately NOT in this list: settings must
   // always stay reachable in the bottom-left corner.
-  const SIDEBAR_BUTTONS = ['themeBtn', 'gitBtn', 'skillBtn', 'marketBtn', 'detailsBtn'];
+  const SIDEBAR_BUTTONS = ['themeBtn', 'webBtn', 'gitBtn', 'skillBtn', 'marketBtn', 'detailsBtn'];
   A.SIDEBAR_BUTTONS = SIDEBAR_BUTTONS;
   function applySidebarButtons(cfg) {
     const on = (cfg && cfg.ui && cfg.ui.sidebarButtons) || {};
@@ -881,6 +881,21 @@
     if (P.git) P.git.render($('gitBody'), A.config);
   };
   A.closeGit = function () { $('gitOverlay').classList.remove('open'); };
+
+  /* ---------- WEB panel (iframe: dsh-web itself, incl. its plugin market) ---------- */
+  A.openWeb = function () {
+    const frame = $('webFrame');
+    if (frame && !frame.src) {
+      let base = 'http://127.0.0.1:3080';
+      try {
+        const u = P.dshState && P.dshState.url;
+        if (u) base = String(u).replace(/\/+$/, '');
+      } catch (e) { /* default */ }
+      frame.src = base + '/';
+    }
+    $('webOverlay').classList.add('open');
+  };
+  A.closeWeb = function () { $('webOverlay').classList.remove('open'); };
 
   /* ---------- skill dock (sidebar) ---------- */
   A.openSkills = function () {
@@ -1807,6 +1822,8 @@
     });
     $('marketBtn').addEventListener('click', A.openMarket);
     $('marketClose').addEventListener('click', A.closeMarket);
+    $('webBtn').addEventListener('click', A.openWeb);
+    $('webClose').addEventListener('click', A.closeWeb);
     $('gitBtn').addEventListener('click', A.openGit);
     $('gitClose').addEventListener('click', A.closeGit);
     $('skillBtn').addEventListener('click', A.openSkills);
@@ -1898,12 +1915,13 @@
       if (e.target === $('marketOverlay')) A.closeMarket();
       if (e.target === $('gitOverlay')) A.closeGit();
       if (e.target === $('skillOverlay')) A.closeSkills();
+      if (e.target === $('webOverlay')) A.closeWeb();
     });
     let lastEscAt = 0;
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
       const now = Date.now();
-      closePops(); A.closeSettings(); A.closeMarket(); A.closeGit(); A.closeSkills();
+      closePops(); A.closeSettings(); A.closeMarket(); A.closeGit(); A.closeSkills(); A.closeWeb();
       if (P.system && P.system.open) P.system.close();
       if (now - lastEscAt < 500) {
         lastEscAt = 0;

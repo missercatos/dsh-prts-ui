@@ -112,6 +112,30 @@
       "repo": "https://github.com/anthropics/skills",
       "subdir": "skills/mcp-builder",
       "category": "tool"
+    },
+    {
+      "name": "claude-api",
+      "displayName": "Claude API · API 开发",
+      "description": "Anthropic 官方 claude-api：Claude API 的调用、流式处理与工具编排开发。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/claude-api",
+      "category": "tool"
+    },
+    {
+      "name": "webapp-testing",
+      "displayName": "Webapp Testing · 应用测试",
+      "description": "Anthropic 官方 webapp-testing：为本地 Web 应用编写端到端测试与 QA。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/webapp-testing",
+      "category": "tool"
+    },
+    {
+      "name": "internal-comms",
+      "displayName": "Internal Comms · 沟通文本",
+      "description": "Anthropic 官方 internal-comms：公告、状态更新等内部沟通文本写作。",
+      "repo": "https://github.com/anthropics/skills",
+      "subdir": "skills/internal-comms",
+      "category": "text"
     }
   ]
 }

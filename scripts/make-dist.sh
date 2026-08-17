@@ -46,7 +46,7 @@ cp "$TGZ" "$OUT/dsh-prts-ui-$VERSION.tgz"
 
 # ---------- 2. Payload directory (what every installer extracts) ----------
 say "Preparing the installer payload…"
-for f in bin src web electron assets scripts cordis.patch.yml package.json LICENSE README.md README.zh.md \
+for f in bin src web electron assets scripts cordis.patch.yml package.json LICENSE README.md README.zh.md installer.ps1 prts-launch.vbs \
          install.sh install.bat install-android.sh update.sh update.bat build-exe.bat prts.config.example.json; do
   if [ -e "$f" ]; then
     mkdir -p "$PAYLOAD/$(dirname "$f")"
