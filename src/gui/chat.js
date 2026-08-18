@@ -570,16 +570,18 @@
     return P.icons[map[name]] || P.icons['ma.tool'] || '⟳';
   }
 
-  /** Collapsible block row: glyph → chevron on hover, summary line, hidden
-   *  body. Shared by think / bash / read / edit blocks (webUI interaction). */
-  function blkRow(kind, title, summary, bodyHtml, rawText) {
-    const item = el('div', 'toolBlock blkRow');
-    const head = el('button', 'dRow blkHead');
-    head.type = 'button';
+  /** Collapsible block row (dsh-web ToolRow): compact header with glyph +
+   *  title + summary, click expands the body downward. */
+  function blkRow(kind, title, summary, bodyHtml, rawText, status) {
+    const item = el('div', 'toolBlock blkRow' + (status && status.failed ? ' failed' : ''));
+    const head = el('div', 'dRow blkHead');
+    const fold = el('button', 'blkFold');
+    fold.type = 'button';
+    fold.setAttribute('aria-expanded', 'false');
+    fold.setAttribute('aria-label', t('chat.fold'));
+    fold.innerHTML = P.icons.chev || '›';
     const glyph = el('span', 'blkGlyph');
     glyph.innerHTML = toolIcon(kind) || P.icons['ma.tool'] || '⟳';
-    const chev = el('span', 'blkChev');
-    chev.innerHTML = P.icons.chev || '›';
     const copyBtn = el('button', 'blkCopy');
     copyBtn.type = 'button';
     copyBtn.title = t('chat.copy');
@@ -590,26 +592,30 @@
       p.then(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copied')); })
         .catch(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copyFail')); });
     });
+    head.appendChild(fold);
     head.appendChild(glyph);
-    head.appendChild(chev);
     head.appendChild(el('span', 'dTitle', title));
-    head.appendChild(copyBtn);
-    item.appendChild(head);
     if (summary) {
-      const s = el('div', 'blkSummary');
+      const s = el('span', 'blkSummary');
       s.textContent = summary;
       s.title = summary;
-      item.appendChild(s);
+      head.appendChild(s);
     }
+    if (status && status.failed) {
+      const st = el('span', 'blkStatus');
+      st.textContent = status.text || 'error';
+      head.appendChild(st);
+    }
+    head.appendChild(copyBtn);
+    item.appendChild(head);
     const body = el('div', 'dBody');
-    body.style.display = 'none';
     if (bodyHtml) body.appendChild(bodyHtml);
     item.appendChild(body);
-    head.addEventListener('click', (e) => {
-      if (e.target.closest('.blkCopy')) return;
-      const open = body.style.display !== 'none';
-      body.style.display = open ? 'none' : '';
+    fold.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = item.classList.contains('open');
       item.classList.toggle('open', !open);
+      fold.setAttribute('aria-expanded', String(!open));
     });
     return item;
   }
@@ -654,6 +660,8 @@
       if (pathRow.childNodes.length) body.appendChild(pathRow);
       body.appendChild(argsBody.appendChild(pre));
     }
+    let failed = false;
+    let statusText = '';
     if (blk.result) {
       const d = el('div');
       const pre = el('div', 'thinkBody');
@@ -662,8 +670,12 @@
       pre.innerHTML = linkifyPaths(mdToHtml(String(blk.result).slice(0, 20000)));
       d.appendChild(pre);
       body.appendChild(d);
+      if (err) {
+        failed = true;
+        statusText = String(blk.result).split('\n')[0].slice(0, 40) || 'error';
+      }
     }
-    return blkRow(name, name, toolSummary(name, blk.arguments), body, [argsText, blk.result || ''].filter(Boolean).join('\n'));
+    return blkRow(name, TOOL_TITLES[name] || name, toolSummary(name, blk.arguments), body, [argsText, blk.result || ''].filter(Boolean).join('\n'), { failed, text: statusText });
   }
 
   /** Think block row — collapsed, summary line shows the gist. */
@@ -749,9 +761,16 @@
   function renderTool(msg) {
     const item = el('div', 'assistantItem toolItem');
     item.dataset.msg = msg.id;
-    const head = el('button', 'dRow');
-    head.type = 'button';
-    head.innerHTML = P.icons['ma.tool'] || '⟳';
+    const head = el('div', 'dRow');
+    const fold = el('button', 'blkFold');
+    fold.type = 'button';
+    fold.setAttribute('aria-expanded', 'false');
+    fold.setAttribute('aria-label', t('chat.fold'));
+    fold.innerHTML = P.icons.chev || '›';
+    head.appendChild(fold);
+    const glyph = el('span', 'blkGlyph');
+    glyph.innerHTML = P.icons['ma.tool'] || '⟳';
+    head.appendChild(glyph);
     head.appendChild(el('span', 'dTitle', msg.name));
     item.appendChild(head);
     if (msg.args) {
@@ -760,8 +779,13 @@
       pre.textContent = String(msg.args).slice(0, 1200);
       argsBody.appendChild(pre);
       item.appendChild(argsBody);
-      head.addEventListener('click', () => item.classList.toggle('openArgs'));
+      fold.addEventListener('click', (e) => {
+        e.stopPropagation();
+        item.classList.toggle('openArgs');
+        fold.setAttribute('aria-expanded', String(item.classList.contains('openArgs')));
+      });
       item.classList.add('openArgs');
+      fold.setAttribute('aria-expanded', 'true');
     }
     if (msg.content) {
       const d = el('div', 'disclosure open');
@@ -849,7 +873,10 @@
      and a live task view while the agent is running.
      ============================================================ */
   let trajQuery = '';
-  let trajSort = 'duration';       // duration | turns | calls
+  let trajTime = 'duration';       // duration | clock
+  let trajTurnChips = true;        // 轮次 toggle
+  let trajCallChips = true;        // 调用数 toggle
+  let trajDetailsOpen = true;      // details column
   let trajSelected = null;         // node index
   let trajDetailTab = 'summary';   // summary | preview | raw
   let trajNodesCache = null;
@@ -898,134 +925,129 @@
     return nodes;
   }
 
-  /** 4-lane waveform: USER top, ASSISTANT below, TOOL under it, ERROR bottom.
-   *  Height = activity density (count in a window), alpha = intensity. */
-  function trajWaveSvg(nodes, onPick) {
-    const W = 900, H = 80, LANE = 19;
-    const lanes = { user: 0, assistant: 1, tool: 2, error: 3 };
-    const bw = nodes.length ? Math.max(2, Math.floor(W / nodes.length) - 1) : 2;
-    const win = 7;
-    const counts = nodes.map((n, i) => {
-      const c = { user: 0, assistant: 0, tool: 0, error: 0 };
-      for (let j = Math.max(0, i - win); j <= Math.min(nodes.length - 1, i + win); j++) c[nodes[j].kind]++;
-      return c;
-    });
-    const maxC = Math.max(1, ...counts.map((c) => Math.max(c.user, c.assistant, c.tool, c.error)));
-    let svg = '';
-    nodes.forEach((n, i) => {
-      const x = i * (bw + 1);
-      const lane = lanes[n.kind];
-      const cy = lane * LANE + LANE / 2 + 4;
-      const c = counts[i][n.kind];
-      const h = 4 + 13 * (c / maxC);
-      const alpha = 0.3 + 0.65 * (c / maxC);
-      svg += '<rect x="' + x + '" y="' + (cy - h / 2) + '" width="' + bw + '" height="' + h + '" fill="' + trajColor(n.kind) + '" opacity="' + alpha.toFixed(2) + '"/>';
-    });
-    const legend = ['user', 'assistant', 'tool', 'error'].map((k) =>
-      '<span class="tlWaveKey"><span class="tlWaveDot" style="background:' + trajColor(k) + '"></span><span>' + t('traj.lane.' + k) + '</span></span>').join('');
-    const svgEl = '<div class="trajWaveLegend">' + legend + '</div>' +
-      '<svg class="trajWave" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:80px;cursor:pointer">' + svg + '</svg>';
-    const wrap = el('div', 'trajWaveWrap');
-    wrap.innerHTML = svgEl;
-    const s = wrap.querySelector('svg.trajWave');
-    s.addEventListener('click', (e) => {
-      const r = s.getBoundingClientRect();
-      const x = (e.clientX - r.left) / Math.max(1, r.width);
-      const idx = Math.min(nodes.length - 1, Math.max(0, Math.floor(x * nodes.length)));
-      if (onPick) onPick(idx);
-    });
-    return wrap;
-  }
+  /** Tool row kind → short display title (dsh-web parity). */
+  const TOOL_TITLES = {
+    bash: 'Bash', terminal: 'Bash', read: 'Read', read_file: 'Read', read_multi: 'Read',
+    edit: 'Edit', str_replace_editor: 'Edit', str_replace: 'Edit', write: 'Write',
+    web_fetch: 'Web', web_search: 'Search', grep: 'Search', glob: 'Search',
+    todo_write: 'Todo', ask_user_question: 'Ask', skill: 'Skill',
+  };
 
-  function trajNodeRow(node, idx) {
-    const row = el('div', 'tlRow' + (trajSelected === idx ? ' sel' : ''));
-    row.dataset.trajIdx = String(idx);
-    const bar = el('span', 'tlBar');
-    bar.style.background = trajColor(node.kind);
-    row.appendChild(bar);
-    const badge = el('span', 'tlType', t('traj.lane.' + node.kind));
-    badge.style.color = trajColor(node.kind);
-    row.appendChild(badge);
-    if (node.brief) {
-      const bf = el('span', 'tlBrief');
-      bf.textContent = String(node.brief).slice(0, 200);
-      bf.title = node.brief;
-      row.appendChild(bf);
+  function trajRow(node, idx) {
+    const nodes = trajNodes();
+    const tr = document.createElement('tr');
+    tr.className = 'trajRow' + (trajSelected === idx ? ' sel' : '');
+    tr.dataset.kind = node.kind;
+    tr.dataset.turnStart = node.turn !== undefined && (idx === 0 || (nodes[idx - 1] && nodes[idx - 1].turn) !== node.turn) ? 'true' : 'false';
+    tr.dataset.error = node.kind === 'error' ? 'true' : 'false';
+    tr.dataset.selected = trajSelected === idx ? 'true' : 'false';
+    tr.dataset.trajIdx = String(idx);
+    const tdEv = document.createElement('td');
+    tdEv.className = 'trajEvent';
+    if (trajTurnChips && node.turn !== undefined && tr.dataset.turnStart === 'true') {
+      const chip = document.createElement('span');
+      chip.className = 'trajTurnLabel' + (trajSelected === idx ? ' active' : '');
+      chip.textContent = 'T' + node.turn;
+      tdEv.appendChild(chip);
     }
-    const meta = el('span', 'tlMeta');
-    if (node.dur !== null && node.dur >= 0 && node.dur < 300000) meta.appendChild(el('span', '', fmtDurShort(node.dur)));
-    if (node.usage && (node.usage.prompt_tokens || node.usage.completion_tokens)) {
-      meta.appendChild(el('span', '', t('chat.tokens', { in: node.usage.prompt_tokens || 0, out: node.usage.completion_tokens || 0 })));
+    const inner = document.createElement('span');
+    inner.className = 'trajEventInner';
+    const kindSlot = document.createElement('span');
+    kindSlot.className = 'trajKindSlot';
+    const tag = document.createElement('span');
+    const toolName = String(node.brief || '').split(/[\s(]/)[0];
+    tag.className = 'trajKindTag trajKind' + (node.kind === 'error' ? 'Error' : node.kind[0].toUpperCase() + node.kind.slice(1));
+    tag.textContent = node.kind === 'tool' ? (TOOL_TITLES[toolName] || toolName || t('traj.lane.tool')) : t('traj.lane.' + node.kind);
+    kindSlot.appendChild(tag);
+    if (trajCallChips && node.kind === 'tool' && node.seq !== undefined) {
+      const c = document.createElement('span');
+      c.className = 'trajCallChip';
+      c.textContent = '#' + node.seq;
+      kindSlot.appendChild(c);
     }
-    row.appendChild(meta);
-    row.addEventListener('click', () => {
+    inner.appendChild(kindSlot);
+    if (trajTime === 'clock' && node.time) {
+      const tm = document.createElement('span');
+      tm.className = 'trajTime';
+      tm.textContent = clock(node.time);
+      inner.appendChild(tm);
+    } else if (trajTime === 'duration' && node.dur !== null && node.dur >= 0) {
+      const tm = document.createElement('span');
+      tm.className = 'trajTime';
+      tm.textContent = fmtDurShort(node.dur);
+      inner.appendChild(tm);
+    }
+    tdEv.appendChild(inner);
+    tr.appendChild(tdEv);
+    const tdC = document.createElement('td');
+    tdC.className = 'trajContent';
+    const ct = document.createElement('span');
+    ct.className = 'trajContentText';
+    ct.textContent = String(node.brief || t('traj.na'));
+    ct.title = String(node.brief || '');
+    tdC.appendChild(ct);
+    tr.appendChild(tdC);
+    tr.addEventListener('click', () => {
       trajSelected = idx;
+      trajDetailTab = 'summary';
       renderTrajectory();
+      const again = tr.isConnected;
+      if (again) tr.scrollIntoView({ block: 'center', behavior: 'smooth' });
     });
-    return row;
+    return tr;
   }
 
-  function trajGroupHead(label) {
-    const head = el('div', 'tlHead');
-    head.appendChild(el('span', 'tlLabel', label));
-    return head;
-  }
-
-  function renderTrajLeft(left) {
-    left.textContent = '';
-    const searchRow = el('div', 'tlSearch');
-    searchRow.innerHTML = P.icons.search || '';
+  function renderTrajBar(bar) {
+    bar.textContent = '';
+    const mkToggle = (label, active, onClick) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'trajToggle' + (active ? ' on' : '');
+      b.setAttribute('aria-pressed', active ? 'true' : 'false');
+      b.textContent = label;
+      b.addEventListener('click', () => { onClick(); renderTrajectory(); });
+      return b;
+    };
+    bar.appendChild(mkToggle(t('traj.dur'), trajTime === 'duration', () => { trajTime = 'duration'; }));
+    bar.appendChild(mkToggle(t('traj.time.clock'), trajTime === 'clock', () => { trajTime = 'clock'; }));
+    bar.appendChild(mkToggle(t('traj.sort.turns'), trajTurnChips, () => { trajTurnChips = !trajTurnChips; }));
+    bar.appendChild(mkToggle(t('traj.sort.calls'), trajCallChips, () => { trajCallChips = !trajCallChips; }));
+    bar.appendChild(mkToggle(t('traj.details'), trajDetailsOpen, () => { trajDetailsOpen = !trajDetailsOpen; }));
+    const search = el('div', 'trajSearch');
+    search.innerHTML = (P.icons && P.icons.search) || '';
     const input = document.createElement('input');
     input.type = 'text';
     input.placeholder = t('traj.search');
     input.spellcheck = false;
     input.value = trajQuery;
     input.addEventListener('input', () => { trajQuery = input.value; trajNodesCache = null; renderTrajectory(); });
-    searchRow.appendChild(input);
-    left.appendChild(searchRow);
+    search.appendChild(input);
+    bar.appendChild(search);
+  }
 
-    // sorting: Duration / Turns / Calls
-    const sorts = el('div', 'mTabs');
-    [['duration', 'traj.sort.duration'], ['turns', 'traj.sort.turns'], ['calls', 'traj.sort.calls']].forEach(([v, k]) => {
-      const b = el('button', 'mTab' + (trajSort === v ? ' on' : ''), t(k));
-      b.type = 'button';
-      b.addEventListener('click', () => { trajSort = v; renderTrajectory(); });
-      sorts.appendChild(b);
-    });
-    left.appendChild(sorts);
-
+  function renderTrajTable(pane) {
+    pane.textContent = '';
     const nodes = trajNodes();
     if (!nodes.length) {
-      left.appendChild(el('div', 'trajEmpty', t('traj.empty')));
+      pane.appendChild(el('div', 'trajEmpty', t('traj.empty')));
       return;
     }
-    left.appendChild(trajWaveSvg(nodes, (idx) => {
-      trajSelected = idx;
-      renderTrajectory();
-      const row = left.querySelector('[data-traj-idx="' + idx + '"]');
-      if (row) row.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    }));
-
+    const table = document.createElement('table');
+    table.className = 'trajTable';
+    table.innerHTML = '<colgroup><col class="trajEventCol"><col class="trajContentCol"></colgroup>' +
+      '<thead><tr><th class="trajEventHeader">' + t('traj.event') + '</th><th>' + t('traj.content') + '</th></tr></thead>';
+    const tbody = document.createElement('tbody');
     const q = trajQuery.trim().toLowerCase();
-    const rows = el('div', 'trajRows');
-    let lastKey = null;
+    let shown = 0;
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i];
-      const role = t('traj.lane.' + node.kind);
-      if (q && !(String(node.ev.type).toLowerCase().indexOf(q) >= 0 || String(node.brief || '').toLowerCase().indexOf(q) >= 0 || String(role).toLowerCase().indexOf(q) >= 0)) continue;
-      let key;
-      if (trajSort === 'turns') key = 'turn:' + (node.turn === undefined ? '?' : node.turn);
-      else if (trajSort === 'calls') key = node.kind === 'tool' ? 'call:' + (node.brief || node.seq) : 'step:' + node.step;
-      else key = 'step:' + (node.turn === undefined ? '?' : node.turn) + '/' + node.step;
-      if (key !== lastKey) {
-        rows.appendChild(trajGroupHead(trajSort === 'turns' ? t('traj.turn', { n: node.turn === undefined ? '?' : node.turn })
-          : trajSort === 'calls' ? t('traj.callGroup', { k: node.kind === 'tool' ? (node.brief || '') : ('step ' + node.step) })
-          : t('traj.stepHeader', { turn: node.turn === undefined ? '?' : node.turn, step: node.step === undefined ? '?' : node.step })));
-        lastKey = key;
-      }
-      rows.appendChild(trajNodeRow(node, i));
+      if (q && !(String(node.ev.type).toLowerCase().indexOf(q) >= 0 || String(node.brief || '').toLowerCase().indexOf(q) >= 0 || t('traj.lane.' + node.kind).toLowerCase().indexOf(q) >= 0)) continue;
+      tbody.appendChild(trajRow(node, i));
+      shown++;
     }
-    left.appendChild(rows);
+    table.appendChild(tbody);
+    pane.appendChild(table);
+    if (!shown) pane.appendChild(el('div', 'trajEmpty', t('traj.empty')));
   }
 
   function renderTrajDetail(right) {
@@ -1156,13 +1178,20 @@
       box.appendChild(el('div', 'trajEmpty', t('traj.empty')));
       return;
     }
-    const grid = el('div', 'trajGrid');
-    const left = el('div', 'trajLeft');
+    const wrap = el('div', 'trajBox');
+    const bar = el('div', 'trajBar');
+    wrap.appendChild(bar);
+    const split = el('div', 'trajSplit');
+    const pane = el('div', 'trajTablePane');
+    split.appendChild(pane);
     const right = el('div', 'trajRight');
-    grid.appendChild(left); grid.appendChild(right);
-    box.appendChild(grid);
-    renderTrajLeft(left);
-    renderTrajRight(right);
+    split.appendChild(right);
+    wrap.appendChild(split);
+    box.appendChild(wrap);
+    renderTrajBar(bar);
+    renderTrajTable(pane);
+    if (trajDetailsOpen || C.streaming || C.workTimer) renderTrajRight(right);
+    else right.style.display = 'none';
   }
 
   // invalidate the node cache whenever raw events change

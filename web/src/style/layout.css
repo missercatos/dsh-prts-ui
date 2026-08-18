@@ -35,8 +35,9 @@ button:focus:not(:focus-visible) { outline: none; }
   height: 100%;
   overflow: hidden;
   background: transparent;
-  transition: grid-template-columns 0.3s var(--prts-ease);
+  transition: grid-template-columns var(--prts-drawer-ms, 300ms) var(--prts-ease);
 }
+html[data-prts-drawer-off] .frame { transition: grid-template-columns 0s; }
 /* Custom wallpaper layer: sits under the whole frame (z-index 0) so the
    background diamond/square marks in the conversation column stay on top. */
 #wallpaperLayer {

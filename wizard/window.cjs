@@ -9,10 +9,10 @@ const url = process.argv.find((a) => /^https?:\/\//.test(a)) || 'http://127.0.0.
 
 app.whenReady().then(() => {
   const win = new BrowserWindow({
-    width: 760,
-    height: 900,
-    minWidth: 640,
-    minHeight: 720,
+    width: 920,
+    height: 640,
+    minWidth: 720,
+    minHeight: 520,
     backgroundColor: '#0A0A0B',
     autoHideMenuBar: true,
     frame: false,

@@ -11,9 +11,15 @@
  *   - the particle intro (welcome to PRTS → PRTS/DeepSeek Harness banner →
  *     the PRTS diamond mark),
  *   - sidebar actions (Git / SKILL市场 / 系统),
- *   - a "PRTS" settings section (balance, git, SKILL市场, wallpaper, colors,
- *     sidebar buttons),
- *   - the first-run API-key onboarding (any port).
+ *   - the PRTS settings sections (PRTS / 余额 / 动效) registered into the
+ *     same settings.section slots dsh-web renders.
+ *
+ * Surface model: dsh-web's React UI stays alive on BOTH surfaces — in the
+ * classic PRTS shell it is kept invisible (html[data-prts-shell] hides the
+ * layout frame) and its centered settings modal is BORROWED as the shared
+ * settings panel (the PRTS footer button opens it, the hover popup jumps
+ * sections, Esc/mask close it). Skin mode (ui.shell = 'dsh-web') shows the
+ * native UI with the PRTS overlay marks instead.
  *
  * Plain JavaScript: React.createElement only, no JSX/TS transform.
  */
@@ -215,11 +221,11 @@ export function apply(ctx) {
   .prtsItem { border: 1px solid var(--dsw-alias-border-l1); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; background: var(--dsw-alias-bg-layer-1); }
   .prtsItemName { font-size: 13px; color: var(--dsw-alias-label-primary); }
   .prtsItemDesc { font-size: 11px; color: var(--dsw-alias-label-secondary); line-height: 1.5; }
-  .prtsBtn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 8px; background: transparent; color: var(--dsw-alias-label-primary); font-size: 12.5px; cursor: pointer; }
+  .prtsBtn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 16px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 10px; background: transparent; color: var(--dsw-alias-label-primary); font-size: 12.5px; cursor: pointer; }
   .prtsBtn:hover:not(:disabled) { background: var(--dsw-alias-bg-layer-1); border-color: var(--dsw-alias-border-l2); }
   .prtsBtn.primary { background: var(--dsw-alias-brand-primary); color: var(--dsw-alias-bg-base); border-color: transparent; }
   .prtsBtn:disabled { opacity: 0.4; cursor: default; }
-  .prtsChip { height: 28px; padding: 0 12px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 8px; background: transparent; color: var(--dsw-alias-label-secondary); font-size: 11.5px; cursor: pointer; }
+  .prtsChip { height: 32px; padding: 0 14px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 10px; background: transparent; color: var(--dsw-alias-label-secondary); font-size: 11.5px; cursor: pointer; transition: background .14s ease, border-color .14s ease, color .14s ease; }
   .prtsChip:hover { background: var(--dsw-alias-bg-layer-1); }
   .prtsChip.on { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-brand-primary); }
   .prtsRow { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
@@ -273,6 +279,20 @@ export function apply(ctx) {
 
   const CATALOG = typeof SILL === 'string' && SILL !== '__SKILL_CATALOG__' ? JSON.parse(SILL) : []
 
+  /* ---------- collapsible settings group (expand animates: the body slides
+   * down in sync via max-height + the content below is pushed smoothly) ---------- */
+  function Group({ title, sub, children, startOpen = true }) {
+    const [open, setOpen] = useState(startOpen)
+    return h('div', { className: 'prtsGroup' + (open ? ' open' : '') },
+      h('button', { className: 'prtsGroupHead', type: 'button', 'aria-expanded': String(open), onClick: () => setOpen(!open) },
+        h('span', { className: 'prtsGroupChev' }, '▾'),
+        h('span', { className: 'prtsGroupTitle' }, title),
+        sub ? h('span', { className: 'prtsGroupSub' }, sub) : null,
+      ),
+      h('div', { className: 'prtsGroupBody' }, children),
+    )
+  }
+
   /* ---------- 动效 (motion plugin) settings ---------- */
   function MotionSettings() {
     const [cfg, setCfg] = useState({ ui: {} })
@@ -285,33 +305,27 @@ export function apply(ctx) {
     }
     const ui = cfg.ui || {}
     return h('div', { className: 'prtsBody' },
-      h('div', { className: 'prtsGroup' },
-        h('div', { className: 'prtsGroupHead', style: { cursor: 'default' } }, h('span', { className: 'prtsGroupTitle' }, '侧边栏抽屉')),
-        h('div', { className: 'prtsGroupBody' },
-          h('div', { className: 'prtsRow' },
-            h('span', { className: 'prtsLabel' }, '抽屉动效'),
-            h('input', { type: 'checkbox', checked: ui.drawer !== false, onChange: (e) => save({ ui: { ...ui, drawer: e.target.checked } }) }),
-          ),
-          ui.drawer !== false ? h('div', { className: 'prtsRow' }, h('span', { className: 'prtsLabel' }, '速度'),
-            h('input', { type: 'range', min: 200, max: 800, step: 20, value: String(ui.drawerMs || 380), style: { flex: 2 }, onChange: (e) => save({ ui: { ...ui, drawerMs: Number(e.target.value) } }) }),
-          ) : null,
-          h('div', { className: 'prtsItemDesc', style: { marginTop: 6 } }, '侧边栏与聊天、输入框、背景不在同一图层 —— 收放像拉抽屉一样，不影响其他任何部件；将来新加入的侧栏类插件也能直接套用这套动效。'),
+      h(Group, { title: '侧边栏抽屉' },
+        h('div', { className: 'prtsRow' },
+          h('span', { className: 'prtsLabel' }, '抽屉动效'),
+          h('input', { type: 'checkbox', checked: ui.drawer !== false, onChange: (e) => save({ ui: { ...ui, drawer: e.target.checked } }) }),
         ),
+        ui.drawer !== false ? h('div', { className: 'prtsRow' }, h('span', { className: 'prtsLabel' }, '速度'),
+          h('input', { type: 'range', min: 200, max: 800, step: 20, value: String(ui.drawerMs || 380), style: { flex: 2 }, onChange: (e) => save({ ui: { ...ui, drawerMs: Number(e.target.value) } }) }),
+        ) : null,
+        h('div', { className: 'prtsItemDesc', style: { marginTop: 6 } }, '侧边栏与聊天、输入框、背景不在同一图层 —— 收放像拉抽屉一样，不影响其他任何部件；将来新加入的侧栏类插件也能直接套用这套动效。'),
       ),
-      h('div', { className: 'prtsGroup' },
-        h('div', { className: 'prtsGroupHead', style: { cursor: 'default' } }, h('span', { className: 'prtsGroupTitle' }, '律动')),
-        h('div', { className: 'prtsGroupBody' },
-          h('div', { className: 'prtsRow' },
-            h('button', {
-              className: 'prtsBtn' + (ui.beat ? ' on' : ''), onClick: async () => {
-                if (ui.beat) { stopBeat(); await save({ ui: { ...ui, beat: false } }); return }
-                const ok = await startBeat()
-                if (ok) await save({ ui: { ...ui, beat: true } })
-                else alert('无法捕获系统声音 —— 请在弹窗中选择「整个屏幕」并勾选系统音频。')
-              }
-            }, ui.beat ? '关闭律动' : '开启系统声音律动'),
-            h('span', { className: 'prtsItemDesc' }, '背景菱形与方块随电脑正在播放的声音振动'),
-          ),
+      h(Group, { title: '律动' },
+        h('div', { className: 'prtsRow' },
+          h('button', {
+            className: 'prtsBtn' + (ui.beat ? ' on' : ''), onClick: async () => {
+              if (ui.beat) { stopBeat(); await save({ ui: { ...ui, beat: false } }); return }
+              const ok = await startBeat()
+              if (ok) await save({ ui: { ...ui, beat: true } })
+              else alert('无法捕获系统声音 —— 请在弹窗中选择「整个屏幕」并勾选系统音频。')
+            }
+          }, ui.beat ? '关闭律动' : '开启系统声音律动'),
+          h('span', { className: 'prtsItemDesc' }, '背景菱形与方块随电脑正在播放的声音振动'),
         ),
       ),
     )
@@ -326,15 +340,48 @@ export function apply(ctx) {
     ['catppuccin', 'Catppuccin', '#89b4fa'],
     ['gruvbox', 'Gruvbox', '#83a598'],
   ]
+  const ACCENT_PRESETS = [
+    { id: 'tokyonight', name: 'Tokyo Night', primary: '#7aa2f7', diamond: '#7dcfff', square: '#bb9af7' },
+    { id: 'tokyonight-storm', name: 'Tokyo Night Storm', primary: '#7aa2f7', diamond: '#2ac3de', square: '#bb9af7' },
+    { id: 'nord', name: 'Nord', primary: '#88c0d0', diamond: '#8fbcbb', square: '#b48ead' },
+    { id: 'dracula', name: 'Dracula', primary: '#bd93f9', diamond: '#8be9fd', square: '#ff79c6' },
+    { id: 'rose-pine', name: 'Rosé Pine', primary: '#ebbcba', diamond: '#9ccfd8', square: '#c4a7e7' },
+    { id: 'catppuccin', name: 'Catppuccin', primary: '#89b4fa', diamond: '#89dceb', square: '#cba6f7' },
+    { id: 'gruvbox', name: 'Gruvbox', primary: '#83a598', diamond: '#8ec07c', square: '#d3869b' },
+    { id: 'mono', name: 'PRTS Mono', primary: '', diamond: '', square: '' },
+  ]
+  const SIDEBAR_BUTTON_IDS = ['themeBtn', 'webBtn', 'gitBtn', 'skillBtn', 'marketBtn', 'detailsBtn']
+  const SIDEBAR_BUTTON_NAMES = { themeBtn: '主题', webBtn: '网页', gitBtn: 'Git', skillBtn: 'SKILL', marketBtn: '插件市场', detailsBtn: '详情' }
   function PrtsSettings() {
     const [cfg, setCfg] = useState({ ui: {} })
-    const [wpOpen, setWpOpen] = useState(false)
-    useEffect(() => { getConfig().then((c) => setCfg(c || { ui: {} })) }, [])
+    const [editors, setEditors] = useState(null)
+    const [name, setName] = useState('')
+    useEffect(() => {
+      getConfig().then((c) => {
+        setCfg(c || { ui: {} })
+        const p = (c && c.persona && c.persona.userName) || ''
+        setName(p)
+      })
+      api('GET', '/prts/api/detect-editors').then((list) => {
+        setEditors(Array.isArray(list) && list.length ? list : null)
+      }).catch(() => setEditors(null))
+    }, [])
     const save = async (patch) => {
       const next = { ...cfg, ...patch, ui: { ...(cfg.ui || {}), ...((patch && patch.ui) || {}) } }
       setCfg(next)
       await setConfig(next)
       await applySkin(next)
+    }
+    const applyAccent = async (a) => {
+      const next = { ...cfg, ui: { ...ui, accent: a } }
+      setCfg(next)
+      await setConfig(next)
+      await applySkin(next)
+      const g = (typeof window !== 'undefined' && window.PRTS) || null
+      if (g && g.app) {
+        if (g.app.applyTheme) g.app.applyTheme((next.ui && next.ui.theme) || 'dark')
+        if (g.app.applyAccent) g.app.applyAccent(next)
+      }
     }
     const ui = cfg.ui || {}
     const w = ui.wallpaper || {}
@@ -367,15 +414,26 @@ export function apply(ctx) {
     }
 
     return h('div', { className: 'prtsBody' },
-      /* ================= wallpaper ================= */
-      h('div', { className: 'prtsGroup' },
-        h('button', { className: 'prtsGroupHead', onClick: () => setWpOpen(!wpOpen) },
-          h('span', { className: 'prtsGroupTitle' }, '壁纸'),
-          h('span', { className: 'prtsGroupSub' }, w.file || w.url ? '已设置' : '未设置'),
-          h('span', { className: 'prtsChev' }, wpOpen ? '▾' : '▸'),
+      /* ================= surface ================= */
+      h(Group, { title: '界面' },
+        h('div', { className: 'prtsRow' },
+          h('select', {
+            className: 'prtsInput', style: { flex: 2 }, value: (ui.shell || 'prts') === 'dsh-web' ? 'dsh-web' : 'prts',
+            onChange: async (e) => {
+              await setConfig({ ui: { ...ui, shell: e.target.value } })
+              window.location.reload()
+            },
+          },
+            h('option', { value: 'prts' }, 'PRTS 经典界面'),
+            h('option', { value: 'dsh-web' }, 'dsh-web 原生界面（皮肤模式）'),
+          ),
         ),
-        wpOpen ? h('div', { className: 'prtsGroupBody' },
-          h('div', { className: 'prtsRow' },
+        h('div', { className: 'prtsItemDesc', style: { marginTop: 6 } }, '经典界面完全沿用旧版 PRTS；切换后自动重载。'),
+      ),
+
+      /* ================= wallpaper ================= */
+      h(Group, { title: '壁纸', sub: w.file || w.url ? '已设置' : '未设置' },
+        h('div', { className: 'prtsRow' },
             h('label', { className: 'prtsBtn', style: { cursor: 'pointer' } },
               '上传图片 / 视频',
               h('input', { type: 'file', accept: 'image/*,video/*', style: { display: 'none' }, onChange: (e) => { const f = e.target.files && e.target.files[0]; if (f) uploadWall(f) } }),
@@ -411,36 +469,81 @@ export function apply(ctx) {
           ui.glass !== false ? h('div', { className: 'prtsRow' }, h('span', { className: 'prtsLabel' }, '模糊程度'),
             h('input', { type: 'range', min: 0, max: 24, step: 1, value: String(ui.blur !== undefined ? ui.blur : 12), style: { flex: 2 }, onChange: (e) => save({ ui: { ...ui, blur: Number(e.target.value) } }) }),
           ) : null,
-        ) : null,
       ),
 
       /* ================= theme (presets only) ================= */
-      h('div', { className: 'prtsGroup' },
-        h('div', { className: 'prtsGroupHead', style: { cursor: 'default' } }, h('span', { className: 'prtsGroupTitle' }, '主题')),
-        h('div', { className: 'prtsGroupBody' },
-          h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 6 } },
-            h('button', { key: 'default', className: 'prtsChip' + (!preset ? ' on' : ''), onClick: () => save({ ui: { ...ui, theme: '' } }) }, '系统默认'),
-            THEME_PRESETS.map(([id, name]) => h('button', { key: id, className: 'prtsChip' + (preset === id ? ' on' : ''), onClick: () => save({ ui: { ...ui, theme: id } }) }, name)),
-          ),
-          h('div', { className: 'prtsItemDesc', style: { marginTop: 8 } }, '预设只着色文字、按钮、描边与背景色调；与通用设置里的白天 / 黑夜 / 跟随系统互不冲突，切换后预设自动适配明暗。'),
+      h(Group, { title: '主题' },
+        h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 6 } },
+          h('button', { key: 'default', className: 'prtsChip' + (!preset ? ' on' : ''), onClick: () => save({ ui: { ...ui, theme: '' } }) }, '系统默认'),
+          THEME_PRESETS.map(([id, name]) => h('button', { key: id, className: 'prtsChip' + (preset === id ? ' on' : ''), onClick: () => save({ ui: { ...ui, theme: id } }) }, name)),
         ),
+        h('div', { className: 'prtsItemDesc', style: { marginTop: 8 } }, '预设只着色文字、按钮、描边与背景色调；与通用设置里的白天 / 黑夜 / 跟随系统互不冲突，切换后预设自动适配明暗。'),
       ),
 
       /* ================= sound beat ================= */
-      h('div', { className: 'prtsGroup' },
-        h('div', { className: 'prtsGroupHead', style: { cursor: 'default' } }, h('span', { className: 'prtsGroupTitle' }, '声音律动')),
-        h('div', { className: 'prtsGroupBody' },
-          h('div', { className: 'prtsRow' },
-            h('button', {
-              className: 'prtsBtn' + (ui.beat ? ' on' : ''), onClick: async () => {
-                if (ui.beat) { stopBeat(); await save({ ui: { ...ui, beat: false } }); return }
-                const ok = await startBeat()
-                if (ok) await save({ ui: { ...ui, beat: true } })
-                else alert('无法捕获系统声音 —— 请在弹窗中选择「整个屏幕」并勾选系统音频。')
-              }
-            }, ui.beat ? '关闭律动' : '开启系统声音律动'),
-            h('span', { className: 'prtsItemDesc' }, '背景菱形与方块随电脑正在播放的声音振动'),
+      h(Group, { title: '声音律动' },
+        h('div', { className: 'prtsRow' },
+          h('button', {
+            className: 'prtsBtn' + (ui.beat ? ' on' : ''), onClick: async () => {
+              if (ui.beat) { stopBeat(); await save({ ui: { ...ui, beat: false } }); return }
+              const ok = await startBeat()
+              if (ok) await save({ ui: { ...ui, beat: true } })
+              else alert('无法捕获系统声音 —— 请在弹窗中选择「整个屏幕」并勾选系统音频。')
+            }
+          }, ui.beat ? '关闭律动' : '开启系统声音律动'),
+          h('span', { className: 'prtsItemDesc' }, '背景菱形与方块随电脑正在播放的声音振动'),
+        ),
+      ),
+
+      /* ================= accent (presets + custom pickers) ================= */
+      h(Group, { title: '外观' },
+        h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 6 } },
+            ACCENT_PRESETS.map((pr) => h('button', {
+              key: pr.id, className: 'prtsChip' + ((ui.accent && (ui.accent.preset || 'tokyonight') === pr.id) ? ' on' : ''),
+              onClick: () => applyAccent({ preset: pr.id, primary: pr.primary, diamond: pr.diamond, square: pr.square }),
+            }, pr.name)),
           ),
+          h('div', { className: 'prtsRow', style: { marginTop: 8 } },
+            [['primary', '主色'], ['diamond', '菱形'], ['square', '方块']].map(([k, label]) =>
+              h('label', { key: k, className: 'prtsLabel', style: { display: 'flex', alignItems: 'center', gap: 4 } },
+                label,
+                h('input', {
+                  type: 'color',
+                  style: { width: 30, height: 24, padding: 0, border: 'none', background: 'none', cursor: 'pointer' },
+                  value: (ui.accent && ui.accent[k]) || (k === 'primary' ? '#7aa2f7' : k === 'diamond' ? '#7dcfff' : '#bb9af7'),
+                  onChange: (e) => applyAccent({ ...(ui.accent || {}), preset: 'custom', [k]: e.target.value }),
+                }),
+              ),
+            ),
+          ),
+      ),
+
+      /* ================= default text editor ================= */
+      h(Group, { title: '默认文本编辑器' },
+        h('div', { className: 'prtsRow' },
+          h('select', {
+            className: 'prtsInput', style: { flex: 2 }, value: ui.editor || '',
+            onChange: (e) => save({ ui: { ...ui, editor: e.target.value } }),
+          },
+            h('option', { value: '' }, '系统默认'),
+            (editors || []).map((ed) => h('option', { key: ed.id, value: ed.id }, ed.name || ed.id)),
+          ),
+        ),
+      ),
+
+      /* ================= doctor name (persona) ================= */
+      h(Group, { title: '配置名称' },
+        h('div', { className: 'prtsRow' },
+          h('input', { className: 'prtsInput', style: { flex: 2 }, value: name, placeholder: '默认', onChange: (e) => setName(e.target.value) }),
+          h('button', {
+            className: 'prtsBtn', onClick: async () => {
+              const next = { ...cfg, persona: { ...(cfg.persona || {}), userName: name.trim() } }
+              setCfg(next)
+              await setConfig(next)
+              const g = (typeof window !== 'undefined' && window.PRTS) || null
+              if (g && g.app && g.app.toast) g.app.toast('已保存')
+            },
+          }, '保存'),
         ),
       ),
 
@@ -616,46 +719,11 @@ export function apply(ctx) {
   }
 
   /* ---------- registrations ---------- */
-  // The slot registrations need the client slot registry. The skin layer
-  // below runs regardless — only these additive UI contributions are
-  // conditional. The left sidebar keeps ONLY dsh-web's own settings button;
-  // PRTS adds nothing else to the footer.
-
-  const openNativeSettings = () => {
-    const btns = [...document.querySelectorAll('button')]
-    const hit = btns.find((b) => /^(设置|settings)$/i.test((b.title || b.textContent || '').trim().slice(0, 8))) ||
-      btns.find((b) => /settings/i.test((b.getAttribute('aria-label') || '') + ' ' + (b.className || ''))) ||
-      // dsh-web's own settings trigger is an icon-only button in the sidebar
-      // footer (hashed class names; the 'trigger' substring survives builds).
-      btns.find((b) => /trigger/i.test(String(b.className || '')))
-    if (hit) { try { hit.click() } catch (e) { /* noop */ } }
-  }
-  const jumpToSection = (label, id) => {
-    openNativeSettings()
-    setTimeout(() => {
-      const items = [...document.querySelectorAll('button, [role="tab"], [class*="nav"] span, [class*="Nav"] span')]
-      const hit = items.find((el) => {
-        const t = (el.textContent || '').trim()
-        return t && (t === label || (id && (el.dataset && (el.dataset.id === id || el.dataset.section === id))))
-      })
-      if (hit) { try { hit.click() } catch (e) { /* noop */ } }
-    }, 400)
-  }
-  const sectionRows = () => {
-    try {
-      const raw = slots && slots.entries ? slots.entries('settings.section') : []
-      return raw.map((e) => {
-        const opt = (e && e.options) || {}
-        const id = String(opt.id || (e && e.id) || '')
-        let label = opt.label
-        if (typeof label === 'function') { try { label = label() } catch (err) { label = null } }
-        label = String(label == null ? '' : label)
-        return { id, order: Number(opt.order) || 0, label: label || id }
-      }).sort((a, b) => a.order - b.order)
-    } catch (e) { return [] }
-  }
-
-  if (slots !== undefined) {
+  // The slot registrations need the client slot registry; both surfaces
+  // register the PRTS sections into settings.section so dsh-web's own
+  // settings panel (the shared settings UI) shows them.
+  const registerSettingsSections = () => {
+    if (slots === undefined) return
     // PRTS settings section (wallpaper / theme / sound / updates)
     slots.inject('settings.section', () => {
       return slots.register({ name: 'settings.section', id: 'prts', order: 90, label: 'PRTS' }, (props) => {
@@ -682,13 +750,17 @@ export function apply(ctx) {
     })
   }
 
-  /** Hover popup above the native settings button: the pages the settings
-   *  panel actually has (通用设置/模型/插件/Agent预设/余额/PRTS + whatever
-   *  later plugins add) pop UP in a vertical stack aligned with the button.
-   *  Fixed overlay — it never shifts the layout. */
-  function settingsHoverPopup() {
+  /** Hover popup above a settings button: the pages the settings panel
+   *  actually has (通用设置/模型/插件/Agent预设/插件市场/PRTS/余额/动效 +
+   *  whatever later plugins add) pop UP in a vertical stack aligned with the
+   *  button. Fixed overlay — it never shifts the layout.
+   *  @param anchor - explicit trigger element (PRTS footer button in shell
+   *  mode); when omitted the native dsh-web settings trigger is auto-found
+   *  (skin mode). */
+  function settingsHoverPopup(anchor) {
     let pop = null
     const findTrigger = () => {
+      if (anchor && anchor.isConnected) return anchor
       const own = document.querySelector('.VOzbGW_trigger')
       if (own) return own
       const btns = [...document.querySelectorAll('button')]
@@ -706,7 +778,7 @@ export function apply(ctx) {
         if (label) push(label, label)
       }
       if (!rows.length) {
-        push('general', '通用设置'); push('models', '模型'); push('plugins', '插件'); push('agent-presets', 'Agent 预设'); push('prts-motion', '动效'); push('prts-balance', '余额')
+        push('general', '通用设置'); push('models', '模型'); push('plugins', '插件'); push('agent-presets', 'Agent 预设'); push('dshmarket', '插件市场'); push('prts', 'PRTS'); push('prts-motion', '动效'); push('prts-balance', '余额')
       }
       return rows
     }
@@ -790,7 +862,6 @@ export function apply(ctx) {
       trig.addEventListener('mouseleave', hide)
     }, 1500)
   }
-  settingsHoverPopup()
 
   // onboarding (first run, any port)  // onboarding (first run) — only AFTER the intro has fully played out and
   // the app has formally entered; never during the animation.
@@ -861,6 +932,7 @@ export function apply(ctx) {
   /* audio-beat mode (system sound): JS drives --prts-beat, CSS applies it */
   .prtsBgMarks.beat .d { transform: translate(-50%,-50%) rotate(45deg) scale(calc(1 + var(--prts-beat, 0) * 0.12)); }
   .prtsBgMarks.beat .s { transform: translate(-50%,-50%) scale(calc(1 + var(--prts-beat, 0) * 0.16)); }
+  #prtsBrandRow.beat .prtsBrandMark { transform: rotate(45deg) scale(calc(1 + var(--prts-beat, 0) * 0.22)); }
   /* composer expand handle: notched arrow + pulsing dots, drag-to-expand */
   .prtsExpand { position: absolute; right: 12px; top: -30px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 3px 2px 2px; border: none; background: transparent; color: var(--prts-accent, var(--dsw-alias-brand-primary)); cursor: ns-resize; z-index: 40; touch-action: none; }
   .prtsExpand svg.arrow { display: block; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--prts-accent, var(--dsw-alias-brand-primary)) 60%, transparent)); animation: prtsArrowGlow 2.4s ease-in-out infinite; }
@@ -889,20 +961,42 @@ export function apply(ctx) {
   .prtsTitlebar .winBtn:hover { background: var(--dsw-alias-bg-layer-2); box-shadow: 0 0 10px rgba(250,250,250,.15); }
   .prtsTitlebar .winBtn.close:hover { background: #f7768e; color: #0A0A0B; border-color: transparent; }
   /* PRTS settings groups (dsh-settings-like cards) */
-  .prtsGroup { border: 1px solid var(--dsw-alias-border-l1); border-radius: 12px; margin: 10px 0; background: var(--dsw-alias-bg-layer-1); overflow: hidden; }
-  .prtsGroupHead { width: 100%; display: flex; align-items: center; gap: 8px; padding: 10px 14px; border: none; background: transparent; color: var(--dsw-alias-label-primary); cursor: pointer; text-align: left; }
+  .prtsGroup { border: 1px solid var(--dsw-alias-border-l1); border-radius: 14px; margin: 10px 0; background: var(--dsw-alias-bg-layer-1); overflow: hidden; }
+  .prtsGroupHead { width: 100%; display: flex; align-items: center; gap: 8px; padding: 12px 16px; border: none; background: transparent; color: var(--dsw-alias-label-primary); cursor: pointer; text-align: left; }
+  .prtsGroupHead:hover { background: var(--dsw-alias-bg-layer-2); }
+  .prtsGroupChev { font-size: 10px; color: var(--dsw-alias-label-secondary); flex: none; transition: transform .28s var(--prts-ease-out, cubic-bezier(.2,.8,.25,1)); }
+  .prtsGroup.open .prtsGroupChev { transform: rotate(180deg); }
   .prtsGroupTitle { font-size: 13px; font-weight: 600; letter-spacing: .04em; }
   .prtsGroupSub { margin-left: auto; font-size: 11px; color: var(--dsw-alias-label-secondary); }
-  .prtsChev { color: var(--dsw-alias-label-secondary); font-size: 11px; }
-  .prtsGroupBody { padding: 2px 14px 12px; }
-  /* hover popup above the settings button: a bare column of small icon
-   * buttons (no panel, no labels) — same height as the settings button,
-   * mouse leave closes it automatically. */
-  .prtsHoverPop { display: flex; flex-direction: column; padding: 0; }
-  .prtsHoverPop button { height: 30px; border: none; border-radius: 8px; background: transparent; color: var(--dsw-alias-label-secondary); cursor: pointer; display: flex; align-items: center; gap: 7px; padding: 0 10px; font-size: 12px; animation: prtsPopUp .16s ease-out; }
-  .prtsHoverPop button span { letter-spacing: .02em; }
-  .prtsHoverPop button:hover { color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-layer-1); }
-  @keyframes prtsPopUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  /* the body always stays mounted — max-height animation slides the content
+     out/in so everything below the group moves in sync */
+  .prtsGroupBody { max-height: 0; opacity: 0; overflow: hidden; padding: 0 16px; transition: max-height .32s var(--prts-ease-out, cubic-bezier(.2,.8,.25,1)), padding .32s var(--prts-ease-out, cubic-bezier(.2,.8,.25,1)), opacity .26s ease; }
+  .prtsGroup.open .prtsGroupBody { max-height: 1000px; opacity: 1; padding: 2px 16px 14px; }
+  /* hover popup above the settings button: dsh-web style card — panel
+   * background, border, radius, shadow, blur — icon+label rows that expand
+   * upward (prtsPopUp slides the whole card up on open). */
+  .prtsHoverPop {
+    display: flex; flex-direction: column; gap: 2px; padding: 6px;
+    background: color-mix(in srgb, var(--dsw-alias-bg-layer-1) 92%, transparent);
+    border: 1px solid var(--dsw-alias-border-l1);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    min-width: 148px;
+    animation: prtsPopUp .18s var(--prts-ease-out, ease-out);
+    transform-origin: bottom center;
+  }
+  .prtsHoverPop button {
+    height: 32px; border: none; border-radius: 7px; background: transparent;
+    color: var(--dsw-alias-label-secondary); cursor: pointer;
+    display: flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 12px;
+    transition: background .14s var(--prts-ease, ease), color .14s var(--prts-ease, ease);
+  }
+  .prtsHoverPop button svg { flex: none; opacity: .85; }
+  .prtsHoverPop button span { letter-spacing: .02em; white-space: nowrap; }
+  .prtsHoverPop button:hover { color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-layer-2); }
+  @keyframes prtsPopUp { from { opacity: 0; transform: translateY(calc(-100% + 10px)); } to { opacity: 1; transform: translateY(-100%); } }
   /* drawer-like collapse for dsh-web's own sidebar toggle: only the grid
      column animates — the frame itself is NEVER translated, so the
      background / composer / conversation stay exactly where they are */
@@ -968,7 +1062,8 @@ export function apply(ctx) {
     status.style.cssText = 'position:fixed;bottom:22px;left:0;right:0;text-align:center;color:#9C9CA1;font-size:12px;letter-spacing:0.18em;z-index:3;pointer-events:none;'
     status.textContent = 'LOADING'
     box.appendChild(status)
-    const engine = window.PRTS_INTRO ? window.PRTS_INTRO.create(cv, { particleNum: 10000, speedRange: [20, 30] }) : null
+    let engine = null
+    try { engine = window.PRTS_INTRO ? window.PRTS_INTRO.create(cv, { particleNum: 10000, speedRange: [20, 30] }) : null } catch (e) { engine = null }
     let done = false
     const finish = () => {
       if (done) return
@@ -990,10 +1085,13 @@ export function apply(ctx) {
     // a settle delay — the effect keeps running until everything is in place
     const waitReady = async () => {
       const t0 = Date.now()
+      // The composer exists in BOTH surfaces: dsh-web renders a <textarea>,
+      // the classic PRTS shell its own #composerInput. Accept either.
+      const hasComposer = () => !!document.querySelector('textarea') || !!document.getElementById('composerInput')
       while (Date.now() - t0 < 30000) {
-        if (document.readyState === 'complete' && document.querySelector('textarea')) {
+        if (document.readyState === 'complete' && hasComposer()) {
           await new Promise((r) => setTimeout(r, 900))
-          if (document.querySelector('textarea')) break
+          if (hasComposer()) break
         }
         await new Promise((r) => setTimeout(r, 250))
       }
@@ -1255,10 +1353,14 @@ export function apply(ctx) {
     if (beatStream) { try { beatStream.getTracks().forEach((t) => t.stop()) } catch (e) { /* noop */ } beatStream = null }
     const marks = document.getElementById('prtsBgMarks')
     if (marks) { marks.classList.remove('beat') }
+    const brand = document.getElementById('brandBtn') || document.getElementById('prtsBrandRow')
+    if (brand) { brand.classList.remove('beat') }
     document.documentElement.style.setProperty('--prts-beat', '0')
   }
   async function startBeat() {
-    const marks = backgroundMarks()
+    // Shell mode already draws its own background marks — only the brand
+    // rhombus pulses there (the skin CSS is not applied in shell mode).
+    const marks = guiMounted ? null : backgroundMarks()
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) throw new Error('unsupported')
       beatStream = await navigator.mediaDevices.getDisplayMedia({ video: false, audio: true })
@@ -1270,7 +1372,9 @@ export function apply(ctx) {
       an.fftSize = 512
       src.connect(an)
       const data = new Uint8Array(an.frequencyBinCount)
-      marks.classList.add('beat')
+      marks && marks.classList.add('beat')
+      const brand = document.getElementById('brandBtn') || document.getElementById('prtsBrandRow')
+      if (brand) brand.classList.add('beat')
       const loop = () => {
         an.getByteFrequencyData(data)
         let sum = 0
@@ -1481,7 +1585,7 @@ export function apply(ctx) {
     }
   }
 
-  /* ---------- mount the skin ---------- */
+  /* ---------- skin mode (dsh-web native UI + PRTS overlay) ---------- */
   // One continuous particle EFFECT: the splash hands the act over via
   // ?prtsAct=, this overlay keeps it running until the app is fully loaded
   // (no dsh boot animation ever flashes through), then it fades and only
@@ -1491,28 +1595,237 @@ export function apply(ctx) {
     if (!skinEntered) return
     swapBrand(); swapHero(); //composerExpand(); sidebarRescue(); cleanHeaderExtras(); recenterMarks(); dismissNativeOnboarding()
   }
-  ensureSkinCss()
-  backgroundMarks()
-  titlebar()
-  swapBrand()
-  recenterMarks()
-  dismissNativeOnboarding()
-  const closeIntro = particleIntro(() => {
-    skinEntered = true
-    skinWalk()
-    showOnboarding()
-  })
-  window.addEventListener('resize', () => { if (skinEntered) { recenterMarks(); composerExpand() } })
-  // keep the app-ready flag fresh while the app is alive (a later splash
-  // launch probes it instead of waiting on the dsh backend only)
-  setInterval(() => {
-    if (skinEntered && document.querySelector('textarea')) {
-      try { fetch(origin() + '/prts/api/ready', { method: 'POST' }) } catch (e) { /* noop */ }
+  function runSkinMode() {
+    ensureSkinCss()
+    backgroundMarks()
+    titlebar()
+    swapBrand()
+    recenterMarks()
+    dismissNativeOnboarding()
+    registerSettingsSections()
+    settingsHoverPopup()
+    // dsh-web skin: PRTS-style settings gear pinned bottom-left (the native
+    // UI has no settings button of its own there) — same shared modal flow.
+    if (!document.getElementById('prts-skin-settings')) {
+      const sb = document.createElement('button')
+      sb.id = 'prts-skin-settings'
+      sb.type = 'button'
+      sb.title = '设置'
+      sb.innerHTML = '<svg width="17" height="17" viewBox="0 0 15 15" fill="none"><path d="M7.5 9.6a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2Z" stroke="currentColor" stroke-width="1.15"/><path d="M13.2 7v.9l-1.7.3a4 4 0 0 1-.5 1.2l1 1.4-.9.9-1.4-1a4 4 0 0 1-1.2.5L8 12.9h-.9L6.8 11.2a4 4 0 0 1-1.2-.5l-1.4 1-.9-.9 1-1.4a4 4 0 0 1-.5-1.2L2.1 6.9V6l1.7-.3a4 4 0 0 1 .5-1.2l-1-1.4.9-.9 1.4 1a4 4 0 0 1 1.2-.5L7.1 1.1H8l.3 1.7a4 4 0 0 1 1.2.5l1.4-1 .9.9-1 1.4a4 4 0 0 1 .5 1.2l1.7.3Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>'
+      sb.style.cssText = 'position: fixed; left: 14px; bottom: 14px; z-index: 1200; width: 38px; height: 38px; border-radius: 12px; border: 1px solid var(--dsw-alias-border-l1); background: color-mix(in srgb, var(--dsw-alias-bg-layer-1) 80%, transparent); color: var(--dsw-alias-label-secondary); display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 6px 18px rgba(0,0,0,.25); transition: color .14s ease, background .14s ease;'
+      sb.addEventListener('mouseenter', () => { sb.style.color = 'var(--dsw-alias-label-primary)'; sb.style.background = 'var(--dsw-alias-bg-layer-2)' })
+      sb.addEventListener('mouseleave', () => { sb.style.color = ''; sb.style.background = '' })
+      document.body.appendChild(sb)
+      settingsHoverPopup(sb)
     }
-  }, 3000)
-  ctx.effect(() => {
-    const int = ctx.get('timer') ? ctx.get('timer').interval(skinWalk, 6000) : null
-    return () => { if (int) int() }
+    const closeIntro = particleIntro(() => {
+      skinEntered = true
+      skinWalk()
+      showOnboarding()
+    })
+    window.addEventListener('resize', () => { if (skinEntered) { recenterMarks(); composerExpand() } })
+    // keep the app-ready flag fresh while the app is alive (a later splash
+    // launch probes it instead of waiting on the dsh backend only)
+    setInterval(() => {
+      if (skinEntered && document.querySelector('textarea')) {
+        try { fetch(origin() + '/prts/api/ready', { method: 'POST' }) } catch (e) { /* noop */ }
+      }
+    }, 3000)
+    ctx.effect(() => {
+      const int = ctx.get('timer') ? ctx.get('timer').interval(skinWalk, 6000) : null
+      return () => { if (int) int() }
+    })
+  }
+
+  /* ============================================================
+     PRTS SHELL (default surface) — the classic PRTS GUI runs as the
+     only visible UI while dsh-web's runtime stays alive underneath.
+     ============================================================ */
+  // dsh-web's own React UI stays ALIVE on both surfaces: the classic shell
+  // hides it (html[data-prts-shell] → .pI_x6G_frame visibility:hidden) and
+  // borrows its settings modal as the shared settings panel; skin mode
+  // (ui.shell = 'dsh-web') shows it with the PRTS overlay marks.
+  const PRTS_GUI_BUNDLE = (typeof window !== 'undefined' && window.PRTS_GUI) || null
+  let guiMounted = false
+  let guiCleanups = []
+  const portRoots = new Map()
+
+  /** Run one <script> in the live document (evaluates immediately in order).
+   *  The GUI bundle ends with `boot()` — document is complete at injection,
+   *  so the classic PRTS GUI starts right away. */
+  function evalGuiScript(code) {
+    const scr = document.createElement('script')
+    scr.textContent = code
+    document.body.appendChild(scr)
+    return scr
+  }
+
+  /** Inject the classic PRTS GUI (markup + css + js) into this document and
+   *  wire it to the host: config through /prts/api/config, community plugin
+   *  contributions through the React ports. Idempotent. */
+  function mountPrtsGui() {
+    if (guiMounted || !PRTS_GUI_BUNDLE) return
+    guiMounted = true
+    const host = document.createElement('div')
+    host.id = 'prts-gui-host'
+    document.body.appendChild(host)
+    guiCleanups.push(() => { host.remove() })
+    // CSS — appended last so PRTS rules beat dsh-web's global styles.
+    if (!document.getElementById('prts-gui-css')) {
+      const s = document.createElement('style')
+      s.id = 'prts-gui-css'
+      s.textContent = PRTS_GUI_BUNDLE.css
+      document.head.appendChild(s)
+    }
+    if (!document.getElementById('prts-gui-shell-css')) {
+      const s = document.createElement('style')
+      s.id = 'prts-gui-shell-css'
+      s.textContent = [
+        '#prts-gui-host { position: fixed; inset: 0; z-index: 10; overflow: hidden; }',
+        '#prts-plugin-dock { display: flex; flex-direction: column; gap: 2px; padding: 2px 0; }',
+        '#prts-plugin-dock .prtsPort { width: 100%; }',
+        '#prts-plugin-dock .prtsPort > * { width: 100%; }',
+        '#prts-overlay-port { position: fixed; inset: 0; z-index: 60; pointer-events: none; }',
+        '#prts-overlay-port > * { pointer-events: auto; }',
+        '.prtsPortHost { margin-top: 6px; }',
+        '.prtsPortCard { border: 1px solid var(--prts-hairline); border-radius: 8px; padding: 10px 12px; margin: 8px 0; background: color-mix(in srgb, var(--prts-surface) 60%, transparent); }',
+        '.prtsPortCardTitle { font-size: 11px; letter-spacing: 0.14em; color: var(--prts-ink-faint); margin-bottom: 6px; text-transform: uppercase; }',
+      ].join('\n')
+      document.head.appendChild(s)
+    }
+    // Markup.
+    host.innerHTML = PRTS_GUI_BUNDLE.html
+    // Scripts — plain eval: the settings UI is dsh-web's own settings modal
+    // (borrowed), so no GUI source hooking is needed anymore.
+    evalGuiScript(PRTS_GUI_BUNDLE.js)
+    const P = (typeof window !== 'undefined' && window.PRTS) || null
+    if (P) {
+      // Config storage through the host (/prts/api/config — the same
+      // prts-ui.json the host plugin reads/writes).
+      if (P.store) {
+        const fallbackLoad = P.store.loadConfig
+        P.store.loadConfig = async () => {
+          try {
+            const c = await api('GET', '/prts/api/config')
+            if (c && typeof c === 'object' && Object.keys(c).length) return c
+          } catch (e) { /* fall through to the fs bridge */ }
+          return fallbackLoad ? fallbackLoad() : {}
+        }
+        P.store.saveConfig = async (cfg) => { await setConfig(cfg || {}) }
+      }
+    }
+    // Ports once the classic GUI DOM is up.
+    queueMicrotask(() => {
+      // Drawer motion config (the GUI boot applies theme/wallpaper/glass
+      // itself — only the drawer speed/switch lives here).
+      getConfig().then((c) => {
+        const ui = (c && c.ui) || {}
+        document.documentElement.style.setProperty('--prts-drawer-ms', (ui.drawerMs || 380) + 'ms')
+        document.documentElement.dataset.prtsDrawerOff = ui.drawer === false ? '1' : ''
+      }).catch(() => { /* noop */ })
+      installSidebarDock()
+      installOverlayPort()
+      refreshPorts()
+    })
+  }
+
+  /** Tear the classic GUI down (skin mode takes over). */
+  function unmountPrtsGui() {
+    for (const c of guiCleanups) { try { c() } catch (e) { /* noop */ } }
+    guiCleanups = []
+    guiMounted = false
+    for (const id of ['prts-gui-css', 'prts-gui-shell-css']) {
+      const s = document.getElementById(id)
+      if (s) s.remove()
+    }
+    for (const root of portRoots.values()) { try { root.unmount() } catch (e) { /* noop */ } }
+    portRoots.clear()
+  }
+
+  /** React port: render registered slot entries (community plugin components)
+   *  into a vanilla container with the entry's composed inject props. */
+  function mountReactPort(container, entries, props) {
+    if (!container || !entries || !entries.length) return
+    let root = portRoots.get(container)
+    if (!root) { root = createRoot(container); portRoots.set(container, root) }
+    const kids = entries.map((e) => {
+      const key = String(e.options && (e.options.id || e.options.key) || 'entry')
+      let composed = {}
+      if (typeof e.inject === 'function') { try { composed = e.inject() || {} } catch (err) { composed = {} } }
+      return R.createElement('div', { key, className: 'prtsPort' },
+        R.createElement(e.component, Object.assign({}, composed, props || {})),
+      )
+    })
+    root.render(R.createElement('div', { className: 'prtsPorts' }, kids))
+  }
+
+  function installSidebarDock() {
+    if (document.getElementById('prts-plugin-dock')) return
+    const foot = document.querySelector('.sbFoot')
+    if (!foot) return
+    const dock = document.createElement('div')
+    dock.id = 'prts-plugin-dock'
+    foot.appendChild(dock)
+  }
+
+  function installOverlayPort() {
+    if (document.getElementById('prts-overlay-port')) return
+    const ov = document.createElement('div')
+    ov.id = 'prts-overlay-port'
+    document.body.appendChild(ov)
+  }
+
+  function refreshPorts() {
+    if (!guiMounted || slots === undefined) return
+    const dock = document.getElementById('prts-plugin-dock')
+    if (dock) mountReactPort(dock, slots.entries('sidebar.footer.action'), { wide: true })
+    const ov = document.getElementById('prts-overlay-port')
+    if (ov) mountReactPort(ov, slots.entries('shell.overlay'), {})
+  }
+
+  /* ---------- surface dispatch ---------- */
+  // Shell mode is the default surface: dsh-web's own React UI stays alive
+  // (its settings modal is borrowed as the shared settings panel) but is
+  // kept invisible behind the PRTS GUI overlay (html[data-prts-shell]).
+  // Skin mode (ui.shell = 'dsh-web') shows the native UI instead.
+  // The shell attr + hide rules go in SYNCHRONOUSLY at apply — before
+  // dsh-web's first paint — so the native UI never flashes through.
+  if (!document.getElementById('prts-shell-css')) {
+    const s = document.createElement('style')
+    s.id = 'prts-shell-css'
+    s.textContent = [
+      // The layout frame stays alive under the PRTS overlay but is never
+      // painted (pointer-events die with visibility). The settings modal is
+      // borrowed as the shared settings panel: it re-shows itself above
+      // everything and slides to the right edge.
+      'html[data-prts-shell] .pI_x6G_frame { position: relative; z-index: 100; visibility: hidden; }',
+      'html[data-prts-shell] .VOzbGW_overlay { visibility: visible !important; }',
+      'html[data-prts-shell] #prts-gui-host { position: fixed; inset: 0; z-index: 10; overflow: hidden; background: var(--prts-bg, #0A0A0B); }',
+    ].join('\n')
+    document.head.appendChild(s)
+  }
+  document.documentElement.dataset.prtsShell = '1'
+  if (ctx && typeof ctx.on === 'function') {
+    // Community plugins (un)installed at runtime: refresh the ports.
+    ctx.on('slots/changed', (key) => {
+      if (key === 'sidebar.footer.action' || key === 'shell.overlay') refreshPorts()
+    })
+  }
+  getConfig().then((cfg) => {
+    const useSkin = (cfg && cfg.ui && cfg.ui.shell === 'dsh-web') || !PRTS_GUI_BUNDLE
+    if (useSkin) {
+      delete document.documentElement.dataset.prtsShell
+      unmountPrtsGui()
+      runSkinMode()
+    } else {
+      mountPrtsGui()
+      registerSettingsSections()
+      settingsHoverPopup(document.getElementById('settingsBtn'))
+    }
+  }).catch(() => {
+    delete document.documentElement.dataset.prtsShell
+    unmountPrtsGui()
+    runSkinMode()
   })
 
   ctx.effect(() => () => { if (styleEl) { styleEl.remove(); styleEl = null } })

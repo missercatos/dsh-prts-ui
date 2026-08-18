@@ -48,6 +48,27 @@ const html = readFileSync(TEMPLATE, 'utf8')
 writeFileSync(OUT, html)
 console.log('bundle ->', OUT, html.length, 'bytes')
 
+// Embedded PRTS GUI package for the dsh-web shell (PRTS_SHELL): the renderer
+// injects these three strings into the dsh-web document so the classic PRTS
+// GUI becomes the only visible surface while dsh-web's runtime stays alive
+// underneath (community plugins keep registering into the slot tree).
+//   html: the template body markup (scripts stripped — the renderer appends
+//         them separately so they eval in the live document).
+//   css : the same stylesheet set as the standalone page.
+//   js  : the same core+dsh+gui sources with the market catalog defined.
+const templateText = readFileSync(TEMPLATE, 'utf8')
+const bodyAt = templateText.indexOf('<body>')
+const scriptAt = templateText.indexOf('<script>', bodyAt)
+const markup = (bodyAt >= 0 && scriptAt > bodyAt
+  ? templateText.slice(bodyAt + '<body>'.length, scriptAt)
+  : '').trim()
+const guiEmbed = {
+  html: markup,
+  css,
+  js: 'window.PRTS_MARKET = ' + market + ';\n' + js,
+}
+console.log('embed -> markup', markup.length, 'css', css.length, 'js', guiEmbed.js.length, 'bytes')
+
 // lib/ for the dsh bundle faces: client plugin + host plugin (ESM copies).
 const LIB_DIR = join(pkgRoot, 'lib')
 import { mkdirSync } from 'node:fs'
@@ -84,6 +105,7 @@ const wrappedClient =
   "    globalThis.THREE = globalThis.THREE || module.exports;\n" +
   "    module.exports = {};\n" +
   "    exports = module.exports;\n" +
+  "    globalThis.PRTS_GUI = " + JSON.stringify(guiEmbed) + ";\n" +
   effectEngine + '\n' +
   clientSrc
     .replace("import React from 'react'", "const React = require('react')")

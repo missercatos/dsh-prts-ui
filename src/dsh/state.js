@@ -203,6 +203,14 @@
     return P.dsh.request('session.rename', { sessionId, title });
   }
 
+  /** Fork a session into a child session (the file-tree sub-session): the
+   *  child continues the parent's context, stays in the same workspace and
+   *  reports parentSessionId in session.list. */
+  async function forkSession(sessionId) {
+    const r = await P.dsh.request('session.fork', { sessionId });
+    return r && r.sessionId;
+  }
+
   async function archiveSession(sessionId) {
     // dsh has no session.delete — sessions are archived from their workspace.
     await P.dsh.request('workspace.archiveSession', { sessionId });
@@ -522,6 +530,7 @@
   S.prompt = prompt;
   S.cancel = cancel;
   S.renameSession = renameSession;
+  S.forkSession = forkSession;
   S.archiveSession = archiveSession;
   S.archiveSessions = archiveSessions;
   S.deleteWorkspace = deleteWorkspace;

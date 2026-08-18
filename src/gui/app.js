@@ -278,12 +278,48 @@
     } catch (e) { A.toast(e.message); }
   }
 
+  // File-tree sidebar: each workspace expands into its sessions, sessions
+  // nest into sub-sessions (parentSessionId from session.list). The branch
+  // is ALWAYS mounted so the collapse/expand animates (grid-rows 0fr↔1fr,
+  // speed follows the drawer motion setting).
+  A.wsExpanded = new Set()
+
+  function workspaceBranch(w) {
+    const branch = document.createElement('div')
+    branch.className = 'sbTreeBranch'
+    const inner = document.createElement('div')
+    inner.className = 'sbTreeInner'
+    branch.appendChild(inner)
+    if (!A.wsExpanded.has(w.workspaceId)) branch.classList.add('closed')
+    return { branch, inner }
+  }
+
+  /** Build one workspace row: chevron (toggle expand) + name + count +
+   *  delete. Clicking the row itself selects the workspace (unchanged). */
   function buildWorkspaceRow(w) {
     const row = document.createElement('div');
-    row.className = 'sbItem' + (w.workspaceId === P.dshState.currentWorkspaceId ? ' active' : '');
+    row.className = 'sbItem sbWsTree' + (w.workspaceId === P.dshState.currentWorkspaceId ? ' active' : '');
     row.dataset.workspace = w.workspaceId;
     row.setAttribute('role', 'button');
     row.tabIndex = 0;
+    const chev = document.createElement('button');
+    chev.type = 'button';
+    chev.className = 'sbTreeChev';
+    chev.setAttribute('aria-expanded', String(A.wsExpanded.has(w.workspaceId)));
+    chev.setAttribute('aria-label', 'expand');
+    chev.innerHTML = P.icons.chev || '▸';
+    chev.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = A.wsExpanded.has(w.workspaceId);
+      if (open) A.wsExpanded.delete(w.workspaceId);
+      else A.wsExpanded.add(w.workspaceId);
+      const branch = row.nextElementSibling;
+      if (branch && branch.classList.contains('sbTreeBranch')) {
+        branch.classList.toggle('closed', !open);
+        chev.setAttribute('aria-expanded', String(!open));
+      }
+    });
+    row.appendChild(chev);
     const name = document.createElement('span');
     name.className = 'name';
     name.textContent = w.title || w.workspaceId;
@@ -301,7 +337,162 @@
     row.appendChild(del);
     row.addEventListener('click', () => selectWorkspace(w.workspaceId));
     row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectWorkspace(w.workspaceId); } });
+    row.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      if (A.selecting) return;
+      showTreeMenu(e.clientX, e.clientY, [
+        { label: A.t('tree.newSession'), fn: () => { P.dshState.currentWorkspaceId = w.workspaceId; newSession(); } },
+        { label: A.t('workspace.rename') || '重命名', fn: () => renameWorkspaceFlow(w) },
+        { label: A.t('common.delete'), danger: true, fn: () => deleteWorkspace(w.workspaceId) },
+      ]);
+    });
     return row;
+  }
+
+  /** Sessions of one workspace rendered as a nested tree (children under
+   *  their parent, any depth), newest-first like the global list. */
+  function buildTreeSessions(w, container) {
+    const byId = new Map();
+    for (const s of P.dshState.sessions) byId.set(s.sessionId, s);
+    const byParent = new Map();
+    for (const s of P.dshState.sessions) {
+      if (s.parentSessionId) {
+        const arr = byParent.get(s.parentSessionId) || [];
+        arr.push(s);
+        byParent.set(s.parentSessionId, arr);
+      }
+    }
+    const kids = (id) => (byParent.get(id) || []).slice().sort((a, b) => b.updatedAt - a.updatedAt);
+    const top = (w.sessionIds || [])
+      .map((id) => byId.get(id))
+      .filter((s) => s && !s.parentSessionId)
+      .sort((a, b) => b.updatedAt - a.updatedAt);
+    const walk = (sessions, depth) => {
+      for (const s of sessions) {
+        container.appendChild(buildTreeSessionRow(s, depth));
+        const children = kids(s.sessionId);
+        if (children.length) walk(children, depth + 1);
+      }
+    };
+    walk(top, 0);
+  }
+
+  /** Tree session row: the flat-list row plus indentation and a sub-session
+   *  marker; right-click offers 新建子会话 / 归档. */
+  function buildTreeSessionRow(s, depth) {
+    const row = document.createElement('div');
+    row.className = 'sbItem sbTreeItem' + (s.sessionId === P.dshState.currentSessionId ? ' active' : '');
+    row.dataset.session = s.sessionId;
+    row.style.paddingLeft = Math.min(10 + depth * 14, 52) + 'px';
+    if (depth > 0) {
+      const mark = document.createElement('span');
+      mark.className = 'sbTreeMark';
+      mark.textContent = '↳';
+      row.appendChild(mark);
+    }
+    const box = document.createElement('button');
+    box.type = 'button';
+    box.className = 'sbCheck' + (A.selectedSessions.has(s.sessionId) ? ' on' : '');
+    box.setAttribute('aria-label', 'select');
+    box.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5.2 4 7.6 8.5 2.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    box.hidden = !A.selecting;
+    box.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (A.selectedSessions.has(s.sessionId)) A.selectedSessions.delete(s.sessionId);
+      else A.selectedSessions.add(s.sessionId);
+      row.classList.toggle('checked', A.selectedSessions.has(s.sessionId));
+      box.classList.toggle('on', A.selectedSessions.has(s.sessionId));
+      updateBulkBar();
+    });
+    row.appendChild(box);
+    const name = document.createElement('span');
+    name.className = 'name';
+    name.textContent = P.dshState.sessionTitle(s);
+    if (s.running) name.textContent += ' …';
+    row.appendChild(name);
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'rowBtn';
+    del.title = A.t('session.archive');
+    del.innerHTML = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2.2 2.2l6.6 6.6M8.8 2.2l-6.6 6.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
+    del.addEventListener('click', (e) => { e.stopPropagation(); archiveSession(s.sessionId); });
+    row.appendChild(del);
+    const onActivate = () => {
+      if (A.selecting) { box.click(); return; }
+      selectSession(s.sessionId);
+    };
+    row.addEventListener('click', onActivate);
+    row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onActivate(); } });
+    row.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      if (A.selecting) return;
+      showTreeMenu(e.clientX, e.clientY, [
+        { label: A.t('tree.newSubSession'), fn: () => forkSessionFlow(s) },
+        { label: A.t('session.archive'), fn: () => archiveSession(s.sessionId) },
+      ]);
+    });
+    return row;
+  }
+
+  /** Tiny fixed context menu for the sidebar tree. */
+  function showTreeMenu(x, y, items) {
+    const old = document.getElementById('prtsTreeMenu');
+    if (old) old.remove();
+    const menu = document.createElement('div');
+    menu.id = 'prtsTreeMenu';
+    menu.style.cssText = 'position: fixed; z-index: 300; min-width: 150px; padding: 6px; border-radius: 10px; border: 1px solid var(--prts-hairline-strong); background: var(--prts-panel); box-shadow: 0 12px 32px rgba(0,0,0,.4);';
+    for (const it of items) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = it.label;
+      b.style.cssText = 'display: block; width: 100%; text-align: left; height: 30px; padding: 0 10px; border: none; border-radius: 7px; background: transparent; color: ' + (it.danger ? '#f7768e' : 'var(--prts-ink-dim)') + '; font-size: 12.5px; cursor: pointer;';
+      b.addEventListener('mouseenter', () => { b.style.background = 'var(--prts-surface-2)'; b.style.color = it.danger ? '#f7768e' : 'var(--prts-ink)'; });
+      b.addEventListener('mouseleave', () => { b.style.background = 'transparent'; b.style.color = it.danger ? '#f7768e' : 'var(--prts-ink-dim)'; });
+      b.addEventListener('click', () => { menu.remove(); it.fn(); });
+      menu.appendChild(b);
+    }
+    document.body.appendChild(menu);
+    const r = menu.getBoundingClientRect();
+    menu.style.left = Math.min(x, window.innerWidth - r.width - 8) + 'px';
+    menu.style.top = Math.min(y, window.innerHeight - r.height - 8) + 'px';
+    const close = () => menu.remove();
+    setTimeout(() => document.addEventListener('click', close, { once: true }), 0);
+    document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); } });
+    window.addEventListener('scroll', close, { once: true });
+  }
+
+  /** Fork the session into a sub-session, then open it. */
+  async function forkSessionFlow(s) {
+    try {
+      const childId = await P.dshState.forkSession(s.sessionId);
+      if (!childId) { A.toast(A.t('session.forkFail')); return; }
+      await P.dshState.listWorkspaces().catch(() => {});
+      await refreshSessions();
+      renderWorkspaces();
+      if (childId) {
+        P.dshState.currentSessionId = childId;
+        A.enterChat();
+        await P.chat.loadHistory(childId);
+        highlightSessions();
+        highlightWorkspaces();
+        A.toast(A.t('session.forked'));
+      }
+    } catch (e) {
+      A.toast(A.t('session.forkFail') + ' — ' + String((e && e.message) || e));
+    }
+  }
+
+  async function renameWorkspaceFlow(w) {
+    const next = await A.askPrompt(A.t('workspace.rename'), w.title || w.workspaceId);
+    if (!next || !next.trim()) return;
+    try {
+      await P.dshState.renameWorkspace(w.workspaceId, next.trim());
+      await P.dshState.listWorkspaces();
+      renderWorkspaces();
+      updateCrumb();
+    } catch (e) {
+      A.toast(String((e && e.message) || e));
+    }
   }
 
   // Chunked DOM renders: every call yields to the animation frame between
@@ -323,7 +514,13 @@
     const step = () => {
       if (token !== wsRenderToken) { if (wsDoneResolve) { wsDoneResolve(); wsDoneResolve = null; } return done; }
       const end = Math.min(i + CHUNK, ws.length);
-      for (; i < end; i++) list.appendChild(buildWorkspaceRow(ws[i]));
+      for (; i < end; i++) {
+        const w = ws[i];
+        list.appendChild(buildWorkspaceRow(w));
+        const { branch, inner } = workspaceBranch(w);
+        buildTreeSessions(w, inner);
+        list.appendChild(branch);
+      }
       if (i < ws.length) requestAnimationFrame(step);
       else {
         $('projectCount').textContent = String(ws.length);
@@ -430,10 +627,18 @@
   /** Cheap re-highlight: only the active classes change, zero DOM rebuild. */
   function highlightSessions() {
     const list = $('sessionList');
-    if (!list) return;
-    for (const row of list.children) {
-      if (!row.dataset || !row.dataset.session) continue;
-      row.classList.toggle('active', row.dataset.session === P.dshState.currentSessionId);
+    const trees = document.querySelectorAll('.sbTreeInner');
+    if (list) {
+      for (const row of list.children) {
+        if (!row.dataset || !row.dataset.session) continue;
+        row.classList.toggle('active', row.dataset.session === P.dshState.currentSessionId);
+      }
+    }
+    for (const inner of trees) {
+      for (const row of inner.children) {
+        if (!row.dataset || !row.dataset.session) continue;
+        row.classList.toggle('active', row.dataset.session === P.dshState.currentSessionId);
+      }
     }
   }
   function highlightWorkspaces() {
@@ -447,6 +652,10 @@
 
   async function selectWorkspace(id) {
     P.dshState.currentWorkspaceId = id;
+    if (!A.wsExpanded.has(id)) {
+      A.wsExpanded.add(id);
+      renderWorkspaces();
+    }
     const loading = refreshSessions();   // list refresh + chunked rebuild
     highlightWorkspaces();               // instant feedback on the current rows
     updateCrumb();
@@ -635,6 +844,7 @@
     if (!P.dshState.currentWorkspaceId && P.dshState.workspaces.length) {
       P.dshState.currentWorkspaceId = P.dshState.workspaces[0].workspaceId;
     }
+    if (P.dshState.currentWorkspaceId) A.wsExpanded.add(P.dshState.currentWorkspaceId);
     renderWorkspaces();
     renderSessions();
     updateModelChip();
@@ -1838,17 +2048,17 @@
     });
     $('newProjectBtn').addEventListener('click', newWorkspace);
     $('newSessionBtn').addEventListener('click', newSession);
-    $('detailsBtn').addEventListener('click', () => {
+    $('detailsBtn') && $('detailsBtn').addEventListener('click', () => {
       if (appEl().hasAttribute('data-details-collapsed')) { showDetailsDefault(); openDetails(); }
       else closeDetails();
     });
-    $('marketBtn').addEventListener('click', A.openMarket);
+    $('marketBtn') && $('marketBtn').addEventListener('click', A.openMarket);
     $('marketClose').addEventListener('click', A.closeMarket);
-    $('webBtn').addEventListener('click', A.openWeb);
+    $('webBtn') && $('webBtn').addEventListener('click', A.openWeb);
     $('webClose').addEventListener('click', A.closeWeb);
-    $('gitBtn').addEventListener('click', A.openGit);
+    $('gitBtn') && $('gitBtn').addEventListener('click', A.openGit);
     $('gitClose').addEventListener('click', A.closeGit);
-    $('skillBtn').addEventListener('click', A.openSkills);
+    $('skillBtn') && $('skillBtn').addEventListener('click', A.openSkills);
     $('skillClose').addEventListener('click', A.closeSkills);
     $('dtClose').addEventListener('click', closeDetails);
     $('settingsBtn').addEventListener('click', A.openSettings);
@@ -1919,6 +2129,7 @@
     });
 
     $('flow').addEventListener('click', (e) => {
+      if (e.target.closest('.blkRow') || e.target.closest('.toolItem') || e.target.closest('.msgActions')) return;
       const item = e.target.closest('.assistantItem') || e.target.closest('.userBubble');
       if (!item) return;
       if (item.classList.contains('assistantItem')) {
@@ -2008,7 +2219,7 @@
       if (!P.dshState.currentSessionId) return;
       const before = P.dshState.sessions.length;
       P.dshState.listSessions().then(() => {
-        if (P.dshState.sessions.length !== before) renderSessions();
+        if (P.dshState.sessions.length !== before) { renderSessions(); renderWorkspaces(); }
         else highlightSessions();   // titles/stats live in projections
         renderStatsDock();
         updateMeter();

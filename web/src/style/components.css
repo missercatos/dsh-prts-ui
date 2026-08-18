@@ -28,6 +28,26 @@
 }
 .sbItem:hover { background: var(--prts-surface-2); color: var(--prts-ink); }
 .sbItem.active { background: var(--prts-surface-2); color: var(--prts-ink); box-shadow: inset 2px 0 0 var(--prts-ink); }
+/* workspace file-tree rows: chevron toggle + animated branch (grid-rows
+   0fr↔1fr, duration follows the drawer motion setting) */
+.sbWsTree .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sbTreeChev {
+  width: 18px; height: 18px; margin-left: -4px; padding: 0; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; border-radius: 5px; background: transparent;
+  color: var(--prts-ink-faint); cursor: pointer;
+  transition: transform 0.22s var(--prts-ease-out), color 0.15s var(--prts-ease), background 0.15s var(--prts-ease);
+}
+.sbTreeChev svg { width: 11px; height: 11px; }
+.sbTreeChev:hover { color: var(--prts-ink); background: var(--prts-surface-2); }
+.sbTreeBranch {
+  display: grid; grid-template-rows: 1fr;
+  transition: grid-template-rows var(--prts-drawer-ms, 350ms) cubic-bezier(.2,.8,.25,1);
+}
+.sbTreeBranch.closed { grid-template-rows: 0fr; }
+.sbTreeInner { overflow: hidden; min-height: 0; display: flex; flex-direction: column; gap: 2px; }
+.sbTreeItem { min-height: 30px; }
+.sbTreeMark { flex: none; font-size: 11px; color: var(--prts-ink-faint); margin-right: 2px; }
 .sbItem.checked { background: var(--prts-surface-2); }
 .sbItem .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sbItem .meta { font-size: 11px; color: var(--prts-ink-faint); font-family: var(--prts-mono); }
