@@ -465,3 +465,13 @@
 .sysV { font-size: 12px; color: var(--prts-ink); font-family: var(--prts-mono); text-align: right; }
 .sysBar { height: 4px; border-radius: 2px; background: var(--prts-hairline); overflow: hidden; }
 .sysBarFill { height: 100%; width: 0; background: var(--prts-accent); transition: width 0.2s var(--prts-ease); }
+
+/* ---------- mobile touch targets ---------- */
+@media (max-width: 760px) {
+  .chip, .sbBtn, .sbFootItem, .crumb, .tab, .bulkBtn, .sBtn {
+    min-height: 40px;
+  }
+  .composerToolbar .meterBtn, .composerToolbar .chip { min-height: 38px; padding: 0 12px; }
+  .heroWord { font-size: 34px !important; }
+  .heroLogo .rhombus-lg { width: 40px; height: 40px; }
+}

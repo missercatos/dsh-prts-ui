@@ -1,14 +1,15 @@
 {
   "name": "dsh-prts-ui",
-  "version": "0.9.3",
+  "version": "0.9.9",
   "description": "PRTS — the monochrome GUI shell for dsh (DeepSeek Harness): particle intro, workspaces/sessions with search, mode/model/reasoning/permission selectors, image attachments, approvals & questions, cost + system panels, voice input. Ships one-click installers for Windows/Linux/macOS/Android and the particle download site.",
   "type": "module",
-  "main": "./src/runner.js",
+  "main": "./src/plugin-root.js",
   "bin": {
     "dsh-prts-ui": "bin/dsh-prts-ui.js",
     "prts": "bin/dsh-prts-ui.js"
   },
   "exports": {
+    ".": "./src/plugin-root.js",
     "./startup": "./src/startup.js",
     "./runner": "./src/runner.js",
     "./package.json": "./package.json",
@@ -22,16 +23,14 @@
     "electron",
     "assets",
     "scripts",
+    "wizard",
+    "vendor",
     "cordis.patch.yml",
     "README.md",
     "README.zh.md",
     "LICENSE",
     "install.sh",
     "install.bat",
-    "install-android.sh",
-    "update.sh",
-    "update.bat",
-    "build-exe.bat",
     "prts.config.example.json",
     "lib"
   ],

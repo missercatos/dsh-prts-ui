@@ -67,7 +67,7 @@
 | 设置里“模型配置”折叠钮无效（CSS `display` 压过 `hidden` 属性） | 全局 `[hidden]{display:none!important}`，同时修好附件条/状态行等同类隐患 |
 | 发送后卡在“停止”状态（mux 断流导致 streaming 永久为 true） | 流结束/断线都会复位 |
 | 流式期间每条 chunk 全量重渲染（大 session 卡顿） | 渲染按帧批处理 + 90ms 节流（实测一轮 9 秒只重写 DOM 16 次）；粒子 willReadFrequently；历史重载 30 秒冷却 |
-| 不先开 dsh web 直接启动 PRTS 会报错/卡死 | 启动顺序改为**窗口优先**：PRTS 窗口立即出现，粒子开场作为加载动画，后台静默探测并拉起 `dsh web`（Windows .cmd 垫片可用），就绪后三幕播完自动进入；关闭 PRTS 自动关掉它拉起的 dsh web（pidfile + 兜底 PID，跨平台强杀） |
+| 不先开 dsh web 直接启动 PRTS 会报错/卡死 | 启动顺序改为**窗口优先**：PRTS 窗口立即出现，粒子开场作为加载动画，后台静默探测并拉起 PRTS 后端（独立 `prts` profile，端口 3081，Windows .cmd 垫片可用），就绪后三幕播完自动进入；关闭 PRTS 自动关掉它拉起的后端（pidfile + 兜底 PID，跨平台强杀）。**隔离**：`dsh web` 保持原版 DeepSeek Harness 界面，PRTS 皮肤只存在于 `prts` profile |
 | 设置“模型配置”折叠瞬间跳变 | 改为网格行高动画（0fr→1fr），文字平滑收起、下方内容平滑上移 |
 | Electron 内 GUI 从 file:// 改为仅回环 HTTP 服务（127.0.0.1 随机端口） | 语音引擎的 wasm 模块导入/Worker 需要真实 http 源；API 仍走 preload 桥，无窗口、不外露 |
 
@@ -80,23 +80,24 @@
 | Windows | `PRTS-Setup-<ver>-windows-x64.exe`（自解压 exe，双击即装）或 `install.bat` |
 | Linux | `PRTS-<ver>-linux-x64.run`（自解压）或 `sh install.sh` |
 | macOS | `PRTS-<ver>-macos.sh` 或 `sh install.sh` |
-| Android | Termux：`sh install-android.sh`（浏览器里跑 dsh web + PRTS）；或把官网作为 PWA“添加到主屏幕” |
+| 手机端 | 无需安装：电脑 PRTS → 设置 → PRTS → 移动端 → 手机扫码连接（同一局域网），浏览器菜单“添加到主屏幕”即可当 App 用 |
 
-安装器做的事：装 Node 环境依赖检查 → 装 dsh（缺省时）→ 装 `prts.config.json` 里列出的插件 → 打包/复用 `dsh-prts-ui-<ver>.tgz` → 装进 `prts` profile → 固定 bundle → 桌面/开始菜单快捷方式 → `prts` 命令入 PATH。
+三个平台（Windows exe / Linux .run / macOS .sh）都带同一个 **PRTS 风格图形引导程序**（黑色·圆角直线·菱形方块·斜体标题）：检测 dsh（没有就自动下载并显示进度）→ 勾选插件（已安装的自动置灰）→ 安装 PRTS 界面并覆盖 PRTS 主题 → 迁移旧版（清理 web profile 里的 PRTS）→ 创建桌面/开始菜单快捷方式 → `prts` 命令入 PATH。装进**独立 `prts` profile**（web bundles + 皮肤插件，端口 3081）；`dsh web` 完全不受影响。
 
 ```sh
 # 通用：启动
-prts                       # 打开 PRTS 窗口（窗口立即出现，粒子开场兼作加载动画；
-                           # 底层静默启动/复用 dsh web:3080，不会唤出网页；
-                           # 关闭 PRTS 窗口时自动关闭它自己拉起的 dsh web）
+prts                       # 打开 PRTS 窗口（窗口立即出现，粒子开场兼作加载动画：
+                           # welcome to PRTS → PRTS/横线/DeepSeek Harness → PRTS 菱形标；
+                           # 底层静默启动/复用 prts profile 的 dsh web:3081，不会唤出网页；
+                           # 关闭 PRTS 窗口时自动关闭它自己拉起的后端）
 dsh --profile prts         # 等价写法
 dsh --profile prts --lang zh
-dsh --profile web --shortcut   # 刷新桌面快捷方式
+prts --shortcut            # 刷新桌面快捷方式
 ```
 
 **配置**：首次安装会生成 `~/.dsh/profiles/prts/prts.config.json`（模板 `prts.config.example.json`），里面可改 npm 镜像、Electron 镜像、插件列表、发布地址。更新时保留你的配置。
 
-**更新**：`sh update.sh`（Windows `update.bat`）会先尝试从 `releaseBase`（官网 releases 目录，读 `releases.json`）下载最新包，失败则本地重建；同时更新 dsh 与插件。
+**更新（稳定版通道）**：安装包用户自动跟随发行版更新 —— 启动时静默检查官网 `releases.json`（稳定版清单，与网站下载同源；git 现行版不会推送），发现新版本可在 设置 → PRTS → 更新 里一键“立即更新”，也有“检查更新”按钮。
 
 **卸载**：
 
@@ -117,7 +118,7 @@ sh scripts/make-dist.sh     # 生成 dist/：tgz + .run + .sh + .exe + .zip + SH
 ```
 
 - Windows exe 用 mingw-w64 编译的自解压 stub（`dist-tools/sfx.c`）+ 追加 payload zip，Linux 上也能直接产出；没有 mingw 时退化为 zip + `build-exe.bat`（Windows 自带 IExpress）。
-- 官网文件在 `docs/`：粒子特效中英文文字（“欢迎使用PRTS / 这里是dsh-prts官网”…）+ 四个平台下载按钮 + PWA（Android 可安装为应用）。部署说明见 `docs/README.txt`。
+- 官网文件在 `docs/`：粒子特效中英文文字（“欢迎使用PRTS / 这里是dsh-prts官网”…）+ 三个平台下载按钮 + 手机端扫码指引页（`docs/mobile.html`）。部署说明见 `docs/README.txt`。
 
 ## 开发与自测
 
@@ -135,7 +136,8 @@ node test/cdp-interact.mjs       # 功能交互测试（新会话/搜索/弹层/
 
 | 变量 | 含义 |
 | --- | --- |
-| `PRTS_DSH_URL` | 后端 dsh web 地址（默认 `http://127.0.0.1:3080`） |
+| `PRTS_DSH_URL` | PRTS 后端 dsh web 地址（默认 `http://127.0.0.1:3081`，prts profile） |
+| `PRTS_DSH_PROFILE` | PRTS 后端使用的 profile 名（默认 `prts`） |
 | `PRTS_ELECTRON` | 预装 Electron 二进制路径（跳过下载） |
 | `PRTS_ELECTRON_CACHE` | Electron 缓存目录（默认 `~/.cache/prts/electron`） |
 | `ELECTRON_MIRROR` | Electron 下载镜像（安装器默认 npmmirror） |

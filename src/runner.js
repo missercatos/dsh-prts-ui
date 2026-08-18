@@ -16,6 +16,10 @@ export const inject = ['prtsStartup']
  * @param ctx - plugin context carrying the startup selection and launcher IO.
  */
 export async function apply(ctx) {
+  // Backend mode: gui-boot spawns `dsh --profile prts --port <port>` with
+  // PRTS_BACKEND=1 as the window's backend. That process must ONLY serve the
+  // web surface — no window of its own, no exit, no backend respawn cascade.
+  if (process.env.PRTS_BACKEND === '1') return
   const dbg = (msg) => { if (process.env.DSH_PRTS_DEBUG) console.error('[prts-runner]', msg) }
   dbg('apply start')
   const startup = ctx.get('prtsStartup')
@@ -48,8 +52,9 @@ export async function apply(ctx) {
       io.exit(1)
       return
     }
-    // Stay alive for the life of the window, then tear down the dsh web backend
-    // we spawned so it never lingers on port 3080 (and blocks `dsh web`).
+    // Stay alive for the life of the window, then tear down the PRTS backend
+    // we spawned so it never lingers on the PRTS port (which would keep a
+    // stale backend running after the window closes).
     const onSignal = () => { launched.cleanup(); io.exit(130) }
     process.on('SIGINT', onSignal)
     process.on('SIGTERM', onSignal)

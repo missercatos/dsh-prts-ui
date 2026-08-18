@@ -26,6 +26,12 @@ function prtsCommand() {
     .name('dsh --profile prts')
     .description('PRTS — the GUI shell for dsh. Opens the window by default.')
     .helpOption('-h, --help', 'show this help')
+    // PRTS shares its profile tree with the dsh web app, so the tree also
+    // parses the web flags (--host/--port/--trusted-host). Unknown options
+    // are kept as operands and swallowed by the variadic argument — they
+    // never kill the boot; the web app's own parser still validates them.
+    .allowUnknownOption()
+    .argument('[args...]', 'additional dsh web flags (--host, --port, --trusted-host)')
     .option('--lang <locale>', 'ui language: zh or en (default: detect from the system)')
     .option('--shortcut', 'create (or refresh) the desktop shortcut and exit')
     .addHelpText('after', `
@@ -46,8 +52,11 @@ export function apply(ctx) {
   const dbg = (msg) => { if (process.env.DSH_PRTS_DEBUG) console.error('[prts-startup]', msg) }
   dbg('apply start')
   const program = prtsCommand()
-  program.action((options) => {
+  program.action(() => {
     dbg('action fired')
+    // Read from program.opts(): leftover web flags land in the variadic
+    // argument, so the action receives no arguments itself.
+    const options = program.opts()
     ctx.provide(PRTS_STARTUP_SERVICE, {
       mode: options.shortcut ? 'shortcut' : 'gui',
       locale: typeof options.lang === 'string' && options.lang.trim() !== '' ? options.lang.trim() : undefined,

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PRTS · 整合包安装向导</title>
+<style>
+  :root {
+    --bg: #0A0A0B; --layer: #111112; --layer2: #161618; --overlay: #0D0D0E;
+    --ink: #FAFAFA; --dim: #9C9CA1; --line: rgba(250,250,250,.14); --line2: rgba(250,250,250,.3);
+    --err: #f7768e; --ok: #9ece6a; --warn: #e0af68;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+    font-size: 14px; overflow: hidden;
+  }
+  /* background marks: diamond + square, PRTS motif */
+  .marks { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+  .marks .d { position: absolute; left: 50%; top: 50%; width: 260px; height: 260px;
+    border: 1px solid rgba(250,250,250,.12); transform: translate(-50%,-50%) rotate(45deg); opacity:.5; }
+  .marks .s { position: absolute; left: 50%; top: 50%; width: 120px; height: 120px;
+    border: 1px solid rgba(250,250,250,.1); transform: translate(-50%,-50%); opacity:.5; }
+  #fx { position: fixed; inset: 0; z-index: 0; }
+  .shell { position: relative; z-index: 1; height: 100%; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .card {
+    width: min(620px, 100%); max-height: 100%; display: flex; flex-direction: column;
+    background: color-mix(in srgb, var(--overlay) 88%, transparent);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--line2); border-radius: 14px; overflow: hidden;
+  }
+  .head { display: flex; align-items: center; gap: 12px; padding: 18px 22px; border-bottom: 1px solid var(--line); }
+  .rhombus { width: 13px; height: 13px; border: 1.5px solid var(--ink); transform: rotate(45deg); flex: none; }
+  .brand { font-style: italic; font-weight: 700; letter-spacing: .3em; font-size: 18px; }
+  .headSub { margin-left: auto; color: var(--dim); font-size: 11px; letter-spacing: .16em; }
+  .body { flex: 1; min-height: 0; overflow-y: auto; padding: 22px; }
+  h1.eyebrow { font-size: 11px; letter-spacing: .28em; color: var(--dim); font-weight: 600; text-transform: uppercase; }
+  h2.title { font-style: italic; font-weight: 600; letter-spacing: .06em; font-size: 21px; margin: 8px 0 10px; }
+  .dim { color: var(--dim); line-height: 1.8; }
+  .rule { height: 1px; background: var(--line); margin: 16px 0; }
+  .foot { display: flex; gap: 10px; justify-content: flex-end; padding: 16px 22px; border-top: 1px solid var(--line); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 18px;
+    border: 1px solid var(--line2); border-radius: var(--radius); background: transparent;
+    color: var(--ink); font-size: 13px; letter-spacing: .04em; cursor: pointer;
+  }
+  .btn:hover:not(:disabled) { border-color: var(--ink); box-shadow: 0 0 12px rgba(250,250,250,.14); }
+  .btn.primary { background: var(--ink); color: var(--bg); border-color: transparent; font-weight: 600; }
+  .btn.ok { background: var(--ok); color: var(--bg); border-color: transparent; font-weight: 600; }
+  .btn:disabled { opacity: .38; cursor: not-allowed; }
+  /* license */
+  label.check { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; line-height: 1.7; }
+  label.check input { margin-top: 4px; accent-color: var(--ink); }
+  /* component rows */
+  .row { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 12px 14px; margin-bottom: 10px; background: var(--layer); }
+  .row .grow { flex: 1; min-width: 0; }
+  .row .name { font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .row .desc { font-size: 11.5px; color: var(--dim); margin-top: 3px; line-height: 1.6; }
+  .tag { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 10px;
+    font-size: 10.5px; letter-spacing: .08em; border: 1px solid var(--line2); color: var(--dim); flex: none; }
+  .tag.on { color: var(--ok); border-color: var(--ok); }
+  .row.off { opacity: .45; }
+  .row.off label { cursor: default; }
+  label.check input:disabled { cursor: default; }
+  .row input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--ink); flex: none; }
+  .diamondMini { display: inline-block; width: 7px; height: 7px; border: 1px solid currentColor; transform: rotate(45deg); flex: none; }
+  /* progress */
+  .bar { height: 6px; border-radius: 3px; background: var(--layer2); overflow: hidden; position: relative; }
+  .bar > i { position: absolute; inset: 0; background: var(--ink); width: 0%; transition: width .4s ease; }
+  .bar.indet > i { width: 34%; animation: slide 1.1s ease-in-out infinite; }
+  @keyframes slide { 0% { left: -34%; } 100% { left: 104%; } }
+  .stage { margin-top: 10px; font-style: italic; letter-spacing: .1em; font-size: 13px; min-height: 20px; }
+  .logbox { margin-top: 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg);
+    height: 210px; overflow-y: auto; padding: 10px 12px; font-family: ui-monospace, Consolas, monospace;
+    font-size: 11px; color: var(--dim); line-height: 1.65; white-space: pre-wrap; word-break: break-all; }
+  .err { color: var(--err); font-weight: 600; }
+  .ok { color: var(--ok); }
+  .doneMark { text-align: center; padding: 12px 0 4px; }
+  .doneMark .big { width: 42px; height: 42px; margin: 0 auto 14px; border: 1.5px solid var(--ok); transform: rotate(45deg); box-shadow: 0 0 26px rgba(158,206,106,.35); }
+  .page { display: none; }
+  .page.active { display: block; }
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 4px; }
+</style>
+</head>
+<body>
+<canvas id="fx"></canvas>
+<div class="marks"><span class="d"></span><span class="s"></span></div>
+<div class="shell">
+  <div class="card">
+    <div class="head">
+      <span class="rhombus"></span>
+      <span class="brand">PRTS</span>
+      <span class="headSub">整合包安装向导 · <span id="plat"></span></span>
+    </div>
+    <div class="body">
+
+      <!-- page 1: welcome + license -->
+      <div class="page active" id="p1">
+        <h1 class="eyebrow">WELCOME</h1>
+        <h2 class="title">欢迎使用 PRTS 整合包</h2>
+        <p class="dim">PRTS —— DeepSeek Harness 的图形界面（罗德岛终端风格）。<br>
+        这个整合包会把 dsh 本体、PRTS 主题界面与常用插件一起准备好：</p>
+        <div class="rule"></div>
+        <p class="dim">· <b>dsh 本体</b>（已安装则直接跳过）<br>
+        · <b>PRTS 图形界面</b>（独立 prts profile，不改动原版 dsh web）<br>
+        · <b>可选插件</b>（已安装的会自动置灰，不会重复安装）</p>
+        <div class="rule"></div>
+        <label class="check">
+          <input type="checkbox" id="agree">
+          <span>我已阅读并同意安装 dsh 与 PRTS（MIT 许可，可随时卸载）。</span>
+        </label>
+      </div>
+
+      <!-- page 2: components -->
+      <div class="page" id="p2">
+        <h1 class="eyebrow">COMPONENTS</h1>
+        <h2 class="title">选择要安装的组件</h2>
+        <div id="components"></div>
+      </div>
+
+      <!-- page 3: progress -->
+      <div class="page" id="p3">
+        <h1 class="eyebrow">INSTALLING</h1>
+        <h2 class="title">正在安装…</h2>
+        <div class="bar" id="bar"><i id="barFill"></i></div>
+        <div class="stage" id="stage"></div>
+        <div class="logbox" id="logbox"></div>
+      </div>
+
+      <!-- page 4: done -->
+      <div class="page" id="p4">
+        <h1 class="eyebrow">COMPLETE</h1>
+        <h2 class="title">安装完成</h2>
+        <div class="doneMark"><div class="big"></div></div>
+        <p class="dim" id="doneText">PRTS 已安装完成。双击桌面图标，或在终端输入 <b>prts</b> 启动。<br>
+        原版 <b>dsh web</b> 不受影响，保持 DeepSeek Harness 原始界面。</p>
+      </div>
+
+      <!-- page 5: error -->
+      <div class="page" id="p5">
+        <h1 class="eyebrow">ERROR</h1>
+        <h2 class="title">安装失败</h2>
+        <p class="dim err" id="errText"></p>
+        <div class="logbox" id="errLog"></div>
+      </div>
+
+    </div>
+    <div class="foot">
+      <button class="btn" id="btnBack" type="button">‹ 上一步</button>
+      <button class="btn primary" id="btnNext" type="button">下一步 ›</button>
+      <button class="btn primary" id="btnStart" type="button" style="display:none">开始安装 ›</button>
+      <button class="btn ok" id="btnLaunch" type="button" style="display:none">启动 PRTS</button>
+      <button class="btn" id="btnClose" type="button" style="display:none">关闭</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id) }
+  var page = 'p1'
+  var S = null
+  var poll = null
+
+  /* ---- ambient particle field (subtle, PRTS monochrome) ---- */
+  ;(function fx() {
+    var cv = $('fx'), ctx = cv.getContext('2d')
+    var N = 130, pts = []
+    function resize() { cv.width = innerWidth; cv.height = innerHeight }
+    resize(); addEventListener('resize', resize)
+    for (var i = 0; i < N; i++) pts.push({
+      x: Math.random() * innerWidth, y: Math.random() * innerHeight,
+      dx: (Math.random() - .5) * .5, dy: (Math.random() - .5) * .5, a: .12 + Math.random() * .3,
+    })
+    function frame() {
+      ctx.clearRect(0, 0, cv.width, cv.height)
+      ctx.fillStyle = '#FAFAFA'
+      for (var i = 0; i < N; i++) {
+        var p = pts[i]
+        p.x += p.dx; p.y += p.dy
+        if (p.x < 0) p.x = cv.width; if (p.x > cv.width) p.x = 0
+        if (p.y < 0) p.y = cv.height; if (p.y > cv.height) p.y = 0
+        ctx.globalAlpha = p.a
+        ctx.fillRect(p.x, p.y, 1.6, 1.6)
+      }
+      ctx.globalAlpha = 1
+      requestAnimationFrame(frame)
+    }
+    requestAnimationFrame(frame)
+  })()
+
+  function show(p) {
+    page = p
+    var pages = ['p1', 'p2', 'p3', 'p4', 'p5']
+    for (var i = 0; i < pages.length; i++) $(pages[i]).classList.toggle('active', pages[i] === p)
+    $('btnBack').style.display = (p === 'p1' || p === 'p3' || p === 'p4') ? 'none' : ''
+    $('btnNext').style.display = (p === 'p1') ? '' : 'none'
+    $('btnStart').style.display = (p === 'p2') ? '' : 'none'
+    $('btnLaunch').style.display = (p === 'p4') ? '' : 'none'
+    $('btnClose').style.display = (p === 'p4' || p === 'p5') ? '' : 'none'
+  }
+
+  function renderComponents() {
+    var host = $('components')
+    host.innerHTML = ''
+    // dsh row
+    var dsh = S.dsh
+    var row = document.createElement('div')
+    row.className = 'row' + (dsh.installed ? ' off' : '')
+    row.innerHTML = '<div class="grow"><div class="name"><span class="diamondMini"></span>dsh 本体（DeepSeek Harness，必装）</div>' +
+      '<div class="desc">' + (dsh.installed ? ('已安装' + (dsh.version ? ' — ' + dsh.version : '')) : '未检测到 — 安装时自动下载（有进度显示）') + '</div></div>' +
+      '<span class="tag' + (dsh.installed ? ' on' : '') + '">' + (dsh.installed ? '已安装' : '待安装') + '</span>'
+    host.appendChild(row)
+    // PRTS row (locked)
+    var prts = document.createElement('div')
+    prts.className = 'row off'
+    prts.innerHTML = '<div class="grow"><div class="name"><span class="diamondMini"></span>PRTS 图形界面（必装）</div>' +
+      '<div class="desc">独立 prts profile + 主题覆盖，原版 dsh web 不受影响' + (S.prtsInstalled ? '；当前已装 v' + S.prtsInstalled + '，将被覆盖为整合包版本' : '') + '</div></div>' +
+      '<span class="tag' + (S.prtsInstalled ? ' on' : '') + '">' + (S.prtsInstalled ? '已安装' : '待安装') + '</span>'
+    host.appendChild(prts)
+    // plugin rows (installed -> greyed, unchecked)
+    for (var i = 0; i < S.plugins.length; i++) {
+      var p = S.plugins[i]
+      var r = document.createElement('label')
+      r.className = 'row' + (p.installed ? ' off' : '')
+      var chk = document.createElement('input')
+      chk.type = 'checkbox'; chk.value = p.id
+      chk.checked = p.installed ? false : p.def
+      chk.disabled = !!p.installed
+      var grow = document.createElement('div'); grow.className = 'grow'
+      grow.innerHTML = '<div class="name">' + p.label + '</div><div class="desc">' + p.desc + '</div>'
+      var tag = document.createElement('span')
+      tag.className = 'tag' + (p.installed ? ' on' : '')
+      tag.textContent = p.installed ? '已安装' : '可选'
+      r.appendChild(chk); r.appendChild(grow); r.appendChild(tag)
+      host.appendChild(r)
+    }
+  }
+
+  function renderProgress() {
+    if (!S || S.step === 'idle') return
+    var indet = S.step === 'running' && (S.progress < 3 || (S.stage || '').indexOf('下载') >= 0 && S.progress >= 8 && S.progress < 55)
+    $('bar').classList.toggle('indet', S.step === 'running' && S.progress < 55 && S.progress > 5)
+    $('barFill').style.width = S.progress + '%'
+    $('stage').textContent = S.stage || ''
+    var box = $('logbox')
+    if (box && S.log) {
+      var prev = box.dataset.len || '0'
+      box.textContent = S.log.join('\n')
+      box.dataset.len = String(S.log.length)
+      if (S.log.length !== Number(prev)) box.scrollTop = box.scrollHeight
+    }
+    if (S.step === 'done') show('p4')
+    else if (S.step === 'error') { $('errText').textContent = S.error; $('errLog').textContent = (S.log || []).join('\n'); show('p5') }
+    else if (S.step === 'running' && page !== 'p3') show('p3')
+  }
+
+  function refresh() {
+    fetch('/api/state').then(function (r) { return r.json() }).then(function (s) {
+      S = s
+      $('plat').textContent = s.platform
+      if (s.tgz === 'missing') { $('errText').textContent = '安装包缺少 dsh-prts-ui-*.tgz'; $('errLog').textContent = ''; show('p5') }
+      renderComponents()
+      renderProgress()
+    }).catch(function () {})
+  }
+
+  $('btnNext').addEventListener('click', function () {
+    if (!$('agree').checked) { alert('请先勾选同意许可。'); return }
+    show('p2')
+  })
+  $('btnBack').addEventListener('click', function () {
+    if (page === 'p2') show('p1')
+    if (page === 'p5') show('p2')
+  })
+  $('btnStart').addEventListener('click', function () {
+    var picks = []
+    var nodes = document.querySelectorAll('#components input[type=checkbox]:checked')
+    for (var i = 0; i < nodes.length; i++) picks.push(nodes[i].value)
+    $('btnStart').disabled = true
+    fetch('/api/install', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plugins: picks }) })
+      .then(function (r) { return r.json() })
+      .then(function (r) { if (!r.ok) alert((r.error) || '无法开始安装') })
+      .catch(function () { $('btnStart').disabled = false })
+  })
+  function wizClose() {
+    if (window.wiz && window.wiz.close) { window.wiz.close(); return }
+    try { window.close() } catch (e) { /* noop */ }
+  }
+  $('btnLaunch').addEventListener('click', function () {
+    fetch('/api/launch', { method: 'POST' }).then(function () {}).catch(function () {})
+    setTimeout(wizClose, 600)
+  })
+  $('btnClose').addEventListener('click', wizClose)
+
+  refresh()
+  poll = setInterval(refresh, 800)
+})()
+</script>
+</body>
+</html>

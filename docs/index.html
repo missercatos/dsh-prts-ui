@@ -10,7 +10,7 @@ if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) && !location.pa
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>PRTS · dsh-prts 官网</title>
-<meta name="description" content="PRTS —— DeepSeek Harness (dsh) 的 GUI 外壳。一键安装包：Windows / Linux / macOS / Android。无需 GitHub 访问。">
+<meta name="description" content="PRTS —— DeepSeek Harness (dsh) 的 GUI 整合包：Windows / Linux / macOS 安装包 + 手机端扫码连接。无需 GitHub 访问。">
 <meta name="theme-color" content="#0A0A0B">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='14' y='14' width='36' height='36' transform='rotate(45 32 32)' fill='none' stroke='%23FAFAFA' stroke-width='2.5'/%3E%3Ctext x='32' y='42' font-size='18' font-style='italic' font-weight='700' fill='%23FAFAFA' text-anchor='middle' font-family='sans-serif'%3EPRTS%3C/text%3E%3C/svg%3E">
@@ -383,15 +383,15 @@ if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) && !location.pa
         'Windows',
         'macOS',
         'Linux',
-        'Android',
+        '手机端扫码',
         '多端下载',
         '点击下方按钮',
         '选择你的版本',
         '根据引导进行安装',
         '祝您使用愉快',
       ],
-      buttons: { windows: 'Windows 安装包', linux: 'Linux 安装包', macos: 'macOS 安装包', android: 'Android 安装包' },
-      os: { windows: '.exe', linux: '.run', macos: '.sh', android: '.zip' },
+      buttons: { windows: 'Windows 安装包', linux: 'Linux 安装包', macos: 'macOS 安装包', mobile: '手机端（扫码）' },
+      os: { windows: '.exe', linux: '.run', macos: '.sh', mobile: '扫码' },
       started: '开始下载：',
       installed: '已加入：',
     },
@@ -410,15 +410,15 @@ if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) && !location.pa
         'Windows',
         'macOS',
         'Linux',
-        'Android',
+        'mobile scan',
         'download for your platform',
         'click the button below',
         'choose your version',
         'follow the installer guide',
         'enjoy!',
       ],
-      buttons: { windows: 'Windows installer', linux: 'Linux installer', macos: 'macOS installer', android: 'Android installer' },
-      os: { windows: '.exe', linux: '.run', macos: '.sh', android: '.zip' },
+      buttons: { windows: 'Windows installer', linux: 'Linux installer', macos: 'macOS installer', mobile: 'Mobile (scan)' },
+      os: { windows: '.exe', linux: '.run', macos: '.sh', mobile: '扫码' },
       started: 'Download started: ',
       installed: 'Added: ',
     },
@@ -427,10 +427,10 @@ if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) && !location.pa
   /* Release mapping — point these at your host. Files are served from
      ./releases/ by default; edit PRTS_RELEASES to override per platform. */
   window.PRTS_RELEASES = window.PRTS_RELEASES || {
-    windows: 'releases/PRTS-Setup-0.9.3-windows-x64.exe',
-    linux: 'releases/PRTS-0.9.3-linux-x64.run',
-    macos: 'releases/PRTS-0.9.3-macos.sh',
-    android: 'releases/PRTS-0.9.3-android.zip',
+    windows: 'releases/PRTS-Setup-0.9.9-windows-x64.exe',
+    linux: 'releases/PRTS-0.9.9-linux-x64.run',
+    macos: 'releases/PRTS-0.9.9-macos.sh',
+    mobile: 'mobile.html',
   };
 
   let lang = 'zh';
@@ -480,19 +480,19 @@ if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) && !location.pa
   function renderButtons() {
     const row = $('dlRow');
     row.textContent = '';
-    const order = ['windows', 'linux', 'macos', 'android'];
+    const order = ['windows', 'linux', 'macos', 'mobile'];
     order.forEach((os, i) => {
       const a = document.createElement('a');
       a.className = 'dlBtn' + (os === 'windows' ? ' primary' : '');
       a.href = window.PRTS_RELEASES[os];
-      a.download = '';
+      if (os !== 'mobile') a.download = '';
       const label = document.createElement('span');
       label.textContent = I18N[lang].buttons[os];
       const badge = document.createElement('span');
       badge.className = 'os';
       badge.textContent = I18N[lang].os[os];
       a.appendChild(label); a.appendChild(badge);
-      a.addEventListener('click', () => toast(I18N[lang].started + a.href.split('/').pop()));
+      a.addEventListener('click', () => toast(os === 'mobile' ? '手机端：扫码连接电脑' : I18N[lang].started + a.href.split('/').pop()));
       row.appendChild(a);
     });
   }

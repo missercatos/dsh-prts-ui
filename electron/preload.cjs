@@ -6,7 +6,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 
 const pending = new Map()
 
-const dshUrl = process.argv.find((a) => a.startsWith('--dsh-url='))?.slice('--dsh-url='.length) || 'http://127.0.0.1:3085'
+const dshUrl = process.argv.find((a) => a.startsWith('--dsh-url='))?.slice('--dsh-url='.length) || 'http://127.0.0.1:3081'
 
 let prtsVersion = '0.0.0'
 try { prtsVersion = require('../package.json').version || '0.0.0' } catch (e) { /* ignore */ }
@@ -58,6 +58,12 @@ contextBridge.exposeInMainWorld('prts', {
       request: (method, payload) => ipcRenderer.invoke('prts:dshRequest', method, payload),
       respond: (rpcId, result) => ipcRenderer.invoke('prts:dshRespond', rpcId, result),
       onFrame: (cb) => ipcRenderer.on('prts:dshFrame', (_e, data) => cb(data)),
+    },
+    win: {
+      minimize: () => ipcRenderer.invoke('prts:win-minimize'),
+      toggleMaximize: () => ipcRenderer.invoke('prts:win-toggle-maximize'),
+      close: () => ipcRenderer.invoke('prts:win-close'),
+      isMaximized: () => ipcRenderer.invoke('prts:win-is-maximized'),
     },
     http(req) {
       const token = req.token || ('h' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6))

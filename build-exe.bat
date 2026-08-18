@@ -5,7 +5,7 @@ REM  Build a Windows .exe installer (PRTS-Setup.exe) using
 REM  IExpress, which ships with Windows (no extra tools needed).
 REM  Run this on a Windows machine inside the repo checkout.
 REM  The exe self-extracts the full source tree and runs
-REM  install.bat (dsh + plugins + GUI + config + updater).
+REM  install.bat (the PRTS wizard: dsh + plugins + GUI + theme).
 REM ============================================================
 set "SRC=%~dp0"
 set "STAGE=%TEMP%\prts-setup-build"
@@ -28,10 +28,10 @@ if "%TGZ%"=="" (
 )
 
 REM stage the full payload (same set make-dist.sh ships)
-for %%d in (bin src web electron assets scripts) do (
+for %%d in (bin src web electron assets scripts wizard vendor) do (
   xcopy /e /i /q /y "%SRC%%%d" "%STAGE%\%%d" >nul
 )
-for %%f in (cordis.patch.yml package.json LICENSE README.md README.zh.md install.sh install.bat install-android.sh update.sh update.bat prts.config.example.json) do (
+for %%f in (cordis.patch.yml package.json LICENSE README.md README.zh.md install.sh install.bat prts.config.example.json) do (
   if exist "%SRC%%%f" copy /y "%SRC%%%f" "%STAGE%\%%f" >nul
 )
 copy /y "%SRC%%TGZ%" "%STAGE%\%TGZ%" >nul

@@ -62,22 +62,22 @@ Every network step falls back to npmmirror (npm registry + Electron mirror); Git
 | Windows | `PRTS-Setup-<ver>-windows-x64.exe` (self-extracting, double-click) or `install.bat` |
 | Linux | `PRTS-<ver>-linux-x64.run` (self-extracting) or `sh install.sh` |
 | macOS | `PRTS-<ver>-macos.sh` or `sh install.sh` |
-| Android | Termux: `sh install-android.sh` (dsh web + PRTS in the browser); or install the website as a PWA |
+| Phone | nothing to install: PC PRTS → Settings → PRTS → Mobile → scan the QR (same LAN); "Add to Home screen" for an app-like launcher |
 
-The installer: checks Node → installs dsh (if missing) → installs the plugins listed in `prts.config.json` → builds/reuses the `dsh-prts-ui` tarball → installs it into the `prts` profile → pins the bundle → creates desktop/menu shortcuts → puts `prts` on PATH.
+Every platform (Windows exe / Linux .run / macOS .sh) ships the same PRTS-styled GUI wizard (dark, rounded+straight lines, diamond/square marks, italic display type): checks dsh (auto-download with progress when missing) → plugin checkboxes (already-installed ones are greyed out) → installs the PRTS UI and applies the PRTS theme → migrates old installs out of the web profile → creates desktop/menu shortcuts → puts `prts` on PATH. Everything lands in the **isolated `prts` profile** (web bundles + skin plugin, port 3081); `dsh web` stays the original DeepSeek Harness UI.
 
 ```sh
 prts                        # open the PRTS window immediately (particle intro = loading;
-                            # dsh web:3080 boots/reuses silently in the background;
+                            # the prts-profile dsh web (port 3081) boots/reuses silently;
                             # closing the window kills the dsh web it spawned)
 dsh --profile prts          # equivalent
 dsh --profile prts --lang zh
-dsh --profile web --shortcut   # refresh desktop shortcuts
+prts --shortcut               # refresh desktop shortcuts
 ```
 
 **Config**: first install provisions `~/.dsh/profiles/prts/prts.config.json` (template: `prts.config.example.json`) — npm/Electron mirrors, plugin list, release URL. Updates preserve it.
 
-**Update**: `sh update.sh` (Windows: `update.bat`) downloads the latest release from `releaseBase` (`releases.json`), falls back to a local rebuild, and updates dsh + plugins.
+**Update (stable channel)**: installer users auto-follow releases — a silent startup check reads the website `releases.json` (the same STABLE set the download site serves; the git tree never enters it), and Settings → PRTS → Update offers "check" and "update now" buttons.
 
 **Remove**:
 
@@ -114,7 +114,8 @@ node test/cdp-interact.mjs       # functional interactions (session/search/popov
 
 | Variable | Meaning |
 | --- | --- |
-| `PRTS_DSH_URL` | dsh web backend URL (default `http://127.0.0.1:3080`) |
+| `PRTS_DSH_URL` | PRTS dsh web backend URL (default `http://127.0.0.1:3081`, the prts profile) |
+| `PRTS_DSH_PROFILE` | profile the PRTS backend boots (default `prts`) |
 | `PRTS_ELECTRON` | preinstalled Electron binary path |
 | `PRTS_ELECTRON_CACHE` | Electron cache dir (default `~/.cache/prts/electron`) |
 | `ELECTRON_MIRROR` | Electron download mirror (installers default to npmmirror) |

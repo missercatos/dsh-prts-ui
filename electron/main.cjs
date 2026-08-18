@@ -37,8 +37,20 @@ if (!gotLock) {
   })
 }
 
-// The dsh web URL is passed as the first argv (launcher) or via DSH_WEB_URL.
-const DSH_WEB_URL = process.argv.find((a) => /^https?:\/\//.test(a)) || process.env.DSH_WEB_URL || 'http://127.0.0.1:3085'
+// The PRTS backend URL is passed as the first argv (launcher) or via
+// DSH_WEB_URL. Default: the isolated PRTS profile's port (3081) — never the
+// official `dsh web` port (3080), which stays the original harness UI.
+const DSH_WEB_URL = process.argv.find((a) => /^https?:\/\//.test(a)) || process.env.DSH_WEB_URL || 'http://127.0.0.1:3081'
+// The splash runs the SAME three.js particle EFFECT as the reference
+// (three + the 1:1-ported engine), so the intro looks identical.
+let PRTS_PARTICLES_ENGINE = ''
+try {
+  PRTS_PARTICLES_ENGINE =
+    fs.readFileSync(path.join(__dirname, '..', 'vendor', 'three.min.js'), 'utf8') + '\n' +
+    fs.readFileSync(path.join(__dirname, '..', 'web', 'src', 'effect', 'arknights.js'), 'utf8')
+} catch (e) {
+  try { fs.writeFileSync(path.join(require('node:os').tmpdir(), 'prts-engine-err.log'), String((e && e.stack) || e)) } catch (e2) { /* noop */ }
+}
 
 function createWindow() {
   win = new BrowserWindow({
@@ -50,6 +62,11 @@ function createWindow() {
     autoHideMenuBar: true,
     show: false,
     icon: path.join(__dirname, '..', 'assets', 'prts.png'),
+    // Frameless: the PRTS skin draws the window bar (full black, three
+    // circles − □ ×, hover-reveal). thickFrame keeps Windows aero-snap and
+    // native edge resize; maximize is still available through the circles.
+    frame: false,
+    thickFrame: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -314,14 +331,14 @@ function readInstalledPlugins() {
 ipcMain.handle('prts:listPlugins', () => readInstalledPlugins())
 
 // Run the packaged updater script (update.sh / update.bat) from the app root.
+// Run the stable-channel updater: it checks the website release manifest —
+// the same STABLE set the download site serves; the git tree never enters it.
 ipcMain.handle('prts:update', () => new Promise((resolve) => {
   const root = path.join(__dirname, '..')
-  const isWin = process.platform === 'win32'
-  const script = isWin ? 'update.bat' : 'update.sh'
-  const file = isWin ? 'cmd' : 'bash'
-  const args = isWin ? ['/c', script] : [script]
-  const child = execFile(file, args, { cwd: root, timeout: 600000 }, (err, stdout, stderr) => {
-    resolve({ ok: !err, stdout: String(stdout || ''), stderr: String(stderr || '') })
+  const child = execFile(process.execPath, [path.join(root, 'scripts', 'update-runner.mjs'), 'update'], { timeout: 600000 }, (err, stdout, stderr) => {
+    let out = null
+    try { out = JSON.parse(String(stdout || '').trim()) } catch (e) { out = null }
+    resolve(out || { ok: !err, stdout: String(stdout || ''), stderr: String(stderr || '') })
   })
   if (!child) resolve({ ok: false, stderr: 'could not spawn the updater' })
 }))
@@ -745,46 +762,95 @@ function splashHtml() {
   return `<!DOCTYPE html>
 <html lang="zh-CN"><head><meta charset="UTF-8"><title>PRTS</title><style>
   html,body{margin:0;height:100%;background:#0A0A0B;overflow:hidden;font-family:sans-serif}
-  #cv{position:fixed;inset:0}
-  .stack{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;pointer-events:none}
-  .d{width:44px;height:44px;border:1.5px solid #FAFAFA;transform:rotate(45deg);animation:pulse 1.6s ease-in-out infinite;box-shadow:0 0 26px rgba(250,250,250,.35)}
-  @keyframes pulse{0%,100%{opacity:.55;transform:rotate(45deg) scale(1)}50%{opacity:1;transform:rotate(45deg) scale(1.12)}}
-  .word{color:#FAFAFA;font-style:italic;letter-spacing:.3em;font-size:26px;font-weight:600}
-  .status{color:#9C9CA1;font-size:12px;letter-spacing:.18em}
+  #cv{position:fixed;inset:0;width:100%;height:100%}
+  .stack{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:none}
+  .status{position:fixed;bottom:22px;left:0;right:0;text-align:center;color:#9C9CA1;font-size:12px;letter-spacing:.18em;min-height:16px;pointer-events:none;z-index:3}
+  .status.hint{color:#FAFAFA;pointer-events:auto;cursor:pointer;display:inline-block;border:1px solid rgba(250,250,250,.3);border-radius:8px;padding:6px 14px}
 </style></head><body>
 <canvas id="cv"></canvas>
-<div class="stack"><span class="d"></span><span class="word">PRTS</span><span class="status" id="st">后台加载中…</span></div>
+  <span class="status" id="st">后台加载中…</span>
 <script>
-(function(){
+${PRTS_PARTICLES_ENGINE || ''}
+;(function(){
   var DSH='__DSH_WEB_URL__';
-  var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
-  var N=2200,pts=[];
-  function resize(){cv.width=innerWidth;cv.height=innerHeight}
-  resize();addEventListener('resize',resize);
-  for(var i=0;i<N;i++)pts.push({x:Math.random()*1e4,y:Math.random()*1e4,s:.5+Math.random()*1.4,v:.04+Math.random()*.3});
-  function frame(){
-    ctx.clearRect(0,0,cv.width,cv.height);ctx.fillStyle='#FAFAFA';
-    for(var i=0;i<N;i++){var p=pts[i];p.y-=p.v;if(p.y<0){p.y=cv.height;p.x=Math.random()*cv.width}
-      ctx.globalAlpha=.5;ctx.fillRect(p.x%cv.width,p.y,p.s,p.s)}
-    ctx.globalAlpha=1;requestAnimationFrame(frame)
+  var cv=document.getElementById('cv');
+  if(!window.PRTS_INTRO){ document.getElementById('st').textContent='特效引擎加载失败'; return; }
+  var eng=PRTS_INTRO.create(cv,{particleNum:10000,speedRange:[20,30]});
+  var st=document.getElementById('st'),t0=Date.now(),ready=false,redirected=false;
+  var act=0,timer=null;
+  function nextAct(){
+    if(act===0) eng.showText('welcome to PRTS', 96);
+    else eng.showMark(1.05);
+    act=(act+1)%2;
+    timer=setTimeout(nextAct,6400);
   }
-  requestAnimationFrame(frame);
-  var st=document.getElementById('st'),ok=false;
-  async function probe(){
-    try{
-      var r=await fetch(DSH+'/api/workspace.list',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'client-request',rpcId:'splash-probe',method:'workspace.list',payload:{}})});
-      if(r.status===200){var j=await r.json().catch(function(){return null});return !!(j&&j.type==='server-response'&&j.result&&j.result.ok===true)}
-    }catch(e){}
-    return false
+  eng.showText('welcome to PRTS', 96); act=1;
+  timer=setTimeout(nextAct,6400);
+  cv.addEventListener('pointermove',function(e){eng.onPointerMove(e);});
+  cv.addEventListener('pointerleave',function(){eng.onPointerLeave();});
+  cv.addEventListener('touchmove',function(e){eng.onPointerMove(e);});
+  function probe(){
+    // 1) the APP's own ready signal: once fully rendered it posts
+    //    /prts/api/ready (kept fresh while it runs), so a warm relaunch
+    //    hands over with zero boot-screen flash. Relayed over the
+    //    main-process http bridge (no CORS), chunk-accumulated.
+    // 2) fallback: the dsh backend answering — a cold start's app cannot
+    //    post ready before the splash redirects, so backend-up enters too.
+    var tryHttp = (window.prts && window.prts.bridge && window.prts.bridge.http)
+      ? function(){
+          return new Promise(function(resolve){
+            var buf='', settled=false;
+            var settle=function(v){ if(!settled){ settled=true; resolve(v) } };
+            try{
+              window.prts.bridge.http({ method:'GET', url: DSH+'/prts/api/ready',
+                onChunk: function(t){ buf+=t },
+                onEnd: function(){
+                  try{ var j=JSON.parse(buf); settle(!!(j && j.ready)) }catch(e){ settle(false) }
+                } });
+              setTimeout(function(){ settle(false) }, 3000);
+            }catch(e){ settle(false) }
+          })
+        }
+      : function(){ return Promise.resolve(false) }
+    var tryDsh = (window.prts && window.prts.bridge && window.prts.bridge.dsh)
+      ? function(){
+          return window.prts.bridge.dsh.request('workspace.list',{})
+            .then(function(r){ return !!(r&&r.type==='server-response'&&r.result&&r.result.ok===true) })
+            .catch(function(){ return false })
+        }
+      : function(){
+          return fetch(DSH+'/api/workspace.list',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'client-request',rpcId:'splash-probe-'+Date.now(),method:'workspace.list',payload:{}})})
+            .then(function(f){
+              if(f.status===200){ return f.json().catch(function(){return null}).then(function(j){ return !!(j&&j.type==='server-response'&&j.result&&j.result.ok===true) }) }
+              return false
+            })
+            .catch(function(){ return false })
+        }
+    return tryHttp().then(function(ready){ return ready ? true : tryDsh() })
   }
+  function enter(){
+    if(redirected)return;redirected=true;
+    clearTimeout(timer);eng.stop();
+    st.textContent='READY · 进入中…';
+    setTimeout(function(){location.replace(DSH+'/?prtsAct='+act)},420);
+  }
+  document.body.addEventListener('click',function(){enter();});
+  setInterval(function(){
+    if(redirected||ready)return;
+    var el=Date.now()-t0;
+    if(el>45000){st.textContent='未检测到 PRTS 后端 — 点击重试';st.classList.add('hint')}
+    else if(el>15000)st.textContent='后端仍在启动…';
+  },500);
   (async function(){
     var delay=600;
     while(true){
-      if(await probe()){ok=true;break}
+      if(await probe()){ready=true;break}
       await new Promise(function(r){setTimeout(r,delay)});
       delay=Math.min(3000,delay+250);
     }
-    if(ok){st.textContent='READY · 进入中…';setTimeout(function(){location.replace(DSH+'/')},600)}
+    st.classList.remove('hint');
+    st.textContent='READY · 进入中…';
+    setTimeout(enter, 900);
   })();
 })();
 </script></body></html>`.replace('__DSH_WEB_URL__', DSH_WEB_URL)
@@ -996,6 +1062,17 @@ app.whenReady().then(async () => {
   createWindow()
   dshMuxWatchdog()
 })
+/* ---------- custom window-bar controls (the three circles) ---------- */
+ipcMain.handle('prts:win-minimize', () => { if (win && !win.isDestroyed()) win.minimize(); return { ok: true } })
+ipcMain.handle('prts:win-toggle-maximize', () => {
+  if (!win || win.isDestroyed()) return { maximized: false }
+  if (win.isMaximized()) win.unmaximize()
+  else win.maximize()
+  return { maximized: win.isMaximized() }
+})
+ipcMain.handle('prts:win-close', () => { if (win && !win.isDestroyed()) win.close(); return { ok: true } })
+ipcMain.handle('prts:win-is-maximized', () => ({ maximized: !!(win && !win.isDestroyed() && win.isMaximized()) }))
+
 app.on('window-all-closed', () => app.quit())
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow()

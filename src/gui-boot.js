@@ -1,12 +1,13 @@
 /**
  * PRTS GUI boot: opens the PRTS Electron window IMMEDIATELY and starts (or
- * reuses) the `dsh web` backend in the background. The particle intro doubles
- * as the loading animation: it keeps looping until the renderer's own ping
- * reaches dsh, a click before that shows the "not loaded" hint, and when the
- * window closes the dsh web backend PRTS spawned is torn down so it never
- * lingers on port 3080. PRTS is only the shell — the agent, sessions, tools,
- * models and plugins all live in dsh, so PRTS keeps working across dsh
- * upgrades as long as `dsh web` still serves /api.
+ * reuses) the PRTS dsh web backend in the background — the isolated `prts`
+ * profile on its own port (default 3081, never the official `dsh web` on
+ * 3080). The particle intro doubles as the loading animation: it keeps
+ * looping until the renderer's own ping reaches dsh, a click before that
+ * shows the "not loaded" hint, and when the window closes the backend PRTS
+ * spawned is torn down so it never lingers. PRTS is only the shell — the
+ * agent, sessions, tools, models and plugins all live in dsh, so PRTS keeps
+ * working across dsh upgrades as long as the prts profile still serves /api.
  */
 import { spawn } from 'node:child_process'
 import { createWriteStream, existsSync, mkdirSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
@@ -49,15 +50,20 @@ function killChild(child) {
   try { child.kill('SIGKILL'); } catch (e) { /* already gone */ }
 }
 
-/** Spawn one detached `dsh web`. On Windows `dsh` is a .cmd shim, which plain
- *  spawn() cannot execute — shell mode fixes that (the launcher itself lives
- *  in the same situation). */
-function spawnDshWeb() {
-  const opts = { stdio: 'ignore', detached: true };
+/** Spawn one detached PRTS backend: `dsh --profile prts --port <port>`. The
+ *  PRTS profile is the isolated web profile (base + web-app bundles + this
+ *  skin plugin), so it never touches the official `dsh web` profile — `dsh
+ *  web` on 3080 stays the original DeepSeek Harness UI while PRTS runs on
+ *  its own port with the PRTS skin. The bundle patch binds the profile to
+ *  0.0.0.0 so the phone's mobile client can reach it over the LAN. On
+ *  Windows `dsh` is a .cmd shim, which plain spawn() cannot execute — shell
+ *  mode fixes that (the launcher itself lives in the same situation). */
+function spawnDshWeb(profile, port) {
+  const opts = { stdio: 'ignore', detached: true, env: Object.assign({}, process.env, { PRTS_BACKEND: '1' }) };
   if (process.platform === 'win32') opts.shell = true;
   let child;
   try {
-    child = spawn('dsh', ['web'], opts);
+    child = spawn('dsh', ['--profile', profile, '--port', String(port)], opts);
   } catch (e) {
     return null;
   }
@@ -99,6 +105,15 @@ async function startBackend(url) {
     return { child: null, pidFile: state.pidFile, stop };
   }
 
+  // The PRTS backend port comes from the URL; the profile from the env
+  // (default 'prts' — the isolated PRTS profile, never the 'web' profile).
+  let port = 3081;
+  try {
+    const parsed = new URL(url);
+    if (parsed.port) port = Number(parsed.port);
+  } catch (e) { /* keep default */ }
+  const profile = process.env.PRTS_DSH_PROFILE || 'prts';
+
   const trySpawn = () => {
     if (state.stopped) return;
     state.attempts++;
@@ -106,7 +121,7 @@ async function startBackend(url) {
     // (port squatted by a non-dsh service, broken install) should not burn
     // CPU forever. The renderer keeps pinging and the intro keeps looping.
     if (state.attempts > 12) return;
-    const child = spawnDshWeb();
+    const child = spawnDshWeb(profile, port);
     if (!child) {
       // dsh is not on PATH yet — retry quietly.
       state.spawnTimer = setTimeout(trySpawn, Math.min(3000, 600 + state.attempts * 400));
@@ -164,19 +179,26 @@ export function electronBinary() {
 function download(url, dest) {
   return new Promise((resolve, reject) => {
     const mod = url.indexOf('https:') === 0 ? httpsGet : httpGet
-    const req = mod(url, (res) => {
-      if (res.statusCode === 301 || res.statusCode === 302) {
-        res.resume()
-        return reject(Object.assign(new Error('redirect ' + res.statusCode), { redirect: res.headers.location }))
-      }
-      if (res.statusCode !== 200) { res.resume(); return reject(new Error('HTTP ' + res.statusCode + ' for ' + url)) }
-      const out = createWriteStream(dest)
-      res.pipe(out)
-      out.on('finish', () => out.close(() => resolve()))
-      out.on('error', reject)
-    })
-    req.on('error', reject)
-    req.setTimeout(180000, () => req.destroy(new Error('download timeout')))
+    // GitHub release URLs (and most CDNs) answer 302 — follow redirects
+    // instead of rejecting them, or first-run downloads can never succeed.
+    const attempt = (u, hops) => {
+      const req = mod(u, (res) => {
+        if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 303 || res.statusCode === 307 || res.statusCode === 308) {
+          res.resume()
+          const next = res.headers.location
+          if (!next || hops >= 5) return reject(new Error('redirect ' + res.statusCode + (next ? ' -> ' + next : '')))
+          return attempt(new URL(next, u).toString(), hops + 1)
+        }
+        if (res.statusCode !== 200) { res.resume(); return reject(new Error('HTTP ' + res.statusCode + ' for ' + url)) }
+        const out = createWriteStream(dest)
+        res.pipe(out)
+        out.on('finish', () => out.close(() => resolve()))
+        out.on('error', reject)
+      })
+      req.on('error', reject)
+      req.setTimeout(180000, () => req.destroy(new Error('download timeout')))
+    }
+    attempt(url, 0)
   })
 }
 
@@ -217,47 +239,53 @@ export async function ensureElectron() {
   throw new Error('failed to fetch electron ' + VERSION + ' (' + p + '/' + a + '): ' + (lastErr && lastErr.message))
 }
 
-/** Open the PRTS window immediately and boot dsh web in the background.
- *  The window is the priority surface: it appears at once, its particle intro
- *  loops as the loading animation while dsh (and the profile's plugins) come
- *  up, and a click before readiness shows the "not loaded" hint. The returned
- *  handle keeps the runner alive until the window closes, then tears the
- *  backend down — so a PRTS-spawned `dsh web` can never outlive its window
- *  and squat on port 3080 (which would break the official `dsh web`). */
+/** Open the PRTS window immediately and boot the PRTS backend in the
+ *  background. The window is the priority surface: it appears at once, its
+ *  particle intro loops as the loading animation while dsh (and the
+ *  profile's plugins) come up, and a click before readiness shows the "not
+ *  loaded" hint. The returned handle keeps the runner alive until the window
+ *  closes, then tears the backend down — so a PRTS-spawned backend can never
+ *  outlive its window and squat on the PRTS port. */
 export async function launchGui(opts) {
-  const url = process.env.PRTS_DSH_URL || 'http://127.0.0.1:3080'
+  const url = process.env.PRTS_DSH_URL || 'http://127.0.0.1:3081'
   // 1. Kick the backend spawn off right away — it boots in parallel with the
   //    Electron download (first run) and the window itself. No readiness wait:
   //    the renderer drives the "loaded" state with its own ping loop.
   const backend = await startBackend(url)
-  // 2. Electron binary (downloads to ~/.cache/prts/electron on first run).
-  const bin = await ensureElectron()
-  const main = join(pkgRoot, 'electron', 'main.cjs')
-  const cdpArgs = process.env.PRTS_CDP ? ['--remote-debugging-port=' + process.env.PRTS_CDP] : []
-  const child = spawn(bin, ['--no-sandbox'].concat(cdpArgs, [main, url]), {
-    stdio: 'ignore',
-    env: Object.assign({}, process.env, {
-      PRTS_GUI: '1',
-      DSH_WEB_URL: url,
-      // Fallback PID + the live pidfile: Electron cleans the spawned backend
-      // up on quit even if this runner dies abnormally first.
-      DSH_WEB_PID: backend.child ? String(backend.child.pid) : '',
-      DSH_WEB_PIDFILE: backend.pidFile,
-    }),
-  })
-  // Not detached: the Electron child keeps the runner's event loop alive, so
-  // the runner stays around to clean up the backend it spawned.
-  const electronExited = new Promise((resolve) => {
-    child.on('exit', resolve)
-    child.on('error', resolve)
-  })
-  return {
-    ok: true, url, pid: child.pid,
-    electronExited,
-    cleanup() {
-      // Kill only the dsh web WE spawned — a reused (already-running) backend
-      // is left alone.
-      backend.stop()
-    },
+  try {
+    // 2. Electron binary (downloads to ~/.cache/prts/electron on first run).
+    const bin = await ensureElectron()
+    const main = join(pkgRoot, 'electron', 'main.cjs')
+    const cdpArgs = process.env.PRTS_CDP ? ['--remote-debugging-port=' + process.env.PRTS_CDP] : []
+    const child = spawn(bin, ['--no-sandbox'].concat(cdpArgs, [main, url]), {
+      stdio: 'ignore',
+      env: Object.assign({}, process.env, {
+        PRTS_GUI: '1',
+        DSH_WEB_URL: url,
+        // Fallback PID + the live pidfile: Electron cleans the spawned backend
+        // up on quit even if this runner dies abnormally first.
+        DSH_WEB_PID: backend.child ? String(backend.child.pid) : '',
+        DSH_WEB_PIDFILE: backend.pidFile,
+      }),
+    })
+    // Not detached: the Electron child keeps the runner's event loop alive, so
+    // the runner stays around to clean up the backend it spawned.
+    const electronExited = new Promise((resolve) => {
+      child.on('exit', resolve)
+      child.on('error', resolve)
+    })
+    return {
+      ok: true, url, pid: child.pid,
+      electronExited,
+      cleanup() {
+        // Kill only the dsh web WE spawned — a reused (already-running) backend
+        // is left alone.
+        backend.stop()
+      },
+    }
+  } catch (error) {
+    // The window never opened — never leave the backend we spawned behind.
+    backend.stop()
+    throw error
   }
 }

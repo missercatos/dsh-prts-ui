@@ -2,37 +2,12 @@
   "generatedAt": "2026-08-17T06:07:49.352Z",
   "plugins": [
     {
-      "pkg": "@liustack/modlens",
-      "name": "ModLens",
-      "displayName": "ModLens",
-      "source": "npm",
-      "description": "Vision for text-only LLMs via Antigravity CLI.",
-      "category": "visual"
-    },
-    {
       "pkg": "dsh-cost-meter",
       "name": "dsh-cost-meter",
       "displayName": "Cost Meter",
       "source": "npm",
       "description": "Per-session cost, daily totals and official price sync.",
       "category": "other"
-    },
-    {
-      "pkg": "dsh-better-sidebar",
-      "name": "dsh-better-sidebar",
-      "displayName": "Better Sidebar",
-      "source": "npm",
-      "description": "VSCode-like sidebar (explorer / editor / terminal / git).",
-      "category": "visual"
-    },
-    {
-      "name": "dshmarket",
-      "displayName": "dshmarket",
-      "description": "Visual plugin market inside DeepSeek Harness — browse, search, and one-click install community plugins. · DSH 可视化插件市场：逛一逛，点一下，装好。",
-      "source": "npm",
-      "pkg": "dshmarket",
-      "repo": "git+https://github.com/dsh-market/dsh-market.git",
-      "category": "visual"
     },
     {
       "name": "@liustack/modsearch",

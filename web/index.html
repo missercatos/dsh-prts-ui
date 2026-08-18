@@ -816,6 +816,16 @@
 .sysBar { height: 4px; border-radius: 2px; background: var(--prts-hairline); overflow: hidden; }
 .sysBarFill { height: 100%; width: 0; background: var(--prts-accent); transition: width 0.2s var(--prts-ease); }
 
+/* ---------- mobile touch targets ---------- */
+@media (max-width: 760px) {
+  .chip, .sbBtn, .sbFootItem, .crumb, .tab, .bulkBtn, .sBtn {
+    min-height: 40px;
+  }
+  .composerToolbar .meterBtn, .composerToolbar .chip { min-height: 38px; padding: 0 12px; }
+  .heroWord { font-size: 34px !important; }
+  .heroLogo .rhombus-lg { width: 40px; height: 40px; }
+}
+
 /* PRTS frame layout: sidebar / main / details, all hairline-divided. */
 html, body { height: 100%; }
 /* Author CSS sets display on many components; make the hidden attribute
@@ -930,6 +940,32 @@ button:focus:not(:focus-visible) { outline: none; }
   transition: opacity 0.2s var(--prts-ease), transform 0.2s var(--prts-ease);
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- mobile (<=760px): off-canvas sidebar, full-width conversation ---------- */
+@media (max-width: 760px) {
+  .frame { grid-template-columns: 0 minmax(0, 1fr) 0 !important; }
+  .handle { display: none !important; }
+  .sbCol {
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 70;
+    width: min(300px, 84vw);
+    transform: translateX(-102%);
+    transition: transform 0.25s var(--prts-ease);
+    box-shadow: 0 0 48px rgba(0, 0, 0, 0.55);
+    border-right: 1px solid var(--prts-hairline-strong);
+  }
+  .frame.mobileNavOpen .sbCol { transform: translateX(0); }
+  .dtCol {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 70;
+    width: min(340px, 92vw);
+    transition: transform 0.25s var(--prts-ease);
+    box-shadow: -6px 0 40px rgba(0, 0, 0, 0.5);
+  }
+  .frame[data-details-collapsed] .dtCol { transform: translateX(103%); }
+  .sbToggleBtn { width: 36px; height: 36px; z-index: 80; }
+  .iconBtn { width: 36px; height: 36px; }
+  .composerInput { font-size: 16px !important; } /* prevent iOS auto-zoom */
+  .tab { padding: 0 14px; }
+}
 
 /* ===== PRTS panels: settings nav, balance, git, skill dock, market =====
    Built on the chat.css settings primitives; Hypergryph-style chrome:
@@ -1986,37 +2022,12 @@ window.PRTS_MARKET = {
   "generatedAt": "2026-08-17T06:07:49.352Z",
   "plugins": [
     {
-      "pkg": "@liustack/modlens",
-      "name": "ModLens",
-      "displayName": "ModLens",
-      "source": "npm",
-      "description": "Vision for text-only LLMs via Antigravity CLI.",
-      "category": "visual"
-    },
-    {
       "pkg": "dsh-cost-meter",
       "name": "dsh-cost-meter",
       "displayName": "Cost Meter",
       "source": "npm",
       "description": "Per-session cost, daily totals and official price sync.",
       "category": "other"
-    },
-    {
-      "pkg": "dsh-better-sidebar",
-      "name": "dsh-better-sidebar",
-      "displayName": "Better Sidebar",
-      "source": "npm",
-      "description": "VSCode-like sidebar (explorer / editor / terminal / git).",
-      "category": "visual"
-    },
-    {
-      "name": "dshmarket",
-      "displayName": "dshmarket",
-      "description": "Visual plugin market inside DeepSeek Harness — browse, search, and one-click install community plugins. · DSH 可视化插件市场：逛一逛，点一下，装好。",
-      "source": "npm",
-      "pkg": "dshmarket",
-      "repo": "git+https://github.com/dsh-market/dsh-market.git",
-      "category": "visual"
     },
     {
       "name": "@liustack/modsearch",
@@ -4228,7 +4239,7 @@ window.PRTS_MARKET = {
 (function (G) {
   'use strict';
   const P = G.PRTS = G.PRTS || {};
-  const D = P.dsh = { baseUrl: 'http://127.0.0.1:3085', connected: false };
+  const D = P.dsh = { baseUrl: 'http://127.0.0.1:3081', connected: false };
 
   let seq = 0;
   const pending = new Map();     // rpcId -> { resolve, reject }  (HTTP responses)
@@ -4505,7 +4516,7 @@ window.PRTS_MARKET = {
   const P = G.PRTS = G.PRTS || {};
   const S = P.dshState = {
     ready: false,
-    url: 'http://127.0.0.1:3085',
+    url: 'http://127.0.0.1:3081',
     workspaces: [],
     sessions: [],       // raw session.list items (projections included)
     archivedSessionIds: [],  // workspace.list archive set (session.list does NOT filter it)
@@ -5208,41 +5219,44 @@ window.PRTS_MARKET = {
     }
 
     function drawModelIntro(maxPoints) {
-      // Two-line intro wordmark: tracked-out "welcome to" above an italic PRTS.
+      // One-line intro wordmark: tracked-out "welcome to" + an italic PRTS.
       // Wide and short so the phrase reads clearly at a glance.
-      const cw = 760, ch = 300;
+      const cw = 1240, ch = 330;
       scratch.width = cw; scratch.height = ch;
       sctx.clearRect(0, 0, cw, ch);
       sctx.fillStyle = '#fff';
       sctx.textAlign = 'center';
       sctx.textBaseline = 'middle';
-      sctx.font = '600 44px ' + getFontStack();
+      sctx.font = '600 72px ' + getFontStack();
       if ('letterSpacing' in sctx) sctx.letterSpacing = '8px';
-      sctx.fillText('welcome to', cw / 2, 92);
+      const w1 = sctx.measureText('welcome to').width;
+      sctx.font = 'italic 700 106px ' + getFontStack();
+      const w2 = sctx.measureText('PRTS').width;
+      const x0 = (cw - w1 - w2 - 14) / 2;
+      sctx.font = '600 72px ' + getFontStack();
+      sctx.fillText('welcome to', x0 + w1 / 2, ch / 2);
+      sctx.font = 'italic 700 106px ' + getFontStack();
+      sctx.fillText('PRTS', x0 + w1 + 14 + w2 / 2, ch / 2 + 3);
       if ('letterSpacing' in sctx) sctx.letterSpacing = '0px';
-      sctx.font = 'italic 700 148px ' + getFontStack();
-      sctx.fillText('PRTS', cw / 2, 208);
-      return sampleFromCanvas(scratch, sctx, cw, ch, maxPoints, 4);
+      return sampleFromCanvas(scratch, sctx, cw, ch, maxPoints, 2);
     }
 
     function drawModelPp(maxPoints) {
-      // PRTS / DeepSeek harness banner (matches pp.png): a thin top rule, a
-      // large upright PRTS wordmark, a small italic DeepSeek caption, a
-      // horizontal bar, and "harness" beneath it.
-      const cw = 700, ch = 400;
+      // "DeepSeek Harness" on ONE line (auto-shrunk to fit).
+      const cw = 1180, ch = 260;
       scratch.width = cw; scratch.height = ch;
       sctx.clearRect(0, 0, cw, ch);
-      sctx.fillStyle = '#fff'; sctx.strokeStyle = '#fff';
+      sctx.fillStyle = '#fff';
       sctx.textAlign = 'center';
-      sctx.textBaseline = 'alphabetic';
-      sctx.fillRect(132, 24, 436, 6);            // top rule
-      sctx.font = '700 ' + Math.floor(176) + 'px ' + getFontStack();
-      sctx.fillText('PRTS', cw / 2, 196);         // large PRTS
-      sctx.font = 'italic 700 ' + Math.floor(58) + 'px ' + getFontStack();
-      sctx.fillText('DeepSeek', cw / 2, 262);     // caption (above the bar)
-      sctx.fillRect(132, 284, 436, 7);            // bar
-      sctx.fillText('harness', cw / 2, 344);      // second line (below the bar)
-      return sampleFromCanvas(scratch, sctx, cw, ch, maxPoints, 4);
+      sctx.textBaseline = 'middle';
+      let size = 118;
+      while (size > 40) {
+        sctx.font = '700 ' + size + 'px ' + getFontStack();
+        if (sctx.measureText('DeepSeek Harness').width <= cw - 40) break;
+        size -= 6;
+      }
+      sctx.fillText('DeepSeek Harness', cw / 2, ch / 2);
+      return sampleFromCanvas(scratch, sctx, cw, ch, maxPoints, 2);
     }
 
     function drawModelMark(scale, maxPoints) {
@@ -5293,12 +5307,23 @@ window.PRTS_MARKET = {
       return s.getPropertyValue('--prts-font').trim() || 'sans-serif';
     }
 
-    function step() {
-      const dt = t();
+    function step(dt) {
+      dt = dt || t();
       const par = mouse.active ? 0.035 : 0.012;
       const mx = (mouse.x - CX) * par;
       const my = (mouse.y - CY) * par;
       for (const p of particles) {
+        // cursor repels nearby particles (website-style)
+        if (mouse.active) {
+          const ddx = p.x - mouse.x, ddy = p.y - mouse.y
+          const dd = Math.sqrt(ddx * ddx + ddy * ddy)
+          const R = 130
+          if (dd < R && dd > 0.001) {
+            const f = (1 - dd / R) * 26 * dt
+            p.x += (ddx / dd) * f
+            p.y += (ddy / dd) * f
+          }
+        }
         let tx, ty, ta;
         if (model && p.target >= 0) {
           const pt = model[p.target];
@@ -5318,18 +5343,22 @@ window.PRTS_MARKET = {
           ty = p.y + p.drift.y * 24 * dt * (state.drift ? 1 : 0) + my * 0.6;
           ta = 0.05;
         }
-        const s = p.speed;
+        // time-based approach (a busy boot must never freeze the motion)
+        const s = Math.min(1, 1 - Math.exp(-dt * p.speed * 60 * 0.55));
         p.x += (tx - p.x) * s;
         p.y += (ty - p.y) * s;
         p.a += (ta - p.a) * Math.min(1, s * 2.2);
       }
     }
 
+    let lastFrameT = 0;
     function frame() {
       if (!state.running) return;
-      t0 = performance.now();
+      const now = performance.now();
+      const dt = lastFrameT ? Math.max(0.001, (now - lastFrameT) / 1000) : 0.016;
+      lastFrameT = now;
       ctx.clearRect(0, 0, W, H);
-      step();
+      step(dt);
       ctx.fillStyle = state.ink;
       for (const p of particles) {
         if (p.a <= 0.008) continue;
@@ -5351,24 +5380,24 @@ window.PRTS_MARKET = {
       showIntro(maxPoints) {
         // Wide and short wordmark. Fixed cap so fullscreen extends the view
         // rather than zooming the shape; small windows shrink to fit.
-        assignTargets(drawModelIntro(maxPoints || 9000), {
-          w: Math.min(720, CX * 1.6),
-          h: Math.min(170, CY * 0.4),
+        assignTargets(drawModelIntro(maxPoints || 16000), {
+          w: Math.min(1240, CX * 1.75),
+          h: Math.min(330, CY * 0.55),
         });
         return api;
       },
       showPp(maxPoints) {
-        // PRTS / DEEPSEEK banner, fixed cap.
-        assignTargets(drawModelPp(maxPoints || 11000), {
-          w: Math.min(880, CX * 1.8),
-          h: Math.min(280, CY * 0.55),
+        // PRTS / rule / DeepSeek Harness banner, fixed cap.
+        assignTargets(drawModelPp(maxPoints || 18000), {
+          w: Math.min(1120, CX * 1.8),
+          h: Math.min(460, CY * 0.7),
         });
         return api;
       },
       showMark(scale, maxPoints) {
         // Square diamond mark, fixed cap.
-        const side = Math.min(300, 0.65 * Math.min(CX, CY));
-        assignTargets(drawModelMark(scale || 1, maxPoints || 9000), { w: side * 2, h: side * 2 });
+        const side = Math.min(440, 0.8 * Math.min(CX, CY));
+        assignTargets(drawModelMark(scale || 1, maxPoints || 16000), { w: side * 2, h: side * 2 });
         return api;
       },
       onMouse(x, y) {
@@ -9115,7 +9144,7 @@ window.PRTS_MARKET = {
   A.openWeb = function () {
     const frame = $('webFrame');
     if (frame && !frame.src) {
-      let base = 'http://127.0.0.1:3080';
+      let base = 'http://127.0.0.1:3081';
       try {
         const u = P.dshState && P.dshState.url;
         if (u) base = String(u).replace(/\/+$/, '');
@@ -9279,6 +9308,18 @@ window.PRTS_MARKET = {
     });
   }
   function toggleSidebar() {
+    // Mobile: the sidebar is an off-canvas overlay — the same single toggle
+    // slides it in/out without touching the desktop grid widths.
+    if (A.mobile) {
+      const open = appEl().classList.toggle('mobileNavOpen');
+      const btn = $('sbToggleBtn');
+      if (btn) {
+        btn.title = A.t(open ? 'sidebar.collapse' : 'sidebar.expand');
+        btn.setAttribute('aria-expanded', String(open));
+        btn.setAttribute('aria-label', A.t(open ? 'sidebar.collapse' : 'sidebar.expand'));
+      }
+      return;
+    }
     const collapsed = appEl().classList.toggle('sbCollapsed');
     // Restoring always returns to the previous width (the "original position").
     appEl().style.setProperty('--dsh-sb', collapsed ? '0px' : A_.sbWidth + 'px');
@@ -9699,7 +9740,7 @@ window.PRTS_MARKET = {
   /* ---------- particles: intro + hero ---------- */
   function runIntro() {
     const cv = $('introCanvas');
-    A.introEngine = P.particles.create(cv, { count: 8000, speedRange: [0.02, 0.05] });
+    A.introEngine = P.particles.create(cv, { count: 14000, speedRange: [0.02, 0.05] });
     A.introEngine.start();
     const tag = $('introTag');
     tag.textContent = A.t('intro.welcome');
@@ -9757,9 +9798,9 @@ window.PRTS_MARKET = {
       // Until the connection is ready the cycle loops forever — the effect
       // doubles as the loading animation.
       if (A.ready && A.phaseCount >= 3) { finish(); return; }
-      if (phase === 0) { A.introEngine.showIntro(9000); tag.classList.add('show'); }
-      else if (phase === 1) { A.introEngine.showPp(10000); tag.classList.remove('show'); }
-      else { A.introEngine.showMark(1.05, 9000); tag.classList.remove('show'); }
+      if (phase === 0) { A.introEngine.showIntro(16000); tag.classList.add('show'); }
+      else if (phase === 1) { A.introEngine.showPp(18000); tag.classList.remove('show'); }
+      else { A.introEngine.showMark(1.25, 16000); tag.classList.remove('show'); }
       A.phaseCount++;
       phase = (phase + 1) % 3;
       A.introTimer = setTimeout(tick, 3200);
@@ -9940,6 +9981,16 @@ window.PRTS_MARKET = {
 
   /* ---------- boot ---------- */
   async function boot() {
+    // Mobile (phone / tablet): the sidebar becomes an off-canvas overlay and
+    // the conversation takes the whole width. Same PRTS theme, touch-first.
+    A.mobile = typeof window !== 'undefined' && window.innerWidth <= 760;
+    if (A.mobile) {
+      document.body.classList.add('mobile');
+      // tapping the conversation closes the mobile nav drawer
+      $('ctCol') && $('ctCol').addEventListener('pointerdown', () => {
+        appEl().classList.remove('mobileNavOpen');
+      });
+    }
     A.config = await P.store.loadConfig();
     A.locale = A.config.locale === 'auto' ? P.platform.detectLocale() : A.config.locale;
     applyTheme(A.config.ui && A.config.ui.theme === 'light' ? 'light' : A.config.ui && A.config.ui.theme === 'custom' ? 'custom' : 'dark');

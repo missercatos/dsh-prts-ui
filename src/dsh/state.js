@@ -16,7 +16,7 @@
   const P = G.PRTS = G.PRTS || {};
   const S = P.dshState = {
     ready: false,
-    url: 'http://127.0.0.1:3085',
+    url: 'http://127.0.0.1:3081',
     workspaces: [],
     sessions: [],       // raw session.list items (projections included)
     archivedSessionIds: [],  // workspace.list archive set (session.list does NOT filter it)

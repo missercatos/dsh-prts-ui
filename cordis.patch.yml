@@ -1,13 +1,28 @@
 # dsh-prts-ui bundle patch: PRTS, a monochrome DeepSeek chat client.
 # It mounts no agent shell, no Host and no HTTP server: the startup provider
-# parses the app flags (`dsh --profile prts [--tui] [--lang zh] [--project x]`),
-# and the runner opens the GUI window (default), runs the ANSI terminal client
-# (--tui), or refreshes the desktop shortcut (--shortcut).
+# parses the app flags (`dsh --profile prts [--lang zh] [--shortcut]`), and
+# the runner opens the GUI window (default) or refreshes the desktop
+# shortcut (--shortcut).
 
 - id: hmr
   disabled: true
 
+# PRTS is a LAN product: the phone's mobile client scans a QR and drives the
+# PC's dsh, so the PRTS profile binds every interface (the official `dsh web`
+# profile stays loopback-only). The port expression is preserved so `--port`
+# keeps working; the /prts/m surface is token-gated.
+- id: webserver
+  config:
+    host: '0.0.0.0'
+    port: !!js ctx.webStartup.port ?? 3080
+
 - insert:
+  # Package-root row: the client-modules registry matches loader entries by
+  # package name, so this no-op row is what publishes the PRTS client bundle
+  # (/plugins/dsh-prts-ui/client.js) into the web UI.
+  - id: prts-root
+    name: 'dsh-prts-ui'
+
   - id: prts-startup
     name: 'dsh-prts-ui/startup'
 
@@ -18,3 +33,4 @@
   # PRTS panel APIs for the client plugin (/prts/api/* on every port).
   - id: prts-host
     name: 'dsh-prts-ui/host'
+    inject: [webServer]

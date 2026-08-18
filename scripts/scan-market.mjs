@@ -119,16 +119,19 @@ async function scanNpm() {
 const gh = await scanGitHub()
 const npm = await scanNpm()
 
-// Merge, dedupe by pkg/repo, keep the known-good three first.
+// Merge, dedupe by pkg/repo, keep the known-good ones first. Plugins that
+// conflict with the PRTS skin (they replace the sidebar / theme / market UI)
+// are BLOCKED from the catalog — never recommended for installation.
+const BLOCKED = new Set(['dshmarket', 'dsh-better-sidebar', '@liustack/modlens'])
 const KNOWN = [
-  { pkg: '@liustack/modlens', name: 'ModLens', displayName: 'ModLens', source: 'npm', description: 'Vision for text-only LLMs via Antigravity CLI.' },
   { pkg: 'dsh-cost-meter', name: 'dsh-cost-meter', displayName: 'Cost Meter', source: 'npm', description: 'Per-session cost, daily totals and official price sync.' },
-  { pkg: 'dsh-better-sidebar', name: 'dsh-better-sidebar', displayName: 'Better Sidebar', source: 'npm', description: 'VSCode-like sidebar (explorer / editor / terminal / git).' },
 ]
 const map = new Map()
 for (const p of [...KNOWN, ...gh, ...npm]) {
   const key = p.pkg || p.repo
   if (!key || map.has(key)) continue
+  const name = String(p.pkg || p.name || '')
+  if (BLOCKED.has(name)) continue
   map.set(key, Object.assign({}, p, { category: classify(p.description || p.displayName || p.name || '') }))
 }
 const plugins = [...map.values()]

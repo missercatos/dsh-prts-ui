@@ -112,3 +112,29 @@ button:focus:not(:focus-visible) { outline: none; }
   transition: opacity 0.2s var(--prts-ease), transform 0.2s var(--prts-ease);
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- mobile (<=760px): off-canvas sidebar, full-width conversation ---------- */
+@media (max-width: 760px) {
+  .frame { grid-template-columns: 0 minmax(0, 1fr) 0 !important; }
+  .handle { display: none !important; }
+  .sbCol {
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 70;
+    width: min(300px, 84vw);
+    transform: translateX(-102%);
+    transition: transform 0.25s var(--prts-ease);
+    box-shadow: 0 0 48px rgba(0, 0, 0, 0.55);
+    border-right: 1px solid var(--prts-hairline-strong);
+  }
+  .frame.mobileNavOpen .sbCol { transform: translateX(0); }
+  .dtCol {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 70;
+    width: min(340px, 92vw);
+    transition: transform 0.25s var(--prts-ease);
+    box-shadow: -6px 0 40px rgba(0, 0, 0, 0.5);
+  }
+  .frame[data-details-collapsed] .dtCol { transform: translateX(103%); }
+  .sbToggleBtn { width: 36px; height: 36px; z-index: 80; }
+  .iconBtn { width: 36px; height: 36px; }
+  .composerInput { font-size: 16px !important; } /* prevent iOS auto-zoom */
+  .tab { padding: 0 14px; }
+}

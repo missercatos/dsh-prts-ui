@@ -162,41 +162,44 @@
     }
 
     function drawModelIntro(maxPoints) {
-      // Two-line intro wordmark: tracked-out "welcome to" above an italic PRTS.
+      // One-line intro wordmark: tracked-out "welcome to" + an italic PRTS.
       // Wide and short so the phrase reads clearly at a glance.
-      const cw = 760, ch = 300;
+      const cw = 1240, ch = 330;
       scratch.width = cw; scratch.height = ch;
       sctx.clearRect(0, 0, cw, ch);
       sctx.fillStyle = '#fff';
       sctx.textAlign = 'center';
       sctx.textBaseline = 'middle';
-      sctx.font = '600 44px ' + getFontStack();
+      sctx.font = '600 72px ' + getFontStack();
       if ('letterSpacing' in sctx) sctx.letterSpacing = '8px';
-      sctx.fillText('welcome to', cw / 2, 92);
+      const w1 = sctx.measureText('welcome to').width;
+      sctx.font = 'italic 700 106px ' + getFontStack();
+      const w2 = sctx.measureText('PRTS').width;
+      const x0 = (cw - w1 - w2 - 14) / 2;
+      sctx.font = '600 72px ' + getFontStack();
+      sctx.fillText('welcome to', x0 + w1 / 2, ch / 2);
+      sctx.font = 'italic 700 106px ' + getFontStack();
+      sctx.fillText('PRTS', x0 + w1 + 14 + w2 / 2, ch / 2 + 3);
       if ('letterSpacing' in sctx) sctx.letterSpacing = '0px';
-      sctx.font = 'italic 700 148px ' + getFontStack();
-      sctx.fillText('PRTS', cw / 2, 208);
-      return sampleFromCanvas(scratch, sctx, cw, ch, maxPoints, 4);
+      return sampleFromCanvas(scratch, sctx, cw, ch, maxPoints, 2);
     }
 
     function drawModelPp(maxPoints) {
-      // PRTS / DeepSeek harness banner (matches pp.png): a thin top rule, a
-      // large upright PRTS wordmark, a small italic DeepSeek caption, a
-      // horizontal bar, and "harness" beneath it.
-      const cw = 700, ch = 400;
+      // "DeepSeek Harness" on ONE line (auto-shrunk to fit).
+      const cw = 1180, ch = 260;
       scratch.width = cw; scratch.height = ch;
       sctx.clearRect(0, 0, cw, ch);
-      sctx.fillStyle = '#fff'; sctx.strokeStyle = '#fff';
+      sctx.fillStyle = '#fff';
       sctx.textAlign = 'center';
-      sctx.textBaseline = 'alphabetic';
-      sctx.fillRect(132, 24, 436, 6);            // top rule
-      sctx.font = '700 ' + Math.floor(176) + 'px ' + getFontStack();
-      sctx.fillText('PRTS', cw / 2, 196);         // large PRTS
-      sctx.font = 'italic 700 ' + Math.floor(58) + 'px ' + getFontStack();
-      sctx.fillText('DeepSeek', cw / 2, 262);     // caption (above the bar)
-      sctx.fillRect(132, 284, 436, 7);            // bar
-      sctx.fillText('harness', cw / 2, 344);      // second line (below the bar)
-      return sampleFromCanvas(scratch, sctx, cw, ch, maxPoints, 4);
+      sctx.textBaseline = 'middle';
+      let size = 118;
+      while (size > 40) {
+        sctx.font = '700 ' + size + 'px ' + getFontStack();
+        if (sctx.measureText('DeepSeek Harness').width <= cw - 40) break;
+        size -= 6;
+      }
+      sctx.fillText('DeepSeek Harness', cw / 2, ch / 2);
+      return sampleFromCanvas(scratch, sctx, cw, ch, maxPoints, 2);
     }
 
     function drawModelMark(scale, maxPoints) {
@@ -247,12 +250,23 @@
       return s.getPropertyValue('--prts-font').trim() || 'sans-serif';
     }
 
-    function step() {
-      const dt = t();
+    function step(dt) {
+      dt = dt || t();
       const par = mouse.active ? 0.035 : 0.012;
       const mx = (mouse.x - CX) * par;
       const my = (mouse.y - CY) * par;
       for (const p of particles) {
+        // cursor repels nearby particles (website-style)
+        if (mouse.active) {
+          const ddx = p.x - mouse.x, ddy = p.y - mouse.y
+          const dd = Math.sqrt(ddx * ddx + ddy * ddy)
+          const R = 130
+          if (dd < R && dd > 0.001) {
+            const f = (1 - dd / R) * 26 * dt
+            p.x += (ddx / dd) * f
+            p.y += (ddy / dd) * f
+          }
+        }
         let tx, ty, ta;
         if (model && p.target >= 0) {
           const pt = model[p.target];
@@ -272,18 +286,22 @@
           ty = p.y + p.drift.y * 24 * dt * (state.drift ? 1 : 0) + my * 0.6;
           ta = 0.05;
         }
-        const s = p.speed;
+        // time-based approach (a busy boot must never freeze the motion)
+        const s = Math.min(1, 1 - Math.exp(-dt * p.speed * 60 * 0.55));
         p.x += (tx - p.x) * s;
         p.y += (ty - p.y) * s;
         p.a += (ta - p.a) * Math.min(1, s * 2.2);
       }
     }
 
+    let lastFrameT = 0;
     function frame() {
       if (!state.running) return;
-      t0 = performance.now();
+      const now = performance.now();
+      const dt = lastFrameT ? Math.max(0.001, (now - lastFrameT) / 1000) : 0.016;
+      lastFrameT = now;
       ctx.clearRect(0, 0, W, H);
-      step();
+      step(dt);
       ctx.fillStyle = state.ink;
       for (const p of particles) {
         if (p.a <= 0.008) continue;
@@ -305,24 +323,24 @@
       showIntro(maxPoints) {
         // Wide and short wordmark. Fixed cap so fullscreen extends the view
         // rather than zooming the shape; small windows shrink to fit.
-        assignTargets(drawModelIntro(maxPoints || 9000), {
-          w: Math.min(720, CX * 1.6),
-          h: Math.min(170, CY * 0.4),
+        assignTargets(drawModelIntro(maxPoints || 16000), {
+          w: Math.min(1240, CX * 1.75),
+          h: Math.min(330, CY * 0.55),
         });
         return api;
       },
       showPp(maxPoints) {
-        // PRTS / DEEPSEEK banner, fixed cap.
-        assignTargets(drawModelPp(maxPoints || 11000), {
-          w: Math.min(880, CX * 1.8),
-          h: Math.min(280, CY * 0.55),
+        // PRTS / rule / DeepSeek Harness banner, fixed cap.
+        assignTargets(drawModelPp(maxPoints || 18000), {
+          w: Math.min(1120, CX * 1.8),
+          h: Math.min(460, CY * 0.7),
         });
         return api;
       },
       showMark(scale, maxPoints) {
         // Square diamond mark, fixed cap.
-        const side = Math.min(300, 0.65 * Math.min(CX, CY));
-        assignTargets(drawModelMark(scale || 1, maxPoints || 9000), { w: side * 2, h: side * 2 });
+        const side = Math.min(440, 0.8 * Math.min(CX, CY));
+        assignTargets(drawModelMark(scale || 1, maxPoints || 16000), { w: side * 2, h: side * 2 });
         return api;
       },
       onMouse(x, y) {

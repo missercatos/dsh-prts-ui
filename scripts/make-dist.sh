@@ -7,13 +7,19 @@
 #   PRTS-<ver>-macos.sh                self-extracting macOS installer
 #   PRTS-Setup-<ver>-windows-x64.exe   self-extracting Windows installer (PE32+)
 #   PRTS-Setup-<ver>-windows-x64.zip   plain zip fallback for Windows
-#   PRTS-<ver>-android.zip             Termux/Android installer
+#   PRTS-mobile-<ver>.zip              mobile guide (scan-to-connect, no install)
 #   SHA256SUMS                          checksums for every artifact
-#   releases.json                       manifest consumed by the download site
+#   releases.json                       STABLE-channel manifest for the site + updater
+#
+# Every installer extracts the same payload and opens the cross-platform
+# PRTS wizard (wizard/server.mjs): dsh check/download with progress, plugin
+# selection (installed ones greyed out), PRTS UI install and theme applied.
+# Only this STABLE release set goes to the download site and the in-app
+# update channel — the git working tree (现行版) never enters releases.json.
 #
 # The Windows exe is a mingw-w64 stub (dist-tools/sfx.c) with the payload zip
 # appended — it extracts with tar/PowerShell and runs install.bat, so the
-# whole installer chain (dsh + plugins + GUI + config + updater) is one file.
+# whole installer chain (dsh + plugins + GUI + wizard) is one file.
 #
 set -eu
 
@@ -46,8 +52,8 @@ cp "$TGZ" "$OUT/dsh-prts-ui-$VERSION.tgz"
 
 # ---------- 2. Payload directory (what every installer extracts) ----------
 say "Preparing the installer payload…"
-for f in bin src web electron assets scripts cordis.patch.yml package.json LICENSE README.md README.zh.md installer.ps1 prts-launch.vbs \
-         install.sh install.bat install-android.sh update.sh update.bat build-exe.bat prts.config.example.json; do
+for f in bin src web electron assets scripts wizard vendor cordis.patch.yml package.json LICENSE README.md README.zh.md \
+         install.sh install.bat prts.config.example.json; do
   if [ -e "$f" ]; then
     mkdir -p "$PAYLOAD/$(dirname "$f")"
     cp -a "$f" "$PAYLOAD/$(dirname "$f")/"
@@ -66,7 +72,7 @@ write_run() {
 # $NAME — self-extracting PRTS installer (Linux / macOS).
 # Usage: sh $NAME   (or chmod +x and run directly)
 set -eu
-NAME="$(basename "\$0")"
+NAME="\$(basename "\$0")"
 WORK="\$(mktemp -d 2>/dev/null || mktemp -d "\${TMPDIR:-/tmp}/prts.XXXXXX")"
 trap 'rm -rf "\$WORK"' EXIT INT TERM
 echo "PRTS: extracting to \$WORK …"
@@ -74,7 +80,7 @@ ARCHIVE=\$(awk '/^__ARCHIVE_BELOW__\$/ {print NR + 1; exit 0;}' "\$0")
 tail -n +\$ARCHIVE "\$0" | tar -xz -C "\$WORK"
 cd "\$WORK/dsh-prts-ui"
 TGZ="\$(ls -1 dsh-prts-ui-*.tgz | head -1)"
-echo "PRTS: starting the installer (install.sh) with \$TGZ …"
+echo "PRTS: opening the installer wizard…"
 sh install.sh "\$TGZ"
 echo "PRTS: installation finished."
 exit 0
@@ -110,29 +116,30 @@ if [ -f "$STUB" ]; then
   say "windows exe: $(ls -la "$EXE" | awk '{print $5}') bytes"
 fi
 
-# ---------- 5. Android ----------
-say "Building the Android (Termux) installer…"
-ANDROID_DIR="$OUT/.work/PRTS-android"
-rm -rf "$ANDROID_DIR"
-mkdir -p "$ANDROID_DIR"
-cp -a "$PAYLOAD" "$ANDROID_DIR/dsh-prts-ui"
-cat > "$ANDROID_DIR/README.txt" <<'EOF'
-PRTS on Android (Termux)
-------------------------
-1. Install Termux (F-Droid build recommended).
-2. pkg update && pkg install -y nodejs git curl termux-api
-3. Copy the dsh-prts-ui folder to ~/ and run:
-     cd ~/dsh-prts-ui && sh install-android.sh
-4. Start with `prts`, then open http://127.0.0.1:3080 in your browser.
+# ---------- 5. Mobile (Android/phone) guide — scan-to-connect, no install ----------
+say "Building the mobile guide zip…"
+MOBILE_DIR="$OUT/.work/PRTS-mobile"
+rm -rf "$MOBILE_DIR"
+mkdir -p "$MOBILE_DIR"
+cat > "$MOBILE_DIR/README.html" <<'MOBILE_EOF'
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PRTS 手机端</title>
+<style>body{background:#0A0A0B;color:#FAFAFA;font-family:sans-serif;padding:24px;line-height:1.9}
+h1{font-style:italic;letter-spacing:.2em}code{background:#161618;padding:2px 8px;border-radius:6px}
+.dim{color:#9C9CA1}</style></head><body>
+<h1>PRTS · 手机端</h1>
+<p>手机端无需安装任何东西 —— 只负责<b>扫码连接电脑</b>，然后就能在手机上控制电脑里的 dsh（对话、工具、审批全部可用）。</p>
+<p><b>1.</b> 在电脑上打开 PRTS，进入 设置 → PRTS → 移动端；<br>
+<b>2.</b> 用手机扫屏幕上的二维码（或手动输入地址）；<br>
+<b>3.</b> 手机浏览器打开后，用浏览器菜单「添加到主屏幕」即可当 App 用。</p>
+<p class="dim">要求：手机与电脑在同一个局域网。主题与配色跟随你在电脑 PRTS 里的设置。</p>
+</body></html>
+MOBILE_EOF
+( cd "$OUT_ABS/.work" && zip -qr "$OUT_ABS/PRTS-mobile-$VERSION.zip" PRTS-mobile )
 
-Tip: the PRTS website is a PWA — open it in Chrome and choose
-"Add to Home screen" for an app-like launcher.
-EOF
-( cd "$OUT_ABS/.work" && zip -qr "$OUT_ABS/PRTS-$VERSION-android.zip" PRTS-android )
-
-# ---------- 6. Checksums + release manifest ----------
+# ---------- 6. Checksums + STABLE release manifest ----------
 say "Writing SHA256SUMS and releases.json…"
-( cd "$OUT" && sha256sum dsh-prts-ui-*.tgz PRTS-[0-9]*.run PRTS-[0-9]*.sh PRTS-[0-9]*.zip PRTS-Setup-*.exe PRTS-Setup-*.zip 2>/dev/null > SHA256SUMS )
+( cd "$OUT" && sha256sum dsh-prts-ui-*.tgz PRTS-[0-9]*.run PRTS-[0-9]*.sh PRTS-mobile-*.zip PRTS-Setup-*.exe PRTS-Setup-*.zip 2>/dev/null > SHA256SUMS )
 
 BASE="${PRTS_RELEASE_BASE:-https://your-domain.example.com/releases}"
 node - "$VERSION" "$BASE" "$OUT" <<'NODE'
@@ -146,6 +153,7 @@ const checksums = fs.readFileSync(out + '/SHA256SUMS', 'utf8')
 const hashOf = (name) => { const hit = checksums.find(([n]) => n === name); return hit ? hit[1] : '' }
 const manifest = {
   product: 'dsh-prts-ui',
+  channel: 'stable', // only the STABLE release set — the git tree never lands here
   version,
   releasedAt: new Date().toISOString(),
   files: files.map((f) => ({ file: f, sha256: hashOf(f), url: base.replace(/\/+$/, '') + '/' + f })),
@@ -153,12 +161,12 @@ const manifest = {
     windows: files.find((f) => f.endsWith('-windows-x64.exe')) || files.find((f) => f.endsWith('-windows-x64.zip')) || '',
     linux: files.find((f) => f.endsWith('-linux-x64.run')) || '',
     macos: files.find((f) => f.endsWith('-macos.sh')) || '',
-    android: files.find((f) => f.endsWith('-android.zip')) || '',
+    mobile: files.find((f) => f.startsWith('PRTS-mobile-') && f.endsWith('.zip')) || '',
     tarball: files.find((f) => f.startsWith('dsh-prts-ui-') && f.endsWith('.tgz')) || '',
   },
 }
 fs.writeFileSync(out + '/releases.json', JSON.stringify(manifest, null, 2))
-console.log('manifest ->', out + '/releases.json')
+console.log('manifest ->', out + '/releases.json (stable channel)')
 NODE
 
 rm -rf "$OUT/.payload" "$OUT/.work"

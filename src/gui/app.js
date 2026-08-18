@@ -886,7 +886,7 @@
   A.openWeb = function () {
     const frame = $('webFrame');
     if (frame && !frame.src) {
-      let base = 'http://127.0.0.1:3080';
+      let base = 'http://127.0.0.1:3081';
       try {
         const u = P.dshState && P.dshState.url;
         if (u) base = String(u).replace(/\/+$/, '');
@@ -1050,6 +1050,18 @@
     });
   }
   function toggleSidebar() {
+    // Mobile: the sidebar is an off-canvas overlay — the same single toggle
+    // slides it in/out without touching the desktop grid widths.
+    if (A.mobile) {
+      const open = appEl().classList.toggle('mobileNavOpen');
+      const btn = $('sbToggleBtn');
+      if (btn) {
+        btn.title = A.t(open ? 'sidebar.collapse' : 'sidebar.expand');
+        btn.setAttribute('aria-expanded', String(open));
+        btn.setAttribute('aria-label', A.t(open ? 'sidebar.collapse' : 'sidebar.expand'));
+      }
+      return;
+    }
     const collapsed = appEl().classList.toggle('sbCollapsed');
     // Restoring always returns to the previous width (the "original position").
     appEl().style.setProperty('--dsh-sb', collapsed ? '0px' : A_.sbWidth + 'px');
@@ -1470,7 +1482,7 @@
   /* ---------- particles: intro + hero ---------- */
   function runIntro() {
     const cv = $('introCanvas');
-    A.introEngine = P.particles.create(cv, { count: 8000, speedRange: [0.02, 0.05] });
+    A.introEngine = P.particles.create(cv, { count: 14000, speedRange: [0.02, 0.05] });
     A.introEngine.start();
     const tag = $('introTag');
     tag.textContent = A.t('intro.welcome');
@@ -1528,9 +1540,9 @@
       // Until the connection is ready the cycle loops forever — the effect
       // doubles as the loading animation.
       if (A.ready && A.phaseCount >= 3) { finish(); return; }
-      if (phase === 0) { A.introEngine.showIntro(9000); tag.classList.add('show'); }
-      else if (phase === 1) { A.introEngine.showPp(10000); tag.classList.remove('show'); }
-      else { A.introEngine.showMark(1.05, 9000); tag.classList.remove('show'); }
+      if (phase === 0) { A.introEngine.showIntro(16000); tag.classList.add('show'); }
+      else if (phase === 1) { A.introEngine.showPp(18000); tag.classList.remove('show'); }
+      else { A.introEngine.showMark(1.25, 16000); tag.classList.remove('show'); }
       A.phaseCount++;
       phase = (phase + 1) % 3;
       A.introTimer = setTimeout(tick, 3200);
@@ -1711,6 +1723,16 @@
 
   /* ---------- boot ---------- */
   async function boot() {
+    // Mobile (phone / tablet): the sidebar becomes an off-canvas overlay and
+    // the conversation takes the whole width. Same PRTS theme, touch-first.
+    A.mobile = typeof window !== 'undefined' && window.innerWidth <= 760;
+    if (A.mobile) {
+      document.body.classList.add('mobile');
+      // tapping the conversation closes the mobile nav drawer
+      $('ctCol') && $('ctCol').addEventListener('pointerdown', () => {
+        appEl().classList.remove('mobileNavOpen');
+      });
+    }
     A.config = await P.store.loadConfig();
     A.locale = A.config.locale === 'auto' ? P.platform.detectLocale() : A.config.locale;
     applyTheme(A.config.ui && A.config.ui.theme === 'light' ? 'light' : A.config.ui && A.config.ui.theme === 'custom' ? 'custom' : 'dark');

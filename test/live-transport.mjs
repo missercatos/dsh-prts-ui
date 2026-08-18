@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Live transport verification for the fixed PRTS client:
- *   - mux over WebSocket connects to the real dsh at $DSH_URL (default 3080)
+ *   - mux over WebSocket connects to the real dsh at $DSH_URL (default 3081)
  *   - workspace.list / session.list / llm.models / llm.providers /
  *     agentPreset.list shapes fold correctly
  *   - session.models / session.history paging / permission projection
@@ -10,7 +10,7 @@
  */
 import { readFileSync } from 'node:fs'
 
-const URL_BASE = process.env.DSH_URL || 'http://127.0.0.1:3080'
+const URL_BASE = process.env.DSH_URL || 'http://127.0.0.1:3081'
 
 const ctx = { console, WebSocket, fetch, URL, AbortController, setTimeout, clearTimeout, TextDecoder, TextEncoder }
 const g = globalThis

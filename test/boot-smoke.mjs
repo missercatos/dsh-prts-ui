@@ -34,7 +34,7 @@ function makeElement(tag) {
     clientWidth: 300,
     clientHeight: 150,
     getContext: () => makeCtx(),
-    style: { setProperty() {} },
+    style: { setProperty() {}, removeProperty() {}, getPropertyValue() { return '' } },
     classList: {
       _s: new Set(),
       add(...c) { c.forEach((x) => this._s.add(x)) },
@@ -150,7 +150,7 @@ const ctx = {
   innerWidth: 1200,
   innerHeight: 800,
   devicePixelRatio: 1,
-  location: { origin: 'http://127.0.0.1:3080', protocol: 'http:' },
+  location: { origin: 'http://127.0.0.1:3081', protocol: 'http:' },
   showDirectoryPicker: undefined,
 }
 ctx.globalThis = ctx

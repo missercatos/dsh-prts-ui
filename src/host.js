@@ -7,7 +7,7 @@
  */
 
 import { join, dirname } from 'node:path'
-import { homedir } from 'node:os'
+import { homedir, networkInterfaces } from 'node:os'
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
@@ -15,7 +15,13 @@ const ASSETS_DIR = dirname(fileURLToPath(import.meta.url)) + '/../assets/'
 
 export const name = 'prts-host'
 
+/** The web route registry must exist before the PRTS routes register. */
+export const inject = ['webServer']
+
 const DSH_HOME = process.env.DSH_HOME || join(homedir(), '.dsh')
+// The profile this host half belongs to (the isolated PRTS profile; only
+// overridden when PRTS_DSH_PROFILE points somewhere else).
+const PRTS_PROFILE = process.env.PRTS_DSH_PROFILE || 'prts'
 
 export function apply(ctx) {
   const webServer = ctx.get('webServer')
@@ -34,15 +40,19 @@ export function apply(ctx) {
   })
   const safeName = (name) => String(name || '').replace(/[^A-Za-z0-9._-]/g, '')
   const skillsRoot = () => join(DSH_HOME, 'skills')
-  const profileDir = () => join(DSH_HOME, 'profiles', 'web')
+  const profileDir = () => join(DSH_HOME, 'profiles', PRTS_PROFILE)
   const cfgPath = () => join(profileDir(), 'prts-ui.json')
   const shell = ctx.get('shell')
   const runShell = async (cmd, timeout) => {
     if (shell === undefined) throw new Error('no shell service')
     let spec
-    try { spec = shell.resolve({ command: cmd, timeout }) } catch (e) { spec = { command: cmd } }
+    try { spec = shell.resolve({ command: cmd, timeoutMs: timeout }) } catch (e) { spec = { command: cmd } }
     const r = await shell.run(spec)
-    return String((r && r.stdout) || '')
+    // rc.6 shape: stdout is a CollectedOutput ({ text, truncated, ... }).
+    const out = r && r.stdout
+    const text = typeof out === 'object' && out !== null ? String(out.text || '') : String(out || '')
+    if (!text && r && r.stderr && typeof r.stderr === 'object' && r.stderr.text) return 'ERR: ' + String(r.stderr.text).slice(0, 2000)
+    return text
   }
 
   /* ---------- PRTS config (prts-ui.json) ---------- */
@@ -251,8 +261,10 @@ export function apply(ctx) {
       const body = JSON.parse(await readBody(req) || '{}')
       const url = String(body.url || '')
       const method = String(body.method || 'GET').toUpperCase()
-      const m = /^https:\/\/([^/]+)/.exec(url)
-      if (!m || HTTP_HOSTS.indexOf(m[1]) < 0) return json(res, 403, { ok: false, error: 'host not allowed' })
+      const m = /^https?:\/\/([^/]+)/.exec(url)
+      // Wallpaper Engine's local JSON API is loopback-only (port 35585).
+      const localWe = /^127\.0\.0\.1(:35585)?$|^localhost(:35585)?$|^\[::1\](:35585)?$/.test(m ? m[1] : '')
+      if (!m || (HTTP_HOSTS.indexOf(m[1]) < 0 && !localWe)) return json(res, 403, { ok: false, error: 'host not allowed' })
       const headers = body.headers || {}
       const hdr = Object.keys(headers).map((k) => '-H ' + JSON.stringify(String(k) + ': ' + String(headers[k]))).join(' ')
       let cmd = 'curl -sS -w "\\n%{http_code}" -X ' + method + ' ' + hdr + ' ' + JSON.stringify(url)
@@ -266,6 +278,114 @@ export function apply(ctx) {
     }
   }
 
+  /* ---------- mobile client (scan-to-connect phone UI) ---------- */
+  const mobileToken = async (reset) => {
+    const cfg = await readConfig()
+    if (reset || !cfg.mobileToken) {
+      const tok = 'm' + Math.random().toString(36).slice(2, 12) + Math.random().toString(36).slice(2, 10)
+      await writeConfig(Object.assign({}, cfg, { mobileToken: tok }))
+      return tok
+    }
+    return String(cfg.mobileToken)
+  }
+  const mobileHandler = async (req, res) => {
+    try {
+      const url = String(req.url || '')
+      const qs = url.split('?')[1] || ''
+      const params = {}
+      for (const pair of qs.split('&')) {
+        const i = pair.indexOf('=')
+        if (i > 0) params[decodeURIComponent(pair.slice(0, i))] = decodeURIComponent(pair.slice(i + 1))
+      }
+      const token = await mobileToken(false)
+      if (params.t !== token) {
+        res.statusCode = 403
+        res.setHeader('content-type', 'text/html; charset=utf-8')
+        res.end('<!DOCTYPE html><html><head><meta charset="utf-8"><title>PRTS</title></head><body style="background:#0A0A0B;color:#FAFAFA;font-family:sans-serif;padding:40px;line-height:2">链接无效或已重置 —— 请在电脑的 PRTS 中重新打开「移动端」扫码。</body></html>')
+        return
+      }
+      const { readFile } = await import('node:fs/promises')
+      const html = await readFile(join(dirname(ASSETS_DIR), 'web', 'index.html'), 'utf8')
+      res.statusCode = 200
+      res.setHeader('content-type', 'text/html; charset=utf-8')
+      res.setHeader('cache-control', 'no-store')
+      res.end(html)
+    } catch (e) {
+      json(res, 500, { ok: false, error: String((e && e.message) || e) })
+    }
+  }
+  const lanAddress = () => {
+    const list = networkInterfaces()
+    const candidates = []
+    for (const name of Object.keys(list)) {
+      for (const it of list[name] || []) {
+        if (it.family !== 'IPv4' && it.family !== 4) continue
+        if (it.internal) continue
+        candidates.push(it.address)
+      }
+    }
+    const priv = candidates.find((a) => /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(a))
+    return priv || candidates[0] || null
+  }
+  const mobileInfoHandler = async (req, res) => {
+    try {
+      const reset = req.method === 'POST'
+      const token = await mobileToken(reset)
+      const ip = lanAddress()
+      const port = String((req.headers && req.headers.host) || '').split(':')[1] || '3081'
+      if (!ip) return json(res, 200, { enabled: false })
+      const url = 'http://' + ip + ':' + port + '/prts/m?t=' + token
+      json(res, 200, { enabled: true, url, token })
+    } catch (e) {
+      json(res, 500, { ok: false, error: String((e && e.message) || e) })
+    }
+  }
+  const mobileManifestHandler = async (req, res) => {
+    try {
+      const token = await mobileToken(false)
+      res.statusCode = 200
+      res.setHeader('content-type', 'application/json; charset=utf-8')
+      res.setHeader('cache-control', 'no-store')
+      res.end(JSON.stringify({
+        name: 'PRTS', short_name: 'PRTS', display: 'standalone',
+        start_url: '/prts/m?t=' + token, scope: '/prts/',
+        background_color: '#0A0A0B', theme_color: '#0A0A0B',
+        icons: [{ src: '/prts/icon.png', sizes: '512x512', type: 'image/png', purpose: 'any' }],
+      }))
+    } catch (e) { json(res, 500, { ok: false }) }
+  }
+  const mobileSwHandler = async (req, res) => {
+    res.statusCode = 200
+    res.setHeader('content-type', 'text/javascript; charset=utf-8')
+    res.setHeader('cache-control', 'no-store')
+    res.end("self.addEventListener('install', function (e) { self.skipWaiting() });\nself.addEventListener('activate', function (e) { e.waitUntil(self.clients.claim()) });\nself.addEventListener('fetch', function (e) { e.respondWith(fetch(e.request).catch(function () { return caches.match(e.request) })) });\n")
+  }
+  const mobileIconHandler = async (req, res) => {
+    try {
+      const { readFile } = await import('node:fs/promises')
+      const buf = await readFile(join(ASSETS_DIR, 'prts.png'))
+      res.statusCode = 200
+      res.setHeader('content-type', 'image/png')
+      res.end(buf)
+    } catch (e) { json(res, 404, { ok: false }) }
+  }
+
+  /* ---------- stable-channel updates (website release set only) ---------- */
+  // In-process updater: the shell service runs sandboxed and cannot reach the
+  // package files, so the stable-channel logic runs right here instead.
+  const updateCheckHandler = async (req, res) => {
+    try {
+      const { check } = await import('../scripts/update-core.mjs')
+      json(res, 200, await check())
+    } catch (e) { json(res, 200, { current: '?', latest: '?', update: false, channel: 'stable', error: String((e && e.message) || e) }) }
+  }
+  const updateHandler = async (req, res) => {
+    try {
+      const { update } = await import('../scripts/update-core.mjs')
+      json(res, 200, await update())
+    } catch (e) { json(res, 500, { ok: false, error: String((e && e.message) || e) }) }
+  }
+
   /* PRTS logo (favicon / brand img) */
   const logoHandler = async (req, res) => {
     try {
@@ -274,6 +394,18 @@ export function apply(ctx) {
     } catch (e) {
       json(res, 404, { ok: false })
     }
+  }
+
+  // App-rendered flag: the client plugin POSTs here once the app is fully
+  // rendered (document complete + composer on screen). The Electron splash
+  // probes it so the particle effect keeps playing until the app is really
+  // ready — dsh's own boot screen never flashes through. Freshness window
+  // keeps a stale flag (app crashed / new load) from skipping the splash.
+  let prtsReadyAt = 0
+  const readyHandler = async (req, res) => {
+    res.setHeader('cache-control', 'no-store')
+    if (req.method === 'POST') { prtsReadyAt = Date.now() }
+    json(res, 200, { ok: true, ready: Date.now() - prtsReadyAt < 6000 })
   }
 
   const disposers = [
@@ -286,6 +418,14 @@ export function apply(ctx) {
     webServer.register({ kind: 'exact', path: '/prts/api/detect-editors', handler: detectEditorsHandler }),
     webServer.register({ kind: 'exact', path: '/prts/api/http', handler: httpProxyHandler }),
     webServer.register({ kind: 'exact', path: '/prts/api/logo', handler: logoHandler }),
+    webServer.register({ kind: 'exact', path: '/prts/api/ready', handler: readyHandler }),
+    webServer.register({ kind: 'exact', path: '/prts/api/update-check', handler: updateCheckHandler }),
+    webServer.register({ kind: 'exact', path: '/prts/api/update', handler: updateHandler }),
+    webServer.register({ kind: 'prefix', path: '/prts/m', handler: mobileHandler }),
+    webServer.register({ kind: 'exact', path: '/prts/api/mobile-info', handler: mobileInfoHandler }),
+    webServer.register({ kind: 'exact', path: '/prts/manifest.json', handler: mobileManifestHandler }),
+    webServer.register({ kind: 'exact', path: '/prts/sw.js', handler: mobileSwHandler }),
+    webServer.register({ kind: 'exact', path: '/prts/icon.png', handler: mobileIconHandler }),
   ]
   ctx.effect(() => () => { for (const d of disposers) d() })
 }
