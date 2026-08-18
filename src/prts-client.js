@@ -244,7 +244,7 @@ export function apply(ctx) {
 
   let lastSkinCfg = null
   let skinTokensKey = ''
-  getConfig().then((cfg) => { lastSkinCfg = cfg; return applySkin(cfg) }).catch(() => {})
+  getConfig().then((cfg) => { lastSkinCfg = cfg; return applySkin(cfg) }).catch(() => { })
   // The light/dark switch (logo row + 通用设置) must adapt the fixed ink
   // instantly — but re-running applySkin here would call overrideTokens,
   // which PUBLISHES a theme change, which fires theme/change again:
@@ -302,12 +302,14 @@ export function apply(ctx) {
         h('div', { className: 'prtsGroupHead', style: { cursor: 'default' } }, h('span', { className: 'prtsGroupTitle' }, '律动')),
         h('div', { className: 'prtsGroupBody' },
           h('div', { className: 'prtsRow' },
-            h('button', { className: 'prtsBtn' + (ui.beat ? ' on' : ''), onClick: async () => {
-              if (ui.beat) { stopBeat(); await save({ ui: { ...ui, beat: false } }); return }
-              const ok = await startBeat()
-              if (ok) await save({ ui: { ...ui, beat: true } })
-              else alert('无法捕获系统声音 —— 请在弹窗中选择「整个屏幕」并勾选系统音频。')
-            } }, ui.beat ? '关闭律动' : '开启系统声音律动'),
+            h('button', {
+              className: 'prtsBtn' + (ui.beat ? ' on' : ''), onClick: async () => {
+                if (ui.beat) { stopBeat(); await save({ ui: { ...ui, beat: false } }); return }
+                const ok = await startBeat()
+                if (ok) await save({ ui: { ...ui, beat: true } })
+                else alert('无法捕获系统声音 —— 请在弹窗中选择「整个屏幕」并勾选系统音频。')
+              }
+            }, ui.beat ? '关闭律动' : '开启系统声音律动'),
             h('span', { className: 'prtsItemDesc' }, '背景菱形与方块随电脑正在播放的声音振动'),
           ),
         ),
@@ -379,14 +381,16 @@ export function apply(ctx) {
               h('input', { type: 'file', accept: 'image/*,video/*', style: { display: 'none' }, onChange: (e) => { const f = e.target.files && e.target.files[0]; if (f) uploadWall(f) } }),
             ),
             h('button', { className: 'prtsBtn', disabled: !!(weState && weState.busy), onClick: detectWe }, weState && weState.busy ? '检测中…' : '连接 Wallpaper Engine'),
-            (w.file || w.url) ? h('button', { className: 'prtsBtn', onClick: async () => { await api('DELETE', '/prts/api/wallpaper').catch(() => {}); await save({ ui: { ...ui, wallpaper: { ...w, file: '', url: '' } } }) } }, '清除') : null,
+            (w.file || w.url) ? h('button', { className: 'prtsBtn', onClick: async () => { await api('DELETE', '/prts/api/wallpaper').catch(() => { }); await save({ ui: { ...ui, wallpaper: { ...w, file: '', url: '' } } }) } }, '清除') : null,
           ),
           weState && weState.error ? h('div', { className: 'prtsItemDesc', style: { marginTop: 6 } }, '未检测到 Wallpaper Engine（需在其设置中开启 HTTP API）') : null,
           weState && weState.list && weState.list.length ? h('div', { className: 'prtsRow' },
-            h('select', { className: 'prtsInput', style: { flex: 2 }, defaultValue: '', onChange: (e) => {
-              const id = e.target.value
-              if (id) save({ ui: { ...ui, wallpaper: { ...w, url: 'http://127.0.0.1:35585/v2/stream/' + encodeURIComponent(id), fit: w.fit || 'cover', type: 'video' } } })
-            } },
+            h('select', {
+              className: 'prtsInput', style: { flex: 2 }, defaultValue: '', onChange: (e) => {
+                const id = e.target.value
+                if (id) save({ ui: { ...ui, wallpaper: { ...w, url: 'http://127.0.0.1:35585/v2/stream/' + encodeURIComponent(id), fit: w.fit || 'cover', type: 'video' } } })
+              }
+            },
               h('option', { value: '' }, '选择一张 Wallpaper Engine 壁纸'),
               weState.list.map((it) => h('option', { key: it.id, value: it.id }, it.title)),
             ),
@@ -427,12 +431,14 @@ export function apply(ctx) {
         h('div', { className: 'prtsGroupHead', style: { cursor: 'default' } }, h('span', { className: 'prtsGroupTitle' }, '声音律动')),
         h('div', { className: 'prtsGroupBody' },
           h('div', { className: 'prtsRow' },
-            h('button', { className: 'prtsBtn' + (ui.beat ? ' on' : ''), onClick: async () => {
-              if (ui.beat) { stopBeat(); await save({ ui: { ...ui, beat: false } }); return }
-              const ok = await startBeat()
-              if (ok) await save({ ui: { ...ui, beat: true } })
-              else alert('无法捕获系统声音 —— 请在弹窗中选择「整个屏幕」并勾选系统音频。')
-            } }, ui.beat ? '关闭律动' : '开启系统声音律动'),
+            h('button', {
+              className: 'prtsBtn' + (ui.beat ? ' on' : ''), onClick: async () => {
+                if (ui.beat) { stopBeat(); await save({ ui: { ...ui, beat: false } }); return }
+                const ok = await startBeat()
+                if (ok) await save({ ui: { ...ui, beat: true } })
+                else alert('无法捕获系统声音 —— 请在弹窗中选择「整个屏幕」并勾选系统音频。')
+              }
+            }, ui.beat ? '关闭律动' : '开启系统声音律动'),
             h('span', { className: 'prtsItemDesc' }, '背景菱形与方块随电脑正在播放的声音振动'),
           ),
         ),
@@ -529,13 +535,15 @@ export function apply(ctx) {
       ) : null,
       h('div', { className: 'prtsRow' },
         h('input', { className: 'prtsInput', style: { flex: 2 }, type: 'password', value: key, placeholder: 'DeepSeek API Key (sk-…)', onChange: (e) => setKey(e.target.value) }),
-        h('button', { className: 'prtsBtn primary', onClick: async () => {
-          const k = key.trim()
-          if (!k) return
-          const res = await api('POST', '/prts/api/http', { method: 'GET', url: 'https://api.deepseek.com/user/balance', headers: { Authorization: 'Bearer ' + k } })
-          if (res && res.status === 200) { await saveDs({ apiKey: k, loggedIn: true }); setKey('') }
-          else alert('API Key 无效')
-        } }, '保存'),
+        h('button', {
+          className: 'prtsBtn primary', onClick: async () => {
+            const k = key.trim()
+            if (!k) return
+            const res = await api('POST', '/prts/api/http', { method: 'GET', url: 'https://api.deepseek.com/user/balance', headers: { Authorization: 'Bearer ' + k } })
+            if (res && res.status === 200) { await saveDs({ apiKey: k, loggedIn: true }); setKey('') }
+            else alert('API Key 无效')
+          }
+        }, '保存'),
       ),
       h('div', { className: 'prtsRow' },
         h('button', { className: 'prtsBtn', onClick: () => window.open('https://platform.deepseek.com/top_up', '_blank') }, '充值'),
@@ -787,29 +795,31 @@ export function apply(ctx) {
   // onboarding (first run, any port)  // onboarding (first run) — only AFTER the intro has fully played out and
   // the app has formally entered; never during the animation.
   let onboardingShown = false
-  function showOnboarding() { getConfig().then(async (cfg) => {
-    if (onboardingShown) return
-    onboardingShown = true
-    const ui = (cfg && cfg.ui) || {}
-    if (ui.onboardedApiKey) return
-    // check whether a key is already configured (PRTS copy)
-    const ds = cfg && cfg.deepseek
-    if (ds && ds.apiKey) {
-      await setConfig({ ...cfg, ui: { ...ui, onboardedApiKey: true } })
-      return
-    }
-    // render the onboarding overlay once
-    const mount = document.createElement('div')
-    mount.id = 'prts-onboard-mount'
-    document.body.appendChild(mount)
-    const root = createRoot ? createRoot(mount) : null
-    const finish = async () => {
-      if (root && root.unmount) root.unmount()
-      mount.remove()
-    }
-    const el = h(Onboarding, { onDone: finish })
-    if (root && root.render) root.render(el)
-  }).catch(() => {}) }
+  function showOnboarding() {
+    getConfig().then(async (cfg) => {
+      if (onboardingShown) return
+      onboardingShown = true
+      const ui = (cfg && cfg.ui) || {}
+      if (ui.onboardedApiKey) return
+      // check whether a key is already configured (PRTS copy)
+      const ds = cfg && cfg.deepseek
+      if (ds && ds.apiKey) {
+        await setConfig({ ...cfg, ui: { ...ui, onboardedApiKey: true } })
+        return
+      }
+      // render the onboarding overlay once
+      const mount = document.createElement('div')
+      mount.id = 'prts-onboard-mount'
+      document.body.appendChild(mount)
+      const root = createRoot ? createRoot(mount) : null
+      const finish = async () => {
+        if (root && root.unmount) root.unmount()
+        mount.remove()
+      }
+      const el = h(Onboarding, { onDone: finish })
+      if (root && root.render) root.render(el)
+    }).catch(() => { })
+  }
 
   /* ============================================================
      PRTS skin layer — everything visual that makes dsh-web look
@@ -1090,7 +1100,7 @@ export function apply(ctx) {
         link.type = 'image/png'
         link.href = 'data:image/png;base64,' + d.b64
         document.head.appendChild(link)
-      }).catch(() => {})
+      }).catch(() => { })
     }
     // Overlay approach: dsh-web's logo row is React-managed — mutating its
     // children (innerHTML swaps, insertBefore) breaks React reconciliation
@@ -1479,7 +1489,7 @@ export function apply(ctx) {
   let skinEntered = false
   const skinWalk = () => {
     if (!skinEntered) return
-    swapBrand(); swapHero(); composerExpand(); sidebarRescue(); cleanHeaderExtras(); recenterMarks(); dismissNativeOnboarding()
+    swapBrand(); swapHero(); //composerExpand(); sidebarRescue(); cleanHeaderExtras(); recenterMarks(); dismissNativeOnboarding()
   }
   ensureSkinCss()
   backgroundMarks()
