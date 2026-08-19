@@ -315,7 +315,7 @@
       else A.wsExpanded.add(w.workspaceId);
       const branch = row.nextElementSibling;
       if (branch && branch.classList.contains('sbTreeBranch')) {
-        branch.classList.toggle('closed', !open);
+        branch.classList.toggle('closed', open);
         chev.setAttribute('aria-expanded', String(!open));
       }
     });
@@ -659,7 +659,7 @@
     const loading = refreshSessions();   // list refresh + chunked rebuild
     highlightWorkspaces();               // instant feedback on the current rows
     updateCrumb();
-    refreshWorkspacePop();
+    if (A.refreshWorkspacePop) A.refreshWorkspacePop();
     await loading;
   }
 

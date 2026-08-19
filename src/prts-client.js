@@ -236,6 +236,41 @@ export function apply(ctx) {
   .prtsOnboardTitle { font-size: 16px; color: var(--dsw-alias-label-primary); letter-spacing: 0.06em; }
   .prtsOnboardBody { font-size: 12px; color: var(--dsw-alias-label-secondary); line-height: 1.7; }
   .prtsDiamond { display: inline-block; width: 9px; height: 9px; transform: rotate(45deg); border: 1.2px solid var(--dsw-alias-brand-primary); }
+  /* PRTS settings groups (dsh-settings-like cards) */
+  .prtsGroup { border: 1px solid var(--dsw-alias-border-l1); border-radius: 14px; margin: 10px 0; background: var(--dsw-alias-bg-layer-1); overflow: hidden; }
+  .prtsGroupHead { width: 100%; display: flex; align-items: center; gap: 8px; padding: 12px 16px; border: none; background: transparent; color: var(--dsw-alias-label-primary); cursor: pointer; text-align: left; }
+  .prtsGroupHead:hover { background: var(--dsw-alias-bg-layer-2); }
+  .prtsGroupChev { font-size: 10px; color: var(--dsw-alias-label-secondary); flex: none; transition: transform .28s var(--prts-ease-out, cubic-bezier(.2,.8,.25,1)); }
+  .prtsGroup.open .prtsGroupChev { transform: rotate(180deg); }
+  .prtsGroupTitle { font-size: 13px; font-weight: 600; letter-spacing: .04em; }
+  .prtsGroupSub { margin-left: auto; font-size: 11px; color: var(--dsw-alias-label-secondary); }
+  /* the body always stays mounted — max-height animation slides the content
+     out/in so everything below the group moves in sync */
+  .prtsGroupBody { max-height: 0; opacity: 0; overflow: hidden; padding: 0 16px; transition: max-height .32s var(--prts-ease-out, cubic-bezier(.2,.8,.25,1)), padding .32s var(--prts-ease-out, cubic-bezier(.2,.8,.25,1)), opacity .26s ease; }
+  .prtsGroup.open .prtsGroupBody { max-height: 1000px; opacity: 1; padding: 2px 16px 14px; }
+  /* hover popup above the settings button: dsh-web style card */
+  .prtsHoverPop {
+    display: flex; flex-direction: column; gap: 2px; padding: 6px;
+    background: color-mix(in srgb, var(--dsw-alias-bg-layer-1) 92%, transparent);
+    border: 1px solid var(--dsw-alias-border-l1);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    min-width: 148px;
+    animation: prtsPopUp .18s var(--prts-ease-out, ease-out);
+    transform-origin: bottom center;
+  }
+  .prtsHoverPop button {
+    height: 32px; border: none; border-radius: 7px; background: transparent;
+    color: var(--dsw-alias-label-secondary); cursor: pointer;
+    display: flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 12px;
+    transition: background .14s var(--prts-ease, ease), color .14s var(--prts-ease, ease);
+  }
+  .prtsHoverPop button svg { flex: none; opacity: .85; }
+  .prtsHoverPop button span { letter-spacing: .02em; white-space: nowrap; }
+  .prtsHoverPop button:hover { color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-layer-2); }
+  @keyframes prtsPopUp { from { opacity: 0; transform: translateY(calc(-100% + 10px)); } to { opacity: 1; transform: translateY(-100%); } }
   `
 
   let styleEl = null
@@ -831,6 +866,8 @@ export function apply(ctx) {
       }
       if (!rows.length) { pop.remove(); pop = null; return }
       document.body.appendChild(pop)
+      const onKey = (e) => { if (e.key === 'Escape') { hide(); document.removeEventListener('keydown', onKey) } }
+      document.addEventListener('keydown', onKey)
       pop.addEventListener('mouseenter', show)
       pop.addEventListener('mouseleave', hide)
     }
