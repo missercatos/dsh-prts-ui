@@ -248,7 +248,8 @@ export function apply(ctx) {
      out/in so everything below the group moves in sync */
   .prtsGroupBody { max-height: 0; opacity: 0; overflow: hidden; padding: 0 16px; transition: max-height .32s var(--prts-ease-out, cubic-bezier(.2,.8,.25,1)), padding .32s var(--prts-ease-out, cubic-bezier(.2,.8,.25,1)), opacity .26s ease; }
   .prtsGroup.open .prtsGroupBody { max-height: 1000px; opacity: 1; padding: 2px 16px 14px; }
-  /* hover popup above the settings button: dsh-web style card */
+  /* hover popup above the settings button: dsh-web style card — sits on top
+     of EVERYTHING (dsh-web shell, intro, settings modal) */
   .prtsHoverPop {
     display: flex; flex-direction: column; gap: 2px; padding: 6px;
     background: color-mix(in srgb, var(--dsw-alias-bg-layer-1) 92%, transparent);
@@ -258,6 +259,7 @@ export function apply(ctx) {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     min-width: 148px;
+    z-index: 100000;
     animation: prtsPopUp .18s var(--prts-ease-out, ease-out);
     transform-origin: bottom center;
   }
@@ -1021,6 +1023,7 @@ export function apply(ctx) {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     min-width: 148px;
+    z-index: 100000;
     animation: prtsPopUp .18s var(--prts-ease-out, ease-out);
     transform-origin: bottom center;
   }
@@ -1034,6 +1037,9 @@ export function apply(ctx) {
   .prtsHoverPop button span { letter-spacing: .02em; white-space: nowrap; }
   .prtsHoverPop button:hover { color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-layer-2); }
   @keyframes prtsPopUp { from { opacity: 0; transform: translateY(calc(-100% + 10px)); } to { opacity: 1; transform: translateY(-100%); } }
+  /* skin mode: dsh-web's own sidebar new-workspace/new-session buttons float
+   * above the PRTS overlay marks — drop them entirely */
+  .newButtons { display: none !important; }
   /* drawer-like collapse for dsh-web's own sidebar toggle: only the grid
      column animates — the frame itself is NEVER translated, so the
      background / composer / conversation stay exactly where they are */
@@ -1831,16 +1837,32 @@ export function apply(ctx) {
     const s = document.createElement('style')
     s.id = 'prts-shell-css'
     s.textContent = [
-      // The layout frame stays alive under the PRTS overlay but is never
-      // painted (pointer-events die with visibility). The settings modal is
-      // borrowed as the shared settings panel: it re-shows itself above
-      // everything and slides to the right edge.
-      'html[data-prts-shell] .pI_x6G_frame { position: relative; z-index: 100; visibility: hidden; }',
-      'html[data-prts-shell] .VOzbGW_overlay { visibility: visible !important; }',
+      // PRTS shell mode: dsh-web is fully suppressed — every body-level
+      // node outside the PRTS GUI host gets display:none (sidebar, app
+      // frame, its own toggle buttons, newButtons, titlebar, splash…).
+      // The settings modal is borrowed as the shared settings panel: its
+      // overlay is reparented onto <body> and excluded here so it can keep
+      // toggling its own display on open/close.
+      'html[data-prts-shell] body > :not(#prts-gui-host):not(.VOzbGW_overlay) { display: none !important; }',
+      // dsh-web's entry intro/splash: belt & suspenders (some may be
+      // re-appended to <body> later by dsh-web).
+      'html[data-prts-shell] body > .intro, html[data-prts-shell] [class*="splash"], html[data-prts-shell] [class*="onboard"], html[data-prts-shell] [class*="particle"] { display: none !important; }',
       'html[data-prts-shell] #prts-gui-host { position: fixed; inset: 0; z-index: 10; overflow: hidden; background: var(--prts-bg, #0A0A0B); }',
     ].join('\n')
     document.head.appendChild(s)
   }
+  // dsh-web's settings overlay is the shared settings panel — move it onto
+  // <body> so the root display:none above never kills it. It stays a fixed
+  // full-screen overlay and toggles its own display on open/close.
+  const reparentOverlay = () => {
+    try {
+      const ov = document.querySelector('.VOzbGW_overlay')
+      if (ov && ov.parentElement !== document.body) document.body.appendChild(ov)
+    } catch (e) { /* noop */ }
+  }
+  reparentOverlay()
+  setTimeout(reparentOverlay, 2000)
+  setTimeout(reparentOverlay, 5000)
   document.documentElement.dataset.prtsShell = '1'
   if (ctx && typeof ctx.on === 'function') {
     // Community plugins (un)installed at runtime: refresh the ports.

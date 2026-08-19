@@ -1457,22 +1457,11 @@ body[data-wallpaper='on'] .settingsCard {
 .skItemMeta { overflow: hidden; }
 .skNameLine { overflow: hidden; flex-wrap: nowrap; }
 .skNameLine .pState { flex: none; }
-/* sidebar view toggle (dsh-web parity) — animated collapse: the workspaces
-   section collapses via grid-template-rows (0fr), the sessions section via
-   flex-grow; content is clipped by overflow and fades in sync. */
-.sbViewIcon svg { width: 12px; height: 12px; }
-.sbSection {
-  display: grid; grid-template-rows: 1fr;
-  transition: grid-template-rows var(--prts-drawer-ms, 350ms) cubic-bezier(.2,.8,.25,1);
-}
-.sbSectionInner { overflow: hidden; min-height: 0; }
-.sbSectionSessions {
-  flex: 1 1 0; min-height: 0; overflow: hidden;
-  transition: flex-grow var(--prts-drawer-ms, 350ms) cubic-bezier(.2,.8,.25,1), opacity .25s ease;
-}
-.sbSectionSessions .sbSectionInner { display: flex; flex-direction: column; min-height: 0; }
-.frame[data-sbview='workspaces'] .sbSectionSessions { flex-grow: 0; opacity: 0; }
-.frame[data-sbview='sessions'] .sbSectionWorkspaces { grid-template-rows: 0fr; opacity: 0; }
+/* unified sidebar: workspaces + nested sessions in ONE scrollable tree
+   area (dsh-web parity) — a single head, no separate section bars */
+.sbSection { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+.sbSectionInner { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.sbSectionInner .sbList { flex: 1 1 0; min-height: 0; overflow-y: auto; }
 
 /* ---------- 0.7.0: webUI-render parity ---------- */
 /* colors: think grey, errors red, main output pure ink */
@@ -1774,45 +1763,29 @@ body[data-glass='off'] { --prts-glass: 0px; --prts-glass-strong: 0px; }
           <span data-i18n="sidebar.newSession">New session</span>
         </button>
       </div>
-      <div class="sbSection sbSectionWorkspaces">
+      <div class="sbSection">
         <div class="sbSectionInner">
           <div class="sbSectionHead">
-            <button class="headBtn sbViewIcon" id="viewToggleBtn" type="button" data-i18n-title="sidebar.viewToggle" title="Switch view">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M5.2 2H2.1a.8.8 0 0 0-.8.8v6.4a.8.8 0 0 0 .8.8h7.8a.8.8 0 0 0 .8-.8V4.3a.8.8 0 0 0-.8-.8H6L5.2 2Z" fill="currentColor"/></svg>
-            </button>
             <span class="eyebrow" data-i18n="sidebar.workspaces">Workspaces</span>
+            <button class="headBtn" id="sessionSelectBtn" type="button" data-i18n-title="session.selectMode" aria-pressed="false">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1.6" y="1.6" width="8.8" height="8.8" rx="2" stroke="currentColor" stroke-width="1.1"/><path d="M3.6 6.2 5.2 7.8 8.4 4.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
             <span class="count" id="projectCount"></span>
+            <span class="count" id="sessionCount"></span>
           </div>
-          <button class="sbWsBtn" id="sidebarWsBtn" type="button" data-i18n-title="workspace.switch">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M5.3 2H2.2a.9.9 0 0 0-.9.9v6.2a.9.9 0 0 0 .9.9h7.6a.9.9 0 0 0 .9-.9V4.4a.9.9 0 0 0-.9-.9H6L5.3 2Z" fill="currentColor"/></svg>
-            <span class="name" id="sidebarWsLabel">dsh</span>
-            <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
-          </button>
+          <div class="sbSearch">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5.2" cy="5.2" r="3.6" stroke="currentColor" stroke-width="1.1"/><path d="M8 8l2.8 2.8" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+            <input id="sessionSearch" type="text" spellcheck="false" autocomplete="off" data-i18n-placeholder="sidebar.searchSessions">
+            <button class="sbSearchClear" id="sessionSearchClear" type="button" title="Clear">×</button>
+          </div>
           <div class="sbList" id="projectList"></div>
-        </div>
-      </div>
-      <div class="sbSection sbSectionSessions">
-        <div class="sbSectionInner">
-          <div class="sbSectionHead">
-          <span class="eyebrow" data-i18n="sidebar.sessions">Sessions</span>
-          <button class="headBtn" id="sessionSelectBtn" type="button" data-i18n-title="session.selectMode" aria-pressed="false">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1.6" y="1.6" width="8.8" height="8.8" rx="2" stroke="currentColor" stroke-width="1.1"/><path d="M3.6 6.2 5.2 7.8 8.4 4.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-          <span class="count" id="sessionCount"></span>
-        </div>
-        <div class="sbSearch">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5.2" cy="5.2" r="3.6" stroke="currentColor" stroke-width="1.1"/><path d="M8 8l2.8 2.8" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
-          <input id="sessionSearch" type="text" spellcheck="false" autocomplete="off" data-i18n-placeholder="sidebar.searchSessions">
-          <button class="sbSearchClear" id="sessionSearchClear" type="button" title="Clear">×</button>
-        </div>
-        <div class="sbList" id="sessionList" style="overflow-y:auto;"></div>
-        <div class="bulkBar" id="sessionBulkBar" hidden>
-          <button class="bulkBtn" id="sessionBulkAll" type="button" data-i18n="session.selectAll">Select all</button>
-          <span class="bulkLabel" id="sessionBulkLabel"></span>
-          <span class="spacer"></span>
-          <button class="bulkBtn" id="sessionBulkCancel" type="button" data-i18n="common.cancel">Cancel</button>
-          <button class="bulkBtn danger" id="sessionBulkArchive" type="button" data-i18n="session.archiveSelected" disabled>Archive</button>
-        </div>
+          <div class="bulkBar" id="sessionBulkBar" hidden>
+            <button class="bulkBtn" id="sessionBulkAll" type="button" data-i18n="session.selectAll">Select all</button>
+            <span class="bulkLabel" id="sessionBulkLabel"></span>
+            <span class="spacer"></span>
+            <button class="bulkBtn" id="sessionBulkCancel" type="button" data-i18n="common.cancel">Cancel</button>
+            <button class="bulkBtn danger" id="sessionBulkArchive" type="button" data-i18n="session.archiveSelected" disabled>Archive</button>
+          </div>
         </div>
       </div>
       <div class="sbFoot">
@@ -8720,7 +8693,8 @@ window.PRTS_MARKET = {
     const inner = document.createElement('div')
     inner.className = 'sbTreeInner'
     branch.appendChild(inner)
-    if (!A.wsExpanded.has(w.workspaceId)) branch.classList.add('closed')
+    // searching force-opens every branch so matches are visible
+    if (!A.wsExpanded.has(w.workspaceId) && !sessionFilter.trim()) branch.classList.add('closed')
     return { branch, inner }
   }
 
@@ -8780,7 +8754,9 @@ window.PRTS_MARKET = {
   }
 
   /** Sessions of one workspace rendered as a nested tree (children under
-   *  their parent, any depth), newest-first like the global list. */
+   *  their parent, any depth), newest-first like the global list. The
+   *  search filter (sessionFilter) applies here — the unified sidebar has
+   *  no separate flat list anymore. */
   function buildTreeSessions(w, container) {
     const byId = new Map();
     for (const s of P.dshState.sessions) byId.set(s.sessionId, s);
@@ -8792,10 +8768,17 @@ window.PRTS_MARKET = {
         byParent.set(s.parentSessionId, arr);
       }
     }
-    const kids = (id) => (byParent.get(id) || []).slice().sort((a, b) => b.updatedAt - a.updatedAt);
+    const q = sessionFilter.trim().toLowerCase();
+    const match = (s) => {
+      if (!q) return true;
+      const title = P.dshState.sessionTitle(s);
+      const sid = String(s.sessionId || '');
+      return title.toLowerCase().indexOf(q) >= 0 || sid.toLowerCase().indexOf(q) >= 0;
+    };
+    const kids = (id) => (byParent.get(id) || []).slice().filter(match).sort((a, b) => b.updatedAt - a.updatedAt);
     const top = (w.sessionIds || [])
       .map((id) => byId.get(id))
-      .filter((s) => s && !s.parentSessionId)
+      .filter((s) => s && !s.parentSessionId && match(s))
       .sort((a, b) => b.updatedAt - a.updatedAt);
     const walk = (sessions, depth) => {
       for (const s of sessions) {
@@ -8936,6 +8919,13 @@ window.PRTS_MARKET = {
     const ws = P.dshState.workspaces;
     if (!ws.length) {
       $('projectCount').textContent = '0';
+      const cnt = $('sessionCount');
+      if (cnt) cnt.textContent = '0';
+      const empty = document.createElement('div');
+      empty.className = 'sbEmpty';
+      empty.textContent = A.t(sessionFilter ? 'sidebar.searchNone' : 'sidebar.sessionsEmpty');
+      list.appendChild(empty);
+      updateBulkBar();
       if (wsDoneResolve) { wsDoneResolve(); wsDoneResolve = null; }
       return done;
     }
@@ -8954,6 +8944,16 @@ window.PRTS_MARKET = {
       if (i < ws.length) requestAnimationFrame(step);
       else {
         $('projectCount').textContent = String(ws.length);
+        const v = visibleSessions().length;
+        const cnt = $('sessionCount');
+        if (cnt) cnt.textContent = String(v);
+        if (v === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'sbEmpty';
+          empty.textContent = A.t(sessionFilter ? 'sidebar.searchNone' : 'sidebar.sessionsEmpty');
+          list.appendChild(empty);
+        }
+        updateBulkBar();
         if (wsDoneResolve) { wsDoneResolve(); wsDoneResolve = null; }
       }
     };
@@ -9017,41 +9017,11 @@ window.PRTS_MARKET = {
     return row;
   }
 
-  let sessionsRenderToken = 0;
-  let sessionsDoneResolve = null;
   function renderSessions() {
-    const list = $('sessionList');
-    const done = new Promise((r) => { sessionsDoneResolve = r; });
-    const token = ++sessionsRenderToken;
-    const ss = visibleSessions();
-    list.textContent = '';
-    const finish = () => {
-      $('sessionCount').textContent = String(ss.length);
-      updateBulkBar();
-      if (sessionsDoneResolve) { sessionsDoneResolve(); sessionsDoneResolve = null; }
-    };
-    if (!ss.length) {
-      const empty = document.createElement('div');
-      empty.className = 'sbEmpty';
-      empty.textContent = A.t(sessionFilter ? 'sidebar.searchNone' : 'sidebar.sessionsEmpty');
-      list.appendChild(empty);
-      finish();
-      return done;
-    }
-    let i = 0;
-    const CHUNK = 40;
-    const step = () => {
-      if (token !== sessionsRenderToken) {
-        if (sessionsDoneResolve) { sessionsDoneResolve(); sessionsDoneResolve = null; }
-        return done;
-      }
-      const end = Math.min(i + CHUNK, ss.length);
-      for (; i < end; i++) list.appendChild(buildSessionRow(ss[i]));
-      if (i < ss.length) requestAnimationFrame(step);
-      else finish();
-    };
-    step();
-    return done;
+    // Unified sidebar: the tree IS the session list (search filter applies
+    // there), so a session re-render is a workspace/tree re-render.
+    updateBulkBar();
+    return renderWorkspaces();
   }
 
   /** Cheap re-highlight: only the active classes change, zero DOM rebuild. */
@@ -10391,22 +10361,8 @@ window.PRTS_MARKET = {
     if (P.system && P.system.bind) P.system.bind();
 
     $('themeBtn').addEventListener('click', A.toggleTheme);
-    // dsh-web parity: switch the left column between workspace / session views.
-    A.sidebarView = 'both';
-    $('viewToggleBtn').addEventListener('click', () => {
-      const seq = ['both', 'workspaces', 'sessions'];
-      A.sidebarView = seq[(seq.indexOf(A.sidebarView) + 1) % seq.length];
-      appEl().dataset.sbview = A.sidebarView;
-      const icons = {
-        both: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M5.2 2H2.1a.8.8 0 0 0-.8.8v6.4a.8.8 0 0 0 .8.8h7.8a.8.8 0 0 0 .8-.8V4.3a.8.8 0 0 0-.8-.8H6L5.2 2Z" fill="currentColor"/></svg>',
-        workspaces: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M5.2 2H2.1a.8.8 0 0 0-.8.8v6.4a.8.8 0 0 0 .8.8h7.8a.8.8 0 0 0 .8-.8V4.3a.8.8 0 0 0-.8-.8H6L5.2 2Z" stroke="currentColor" stroke-width="1.1"/></svg>',
-        sessions: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1.8" y="2" width="8.4" height="8" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M3.4 4.6h5.2M3.4 7.2h5.2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>',
-      };
-      const btn = $('viewToggleBtn');
-      if (btn) { btn.innerHTML = icons[A.sidebarView]; btn.title = A.t('sidebar.view.' + A.sidebarView); }
-      placeHandles();
-    });
-    appEl().dataset.sbview = A.sidebarView;
+    // Unified sidebar: workspaces + nested sessions in one tree area
+    // (dsh-web parity) — no separate session list / view toggle anymore.
     $('sbToggleBtn').addEventListener('click', toggleSidebar);
     $('sessionSelectBtn').addEventListener('click', toggleSelecting);
     $('sessionBulkArchive').addEventListener('click', archiveSelected);

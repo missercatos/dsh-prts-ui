@@ -290,7 +290,8 @@
     const inner = document.createElement('div')
     inner.className = 'sbTreeInner'
     branch.appendChild(inner)
-    if (!A.wsExpanded.has(w.workspaceId)) branch.classList.add('closed')
+    // searching force-opens every branch so matches are visible
+    if (!A.wsExpanded.has(w.workspaceId) && !sessionFilter.trim()) branch.classList.add('closed')
     return { branch, inner }
   }
 
@@ -350,7 +351,9 @@
   }
 
   /** Sessions of one workspace rendered as a nested tree (children under
-   *  their parent, any depth), newest-first like the global list. */
+   *  their parent, any depth), newest-first like the global list. The
+   *  search filter (sessionFilter) applies here — the unified sidebar has
+   *  no separate flat list anymore. */
   function buildTreeSessions(w, container) {
     const byId = new Map();
     for (const s of P.dshState.sessions) byId.set(s.sessionId, s);
@@ -362,10 +365,17 @@
         byParent.set(s.parentSessionId, arr);
       }
     }
-    const kids = (id) => (byParent.get(id) || []).slice().sort((a, b) => b.updatedAt - a.updatedAt);
+    const q = sessionFilter.trim().toLowerCase();
+    const match = (s) => {
+      if (!q) return true;
+      const title = P.dshState.sessionTitle(s);
+      const sid = String(s.sessionId || '');
+      return title.toLowerCase().indexOf(q) >= 0 || sid.toLowerCase().indexOf(q) >= 0;
+    };
+    const kids = (id) => (byParent.get(id) || []).slice().filter(match).sort((a, b) => b.updatedAt - a.updatedAt);
     const top = (w.sessionIds || [])
       .map((id) => byId.get(id))
-      .filter((s) => s && !s.parentSessionId)
+      .filter((s) => s && !s.parentSessionId && match(s))
       .sort((a, b) => b.updatedAt - a.updatedAt);
     const walk = (sessions, depth) => {
       for (const s of sessions) {
@@ -506,6 +516,13 @@
     const ws = P.dshState.workspaces;
     if (!ws.length) {
       $('projectCount').textContent = '0';
+      const cnt = $('sessionCount');
+      if (cnt) cnt.textContent = '0';
+      const empty = document.createElement('div');
+      empty.className = 'sbEmpty';
+      empty.textContent = A.t(sessionFilter ? 'sidebar.searchNone' : 'sidebar.sessionsEmpty');
+      list.appendChild(empty);
+      updateBulkBar();
       if (wsDoneResolve) { wsDoneResolve(); wsDoneResolve = null; }
       return done;
     }
@@ -524,6 +541,16 @@
       if (i < ws.length) requestAnimationFrame(step);
       else {
         $('projectCount').textContent = String(ws.length);
+        const v = visibleSessions().length;
+        const cnt = $('sessionCount');
+        if (cnt) cnt.textContent = String(v);
+        if (v === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'sbEmpty';
+          empty.textContent = A.t(sessionFilter ? 'sidebar.searchNone' : 'sidebar.sessionsEmpty');
+          list.appendChild(empty);
+        }
+        updateBulkBar();
         if (wsDoneResolve) { wsDoneResolve(); wsDoneResolve = null; }
       }
     };
@@ -587,41 +614,11 @@
     return row;
   }
 
-  let sessionsRenderToken = 0;
-  let sessionsDoneResolve = null;
   function renderSessions() {
-    const list = $('sessionList');
-    const done = new Promise((r) => { sessionsDoneResolve = r; });
-    const token = ++sessionsRenderToken;
-    const ss = visibleSessions();
-    list.textContent = '';
-    const finish = () => {
-      $('sessionCount').textContent = String(ss.length);
-      updateBulkBar();
-      if (sessionsDoneResolve) { sessionsDoneResolve(); sessionsDoneResolve = null; }
-    };
-    if (!ss.length) {
-      const empty = document.createElement('div');
-      empty.className = 'sbEmpty';
-      empty.textContent = A.t(sessionFilter ? 'sidebar.searchNone' : 'sidebar.sessionsEmpty');
-      list.appendChild(empty);
-      finish();
-      return done;
-    }
-    let i = 0;
-    const CHUNK = 40;
-    const step = () => {
-      if (token !== sessionsRenderToken) {
-        if (sessionsDoneResolve) { sessionsDoneResolve(); sessionsDoneResolve = null; }
-        return done;
-      }
-      const end = Math.min(i + CHUNK, ss.length);
-      for (; i < end; i++) list.appendChild(buildSessionRow(ss[i]));
-      if (i < ss.length) requestAnimationFrame(step);
-      else finish();
-    };
-    step();
-    return done;
+    // Unified sidebar: the tree IS the session list (search filter applies
+    // there), so a session re-render is a workspace/tree re-render.
+    updateBulkBar();
+    return renderWorkspaces();
   }
 
   /** Cheap re-highlight: only the active classes change, zero DOM rebuild. */
@@ -1961,22 +1958,8 @@
     if (P.system && P.system.bind) P.system.bind();
 
     $('themeBtn').addEventListener('click', A.toggleTheme);
-    // dsh-web parity: switch the left column between workspace / session views.
-    A.sidebarView = 'both';
-    $('viewToggleBtn').addEventListener('click', () => {
-      const seq = ['both', 'workspaces', 'sessions'];
-      A.sidebarView = seq[(seq.indexOf(A.sidebarView) + 1) % seq.length];
-      appEl().dataset.sbview = A.sidebarView;
-      const icons = {
-        both: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M5.2 2H2.1a.8.8 0 0 0-.8.8v6.4a.8.8 0 0 0 .8.8h7.8a.8.8 0 0 0 .8-.8V4.3a.8.8 0 0 0-.8-.8H6L5.2 2Z" fill="currentColor"/></svg>',
-        workspaces: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M5.2 2H2.1a.8.8 0 0 0-.8.8v6.4a.8.8 0 0 0 .8.8h7.8a.8.8 0 0 0 .8-.8V4.3a.8.8 0 0 0-.8-.8H6L5.2 2Z" stroke="currentColor" stroke-width="1.1"/></svg>',
-        sessions: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1.8" y="2" width="8.4" height="8" rx="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M3.4 4.6h5.2M3.4 7.2h5.2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>',
-      };
-      const btn = $('viewToggleBtn');
-      if (btn) { btn.innerHTML = icons[A.sidebarView]; btn.title = A.t('sidebar.view.' + A.sidebarView); }
-      placeHandles();
-    });
-    appEl().dataset.sbview = A.sidebarView;
+    // Unified sidebar: workspaces + nested sessions in one tree area
+    // (dsh-web parity) — no separate session list / view toggle anymore.
     $('sbToggleBtn').addEventListener('click', toggleSidebar);
     $('sessionSelectBtn').addEventListener('click', toggleSelecting);
     $('sessionBulkArchive').addEventListener('click', archiveSelected);

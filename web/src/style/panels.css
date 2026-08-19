@@ -467,22 +467,11 @@ body[data-wallpaper='on'] .settingsCard {
 .skItemMeta { overflow: hidden; }
 .skNameLine { overflow: hidden; flex-wrap: nowrap; }
 .skNameLine .pState { flex: none; }
-/* sidebar view toggle (dsh-web parity) — animated collapse: the workspaces
-   section collapses via grid-template-rows (0fr), the sessions section via
-   flex-grow; content is clipped by overflow and fades in sync. */
-.sbViewIcon svg { width: 12px; height: 12px; }
-.sbSection {
-  display: grid; grid-template-rows: 1fr;
-  transition: grid-template-rows var(--prts-drawer-ms, 350ms) cubic-bezier(.2,.8,.25,1);
-}
-.sbSectionInner { overflow: hidden; min-height: 0; }
-.sbSectionSessions {
-  flex: 1 1 0; min-height: 0; overflow: hidden;
-  transition: flex-grow var(--prts-drawer-ms, 350ms) cubic-bezier(.2,.8,.25,1), opacity .25s ease;
-}
-.sbSectionSessions .sbSectionInner { display: flex; flex-direction: column; min-height: 0; }
-.frame[data-sbview='workspaces'] .sbSectionSessions { flex-grow: 0; opacity: 0; }
-.frame[data-sbview='sessions'] .sbSectionWorkspaces { grid-template-rows: 0fr; opacity: 0; }
+/* unified sidebar: workspaces + nested sessions in ONE scrollable tree
+   area (dsh-web parity) — a single head, no separate section bars */
+.sbSection { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+.sbSectionInner { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.sbSectionInner .sbList { flex: 1 1 0; min-height: 0; overflow-y: auto; }
 
 /* ---------- 0.7.0: webUI-render parity ---------- */
 /* colors: think grey, errors red, main output pure ink */

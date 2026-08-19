@@ -57,45 +57,29 @@
           <span data-i18n="sidebar.newSession">New session</span>
         </button>
       </div>
-      <div class="sbSection sbSectionWorkspaces">
+      <div class="sbSection">
         <div class="sbSectionInner">
           <div class="sbSectionHead">
-            <button class="headBtn sbViewIcon" id="viewToggleBtn" type="button" data-i18n-title="sidebar.viewToggle" title="Switch view">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M5.2 2H2.1a.8.8 0 0 0-.8.8v6.4a.8.8 0 0 0 .8.8h7.8a.8.8 0 0 0 .8-.8V4.3a.8.8 0 0 0-.8-.8H6L5.2 2Z" fill="currentColor"/></svg>
-            </button>
             <span class="eyebrow" data-i18n="sidebar.workspaces">Workspaces</span>
+            <button class="headBtn" id="sessionSelectBtn" type="button" data-i18n-title="session.selectMode" aria-pressed="false">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1.6" y="1.6" width="8.8" height="8.8" rx="2" stroke="currentColor" stroke-width="1.1"/><path d="M3.6 6.2 5.2 7.8 8.4 4.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
             <span class="count" id="projectCount"></span>
+            <span class="count" id="sessionCount"></span>
           </div>
-          <button class="sbWsBtn" id="sidebarWsBtn" type="button" data-i18n-title="workspace.switch">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M5.3 2H2.2a.9.9 0 0 0-.9.9v6.2a.9.9 0 0 0 .9.9h7.6a.9.9 0 0 0 .9-.9V4.4a.9.9 0 0 0-.9-.9H6L5.3 2Z" fill="currentColor"/></svg>
-            <span class="name" id="sidebarWsLabel">dsh</span>
-            <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.7 4.2a.6.6 0 0 1 .9 0L6 6.7l2.4-2.5a.6.6 0 1 1 .9.9l-2.9 3a.6.6 0 0 1-.9 0l-2.9-3a.6.6 0 0 1 0-.9Z" fill="currentColor"/></svg>
-          </button>
+          <div class="sbSearch">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5.2" cy="5.2" r="3.6" stroke="currentColor" stroke-width="1.1"/><path d="M8 8l2.8 2.8" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+            <input id="sessionSearch" type="text" spellcheck="false" autocomplete="off" data-i18n-placeholder="sidebar.searchSessions">
+            <button class="sbSearchClear" id="sessionSearchClear" type="button" title="Clear">×</button>
+          </div>
           <div class="sbList" id="projectList"></div>
-        </div>
-      </div>
-      <div class="sbSection sbSectionSessions">
-        <div class="sbSectionInner">
-          <div class="sbSectionHead">
-          <span class="eyebrow" data-i18n="sidebar.sessions">Sessions</span>
-          <button class="headBtn" id="sessionSelectBtn" type="button" data-i18n-title="session.selectMode" aria-pressed="false">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1.6" y="1.6" width="8.8" height="8.8" rx="2" stroke="currentColor" stroke-width="1.1"/><path d="M3.6 6.2 5.2 7.8 8.4 4.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-          <span class="count" id="sessionCount"></span>
-        </div>
-        <div class="sbSearch">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5.2" cy="5.2" r="3.6" stroke="currentColor" stroke-width="1.1"/><path d="M8 8l2.8 2.8" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
-          <input id="sessionSearch" type="text" spellcheck="false" autocomplete="off" data-i18n-placeholder="sidebar.searchSessions">
-          <button class="sbSearchClear" id="sessionSearchClear" type="button" title="Clear">×</button>
-        </div>
-        <div class="sbList" id="sessionList" style="overflow-y:auto;"></div>
-        <div class="bulkBar" id="sessionBulkBar" hidden>
-          <button class="bulkBtn" id="sessionBulkAll" type="button" data-i18n="session.selectAll">Select all</button>
-          <span class="bulkLabel" id="sessionBulkLabel"></span>
-          <span class="spacer"></span>
-          <button class="bulkBtn" id="sessionBulkCancel" type="button" data-i18n="common.cancel">Cancel</button>
-          <button class="bulkBtn danger" id="sessionBulkArchive" type="button" data-i18n="session.archiveSelected" disabled>Archive</button>
-        </div>
+          <div class="bulkBar" id="sessionBulkBar" hidden>
+            <button class="bulkBtn" id="sessionBulkAll" type="button" data-i18n="session.selectAll">Select all</button>
+            <span class="bulkLabel" id="sessionBulkLabel"></span>
+            <span class="spacer"></span>
+            <button class="bulkBtn" id="sessionBulkCancel" type="button" data-i18n="common.cancel">Cancel</button>
+            <button class="bulkBtn danger" id="sessionBulkArchive" type="button" data-i18n="session.archiveSelected" disabled>Archive</button>
+          </div>
         </div>
       </div>
       <div class="sbFoot">
