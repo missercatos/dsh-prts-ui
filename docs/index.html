@@ -391,7 +391,7 @@ if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) && !location.pa
         '祝您使用愉快',
       ],
       buttons: { windows: 'Windows 安装包', linux: 'Linux 安装包', macos: 'macOS 安装包', mobile: '手机端（扫码）' },
-      os: { windows: '.exe', linux: '.run', macos: '.sh', mobile: '扫码' },
+      os: { windows: '.exe', linux: '.deb', macos: '.sh', mobile: '扫码' },
       started: '开始下载：',
       installed: '已加入：',
     },
@@ -418,7 +418,7 @@ if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) && !location.pa
         'enjoy!',
       ],
       buttons: { windows: 'Windows installer', linux: 'Linux installer', macos: 'macOS installer', mobile: 'Mobile (scan)' },
-      os: { windows: '.exe', linux: '.run', macos: '.sh', mobile: '扫码' },
+      os: { windows: '.exe', linux: '.deb', macos: '.sh', mobile: '扫码' },
       started: 'Download started: ',
       installed: 'Added: ',
     },
@@ -427,9 +427,9 @@ if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) && !location.pa
   /* Release mapping — point these at your host. Files are served from
      ./releases/ by default; edit PRTS_RELEASES to override per platform. */
   window.PRTS_RELEASES = window.PRTS_RELEASES || {
-    windows: 'releases/PRTS-Setup-0.9.9-windows-x64.exe',
-    linux: 'releases/PRTS-0.9.9-linux-x64.run',
-    macos: 'releases/PRTS-0.9.9-macos.sh',
+    windows: 'releases/PRTS-Setup-0.0.1-new.0-windows-x64.exe',
+    linux: 'releases/PRTS-0.0.1-new.0-amd64.deb',
+    macos: 'releases/PRTS-0.0.1-new.0-macos.sh',
     mobile: 'mobile.html',
   };
 
