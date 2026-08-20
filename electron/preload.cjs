@@ -51,6 +51,7 @@ contextBridge.exposeInMainWorld('prts', {
     prtsLogo: () => ipcRenderer.invoke('prts:prtsLogo'),
     loginDeepseek: () => ipcRenderer.invoke('prts:loginDeepseek'),
     openDeepseek: (page) => ipcRenderer.invoke('prts:openDeepseek', page),
+    copyText: (t) => ipcRenderer.invoke('prts:copyText', t),
     loginGithub: () => ipcRenderer.invoke('prts:loginGithub'),
     update: () => ipcRenderer.invoke('prts:update'),
     download: (url) => ipcRenderer.invoke('prts:download', url),
@@ -66,6 +67,8 @@ contextBridge.exposeInMainWorld('prts', {
       close: () => ipcRenderer.invoke('prts:win-close'),
       isMaximized: () => ipcRenderer.invoke('prts:win-is-maximized'),
     },
+    openSystemPanel: () => ipcRenderer.invoke('prts:openSystemPanel'),
+    manualWindowBar: (action) => ipcRenderer.invoke('prts:systemWindowBar', action),
     http(req) {
       const token = req.token || ('h' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6))
       pending.set(token, req)

@@ -2536,6 +2536,7 @@
   A.applyAccent = applyAccent;
   A.applyWallpaper = applyWallpaper;
   A.applyI18n = applyI18n;
+  A.applyBgFx = applyBgFx;
   A.setModeLabel = setModeLabel;
   A.presetLabel = presetLabel;
   A.newSession = newSession;

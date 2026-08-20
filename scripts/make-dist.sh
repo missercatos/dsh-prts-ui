@@ -116,6 +116,69 @@ if [ -f "$STUB" ]; then
   say "windows exe: $(ls -la "$EXE" | awk '{print $5}') bytes"
 fi
 
+# ---------- 4b. Linux .deb 安装包（v0.0.1 new 引入） ----------
+# 真正的 Debian 二进制包：把 PRTS 整合包（bin/web/electron/assets/lib/wizard）
+# 装进 /opt/prts，注册 prts 命令到 /usr/bin 并生成桌面快捷方式（图标 prts.png）。
+say "Building the Linux .deb installer…"
+build_deb() {
+  ARCH="${1:-amd64}"
+  DEB_ROOT="$OUT/.work/prts-deb"
+  DEB_CTRL="$DEB_ROOT/DEBIAN"
+  DEB_OPT="$DEB_ROOT/opt/prts"
+  rm -rf "$DEB_ROOT"
+  mkdir -p "$DEB_CTRL" "$DEB_OPT" "$DEB_ROOT/usr/bin" "$DEB_ROOT/usr/share/applications" "$DEB_ROOT/usr/share/icons/hicolor/512x512/apps"
+  # control
+  cat > "$DEB_CTRL/control" <<DEB_CTRL
+Package: dsh-prts
+Version: $VERSION
+Section: utils
+Priority: optional
+Architecture: $ARCH
+Depends: nodejs (>= 18)
+Maintainer: PRTS Project <prts@prts.local>
+Description: PRTS — a DeepSeek Harness (dsh) integration + skin
+ Installs a visual-only skin/integration pack on top of DeepSeek Harness:
+ monochrome theme, particles, glowing rhombus, brand & welcome overrides and
+ a standalone system-panel window. Includes one-click installers and the launcher.
+DEB_CTRL
+  # payload 到 /opt/prts
+  for f in bin src web electron assets lib wizard scripts package.json LICENSE README.md README.zh.md; do
+    if [ -e "$f" ]; then cp -a "$f" "$DEB_OPT/" 2>/dev/null; fi
+  done
+  cp "$OUT/dsh-prts-ui-$VERSION.tgz" "$DEB_OPT/" 2>/dev/null || true
+  # prts launcher → /usr/bin/prts（走 bin 入口：检测/下载 Electron 到缓存后启动）
+  cat > "$DEB_ROOT/usr/bin/prts" <<'LAUNCH'
+#!/bin/sh
+# PRTS launcher — opens the desktop integration (Electron) under the PRTS skin.
+exec node /opt/prts/bin/dsh-prts-ui.js "$@"
+LAUNCH
+  chmod +x "$DEB_ROOT/usr/bin/prts"
+  # desktop entry + icon
+  cat > "$DEB_ROOT/usr/share/applications/prts.desktop" <<DESK_EOF
+[Desktop Entry]
+Type=Application
+Name=PRTS
+Comment=DeepSeek Harness integration + skin
+Exec=prts
+Icon=prts
+Terminal=false
+Categories=Utility;Network;
+DESK_EOF
+  cp assets/prts.png "$DEB_ROOT/usr/share/icons/hicolor/512x512/apps/prts.png"
+  # 生成 .deb（优先 dpkg-deb）
+  if command -v dpkg-deb >/dev/null 2>&1; then
+    dpkg-deb --build --root-owner-group "$DEB_ROOT" "$OUT/PRTS-$VERSION-$ARCH.deb"
+  else
+    say "warning: dpkg-deb not found — .deb skipped (install dpkg-dev to build it)"
+  fi
+  if [ -f "$OUT/PRTS-$VERSION-$ARCH.deb" ]; then
+    say "linux deb: $(ls -la "$OUT/PRTS-$VERSION-$ARCH.deb" | awk '{print $5}') bytes"
+  else
+    say "warning: .deb not built (dpkg-deb missing)"
+  fi
+}
+build_deb amd64
+
 # ---------- 5. Mobile (Android/phone) guide — scan-to-connect, no install ----------
 say "Building the mobile guide zip…"
 MOBILE_DIR="$OUT/.work/PRTS-mobile"

@@ -9,7 +9,7 @@
 import { join, dirname } from 'node:path'
 import { homedir, networkInterfaces } from 'node:os'
 import { readFile } from 'node:fs/promises'
-import { readdirSync, statSync, writeFileSync, readFileSync, mkdirSync, unlinkSync, rmSync, existsSync } from 'node:fs'
+import { readdirSync, statSync, writeFileSync, readFileSync, mkdirSync, unlinkSync, rmSync, existsSync, openSync, writeSync, closeSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 const ASSETS_DIR = dirname(fileURLToPath(import.meta.url)) + '/../assets/'
@@ -244,8 +244,59 @@ export function apply(ctx) {
         const file = safeName(body.file)
         if (!file) return json(res, 400, { ok: false })
         mkdirSync(dir, { recursive: true })
-        writeFileSync(join(dir, file), Buffer.from(String(body.base64 || ''), 'base64'))
+        const buf = Buffer.from(String(body.base64 || ''), 'base64')
+        const offset = Number(body.offset) || 0
+        if (offset <= 0) writeFileSync(join(dir, file), buf)
+        else {
+          // chunked upload: dsh's request channel caps bodies near ~96 KB
+          // (E2BIG), so big images/videos arrive in offset-ordered slices
+          const fd = openSync(join(dir, file), 'a')
+          try { writeSync(fd, buf) } finally { closeSync(fd) }
+        }
         return json(res, 200, { ok: true, file })
+      }
+      json(res, 405, { ok: false })
+    } catch (e) {
+      json(res, 500, { ok: false, error: String(e && e.message ? e.message : e) })
+    }
+  }
+
+  /* ---------- message feedback sidecar ---------- */
+  // dsh's own messageFeedback.* RPCs are not exposed on the HTTP proxy, so
+  // PRTS keeps its own per-session sidecar (profileDir/feedback/<session>.json).
+  const feedbackHandler = async (req, res) => {
+    try {
+      const url = String(req.url || '')
+      const qs = url.split('?')[1] || ''
+      const params = {}
+      for (const pair of qs.split('&')) {
+        const i = pair.indexOf('=')
+        if (i > 0) params[decodeURIComponent(pair.slice(0, i))] = decodeURIComponent(pair.slice(i + 1))
+      }
+      const session = safeName(params.session) || ''
+      if (!session) return json(res, 400, { ok: false, error: 'missing session' })
+      const file = join(profileDir(), 'feedback', session + '.json')
+      const load = () => {
+        if (!existsSync(file)) return {}
+        try { return JSON.parse(readFileSync(file, 'utf8')) } catch (e) { return {} }
+      }
+      if (req.method === 'GET') return json(res, 200, { ok: true, items: load() })
+      const body = JSON.parse(await readBody(req) || '{}')
+      if (req.method === 'PUT') {
+        const messageId = safeName(body.messageId) || ''
+        const rating = body.rating === 'good' ? 'good' : body.rating === 'bad' ? 'bad' : ''
+        if (!messageId || !rating) return json(res, 400, { ok: false, error: 'bad payload' })
+        const items = load()
+        items[messageId] = { rating, ts: Date.now() }
+        mkdirSync(dirname(file), { recursive: true })
+        writeFileSync(file, JSON.stringify(items, null, 2))
+        return json(res, 200, { ok: true })
+      }
+      if (req.method === 'DELETE') {
+        const items = load()
+        delete items[body.messageId || '']
+        writeFileSync(file, JSON.stringify(items, null, 2))
+        return json(res, 200, { ok: true })
       }
       json(res, 405, { ok: false })
     } catch (e) {
@@ -450,6 +501,8 @@ export function apply(ctx) {
     webServer.register({ kind: 'exact', path: '/prts/api/skill-install', handler: skillInstallHandler }),
     webServer.register({ kind: 'exact', path: '/prts/api/skill-delete', handler: skillDeleteHandler }),
     webServer.register({ kind: 'prefix', path: '/prts/api/wallpaper', handler: wallpaperHandler }),
+    webServer.register({ kind: 'exact', path: '/prts/api/wallpapers', handler: wallpaperHandler }),
+    webServer.register({ kind: 'exact', path: '/prts/api/feedback', handler: feedbackHandler }),
     webServer.register({ kind: 'exact', path: '/prts/api/open-path', handler: openPathHandler }),
     webServer.register({ kind: 'exact', path: '/prts/api/detect-editors', handler: detectEditorsHandler }),
     webServer.register({ kind: 'exact', path: '/prts/api/http', handler: httpProxyHandler }),

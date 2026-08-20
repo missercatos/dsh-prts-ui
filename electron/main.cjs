@@ -4,7 +4,7 @@
  * API traffic go through the IPC bridge to avoid CORS and enable real file
  * storage. Single instance, auto-hide menu, quit on last window closed.
  */
-const { app, BrowserWindow, ipcMain, session, protocol, dialog, shell } = require('electron')
+const { app, BrowserWindow, ipcMain, session, protocol, dialog, shell, clipboard } = require('electron')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
@@ -85,6 +85,7 @@ function createWindow() {
 
 /* ---------- filesystem bridge ---------- */
 ipcMain.handle('prts:readFile', (_e, p) => fs.promises.readFile(p, 'utf8'))
+ipcMain.handle('prts:copyText', (_e, t) => { clipboard.writeText(String(t || '')); return true })
 ipcMain.handle('prts:writeFile', async (_e, p, d) => {
   await fs.promises.writeFile(p, d, 'utf8')
   // PRTS config holds account tokens (github/deepseek) — keep it owner-only.
@@ -792,17 +793,18 @@ ${PRTS_PARTICLES_ENGINE || ''}
   var DSH='__DSH_WEB_URL__';
   var cv=document.getElementById('cv');
   if(!window.PRTS_INTRO){ document.getElementById('st').textContent='特效引擎加载失败'; return; }
-  var eng=PRTS_INTRO.create(cv,{particleNum:10000,speedRange:[20,30]});
+  var eng=PRTS_INTRO.create(cv,{particleNum:10000,speedRange:[34,52]});
   var st=document.getElementById('st'),t0=Date.now(),ready=false,redirected=false;
   var act=0,timer=null;
+  // v0.0.1(new)：入场动画提速 —— 粒子运动更快（speedRange 上调）、切镜更快
   function nextAct(){
-    if(act===0) eng.showText('welcome to PRTS', 96);
+    if(act===0) eng.showText('welcome to PRTS', 88);
     else eng.showMark(1.05);
     act=(act+1)%2;
-    timer=setTimeout(nextAct,6400);
+    timer=setTimeout(nextAct,3800);
   }
-  eng.showText('welcome to PRTS', 96); act=1;
-  timer=setTimeout(nextAct,6400);
+  eng.showText('welcome to PRTS', 88); act=1;
+  timer=setTimeout(nextAct,3800);
   cv.addEventListener('pointermove',function(e){eng.onPointerMove(e);});
   cv.addEventListener('pointerleave',function(){eng.onPointerLeave();});
   cv.addEventListener('touchmove',function(e){eng.onPointerMove(e);});
@@ -876,6 +878,71 @@ ${PRTS_PARTICLES_ENGINE || ''}
 /* Loopback-only HTTP server: serves the single-file GUI plus the speech
  * engine files and the whisper model from the shared cache. Everything stays
  * on http(s) so transformers.js's XHR/module loading works untouched. */
+
+/* PRTS 系统面板 —— 独立小窗内容（只读遥测/关于；经 window.prts.bridge 取 systemInfo） */
+function systemPanelHtml() {
+  return `<!DOCTYPE html><html lang="zh-CN" data-theme="dark"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PRTS · SYSTEM</title>
+<style>
+:root{--bg:#0A0A0B;--panel:#101012;--surface:#161618;--ink:#FAFAFA;--dim:#A0A0A5;--hair:rgba(255,255,255,.14);--acc:#7AA2F7}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;font-family:-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--ink);-webkit-user-select:none;user-select:none;display:flex;flex-direction:column;overflow:hidden}
+.bar{display:flex;align-items:center;height:42px;padding:0 14px;gap:10px;border-bottom:1px solid var(--hair)}
+.bar .rhombus{width:11px;height:11px;transform:rotate(45deg);border:1.4px solid var(--ink)}
+.bar .title{font-style:italic;font-weight:700;letter-spacing:.16em;font-size:13px}
+.bar .spacer{flex:1}
+.winBtn{width:22px;height:22px;border:none;border-radius:6px;background:transparent;color:var(--dim);cursor:pointer;line-height:1;font-size:12px}
+.winBtn:hover{background:var(--surface);color:var(--ink)}
+.body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+h3{font-size:11px;letter-spacing:.2em;color:var(--dim);margin:2px 0 6px;font-weight:600}
+.card{background:var(--panel);border:1px solid var(--hair);border-radius:12px;padding:12px 14px}
+.row{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-size:12px}
+.row .k{color:var(--dim);white-space:nowrap}.row .v{text-align:right;word-break:break-all}
+.brandmark{display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 0}
+.brandmark .big{width:22px;height:22px;transform:rotate(45deg);border:2px solid var(--ink)}
+.brandmark .w{font-style:italic;font-weight:800;letter-spacing:.2em;font-size:18px}
+.dim{color:var(--dim);font-size:11px;text-align:center;line-height:1.7}
+</style></head><body>
+<div class="bar">
+  <span class="rhombus"></span><span class="title">PRTS SYSTEM</span><span class="spacer"></span>
+  <button class="winBtn" id="minBtn">–</button><button class="winBtn" id="closeBtn">×</button>
+</div>
+<div class="body">
+  <div class="card brandmark"><span class="big"></span><span class="w">PRTS</span></div>
+  <div class="card"><h3>关于</h3>
+    <div class="row"><span class="k">版本</span><span class="v" id="ver">…</span></div>
+    <div class="row"><span class="k">后端 dsh</span><span class="v" id="dsh">…</span></div>
+    <div class="row"><span class="k">平台</span><span class="v" id="plat">…</span></div>
+  </div>
+  <div class="card"><h3>硬件遥测</h3><div id="hw"></div></div>
+  <p class="dim">图形化 AI 入口 · 黑白 · 菱形 · 粒子</p>
+</div>
+<script>
+(function(){
+  var bridge = window.prts && window.prts.bridge;
+  function set(id,t){ var el=document.getElementById(id); if(el) el.textContent=t }
+  set('ver', (window.prts&&window.prts.env&&window.prts.env.prtsVersion)||'0.0.1');
+  set('dsh', (window.prts&&window.prts.env&&window.prts.env.dshUrl)||'');
+  set('plat', (window.prts&&window.prts.env&&window.prts.env.platform)||'');
+  document.getElementById('closeBtn').onclick=function(){ if(bridge&&bridge.manualWindowBar) bridge.manualWindowBar('close'); else window.close() };
+  document.getElementById('minBtn').onclick=function(){ if(bridge&&bridge.manualWindowBar) bridge.manualWindowBar('minimize') };
+  if(bridge&&bridge.systemInfo){ bridge.systemInfo().then(function(info){
+    var rows=(info&&info.rows)||[];
+    function addR(k,v){ var d=document.getElementById('hw'); if(!d) return; var row=document.createElement('div'); row.className='row';
+      var kk=document.createElement('span'); kk.className='k'; kk.textContent=k;
+      var vv=document.createElement('span'); vv.className='v'; vv.textContent=String(v==null?'':v);
+      row.appendChild(kk); row.appendChild(vv); d.appendChild(row) }
+    if(info.cpu&&info.mem){ addR('CPU',info.cpu); addR('内存',info.mem) }
+    else if(info.specs){ for(var i=0;i<info.specs.length;i++){ var s=info.specs[i]; addR(s.label||s[0], s.value!=null?s.value:(s[1])) } }
+    else { addR('数据', JSON.stringify(info).slice(0,120)) }
+    if(!rows.frame){ var d=document.getElementById('hw'); if(d&&!d.children.length) d.innerHTML='<div class="row"><span class="k">—</span><span class="v">暂无遥测数据</span></div>' }
+  }).catch(function(){}) }
+})();
+</script></body></html>`
+}
+
+
 let guiServer = null
 let guiPort = 0
 function startGuiServer() {
@@ -886,6 +953,11 @@ function startGuiServer() {
       if (urlPath === '/splash.html') {
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' })
         res.end(splashHtml())
+        return
+      }
+      if (urlPath === '/system.html') {
+        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' })
+        res.end(systemPanelHtml())
         return
       }
       if (urlPath === '/' || urlPath === '/index.html') {
@@ -1089,6 +1161,43 @@ ipcMain.handle('prts:win-toggle-maximize', () => {
 })
 ipcMain.handle('prts:win-close', () => { if (win && !win.isDestroyed()) win.close(); return { ok: true } })
 ipcMain.handle('prts:win-is-maximized', () => ({ maximized: !!(win && !win.isDestroyed() && win.isMaximized()) }))
+
+/* ---------- 系统面板：独立小窗（第③④效果） ----------
+ * 侧栏新增的 SYSTEM 按钮通过 prts:openSystemPanel 打开一个独立 frameless 小窗，
+ * 加载本地 /system.html（一个只读遥测/关于面板），不改变主窗口布局。 */
+let sysWin = null
+ipcMain.handle('prts:openSystemPanel', () => {
+  try {
+    if (sysWin && !sysWin.isDestroyed()) { sysWin.focus(); return { ok: true } }
+    sysWin = new BrowserWindow({
+      width: 420, height: 560, minWidth: 360, minHeight: 460,
+      backgroundColor: '#0A0A0B', autoHideMenuBar: true, show: false,
+      icon: path.join(__dirname, '..', 'assets', 'prts.png'),
+      frame: false, thickFrame: true,
+      parent: win,
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.cjs'),
+        contextIsolation: true, nodeIntegration: false, sandbox: false,
+        additionalArguments: ['--dsh-url=' + DSH_WEB_URL, '--prts-window=system'],
+      },
+    })
+    sysWin.once('ready-to-show', () => sysWin.show())
+    sysWin.removeMenu()
+    sysWin.loadURL('http://127.0.0.1:' + guiPort + '/system.html')
+    sysWin.on('closed', () => { sysWin = null })
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: String(e && e.message || e) }
+  }
+})
+ipcMain.handle('prts:closeSystemPanel', () => { if (sysWin && !sysWin.isDestroyed()) sysWin.close(); return { ok: true } })
+ipcMain.handle('prts:systemWindowBar', (e, action) => {
+  const w = (e.sender === sysWin && sysWin && !sysWin.isDestroyed()) ? sysWin : win
+  if (!w || w.isDestroyed()) return { ok: false }
+  if (action === 'close') w.close()
+  else if (action === 'minimize') w.minimize()
+  return { ok: true }
+})
 
 app.on('window-all-closed', () => app.quit())
 app.on('activate', () => {

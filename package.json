@@ -1,7 +1,7 @@
 {
   "name": "dsh-prts-ui",
-  "version": "1.0.0",
-  "description": "PRTS — the monochrome GUI shell for dsh (DeepSeek Harness): particle intro, workspaces/sessions with search, mode/model/reasoning/permission selectors, image attachments, approvals & questions, cost + system panels, voice input. Ships one-click installers for Windows/Linux/macOS/Android and the particle download site.",
+  "version": "0.0.1-new.0",
+  "description": "PRTS — 一套基于 DeepSeek Harness (dsh) 的整合包 + 皮肤。皮肤层严格只做视觉美化（入场动画、黑白主题、粒子、发光菱形、背景图形层、品牌标志、欢迎语、独立系统面板），完全不改动 dsh 核心与输入框；配套跨平台一键安装器（Windows exe / Linux .deb / macOS）与官网。",
   "type": "module",
   "main": "./src/plugin-root.js",
   "bin": {

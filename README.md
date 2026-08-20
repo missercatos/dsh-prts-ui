@@ -1,128 +1,67 @@
-# dsh-prts-ui
+# PRTS — a DeepSeek Harness (dsh) integration + skin
+
+> **v0.0.1 (new) — full rework**: PRTS is no longer a plugin that rewrites the whole UI. It is now an **integration pack + skin**.
 
 <p align="center">
-  <img src="assets/prts.png" width="160" alt="PRTS logo">
+  <img src="assets/prts.png" width="160" alt="PRTS mark">
 </p>
 
-<p align="center">
-  <a href="https://github.com/missercatos/dsh-prts-ui/releases"><img src="https://img.shields.io/badge/version-v0.9.3-7aa2f7?style=flat-square" alt="v0.9.3"></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-9ece6a?style=flat-square" alt="MIT"></a>
-  <a href="https://github.com/missercatos/dsh-prts-ui/releases"><img src="https://img.shields.io/badge/release-0.9.3-bb9af7?style=flat-square" alt="release"></a>
-</p>
+PRTS sits on **DeepSeek Harness (dsh)** as its kernel and adds a skin that only changes visuals — never the core. The desktop integration pack handles "detect/install dsh → package installed plugins → one-click enter"; the skin plugin handles the beauty.
 
-> [中文](./README.zh.md)
+## 🔑 One rule: never touch the core
 
-**v0.9.3** · PRTS is a **GUI shell for dsh (DeepSeek Harness)** — not a standalone app. It mirrors dsh's real state (workspaces, sessions, models, credentials, tools, plugins) over dsh's stable `/api` RPC + WebSocket protocol; PRTS adds only the look and the control surface. Because it depends on the stable `/api` contract, dsh upgrades do not break it.
+**The PRTS skin does strictly five things; everything else stays 100% native dsh:**
 
-Version 0.6.x is fixed and tested against the **current dsh core (v4-generation wire: `session.list`→`items`, `/api/events.mux` as a WebSocket)**.
+| # | Effect | How |
+|---|---|---|
+| ① | Entry animation | integration-pack splash particle acts (sped up), then enters dsh |
+| ② | Top-left brand | whale wordmark visually overridden to a rhombus + PRTS (no icon swap) |
+| ③ | Home hero copy | 「探索未至之境」→「欢迎回归，博士」(copy & fish-mark overlay) |
+| ④ | System panel | a **separate new button** opens a standalone window (does not alter the “click logo → new session” behavior) |
+| ⑤ | Overall theme | monochrome + particles + glowing rhombus + background shapes layer (rhombus / squares / white dots, above the wallpaper, below the dialogs) |
 
-## Features (mirroring dsh's capabilities)
+This keeps the red line: **input position untouched, deepseek icon untouched, and dsh's core conversation/settings/market logic completely unaffected.** dsh upgrades bring new abilities, never break PRTS.
 
-- **Workspaces**: sidebar list, create/delete, header crumb switcher; workspace selector chips in the sidebar and above the welcome-screen composer (switch/add) — adding a workspace opens the OS file manager first (Electron-native dialog on Windows/Linux/macOS), with a typed-path fallback
-- **Sessions**: new, archive, **session search** (local filter + dsh `session.search`), **bulk archive** (select mode + select-all, combines with search)
-- **Mode**: dsh's own agent presets. Blank sessions switch directly; **started sessions are preset-locked** (dsh constraint) — switching offers a new session with that preset
-- **Model**: provider → model picker (live `session.models`)
-- **Reasoning level**: per-model reasoning efforts via `session.selectModel` `reasoningEffort`
-- **Permission level**: permission presets from the session projection (applied via the `/permission` command)
-- **File transfer**: attach images (PNG/JPEG/WebP/GIF) to messages; history images resolve via `session.attachment`
-- **Approvals & questions**: `approval/requested` / `question/requested` cards with allow/reject/answer
-- **Context meter**: live context-window pressure ring next to the composer
-- **Bottom stats dock**: the same live stats line as the session UI — turns · steps | LLM · tool time | avg TTFT · tok/s | cache hit % | in/out tokens (projection frames + 8 s poll)
-- **Voice input**: real microphone speech-to-text — first-use consent modal, VAD auto start/stop, local whisper-tiny ONNX engine (engine + model cached from npmmirror / hf-mirror on first use, fully offline after; webkitSpeechRecognition preferred when present)
-- **Trajectory & log split**: the Trajectory tab is a step timeline (grouped by turn/step with durations); the Session log button downloads the dsh-web-style ZIP archive (`/api/session.export`) and falls back to a raw-event overlay with JSON export
-- **Welcome-screen selectors**: above the initial input area, dsh-web style — a folder chip (workspace switch/add), mode (standard / PTC / minimal / creative…), model and reasoning chips; selectable before any session is open
-- Plus: three-phase particle intro (welcome → PRTS·DEEPSEEK banner → diamond mark, 3.2 s each) that doubles as the loading animation — it loops while dsh is still booting, a click before readiness shows the "not ready" hint, and once ready the three scenes play out and auto-enter (or click to enter); system panel (hardware telemetry), cost panel, plugin market, zh/en UI, light/dark theme
+## ✨ Highlights
 
-## Compatibility fixes in 0.2.0
+- **Skin tech**: built on dsh's official client-plugin API — `theme.overrideTokens()` (monochrome tokens), `slots.register('sidebar.footer.action', …)` (system-panel button), and a CSS skin layer for the brand & hero copy. All via stable dsh interfaces; no source patching.
+- **System panel**: a standalone frameless Electron window (`prts:openSystemPanel`), read-only telemetry/about; does not change main-window layout.
+- **Integration pack**: the installer "detect/install dsh → export installed plugins from `~/.dsh` → assemble the desktop integration → create the desktop shortcut", entering a full DeepSeek Harness under the PRTS skin in one click.
 
-- Mux transport is now **WebSocket-first** (current builds answer plain GET with `upgrade required`), SSE fallback kept
-- `session.list` `items` shape, titles from `projections.values.title`
-- `session.history` `{events:[{event,view}]}` shape + paged back-read (`beforeSeq`/`maxMessages`) so huge sessions open instantly
-- Streaming via `assistant/chunk` (`reasoning-delta`/`text-delta`/`tool-call-delta`/`usage`/`finish`)
-- The command directory comes from the `commands/list` RPC (the dsh web source — includes plugin-extended commands), with a local fallback from the session's `command/run` history + built-ins for older builds
-- `session.search` degrades to a local title filter when the deployment disables the index
-- `window.prompt()`/`window.confirm()` replaced with PRTS-styled modals (Electron disables `prompt()` — this was the "buttons do nothing" bug)
-- Approval/question answers wrapped correctly as `{ok:true,value:{...}}`
-- Header popovers open downward when the trigger is near the top edge
-- Dead controls wired: sidebar collapse (a floating expand chip reappears when collapsed), chat/trajectory tabs, session log, context meter
-- Settings "Model configuration" collapse fixed (`[hidden]{display:none!important}` — CSS display was overriding the attribute; same fix for the attach strip and status row)
-- Streaming renders are batched per animation frame + throttled to 90 ms (a 9 s live turn rewrites the DOM ~16 times instead of once per chunk); history reloads cooldown 30 s
-- **Window-first boot**: launching PRTS without dsh web running no longer errors/hangs — the window opens immediately, the particle intro is the loading screen, and dsh web boots silently in the background (Windows `.cmd` shims supported); when PRTS closes, the dsh web it spawned is killed (pidfile + fallback pid, cross-platform)
-- The Electron mux relay probes with plain HTTP before ever opening its WebSocket against the backend (a failed WS connect inside the Electron main process wedges its message loop) — probes keep running until dsh answers, then the relay connects and re-probes after drops
-- Settings collapse animates (grid-row 0fr→1fr) instead of jumping
-- The Electron renderer is served over a loopback-only HTTP server (random 127.0.0.1 port) so the speech engine's wasm import()/worker loading works; the dsh API still rides the preload bridge — no window, no exposure
-- Streaming state no longer sticks on "stop" after a mux drop
-
-## Install (one click, CN-network friendly)
-
-Every network step falls back to npmmirror (npm registry + Electron mirror); GitHub access is never required.
+## 🖥️ Platforms & installers
 
 | Platform | Installer |
 | --- | --- |
-| Windows | `PRTS-Setup-<ver>-windows-x64.exe` (self-extracting, double-click) or `install.bat` |
-| Linux | `PRTS-<ver>-linux-x64.run` (self-extracting) or `sh install.sh` |
-| macOS | `PRTS-<ver>-macos.sh` or `sh install.sh` |
-| Phone | nothing to install: PC PRTS → Settings → PRTS → Mobile → scan the QR (same LAN); "Add to Home screen" for an app-like launcher |
+| Windows | `PRTS-Setup-<ver>-windows-x64.exe` (self-extracting one-click, the priority) |
+| Linux | `PRTS-<ver>-<arch>.deb` |
+| macOS | `PRTS-<ver>-macos.sh` |
 
-Every platform (Windows exe / Linux .run / macOS .sh) ships the same PRTS-styled GUI wizard (dark, rounded+straight lines, diamond/square marks, italic display type): checks dsh (auto-download with progress when missing) → plugin checkboxes (already-installed ones are greyed out) → installs the PRTS UI and applies the PRTS theme → migrates old installs out of the web profile → creates desktop/menu shortcuts → puts `prts` on PATH. Everything lands in the **isolated `prts` profile** (web bundles + skin plugin, port 3081); `dsh web` stays the original DeepSeek Harness UI.
+Installer flow:
+1. **check whether dsh is present**, install it if missing (mirror fallback for CN networks);
+2. **auto-read installed plugins across `~/.dsh` profiles** and ship them as one integration pack;
+3. create a desktop shortcut (`prts` command; icon = the `prts.png` rhombus).
+
+## ▶️ Usage
 
 ```sh
-prts                        # open the PRTS window immediately (particle intro = loading;
-                            # the prts-profile dsh web (port 3081) boots/reuses silently;
-                            # closing the window kills the dsh web it spawned)
-dsh --profile prts          # equivalent
+prts                       # open the PRTS window (particle intro → PRTS-skin dsh web)
+dsh --profile prts         # equivalent
 dsh --profile prts --lang zh
-prts --shortcut               # refresh desktop shortcuts
+prts --shortcut            # refresh the desktop shortcut
 ```
 
-**Config**: first install provisions `~/.dsh/profiles/prts/prts.config.json` (template: `prts.config.example.json`) — npm/Electron mirrors, plugin list, release URL. Updates preserve it.
+Config at `~/.dsh/profiles/prts/prts-ui.json`: `.persona.userName` controls the “欢迎回归，博士” greeting.
 
-**Update (stable channel)**: installer users auto-follow releases — a silent startup check reads the website `releases.json` (the same STABLE set the download site serves; the git tree never enters it), and Settings → PRTS → Update offers "check" and "update now" buttons.
-
-**Remove**:
+## 🛠️ Development
 
 ```sh
-dsh plugin --profile prts remove dsh-prts-ui
-rm -f ~/Desktop/dsh-prts.desktop ~/.local/share/applications/dsh-prts.desktop
-rm -rf ~/.config/prts ~/.dsh/profiles/prts
+pnpm install && pnpm bundle      # regenerate web/index.html & lib/client.js from src/
+node scripts/make-dist.sh        # build all dist/ installers (needs per-platform tooling)
 ```
 
-## Plugin form on a running dsh (`/prts`)
+Skin plugin core: `src/prts-client.js`. Electron shell: `electron/main.cjs` + `electron/preload.cjs`.
+Website (kept): `docs/` (particle download site + mobile guide), static hosting only.
 
-The GUI is a plugin. Besides the profile install above, it can mount as a **dynamic Cordis plugin** on a live dsh: the Host half registers the `/prts` route (this repo's `plugin/host.js` + `plugin/client.js`; running in this session as plugin `prts-1`). Open `http://127.0.0.1:3080/prts/` — the full PRTS UI on the same origin, same sessions, same agent.
-
-## Packaging & website
-
-```sh
-sh scripts/make-dist.sh     # dist/: tgz + .run + .sh + .exe + .zip + SHA256SUMS + releases.json
-```
-
-- The Windows exe is a mingw-w64 self-extracting stub (`dist-tools/sfx.c`) with the payload zip appended — buildable on Linux. Without mingw it falls back to the zip + `build-exe.bat` (Windows IExpress).
-- The site lives in `docs/`: particle-text zh/en intro ("Welcome to PRTS / This is the dsh-prts official site" …) + four platform download buttons + PWA (installable on Android). See `docs/README.txt`.
-
-## Development & self-tests
-
-```sh
-pnpm install && pnpm bundle      # regenerate web/index.html from src/ + web/src
-node test/live-transport.mjs     # full /api + mux verification against a live dsh
-node test/cdp-drive.mjs          # CDP state/console/screenshot of the window
-node test/cdp-audit.mjs          # per-control hit-testing (clickability audit)
-node test/cdp-interact.mjs       # functional interactions (session/search/popovers/send/stop)
-```
-
-## Environment variables
-
-| Variable | Meaning |
-| --- | --- |
-| `PRTS_DSH_URL` | PRTS dsh web backend URL (default `http://127.0.0.1:3081`, the prts profile) |
-| `PRTS_DSH_PROFILE` | profile the PRTS backend boots (default `prts`) |
-| `PRTS_ELECTRON` | preinstalled Electron binary path |
-| `PRTS_ELECTRON_CACHE` | Electron cache dir (default `~/.cache/prts/electron`) |
-| `ELECTRON_MIRROR` | Electron download mirror (installers default to npmmirror) |
-| `DSH_PRTS_NO_SHORTCUT` | `1` disables shortcut installation |
-| `DSH_PRTS_DESKTOP` | desktop dir for shortcuts (tests) |
-| `DSH_HOME` | dsh home (default `~/.dsh`) |
-
-## License
+## 📄 License
 
 MIT — see [LICENSE](./LICENSE).

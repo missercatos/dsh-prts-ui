@@ -418,9 +418,7 @@
     cp.innerHTML = P.icons['ma.copy'] || '';
     cp.addEventListener('click', (e) => {
       e.stopPropagation();
-      const p = navigator.clipboard ? navigator.clipboard.writeText(msg.content || '') : Promise.reject(new Error('no clipboard'));
-      p.then(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copied')); })
-        .catch(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copyFail')); });
+      toastCopy(msg.content || '');
     });
     actions.appendChild(cp);
     foot.appendChild(actions);
@@ -531,33 +529,56 @@
 
   async function sendFeedback(msg, value) {
     try {
-      if (value) await P.dsh.request('messageFeedback.put', { messageId: msg.id, value });
-      else await P.dsh.request('messageFeedback.delete', { messageId: msg.id });
-      C.msgFeedback = C.msgFeedback || {};
-      if (value) C.msgFeedback[msg.id] = value;
-      else delete C.msgFeedback[msg.id];
-      renderFlow();
-      if (P.app && P.app.toast) P.app.toast(t('chat.feedbackSent'));
+      const base = (P.dsh && P.dsh.baseUrl) || ''
+      const url = base + '/prts/api/feedback?session=' + encodeURIComponent(C.sessionId || '')
+      const res = await fetch(url, {
+        method: value ? 'PUT' : 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId: msg.id, rating: value }),
+      })
+      if (!res.ok) throw new Error('HTTP ' + res.status)
+      C.msgFeedback = C.msgFeedback || {}
+      if (value) C.msgFeedback[msg.id] = value
+      else delete C.msgFeedback[msg.id]
+      renderFlow()
+      if (P.app && P.app.toast) P.app.toast(t('chat.feedbackSent'))
     } catch (e) {
-      if (P.app && P.app.toast) P.app.toast(t('chat.feedbackFail'));
+      if (P.app && P.app.toast) P.app.toast(t('chat.feedbackFail'))
     }
+  }
+
+  /** Copy via the Electron bridge first (sandboxed renderers have no clipboard
+   *  API), then navigator.clipboard, then a textarea fallback. */
+  async function copyText(txt) {
+    const s = String(txt || '')
+    if (window.prts && window.prts.copyText) return window.prts.copyText(s)
+    if (navigator.clipboard) { await navigator.clipboard.writeText(s); return }
+    const ta = document.createElement('textarea')
+    ta.value = s
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.select()
+    try { document.execCommand('copy') } finally { ta.remove() }
+  }
+  function toastCopy(txt) {
+    copyText(txt)
+      .then(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copied')) })
+      .catch(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copyFail')) })
   }
 
   async function branchFrom(msg) {
     try {
-      let r = null;
-      try { r = await P.dsh.request('session.fork', { sessionId: C.sessionId, boundary: msg._seq }); } catch (e1) { r = null; }
-      if (!r || !r.sessionId) r = await P.dsh.request('session.fork', { sourceSessionId: C.sessionId, boundary: msg._seq });
-      const child = r && r.sessionId;
-      if (!child) throw new Error('no child session');
-      P.dshState.currentSessionId = child;
-      await P.dshState.listSessions();
-      if (P.app && P.app.renderSessions) P.app.renderSessions();
-      if (P.app && P.app.selectSession) await P.app.selectSession(child);
-      else await C.loadHistory(child);
-      if (P.app && P.app.toast) P.app.toast(t('chat.branched'));
+      const child = await P.dshState.forkSessionAt(C.sessionId, msg && msg._seq)
+      if (!child) throw new Error('no child session')
+      P.dshState.currentSessionId = child
+      await P.dshState.listSessions()
+      if (P.app && P.app.renderSessions) P.app.renderSessions()
+      if (P.app && P.app.selectSession) await P.app.selectSession(child)
+      else await C.loadHistory(child)
+      if (P.app && P.app.toast) P.app.toast(t('chat.branched'))
     } catch (e) {
-      if (P.app && P.app.toast) P.app.toast(t('chat.branchFail', { msg: (e && e.message) || e }));
+      if (P.app && P.app.toast) P.app.toast(t('chat.branchFail', { msg: (e && e.message) || e }))
     }
   }
 
@@ -588,9 +609,7 @@
     copyBtn.innerHTML = P.icons['ma.copy'] || '';
     copyBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const p = navigator.clipboard ? navigator.clipboard.writeText(rawText || '') : Promise.reject(new Error('no clipboard'));
-      p.then(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copied')); })
-        .catch(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copyFail')); });
+      toastCopy(rawText || '');
     });
     head.appendChild(fold);
     head.appendChild(glyph);
@@ -742,9 +761,7 @@
     };
     actions.appendChild(mk('ma.copy', t('chat.copy'), () => {
       const txt = [msg.reasoning || '', msg.content || ''].filter(Boolean).join('\n');
-      const p = navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject(new Error('no clipboard'));
-      p.then(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copied')); })
-        .catch(() => { if (P.app && P.app.toast) P.app.toast(t('chat.copyFail')); });
+      toastCopy(txt);
     }));
     const fb = C.msgFeedback || {};
     const up = mk('ma.good', t('chat.good'), () => sendFeedback(msg, fb[msg.id] === 'good' ? null : 'good'));

@@ -211,6 +211,13 @@
     return r && r.sessionId;
   }
 
+  /** Fork at a message boundary: `atSeq` anchors the cut at the first
+   *  completed turn at/after that seq (a message's fork button passes it). */
+  async function forkSessionAt(sessionId, atSeq) {
+    const r = await P.dsh.request('session.fork', { sessionId, atSeq });
+    return r && r.sessionId;
+  }
+
   async function archiveSession(sessionId) {
     // dsh has no session.delete — sessions are archived from their workspace.
     await P.dsh.request('workspace.archiveSession', { sessionId });
@@ -531,6 +538,7 @@
   S.cancel = cancel;
   S.renameSession = renameSession;
   S.forkSession = forkSession;
+  S.forkSessionAt = forkSessionAt;
   S.archiveSession = archiveSession;
   S.archiveSessions = archiveSessions;
   S.deleteWorkspace = deleteWorkspace;

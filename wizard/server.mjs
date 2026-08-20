@@ -123,19 +123,68 @@ function findTgz(preferred) {
 
 function snapshot() {
   const plugins = PLUGINS.map((p) => ({ id: p.id, label: p.label, desc: p.desc, def: p.def, installed: !!installedVersion(p.id) }))
+  // v0.0.1(new)：整合包策略 —— 自动发现本机 ~/.dsh 已安装的插件，
+  // 把它们一并作为桌面整合包的一等插件（pre-selected），其余仍是可选手项。
+  const discovered = discoverInstalledPlugins()
+  const merged = mergedPluginList(discovered, plugins)
   return {
     platform: IS_WIN ? 'windows' : osPlatform() === 'darwin' ? 'macos' : 'linux',
     version: (readJson(join(ROOT, 'package.json')) || {}).version || '0.0.0',
     tgz: findTgz(process.env.PRTS_WIZARD_TGZ || '') ? 'ok' : 'missing',
     dsh: { installed: dshInstalled(), version: dshVersion() },
     prtsInstalled: prtsVersion(),
-    plugins,
+    discovered: discovered.map((p) => p.id),
+    plugins: merged,
     step: state.step,
     stage: state.stage,
     progress: state.progress,
     error: state.error,
     log: state.log.slice(-160),
   }
+}
+
+/* ---------- v0.0.1(new)：从 ~/.dsh 自动发现已装插件 ---------- */
+
+/**
+ * 读 ~/.dsh 下 profiles 目录内每个 profile 的 package.json 的
+ * dependencies + devDependencies，把每个非 dsh 内核 / 非本插件包名
+ * 收集为本机已装插件清单。
+ * 返回 [{ id, label, desc, installed:true }]，id 是可直接 `dsh plugin add` 的 spec。
+ */
+function discoverInstalledPlugins() {
+  const PROFILES_ROOT = join(DSH_HOME, 'profiles')
+  const seen = new Map()
+  const SKIP = new Set(['dsh-prts-ui', '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@deepseek-ai/dsh-cmdline'])
+  let dirs = []
+  try { dirs = readdirSync(PROFILES_ROOT) } catch (e) { dirs = [] }
+  for (const prof of dirs) {
+    const pkgPath = join(PROFILES_ROOT, prof, 'package.json')
+    let m = null
+    try { m = JSON.parse(readFileSync(pkgPath, 'utf8')) } catch (e) { continue }
+    const deps = Object.assign({}, m.dependencies, m.devDependencies)
+    for (const name of Object.keys(deps)) {
+      if (SKIP.has(name)) continue
+      if (seen.has(name)) continue
+      const spec = deps[name]
+      const id = /^github:|^git\+/.test(String(spec)) && String(spec).includes('.git')
+        ? String(spec) // 保留 github: 源，可直接 add
+        : /^file:/.test(String(spec))
+          ? name       // 本地打包 → 用包名注册；安装器另有 PRTS tgz 处理
+          : String(spec).indexOf('/') >= 0 ? spec : name // 其它规范化到可 add 的形态
+      seen.set(name, { id, label: name, desc: '来自 ~/.dsh 已安装插件', installed: true })
+    }
+  }
+  return Array.from(seen.values())
+}
+
+/** 把“已安装发现”合并到默认插件表：已装的置前并预选；未装的保留手选项。 */
+function mergedPluginList(discovered, defaults) {
+  const byId = new Map(defaults.map((p) => [p.id, p]))
+  for (const d of discovered) {
+    if (!byId.has(d.id)) byId.set(d.id, { id: d.id, label: d.label, desc: d.desc, def: true, installed: true, discovered: true })
+    else { const cur = byId.get(d.id); byId.set(d.id, { ...cur, installed: true, discovered: true }) }
+  }
+  return Array.from(byId.values())
 }
 
 /* ---------- pipeline ---------- */
