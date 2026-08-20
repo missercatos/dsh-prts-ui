@@ -2,7 +2,7 @@
   "product": "dsh-prts-ui",
   "channel": "stable",
   "version": "0.0.1-new.0",
-  "releasedAt": "2026-08-20T10:42:47.646Z",
+  "releasedAt": "2026-08-20T10:43:21.762Z",
   "files": [
     {
       "file": "PRTS-0.0.1-new.0-amd64.deb",
@@ -11,32 +11,32 @@
     },
     {
       "file": "PRTS-0.0.1-new.0-linux-x64.run",
-      "sha256": "0495ae35627ba09f521be05a8b19601641155a82a2114a9aa352613bf407a510",
+      "sha256": "5a67f3a05164cebbab3934ee0df411fe4421bc1a7eb8bc530ee26ff28eaa8da9",
       "url": "https://your-domain.example.com/releases/PRTS-0.0.1-new.0-linux-x64.run"
     },
     {
       "file": "PRTS-0.0.1-new.0-macos.sh",
-      "sha256": "27d548d5f8f77bce4af2d903c4aad9200efd50c0997f7909ffd78ca17a6a8f03",
+      "sha256": "04a08e2dbabf435aa69d21a240ade44c42e6c535146c16b25a999d7a02e74527",
       "url": "https://your-domain.example.com/releases/PRTS-0.0.1-new.0-macos.sh"
     },
     {
       "file": "PRTS-Setup-0.0.1-new.0-windows-x64.exe",
-      "sha256": "2fa391edcb781cf0dd091cb2eb3f0614e640635224f30d22919354eda21436de",
+      "sha256": "edd339ddb186b3af2af4a4a236394311c6134728f055c7ed0afc4ef578244351",
       "url": "https://your-domain.example.com/releases/PRTS-Setup-0.0.1-new.0-windows-x64.exe"
     },
     {
       "file": "PRTS-Setup-0.0.1-new.0-windows-x64.zip",
-      "sha256": "347737f5215d8e932aaa70fc7f8d273281e99b3092a1ee40aaaf60764b6ed98a",
+      "sha256": "35f71696e9dfb983817108057c6007bf8e7b66e8075bd742024d92f99a2e06d4",
       "url": "https://your-domain.example.com/releases/PRTS-Setup-0.0.1-new.0-windows-x64.zip"
     },
     {
       "file": "PRTS-mobile-0.0.1-new.0.zip",
-      "sha256": "0b0eb557fb8b0949907afd5afd1cba20e033fec84af9129c4277205178cf2622",
+      "sha256": "118f689c2e3212f0e1e3cc121e221ab611ac8d66e165f1f3ec2fd9ae949d0831",
       "url": "https://your-domain.example.com/releases/PRTS-mobile-0.0.1-new.0.zip"
     },
     {
       "file": "dsh-prts-ui-0.0.1-new.0.tgz",
-      "sha256": "1b5aef25c465c638b61a012f7119213b43263d110b5b3db465d1a0f76066378f",
+      "sha256": "adbd7647deca1c8e2069aa5cf112311f81f344de47aed471919d3b62c46faad0",
       "url": "https://your-domain.example.com/releases/dsh-prts-ui-0.0.1-new.0.tgz"
     }
   ],
