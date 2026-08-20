@@ -222,7 +222,8 @@ const manifest = {
   files: files.map((f) => ({ file: f, sha256: hashOf(f), url: base.replace(/\/+$/, '') + '/' + f })),
   downloads: {
     windows: files.find((f) => f.endsWith('-windows-x64.exe')) || files.find((f) => f.endsWith('-windows-x64.zip')) || '',
-    linux: files.find((f) => f.endsWith('-linux-x64.run')) || '',
+    // v0.0.1(new)：Linux 首选安装包为 .deb，其次自解压 .run
+    linux: files.find((f) => f.endsWith('-amd64.deb')) || files.find((f) => f.endsWith('-linux-x64.run')) || '',
     macos: files.find((f) => f.endsWith('-macos.sh')) || '',
     mobile: files.find((f) => f.startsWith('PRTS-mobile-') && f.endsWith('.zip')) || '',
     tarball: files.find((f) => f.startsWith('dsh-prts-ui-') && f.endsWith('.tgz')) || '',
