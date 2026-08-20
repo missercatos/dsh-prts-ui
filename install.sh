@@ -2,10 +2,10 @@
 #
 # PRTS v0.0.1(new) — Linux / macOS 整合包安装器入口。
 # 只是一个薄启动器：真正工作交给零依赖的 Node wizard(wizard/server.mjs)。
-# 引导策略见 wizard：
+# 引导策略见 wizard（新整合包不附带任何自研界面）：
 #   1) 检查系统是否自带 dsh，没有则自动安装(国内镜像回退)；
-#   2) 自动读取 ~/.dsh 各 profile 已装插件，并入桌面整合包；
-#   3) 安装 PRTS 皮肤到独立 prts profile，生成桌面快捷方式。
+#   2) 询问要安装哪些插件，安装到官方 dsh web 的 web profile；
+#   3) 生成 prts 启动命令与桌面快捷方式，打开官方 dsh web。
 #
 #   sh install.sh [path/to/dsh-prts-ui-<ver>.tgz]
 #

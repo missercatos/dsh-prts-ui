@@ -1,24 +1,25 @@
 #!/usr/bin/env node
 /**
- * PRTS installer wizard — one cross-platform bootstrap for the integrated
- * package (Windows / Linux / macOS). Zero-dependency Node HTTP server on
- * 127.0.0.1: serves the PRTS-styled wizard page and drives the install
- * pipeline, streaming live progress (dsh download included) to the page.
+ * PRTS installer wizard — redesigned for the current integration pack.
+ * The redesigned version ships NO bundled UI ("PRTS 界面" is gone): the
+ * interface is the OFFICIAL dsh web (DeepSeek Harness browser UI), so the
+ * wizard only bootstraps dsh + plugins onto the official `web` profile and
+ * creates the launcher / desktop shortcut that opens it.
  *
- * Pipeline (the "modpack" flow):
+ * Pipeline:
  *   1. environment check (node / npm / pnpm)
  *   2. dsh harness — already installed? skip : npm i -g @deepseek-ai/dsh
- *      (progress shown while downloading)
- *   3. plugin selection — installed plugins are greyed out in the page
- *   4. PRTS UI package into the isolated `prts` profile (bundles pinned)
- *   5. migration: clean pre-0.9.4 installs out of the official web profile
- *   6. config provision + desktop shortcuts
+ *      (npmmirror fallback; live progress while downloading)
+ *   3. plugin selection — installed plugins are greyed out in the page;
+ *      selected ones land in the official `web` profile (`dsh web` shows them)
+ *   4. launcher + desktop shortcut: the `prts` command starts `dsh web` and
+ *      opens http://127.0.0.1:3080 in the default browser
  */
 
 import { createServer } from 'node:http'
 import { spawn, spawnSync } from 'node:child_process'
-import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync, copyFileSync } from 'node:fs'
-import { join, dirname, resolve } from 'node:path'
+import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync, copyFileSync, chmodSync } from 'node:fs'
+import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { homedir, platform as osPlatform } from 'node:os'
 
@@ -26,27 +27,25 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const IS_WIN = osPlatform() === 'win32'
 const HOME = process.env.HOME || process.env.USERPROFILE || homedir()
 const DSH_HOME = process.env.DSH_HOME || join(HOME, '.dsh')
-const PROFILE_DIR = join(DSH_HOME, 'profiles', 'prts')
+/** Plugins land in the official web profile — the profile `dsh web` boots. */
 const WEB_PROFILE_DIR = join(DSH_HOME, 'profiles', 'web')
+/** dsh web's default loopback URL (see @deepseek-ai/dsh-web-app / dsh-cmdline). */
+const DSH_WEB_URL = 'http://127.0.0.1:3080'
 
-/** The integrated pack's plugin manifest. `rec: true` marks the recommended
- *  combination — plugins with no conflicts against the PRTS skin or against
- *  each other (they integrate into the sidebar / input / panels instead of
- *  replacing them). Plugins carrying a `conflict` string DO clash with the
- *  PRTS skin (they replace the sidebar / market / theme UI), so they are
- *  never pre-selected — advanced users may still opt in at their own risk.
- *  Installed plugins are greyed out in the wizard; everything lands in the
- *  PRTS profile (the official `dsh web` profile stays untouched). */
+/** The integration pack's plugin catalog — plain optional dsh plugins. The
+ *  redesigned version has no bundled UI, so no plugin conflicts with anything:
+ *  every plugin is a normal plugin for the official `web` profile. Installed
+ *  plugins are greyed out in the wizard. */
 const PLUGINS = [
-  { id: 'dsh-sidebar-files', label: 'dsh-sidebar-files', desc: '侧栏文件管理', def: true, rec: true },
-  { id: 'git+https://github.com/ChenRuoT/dsh-sidebar-qa.git', label: 'dsh-sidebar-qa', desc: '侧栏问答（GitHub 源码安装）', def: true, rec: true },
-  { id: 'dsh-at-file', label: 'dsh-at-file', desc: '@ 引用文件', def: true, rec: true },
-  { id: 'dsh-paste-input', label: 'dsh-paste-input', desc: '粘贴输入增强', def: true, rec: true },
-  { id: 'dsh-office', label: 'dsh-office', desc: 'Office 文档处理', def: true, rec: true },
-  { id: 'sh-browser-panel', label: 'sh-browser-panel', desc: '浏览器面板', def: true, rec: true },
-  { id: 'dsh-better-sidebar', label: 'dsh-better-sidebar', desc: '类 VSCode 侧栏（资源管理器 / 编辑器 / 终端 / Git）', def: false, conflict: '会替换 PRTS 侧栏 UI，与皮肤冲突' },
-  { id: 'dshmarket', label: 'dshmarket', desc: 'dsh 插件市场：浏览、搜索、一键装卸插件', def: false, conflict: '会替换 PRTS 自带插件市场 UI，与皮肤冲突' },
-  { id: '@liustack/modlens@3.17.2', label: 'ModLens', desc: '视觉增强：给纯文本模型增加图片理解能力', def: false, conflict: '会替换 PRTS 视觉主题，与皮肤冲突' },
+  { id: 'dsh-better-sidebar', label: 'dsh-better-sidebar', desc: '类 VSCode 侧栏（资源管理器 / 编辑器 / 终端 / Git）', def: true },
+  { id: 'dsh-sidebar-files', label: 'dsh-sidebar-files', desc: '侧栏文件管理', def: true },
+  { id: 'dshmarket', label: 'dshmarket', desc: 'dsh 插件市场：浏览、搜索、一键装卸插件', def: true },
+  { id: 'git+https://github.com/ChenRuoT/dsh-sidebar-qa.git', label: 'dsh-sidebar-qa', desc: '侧栏问答（GitHub 源码安装）', def: true },
+  { id: '@liustack/modlens@3.17.2', label: 'ModLens', desc: '视觉增强：给纯文本模型增加图片理解能力', def: true },
+  { id: 'dsh-at-file', label: 'dsh-at-file', desc: '@ 引用文件', def: true },
+  { id: 'dsh-paste-input', label: 'dsh-paste-input', desc: '粘贴输入增强', def: true },
+  { id: 'dsh-office', label: 'dsh-office', desc: 'Office 文档处理', def: true },
+  { id: 'sh-browser-panel', label: 'sh-browser-panel', desc: '浏览器面板', def: true },
 ]
 
 /* ---------- state ---------- */
@@ -65,15 +64,6 @@ function pushLog(line) {
   if (state.log.length > 400) state.log.splice(0, state.log.length - 400)
 }
 
-function versionCompare(a, b) {
-  const pa = String(a || '0').split('.').map((n) => parseInt(n, 10) || 0)
-  const pb = String(b || '0').split('.').map((n) => parseInt(n, 10) || 0)
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0) ? 1 : -1
-  }
-  return 0
-}
-
 /* ---------- environment / installed-state detection ---------- */
 
 function spawnSyncSafe(file, args, opts = {}) {
@@ -90,13 +80,14 @@ function readJson(p) {
   try { return JSON.parse(readFileSync(p, 'utf8')) } catch (e) { return null }
 }
 
+/** Version of `spec` installed in the OFFICIAL web profile, or null. */
 function installedVersion(spec) {
   // Normalize a pnpm spec (version suffix / git+ prefix) to the package
   // directory name under the profile's node_modules.
   let name = String(spec)
   if (name.startsWith('git+')) name = name.slice(4).replace(/\.git$/, '').split('/').pop()
   else name = name.replace(/@(\d[\w.+-]*)$/, '')
-  const rel = join(PROFILE_DIR, 'node_modules', ...name.split('/'))
+  const rel = join(WEB_PROFILE_DIR, 'node_modules', ...name.split('/'))
   const m = readJson(join(rel, 'package.json'))
   return m && m.version ? m.version : null
 }
@@ -108,41 +99,19 @@ function dshVersion() {
   return line.length < 60 ? line : 'installed'
 }
 
-function prtsVersion() {
-  return installedVersion('dsh-prts-ui') || null
-}
-
 function dshInstalled() {
   return hasCmd('dsh') && dshVersion() !== null
 }
 
-/** The tarball the installer payload ships (explicit arg or newest found). */
-function findTgz(preferred) {
-  // ALWAYS resolve to an absolute path: pnpm treats a bare tarball name as
-  // an npm registry package (404) unless it is a real filesystem path.
-  // The version part must tolerate npm prerelease tags (e.g. 0.0.1-new.0) —
-  // a `[\d.]+` pattern silently misses those and reports a "missing tgz".
-  if (preferred && existsSync(preferred)) return resolve(preferred)
-  let files = []
-  try {
-    files = readdirSync(ROOT).filter((f) => /^dsh-prts-ui-[\w.+~-]+\.tgz$/.test(f)).sort()
-  } catch (e) { files = [] }
-  if (!files.length) return null
-  return join(ROOT, files[files.length - 1])
-}
-
 function snapshot() {
-  const plugins = PLUGINS.map((p) => ({ id: p.id, label: p.label, desc: p.desc, def: p.def, rec: !!p.rec, conflict: p.conflict || '', installed: !!installedVersion(p.id) }))
-  // v0.0.1(new)：整合包策略 —— 自动发现本机 ~/.dsh 已安装的插件，
-  // 把它们一并作为桌面整合包的一等插件（pre-selected），其余仍是可选手项。
+  const plugins = PLUGINS.map((p) => ({ id: p.id, label: p.label, desc: p.desc, def: p.def, installed: !!installedVersion(p.id) }))
+  // 自动发现本机 ~/.dsh 已安装的插件：已装的自动置灰，不重复安装。
   const discovered = discoverInstalledPlugins()
   const merged = mergedPluginList(discovered, plugins)
   return {
     platform: IS_WIN ? 'windows' : osPlatform() === 'darwin' ? 'macos' : 'linux',
     version: (readJson(join(ROOT, 'package.json')) || {}).version || '0.0.0',
-    tgz: findTgz(process.env.PRTS_WIZARD_TGZ || '') ? 'ok' : 'missing',
     dsh: { installed: dshInstalled(), version: dshVersion() },
-    prtsInstalled: prtsVersion(),
     discovered: discovered.map((p) => p.id),
     plugins: merged,
     step: state.step,
@@ -153,7 +122,7 @@ function snapshot() {
   }
 }
 
-/* ---------- v0.0.1(new)：从 ~/.dsh 自动发现已装插件 ---------- */
+/* ---------- 自动发现 ~/.dsh 已装插件 ---------- */
 
 /**
  * 读 ~/.dsh 下 profiles 目录内每个 profile 的 package.json 的
@@ -179,7 +148,7 @@ function discoverInstalledPlugins() {
       const id = /^github:|^git\+/.test(String(spec)) && String(spec).includes('.git')
         ? String(spec) // 保留 github: 源，可直接 add
         : /^file:/.test(String(spec))
-          ? name       // 本地打包 → 用包名注册；安装器另有 PRTS tgz 处理
+          ? name       // 本地打包 → 用包名注册
           : String(spec).indexOf('/') >= 0 ? spec : name // 其它规范化到可 add 的形态
       seen.set(name, { id, label: name, desc: '来自 ~/.dsh 已安装插件', installed: true })
     }
@@ -187,7 +156,7 @@ function discoverInstalledPlugins() {
   return Array.from(seen.values())
 }
 
-/** 把“已安装发现”合并到默认插件表：已装的置前并预选；未装的保留手选项。 */
+/** 把“已安装发现”合并到默认插件表：已装的置前并置灰。 */
 function mergedPluginList(discovered, defaults) {
   const byId = new Map(defaults.map((p) => [p.id, p]))
   for (const d of discovered) {
@@ -236,6 +205,30 @@ function npmInstallGlobal(pkg) {
   })()
 }
 
+/** pnpm 11 blocks build scripts until approved: approve the package name
+ *  pnpm hinted at and return true when something was written. */
+function approveBuildsHint() {
+  const hinted = state.log.slice(-40).join('\n').match(/(?:approve-builds|ignored build scripts?|allowBuilds)[^\n]*?[\s'"]+(@?[a-z0-9][\w.-]*(?:\/[\w.-]+)?)/i)
+  if (!hinted || !hinted[1]) return false
+  const ws = join(WEB_PROFILE_DIR, 'pnpm-workspace.yaml')
+  try {
+    const q = (k) => (/^@/.test(k) ? "'" + k + "'" : k)
+    const lines = readFileSync(ws, 'utf8').split('\n')
+    if (lines.some((l) => l.indexOf('  ' + q(hinted[1]) + ':') === 0)) return false
+    const idx = lines.findIndex((l) => /^allowBuilds:/.test(l))
+    if (idx >= 0) lines.splice(idx + 1, 0, '  ' + q(hinted[1]) + ': true')
+    else lines.push('', 'allowBuilds:', '  ' + q(hinted[1]) + ': true')
+    writeFileSync(ws, lines.join('\n'))
+    return true
+  } catch (e) { return false }
+}
+
+async function installPlugin(p) {
+  let code = await execLog('dsh', ['plugin', '--profile', 'web', 'add', p.id])
+  if (code !== 0 && approveBuildsHint()) code = await execLog('dsh', ['plugin', '--profile', 'web', 'add', p.id])
+  if (code !== 0) pushLog('（跳过）' + p.id + ' 未能安装 — 不影响安装')
+}
+
 async function runPipeline(selectedPlugins) {
   state.started = true
   state.step = 'running'
@@ -261,136 +254,28 @@ async function runPipeline(selectedPlugins) {
     }
     bump(55, 'dsh 本体就绪')
 
-    // 3. selected plugins (installed ones skip automatically; git-hosted
-    //    packages get their build script approved on the first attempt)
+    // 旧版残留清理：老整合包把 dsh-prts-ui 皮肤插件装进过 web profile，
+    // 新版本不再带任何界面 — 发现就移除（尽力而为，失败不影响安装）。
+    const webManifest = readJson(join(WEB_PROFILE_DIR, 'package.json'))
+    if (webManifest && webManifest.dependencies && webManifest.dependencies['dsh-prts-ui']) {
+      pushLog('清理旧版 PRTS 皮肤插件（web profile）…')
+      await execLog('dsh', ['plugin', '--profile', 'web', 'remove', 'dsh-prts-ui'])
+    }
+
+    // 3. selected plugins → official web profile (installed ones skip)
     const plugins = PLUGINS.filter((p) => selectedPlugins.indexOf(p.id) >= 0 && !installedVersion(p.id))
-    const conflictPicks = plugins.filter((p) => p.conflict)
-    if (conflictPicks.length) pushLog('注意：勾选了与 PRTS 皮肤冲突的插件（' + conflictPicks.map((p) => p.label).join('、') + '）— 可能覆盖皮肤界面。')
     let i = 0
     for (const p of plugins) {
-      bump(55 + Math.round((i / Math.max(1, plugins.length)) * 20), '安装插件 ' + p.label)
-      let code = await execLog('dsh', ['plugin', '--profile', 'prts', 'add', p.id])
-      if (code !== 0) {
-        // pnpm 11 blocks build scripts until approved — approve the hinted
-        // package name and retry once before giving up on this plugin.
-        const hinted = state.log.slice(-40).join('\n').match(/(?:approve-builds|ignored build scripts?|allowBuilds)[^\n]*?[\s'"]+(@?[a-z0-9][\w.-]*(?:\/[\w.-]+)?)/i)
-        if (hinted && hinted[1]) {
-          const ws = join(PROFILE_DIR, 'pnpm-workspace.yaml')
-          try {
-            const lines = readFileSync(ws, 'utf8').split('\n')
-            const already = lines.some((l) => l.indexOf('  ' + hinted[1] + ':') === 0)
-            if (!already) {
-              const q2 = (k) => (/^@/.test(k) ? "'" + k + "'" : k)
-              const idx = lines.findIndex((l) => /^allowBuilds:/.test(l))
-              if (idx >= 0) { lines.splice(idx + 1, 0, '  ' + q2(hinted[1]) + ': true'); writeFileSync(ws, lines.join('\n')) }
-            }
-          } catch (e) { /* noop */ }
-          code = await execLog('dsh', ['plugin', '--profile', 'prts', 'add', p.id])
-        }
-        if (code !== 0) pushLog('（跳过）' + p.id + ' 未能安装 — 不影响安装')
-      }
+      bump(55 + Math.round((i / Math.max(1, plugins.length)) * 30), '安装插件 ' + p.label)
+      await installPlugin(p)
       i++
     }
 
-    // 4. PRTS UI package into the prts profile
-    const tgz = findTgz(process.env.PRTS_WIZARD_TGZ || '')
-    if (!tgz) throw new Error('安装包缺少 dsh-prts-ui-*.tgz')
-    bump(80, '安装 PRTS 界面')
-    mkdirSync(PROFILE_DIR, { recursive: true })
-    // Keep the tarball INSIDE the profile: the self-extracting installer
-    // deletes its payload directory on exit, and a dangling `file:` spec
-    // would break every later profile operation.
-    const keptTgz = join(PROFILE_DIR, 'dsh-prts-ui-' + snapshot().version + '.tgz')
-    try { copyFileSync(tgz, keptTgz) } catch (e) { /* fall through to the payload path */ }
-    const installTgz = existsSync(keptTgz) ? keptTgz : tgz
-    const bundles = join(PROFILE_DIR, 'package.json')
-    let m = readJson(bundles) || { name: 'dsh-profile-prts', private: true, dependencies: {} }
-    m.dsh = m.dsh || {}
-    const wanted = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app']
-    const cur = (m.dsh.profile && m.dsh.profile.bundles) || []
-    m.dsh.profile = { bundles: [...wanted, ...cur.filter((b) => wanted.indexOf(b) < 0)] }
-    writeFileSync(bundles, JSON.stringify(m, null, 2) + '\n')
-    // allowBuilds (pnpm 11 build-script approvals)
-    const ws = join(PROFILE_DIR, 'pnpm-workspace.yaml')
-    const base = new Map([
-      ['node-pty', 'true'], ['koffi', 'true'], ['protobufjs', 'true'],
-      ['@google/genai', 'true'], ['@deepseek-ai/dsh-subprocess-local', 'true'], ['dsh-prts-ui', 'true'],
-    ])
-    const extra = new Map()
-    try {
-      for (const line of readFileSync(ws, 'utf8').split('\n')) {
-        const mm = line.match(/^  (@?[a-z0-9][\w.-]*(?:\/[\w.-]+)?): (true|false)\s*$/)
-        if (mm && !base.has(mm[1])) extra.set(mm[1], mm[2])
-      }
-    } catch (e) { /* new file */ }
-    const q = (k) => (/^@/.test(k) ? "'" + k + "'" : k)
-    writeFileSync(ws, 'allowBuilds:\n' + [...base, ...extra].map(([k, v]) => '  ' + q(k) + ': ' + v).join('\n') + '\n')
-    let code = await execLog('dsh', ['plugin', '--profile', 'prts', 'add', installTgz])
-    if (code !== 0 || !prtsVersion()) throw new Error('PRTS 插件安装失败。')
-    // pin the bundle (web bundles first, dsh-prts-ui after, others preserved)
-    m = readJson(bundles) || {}
-    m.dsh = m.dsh || {}
-    const ex = (m.dsh.profile && m.dsh.profile.bundles) || []
-    const want2 = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'dsh-prts-ui']
-    m.dsh.profile = { bundles: Array.from(new Set([...want2, ...ex.filter((b) => want2.indexOf(b) < 0)])) }
-    writeFileSync(bundles, JSON.stringify(m, null, 2) + '\n')
-    pushLog('PRTS installed: v' + prtsVersion())
-
-    // 5. migration: restore the official web profile (pre-0.9.4 installs)
-    bump(92, '恢复原版 dsh web')
-    if (existsSync(join(WEB_PROFILE_DIR, 'node_modules', 'dsh-prts-ui', 'package.json'))) {
-      await execLog('dsh', ['plugin', '--profile', 'web', 'remove', 'dsh-prts-ui'])
-    }
-    const wm = readJson(join(WEB_PROFILE_DIR, 'package.json'))
-    if (wm && wm.dsh && wm.dsh.profile && Array.isArray(wm.dsh.profile.bundles)) {
-      const before = wm.dsh.profile.bundles.length
-      wm.dsh.profile.bundles = wm.dsh.profile.bundles.filter((b) => b !== 'dsh-prts-ui')
-      if (wm.dsh.profile.bundles.length !== before) writeFileSync(join(WEB_PROFILE_DIR, 'package.json'), JSON.stringify(wm, null, 2))
-    }
-
-    // 6. config + shortcuts
-    bump(95, '写入配置与快捷方式')
-    const cfg = join(PROFILE_DIR, 'prts.config.json')
-    if (!existsSync(cfg)) {
-      const example = join(ROOT, 'prts.config.example.json')
-      if (existsSync(example)) writeFileSync(cfg, readFileSync(example, 'utf8'))
-    }
-    const bin = join(PROFILE_DIR, 'node_modules', 'dsh-prts-ui', 'bin', 'dsh-prts-ui.js')
-    if (existsSync(bin)) {
-      await execLog(process.execPath, [bin, '--shortcut'])
-    } else {
-      pushLog('shortcut skipped: PRTS bin not found')
-    }
-    // the `prts` command: resilient launcher (prts profile → legacy web fallback)
-    if (IS_WIN) {
-      const dir = join(HOME, '.local', 'bin')
-      mkdirSync(dir, { recursive: true })
-      writeFileSync(join(dir, 'prts.cmd'), [
-        '@echo off',
-        'for %%P in (prts web) do (',
-        '  if exist "%USERPROFILE%\\.dsh\\profiles\\%%P\\node_modules\\dsh-prts-ui\\bin\\dsh-prts-ui.js" (',
-        '    node "%USERPROFILE%\\.dsh\\profiles\\%%P\\node_modules\\dsh-prts-ui\\bin\\dsh-prts-ui.js" %*',
-        '    exit /b 0',
-        '  )',
-        ')',
-        'echo PRTS not installed - run the installer again.',
-        'exit /b 1',
-      ].join('\r\n') + '\r\n')
-    } else {
-      const dir = join(HOME, '.local', 'bin')
-      mkdirSync(dir, { recursive: true })
-      writeFileSync(join(dir, 'prts'), [
-        '#!/bin/sh',
-        'BASE="$HOME/.dsh/profiles"',
-        'for P in prts web; do',
-        '  BIN="$BASE/$P/node_modules/dsh-prts-ui/bin/dsh-prts-ui.js"',
-        '  if [ -f "$BIN" ]; then exec node "$BIN" "$@"; fi',
-        'done',
-        'echo "PRTS not installed - run the installer again." >&2',
-        'exit 1',
-      ].join('\n') + '\n', { mode: 0o755 })
-    }
-    pushLog('prts command -> ' + join(HOME, '.local', 'bin', (IS_WIN ? 'prts.cmd' : 'prts')))
+    // 4. launcher + desktop shortcut → 官方 dsh web
+    bump(88, '配置 dsh web 与快捷方式')
+    const launcher = writePrtsLauncher()
+    pushLog('prts command -> ' + launcher)
+    for (const s of writeShortcuts()) pushLog('shortcut -> ' + s)
 
     bump(100, '完成')
     state.step = 'done'
@@ -403,6 +288,144 @@ async function runPipeline(selectedPlugins) {
     // and every re-attempt was rejected with 409 until the wizard restarted)
     state.started = false
   }
+}
+
+/* ---------- launcher + desktop shortcuts (官方 dsh web) ---------- */
+
+function launcherPath() {
+  return join(HOME, '.local', 'bin', IS_WIN ? 'prts.cmd' : 'prts')
+}
+
+/** `prts` 启动命令：后台拉起官方 dsh web，并在默认浏览器打开其界面。 */
+function writePrtsLauncher() {
+  const dir = join(HOME, '.local', 'bin')
+  mkdirSync(dir, { recursive: true })
+  const p = launcherPath()
+  if (IS_WIN) {
+    writeFileSync(p, [
+      '@echo off',
+      'rem PRTS — 打开官方 dsh web（DeepSeek Harness 浏览器界面）',
+      'where dsh >nul 2>nul || (echo PRTS: 未检测到 dsh — 请重新运行安装程序。& exit /b 1)',
+      'curl -s -o nul --max-time 1 ' + DSH_WEB_URL + '/ >nul 2>nul',
+      'if errorlevel 1 start "" /b dsh web',
+      'start "" ' + DSH_WEB_URL + '/',
+      'exit /b 0',
+    ].join('\r\n') + '\r\n')
+  } else {
+    writeFileSync(p, [
+      '#!/bin/sh',
+      '# PRTS — 打开官方 dsh web（DeepSeek Harness 浏览器界面）',
+      'if ! command -v dsh >/dev/null 2>&1; then',
+      '  echo "PRTS: 未检测到 dsh — 请重新运行安装程序。" >&2',
+      '  exit 1',
+      'fi',
+      '# dsh web 未在运行则后台拉起；无论是否已在运行都打开浏览器',
+      'if ! (curl -s -o /dev/null --max-time 1 ' + DSH_WEB_URL + '/ 2>/dev/null); then',
+      '  nohup dsh web >/dev/null 2>&1 &',
+      'fi',
+      'sleep 1',
+      'if command -v xdg-open >/dev/null 2>&1; then',
+      '  xdg-open "' + DSH_WEB_URL + '/" >/dev/null 2>&1 &',
+      'elif command -v open >/dev/null 2>&1; then',
+      '  open "' + DSH_WEB_URL + '/" >/dev/null 2>&1 &',
+      'else',
+      '  echo "PRTS: 请手动打开 ' + DSH_WEB_URL + '/"',
+      'fi',
+      'exit 0',
+    ].join('\n') + '\n', { mode: 0o755 })
+  }
+  return p
+}
+
+function desktopDir() {
+  if (process.env.DSH_PRTS_DESKTOP) return process.env.DSH_PRTS_DESKTOP
+  if (osPlatform() === 'linux') return process.env.XDG_DESKTOP_DIR || join(HOME, 'Desktop')
+  if (osPlatform() === 'darwin') return join(HOME, 'Desktop')
+  if (IS_WIN) return join(HOME, 'Desktop')
+  return null
+}
+
+/** PRTS 图标（若包内存在）复制到稳定路径，避免版本化 pnpm 路径失效。 */
+function stableIcon() {
+  const src = join(ROOT, 'assets', 'prts.png')
+  if (!existsSync(src)) return ''
+  try {
+    const dir = join(HOME, '.local', 'share', 'icons')
+    mkdirSync(dir, { recursive: true })
+    copyFileSync(src, join(dir, 'prts.png'))
+    return join(dir, 'prts.png')
+  } catch (e) { return src }
+}
+
+function writeShortcuts() {
+  const out = []
+  const desktop = desktopDir()
+  const hasDesktop = desktop && existsSync(desktop)
+  if (osPlatform() === 'linux') {
+    const icon = stableIcon()
+    const content = [
+      '[Desktop Entry]',
+      'Type=Application',
+      'Name=PRTS',
+      'Comment=PRTS — DeepSeek Harness 整合包（官方 dsh web）',
+      'Exec=' + launcherPath(),
+      ...(icon ? ['Icon=' + icon] : []),
+      'Terminal=false',
+      'Categories=Utility;Chat;',
+      '',
+    ].join('\n')
+    // 应用菜单副本（GNOME/KDE 启动器、可固定到 Dock/任务栏）始终写入
+    try {
+      const apps = join(HOME, '.local', 'share', 'applications')
+      mkdirSync(apps, { recursive: true })
+      const menu = join(apps, 'PRTS.desktop')
+      writeFileSync(menu, content)
+      chmodSync(menu, 0o755)
+      out.push(menu)
+    } catch (e) { /* non-fatal */ }
+    // 桌面图标：Desktop 目录存在才写
+    if (hasDesktop) {
+      const target = join(desktop, 'PRTS.desktop')
+      writeFileSync(target, content)
+      chmodSync(target, 0o755)
+      out.push(target)
+    }
+  } else if (osPlatform() === 'darwin') {
+    if (hasDesktop) {
+      const target = join(desktop, 'PRTS.command')
+      writeFileSync(target, '#!/bin/bash\nexec "$HOME/.local/bin/prts"\n')
+      chmodSync(target, 0o755)
+      out.push(target)
+    }
+  } else if (IS_WIN) {
+    out.push(...windowsShortcuts())
+  }
+  return out
+}
+
+function windowsShortcuts() {
+  const launcher = launcherPath()
+  const targets = [
+    join(HOME, 'Desktop', 'PRTS.lnk'),
+    join(process.env.APPDATA || join(HOME, 'AppData', 'Roaming'), 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'PRTS.lnk'),
+  ]
+  const icon = join(ROOT, 'assets', 'prts.ico')
+  const list = targets.map((t) => JSON.stringify(t)).join(', ')
+  const ps =
+    '$ws = New-Object -ComObject WScript.Shell;' +
+    'foreach ($p in @(' + list + ')) { ' +
+    '$s = $ws.CreateShortcut($p);' +
+    '$s.TargetPath = "cmd.exe";' +
+    '$s.Arguments = ' + JSON.stringify('/c ""' + launcher + '""') + ';' +
+    (existsSync(icon) ? '$s.IconLocation = ' + JSON.stringify(icon + ',0') + ';' : '') +
+    '$s.WorkingDirectory = ' + JSON.stringify(HOME) + ';' +
+    '$s.Description = "PRTS";' +
+    '$s.Save();' +
+    '}'
+  try {
+    spawnSync('powershell.exe', ['-NoProfile', '-Command', ps], { encoding: 'utf8', timeout: 60000 })
+  } catch (e) { /* non-fatal */ }
+  return targets
 }
 
 /* ---------- HTTP ---------- */
@@ -436,13 +459,15 @@ const server = createServer(async (req, res) => {
       return json(res, 200, { ok: true })
     }
     if (url.pathname === '/api/launch' && req.method === 'POST') {
-      const bin = join(PROFILE_DIR, 'node_modules', 'dsh-prts-ui', 'bin', 'dsh-prts-ui.js')
-      if (existsSync(bin)) {
-        const child = spawn(process.execPath, [bin], { detached: true, stdio: 'ignore', windowsHide: true })
+      const launcher = launcherPath()
+      if (existsSync(launcher)) {
+        const child = IS_WIN
+          ? spawn('cmd.exe', ['/c', launcher], { detached: true, stdio: 'ignore', windowsHide: true })
+          : spawn(launcher, [], { detached: true, stdio: 'ignore' })
         child.unref()
         return json(res, 200, { ok: true })
       }
-      return json(res, 400, { ok: false, error: 'PRTS not installed' })
+      return json(res, 400, { ok: false, error: 'launcher not installed' })
     }
     json(res, 404, { ok: false })
   } catch (error) {

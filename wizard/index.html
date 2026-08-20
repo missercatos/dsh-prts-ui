@@ -63,9 +63,6 @@
   .tag { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 10px;
     font-size: 10.5px; letter-spacing: .08em; border: 1px solid var(--line2); color: var(--dim); flex: none; }
   .tag.on { color: var(--ok); border-color: var(--ok); }
-  .tag.rec { color: var(--ink); border-color: var(--ink); }
-  .tag.warn { color: var(--warn); border-color: var(--warn); }
-  .warnTxt { color: var(--warn); }
   .hint { font-size: 11.5px; color: var(--dim); line-height: 1.7; margin: -4px 0 14px; }
   .hint b { color: var(--ink); font-weight: 600; }
   .row.off { opacity: .45; }
@@ -108,16 +105,16 @@
       <div class="page active" id="p1">
         <h1 class="eyebrow">WELCOME</h1>
         <h2 class="title">欢迎使用 PRTS 整合包</h2>
-        <p class="dim">PRTS —— DeepSeek Harness 的图形界面（罗德岛终端风格）。<br>
-        这个整合包会把 dsh 本体、PRTS 主题界面与常用插件一起准备好：</p>
+        <p class="dim">PRTS —— DeepSeek Harness (dsh) 的一键整合包。<br>
+        本整合包不附带任何自研界面：装好 dsh 与所选插件后，直接使用<strong>官方 dsh web</strong>（DeepSeek Harness 浏览器界面）：</p>
         <div class="rule"></div>
         <p class="dim">· <b>dsh 本体</b>（已安装则直接跳过）<br>
-        · <b>PRTS 图形界面</b>（独立 prts profile，不改动原版 dsh web）<br>
-        · <b>推荐插件</b>（与 PRTS 皮肤无冲突的组合，默认勾选；已安装的会自动置灰，不会重复安装）</p>
+        · <b>插件选择</b>（与界面零冲突，默认全选；已安装的会自动置灰，不会重复安装）<br>
+        · <b>官方 dsh web</b> + 桌面快捷方式（界面完全外包给 dsh，不改动任何 UI）</p>
         <div class="rule"></div>
         <label class="check">
           <input type="checkbox" id="agree">
-          <span>我已阅读并同意安装 dsh 与 PRTS（MIT 许可，可随时卸载）。</span>
+          <span>我已阅读并同意安装 dsh 与所选插件（MIT 许可，可随时卸载）。</span>
         </label>
       </div>
 
@@ -125,7 +122,7 @@
       <div class="page" id="p2">
         <h1 class="eyebrow">COMPONENTS</h1>
         <h2 class="title">选择要安装的组件</h2>
-        <p class="hint"><b>推荐</b> = 与 PRTS 皮肤无冲突的组合，可放心一起装；标 <span class="warnTxt"><b>冲突</b></span> 的插件会替换侧栏 / 市场 / 主题界面，默认不勾选。</p>
+        <p class="hint">插件会安装到官方 dsh web 的 <b>web</b> profile，打开 dsh web 即可使用；已安装的自动置灰。</p>
         <div id="components"></div>
       </div>
 
@@ -143,8 +140,8 @@
         <h1 class="eyebrow">COMPLETE</h1>
         <h2 class="title">安装完成</h2>
         <div class="doneMark"><div class="big"></div></div>
-        <p class="dim" id="doneText">PRTS 已安装完成。双击桌面图标，或在终端输入 <b>prts</b> 启动。<br>
-        原版 <b>dsh web</b> 不受影响，保持 DeepSeek Harness 原始界面。</p>
+        <p class="dim" id="doneText">整合包已就绪：官方 <b>dsh web</b> 已配置好所选插件。<br>
+        双击桌面 <b>PRTS</b> 图标，或在终端输入 <b>prts</b>，即可打开 DeepSeek Harness 浏览器界面。</p>
       </div>
 
       <!-- page 5: error -->
@@ -157,11 +154,10 @@
 
     </div>
     <div class="foot">
-      <button class="btn" id="btnRec" type="button" style="display:none">恢复推荐配置</button>
       <button class="btn" id="btnBack" type="button">‹ 上一步</button>
       <button class="btn primary" id="btnNext" type="button">下一步 ›</button>
       <button class="btn primary" id="btnStart" type="button" style="display:none">开始安装 ›</button>
-      <button class="btn ok" id="btnLaunch" type="button" style="display:none">启动 PRTS</button>
+      <button class="btn ok" id="btnLaunch" type="button" style="display:none">启动 dsh web</button>
       <button class="btn" id="btnClose" type="button" style="display:none">关闭</button>
     </div>
   </div>
@@ -207,7 +203,6 @@
     for (var i = 0; i < pages.length; i++) $(pages[i]).classList.toggle('active', pages[i] === p)
     $('btnBack').style.display = (p === 'p1' || p === 'p3' || p === 'p4') ? 'none' : ''
     $('btnNext').style.display = (p === 'p1') ? '' : 'none'
-    $('btnRec').style.display = (p === 'p2') ? '' : 'none'
     $('btnStart').style.display = (p === 'p2') ? '' : 'none'
     $('btnLaunch').style.display = (p === 'p4') ? '' : 'none'
     $('btnClose').style.display = (p === 'p4' || p === 'p5') ? '' : 'none'
@@ -224,14 +219,7 @@
       '<div class="desc">' + (dsh.installed ? ('已安装' + (dsh.version ? ' — ' + dsh.version : '')) : '未检测到 — 安装时自动下载（有进度显示）') + '</div></div>' +
       '<span class="tag' + (dsh.installed ? ' on' : '') + '">' + (dsh.installed ? '已安装' : '待安装') + '</span>'
     host.appendChild(row)
-    // PRTS row (locked)
-    var prts = document.createElement('div')
-    prts.className = 'row off'
-    prts.innerHTML = '<div class="grow"><div class="name"><span class="diamondMini"></span>PRTS 图形界面（必装）</div>' +
-      '<div class="desc">独立 prts profile + 主题覆盖，原版 dsh web 不受影响' + (S.prtsInstalled ? '；当前已装 v' + S.prtsInstalled + '，将被覆盖为整合包版本' : '') + '</div></div>' +
-      '<span class="tag' + (S.prtsInstalled ? ' on' : '') + '">' + (S.prtsInstalled ? '已安装' : '待安装') + '</span>'
-    host.appendChild(prts)
-    // plugin rows (installed -> greyed, unchecked)
+    // plugin rows (installed -> greyed, unchecked; no UI conflicts — plain options)
     for (var i = 0; i < S.plugins.length; i++) {
       var p = S.plugins[i]
       var r = document.createElement('label')
@@ -241,14 +229,10 @@
       chk.checked = p.installed ? false : p.def
       chk.disabled = !!p.installed
       var grow = document.createElement('div'); grow.className = 'grow'
-      var flags = ''
-      if (p.rec) flags += '<span class="tag rec">推荐</span>'
-      if (p.conflict) flags += '<span class="tag warn">冲突</span>'
-      grow.innerHTML = '<div class="name">' + p.label + ' ' + flags + '</div><div class="desc">' +
-        p.desc + (p.conflict ? '<br><span class="warnTxt">⚠ ' + p.conflict + '</span>' : '') + '</div>'
+      grow.innerHTML = '<div class="name">' + p.label + '</div><div class="desc">' + p.desc + '</div>'
       var tag = document.createElement('span')
       tag.className = 'tag' + (p.installed ? ' on' : '')
-      tag.textContent = p.installed ? '已安装' : (p.rec ? '推荐安装' : '可选')
+      tag.textContent = p.installed ? '已安装' : '可选'
       r.appendChild(chk); r.appendChild(grow); r.appendChild(tag)
       host.appendChild(r)
     }
@@ -276,7 +260,6 @@
     fetch('/api/state').then(function (r) { return r.json() }).then(function (s) {
       S = s
       $('plat').textContent = s.platform
-      if (s.tgz === 'missing') { $('errText').textContent = '安装包缺少 dsh-prts-ui-*.tgz'; $('errLog').textContent = ''; show('p5') }
       renderComponents()
       renderProgress()
     }).catch(function () {})
@@ -289,17 +272,6 @@
   $('btnBack').addEventListener('click', function () {
     if (page === 'p2') show('p1')
     if (page === 'p5') show('p2')
-  })
-  // restore the recommended (conflict-free) selection
-  $('btnRec').addEventListener('click', function () {
-    var nodes = document.querySelectorAll('#components input[type=checkbox]')
-    for (var i = 0; i < nodes.length; i++) {
-      var n = nodes[i]
-      if (n.disabled) continue
-      var hit = null
-      for (var j = 0; j < S.plugins.length; j++) { if (S.plugins[j].id === n.value) { hit = S.plugins[j]; break } }
-      n.checked = hit ? !!hit.rec : false
-    }
   })
   $('btnStart').addEventListener('click', function () {
     var picks = []
