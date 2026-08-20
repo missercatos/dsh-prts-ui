@@ -62,6 +62,26 @@ node scripts/make-dist.sh        # 生成 dist/ 全部安装包（需对应平�
 皮肤插件核心：`src/prts-client.js`。Electron 壳：`electron/main.cjs` + `electron/preload.cjs`。
 官网（保留）：`docs/`（粒子特效下载站 + 手机端指引页），静态托管即可。
 
+## ❓ 常见问题：Windows 安装时被 SmartScreen 拦截
+
+安装 `PRTS-Setup-*.exe` 时 Windows 提示"**Microsoft Defender SmartScreen 已阻止无法识别的应用程序**"，是因为：
+- exe **未做代码签名**（没有 Authenticode 数字证书），且是新文件、下载量少、信誉分不足。
+
+**临时放行（对当前用户）**：点击"**更多信息 (More info)**" → "**仍要运行 (Run anyway)**"。
+如果提示来自文件属性（"此文件来自其他计算机，可能被阻止"），右键 exe → 属性 → 勾选"**解除锁定 (Unblock)**"。
+
+**彻底解决（发布方）**：对 exe 做代码签名，签名后 SmartScreen 不再拦截，并显示发布者名称：
+1. 购买 **OV 或 EV 代码签名证书**（DigiCert / Sectigo / GlobalSign / SSL.com 等，EV 可立即获得信誉），或使用 **Azure Trusted Signing**（微软云签名，无需 USB 令牌、按次计费）；
+2. 用 `make-dist.sh` 内置的签名步骤：
+   ```sh
+   # Linux/macOS 用 osslsigncode：
+   PRTS_SIGN_PFX=/path/cert.pfx PRTS_SIGN_PASSWORD=xxx node scripts/make-dist.sh
+   # Windows 用 SDK 的 signtool：
+   PRTS_SIGN_SHA1=<证书指纹> node scripts/make-dist.sh
+   ```
+   （自动加时间戳 `http://timestamp.digicert.com`；不提供证书时 exe 保持未签名并给出提示。）
+3. 把最终 exe 提交到 [Microsoft 恶意软件提交门户](https://www.microsoft.com/en-us/wdsi/filesubmission) 并持续分发（下载量会累积信誉）。
+
 ## 📄 许可证
 
 MIT —— 见 [LICENSE](./LICENSE)。

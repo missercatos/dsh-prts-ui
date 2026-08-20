@@ -62,6 +62,29 @@ node scripts/make-dist.sh        # build all dist/ installers (needs per-platfor
 Skin plugin core: `src/prts-client.js`. Electron shell: `electron/main.cjs` + `electron/preload.cjs`.
 Website (kept): `docs/` (particle download site + mobile guide), static hosting only.
 
+## ❓ FAQ: Windows SmartScreen blocks the installer
+
+"Microsoft Defender SmartScreen prevented an unrecognized app from starting" on
+`PRTS-Setup-*.exe` happens because the exe is **unsigned** (no Authenticode
+certificate) and too new/low-download-count to have reputation.
+
+- **End-user workaround**: click "**More info**" → "**Run anyway**". If the block
+  comes from the file's properties ("file from another computer"), right-click
+  the exe → Properties → tick "**Unblock**".
+- **Real fix (publisher)**: code-sign the exe — SmartScreen then trusts it and
+  shows the publisher name:
+  1. Get an **OV/EV code-signing certificate** (DigiCert / Sectigo / GlobalSign /
+     SSL.com; EV builds reputation instantly) or use **Azure Trusted Signing**;
+  2. Let `make-dist.sh` sign it:
+     ```sh
+     PRTS_SIGN_PFX=/path/cert.pfx PRTS_SIGN_PASSWORD=xxx node scripts/make-dist.sh   # osslsigncode on Linux/macOS
+     PRTS_SIGN_SHA1=<thumbprint>     node scripts/make-dist.sh                        # signtool on Windows
+     ```
+     (timestamps via `http://timestamp.digicert.com`; without a cert the exe is
+     left unsigned and the build says so);
+  3. Submit the final exe to [Microsoft's malware submission portal](https://www.microsoft.com/en-us/wdsi/filesubmission)
+     and keep distributing — downloads accumulate reputation.
+
 ## 📄 License
 
 MIT — see [LICENSE](./LICENSE).

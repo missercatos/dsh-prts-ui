@@ -11,6 +11,7 @@
  */
 import { spawn } from 'node:child_process'
 import { createWriteStream, existsSync, mkdirSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
+import { createServer as createNetServer } from 'node:net'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { get as httpGet } from 'node:http'
@@ -72,6 +73,19 @@ function spawnDshWeb(profile, port) {
   return child;
 }
 
+/** Probe an available loopback port, preferring `preferred` when it is free. */
+function probeFreePort(preferred) {
+  return new Promise((resolve) => {
+    const srv = createNetServer();
+    srv.unref();
+    srv.on('error', () => resolve(preferred));
+    srv.listen(0, '127.0.0.1', () => {
+      const p = srv.address().port;
+      srv.close(() => resolve(p));
+    });
+  });
+}
+
 /**
  * Start the dsh web backend without blocking on readiness: spawn immediately,
  * retry spawns silently while the window lives (dsh may still be installing
@@ -79,13 +93,15 @@ function spawnDshWeb(profile, port) {
  * Electron can tear the backend down on quit even if the runner dies first.
  * Reuses a dsh web that is already answering (child = null — never killed).
  */
-async function startBackend(url) {
+export async function startBackend(url) {
   const state = {
     child: null,
     spawnTimer: null,
     attempts: 0,
     stopped: false,
+    port: 0,
     pidFile: join(tmpdir(), 'prts-dsh-' + process.pid + '.pid'),
+    resolveFirst: null,
   };
   const writePid = () => {
     try { if (state.child && state.child.pid) writeFileSync(state.pidFile, String(state.child.pid), 'utf8'); } catch (e) { /* noop */ }
@@ -102,26 +118,34 @@ async function startBackend(url) {
   if (await dshUp(url)) {
     // An instance is already serving — reuse it and never touch it.
     clearPid();
-    return { child: null, pidFile: state.pidFile, stop };
+    return { child: null, pidFile: state.pidFile, stop, url };
   }
 
-  // The PRTS backend port comes from the URL; the profile from the env
+  // The preferred backend port comes from the URL; the profile from the env
   // (default 'prts' — the isolated PRTS profile, never the 'web' profile).
-  let port = 3081;
+  let preferredPort = 3081;
   try {
     const parsed = new URL(url);
-    if (parsed.port) port = Number(parsed.port);
+    if (parsed.port) preferredPort = Number(parsed.port);
   } catch (e) { /* keep default */ }
   const profile = process.env.PRTS_DSH_PROFILE || 'prts';
+  const urlOf = (p) => 'http://127.0.0.1:' + String(p);
 
-  const trySpawn = () => {
+  const firstSpawn = new Promise((resolve) => { state.resolveFirst = resolve; });
+
+  const trySpawn = async () => {
     if (state.stopped) return;
     state.attempts++;
     // After a while, stop respawning: a backend that keeps dying instantly
-    // (port squatted by a non-dsh service, broken install) should not burn
-    // CPU forever. The renderer keeps pinging and the intro keeps looping.
+    // (broken install) should not burn CPU forever. The renderer keeps
+    // pinging and the intro keeps looping.
     if (state.attempts > 12) return;
-    const child = spawnDshWeb(profile, port);
+    // Pick a FREE port on every attempt: a stale dsh backend (or any other
+    // service) squatting the preferred port must never make the window load
+    // a foreign/wrong profile — EADDRINUSE used to silently fall through to
+    // whatever was already listening, breaking plugin bundles.
+    state.port = await probeFreePort(preferredPort);
+    const child = spawnDshWeb(profile, state.port);
     if (!child) {
       // dsh is not on PATH yet — retry quietly.
       state.spawnTimer = setTimeout(trySpawn, Math.min(3000, 600 + state.attempts * 400));
@@ -129,25 +153,29 @@ async function startBackend(url) {
     }
     state.child = child;
     writePid();
+    if (state.resolveFirst) { state.resolveFirst(); state.resolveFirst = null; }
     child.on('exit', () => {
       if (state.child === child) state.child = null;
       // Only retry once the previous process is really gone — never stack
-      // several dsh-web instances racing for the port.
+      // several dsh-web instances racing for a port.
       if (!state.stopped) state.spawnTimer = setTimeout(trySpawn, 3000);
     });
   };
   trySpawn();
+  // Wait for the first spawn so the caller gets the REAL (possibly shifted)
+  // URL to hand to Electron — never the squatted preferred port.
+  await firstSpawn;
 
   // Readiness probe — informational only; the renderer drives the UX with
   // its own ping loop. Stops probing once the window closes.
   (async () => {
     while (!state.stopped) {
-      if (await dshUp(url)) return;
+      if (state.port && (await dshUp(urlOf(state.port)))) return;
       await new Promise((r) => setTimeout(r, 700));
     }
   })().catch(() => {});
 
-  return { child: state.child, pidFile: state.pidFile, stop };
+  return { child: state.child, pidFile: state.pidFile, stop, url: urlOf(state.port) };
 }
 
 /* ---------- Electron ---------- */
@@ -247,11 +275,14 @@ export async function ensureElectron() {
  *  closes, then tears the backend down — so a PRTS-spawned backend can never
  *  outlive its window and squat on the PRTS port. */
 export async function launchGui(opts) {
-  const url = process.env.PRTS_DSH_URL || 'http://127.0.0.1:3081'
+  const preferredUrl = process.env.PRTS_DSH_URL || 'http://127.0.0.1:3081'
   // 1. Kick the backend spawn off right away — it boots in parallel with the
   //    Electron download (first run) and the window itself. No readiness wait:
-  //    the renderer drives the "loaded" state with its own ping loop.
-  const backend = await startBackend(url)
+  //    the renderer drives the "loaded" state with its own ping loop. The
+  //    returned URL is the REAL port the backend bound (it shifts to a free
+  //    port when the preferred one is squatted by a stale process).
+  const backend = await startBackend(preferredUrl)
+  const url = backend.url || preferredUrl
   try {
     // 2. Electron binary (downloads to ~/.cache/prts/electron on first run).
     const bin = await ensureElectron()

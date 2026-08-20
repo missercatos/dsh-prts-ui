@@ -95,12 +95,13 @@ write_run "$OUT/PRTS-$VERSION-macos.sh" "PRTS macOS installer"
 
 # ---------- 4. Windows exe (SFX stub + payload zip) ----------
 say "Building the Windows installer exe…"
-if [ ! -f "$STUB" ]; then
-  if command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1; then
-    ( cd dist-tools && x86_64-w64-mingw32-windres prts.rc -O coff -o prts.res.o && x86_64-w64-mingw32-gcc -Os -s -o PRTS-Setup.exe sfx.c prts.res.o -luser32 -lshell32 )
-  else
-    warn="mingw-w64 not found — skipping the exe (zip + build-exe.bat still produced)"
-  fi
+# Always rebuild the stub when the mingw toolchain is available so the fresh
+# VERSIONINFO (company/product/version resources) lands in the exe; fall back
+# to the prebuilt stub when the toolchain is missing.
+if command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1; then
+  ( cd dist-tools && x86_64-w64-mingw32-windres prts.rc -O coff -o prts.res.o && x86_64-w64-mingw32-gcc -Os -s -o PRTS-Setup.exe sfx.c prts.res.o -luser32 -lshell32 )
+else
+  warn="mingw-w64 not found — using the prebuilt stub (zip + build-exe.bat still produced)"
 fi
 ZIP_PAYLOAD="$OUT/.work/PRTS-windows"
 rm -rf "$ZIP_PAYLOAD"
@@ -114,6 +115,31 @@ if [ -f "$STUB" ]; then
   printf 'PRTSPAYLOAD0' >> "$EXE"
   cat "$OUT/.work/payload.zip" >> "$EXE"
   say "windows exe: $(ls -la "$EXE" | awk '{print $5}') bytes"
+  # 4a. 可选代码签名 — SmartScreen 弹“无法识别的应用程序”的根因是 exe 未签名。
+  # 提供证书后自动签名（signtool 或 Linux 上的 osslsigncode）：
+  #   PRTS_SIGN_PFX=/path/cert.pfx PRTS_SIGN_PASSWORD=...   （osslsigncode）
+  #   PRTS_SIGN_CERT=/path/cert.pfx PRTS_SIGN_PASSWORD=...   （signtool）
+  #   PRTS_SIGN_SHA1=<证书指纹>                              （signtool 从证书库取）
+  if [ -n "${PRTS_SIGN_PFX:-}" ] || [ -n "${PRTS_SIGN_CERT:-}" ] || [ -n "${PRTS_SIGN_SHA1:-}" ]; then
+    if command -v osslsigncode >/dev/null 2>&1 && [ -n "${PRTS_SIGN_PFX:-}" ]; then
+      osslsigncode sign -pkcs12 "$PRTS_SIGN_PFX" -pass "$PRTS_SIGN_PASSWORD" \
+        -n "PRTS" -i "https://your-domain.example.com" \
+        -t http://timestamp.digicert.com \
+        -in "$EXE" -out "$EXE.signed" && mv "$EXE.signed" "$EXE" \
+        && say "windows exe: signed with osslsigncode"
+    elif command -v signtool >/dev/null 2>&1; then
+      if [ -n "${PRTS_SIGN_SHA1:-}" ]; then
+        signtool sign /sha1 "$PRTS_SIGN_SHA1" /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 "$EXE"
+      elif [ -n "${PRTS_SIGN_CERT:-}" ]; then
+        signtool sign /f "$PRTS_SIGN_CERT" /p "$PRTS_SIGN_PASSWORD" /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 "$EXE"
+      fi
+      say "windows exe: signed with signtool"
+    else
+      warn="code signing requested but neither osslsigncode nor signtool found — exe left unsigned (SmartScreen may warn)"
+    fi
+  else
+    say "windows exe: unsigned (set PRTS_SIGN_PFX / PRTS_SIGN_PASSWORD to sign and silence SmartScreen)"
+  fi
 fi
 
 # ---------- 4b. Linux .deb 安装包（v0.0.1 new 引入） ----------

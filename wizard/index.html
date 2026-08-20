@@ -106,11 +106,11 @@
         <h1 class="eyebrow">WELCOME</h1>
         <h2 class="title">欢迎使用 PRTS 整合包</h2>
         <p class="dim">PRTS —— DeepSeek Harness (dsh) 的一键整合包。<br>
-        本整合包不附带任何自研界面：装好 dsh 与所选插件后，直接使用<strong>官方 dsh web</strong>（DeepSeek Harness 浏览器界面）：</p>
+        装好 dsh 与所选插件后，安装器会<strong>自动打包为桌面 GUI</strong>（Electron 窗口包住官方 dsh web，不是浏览器环境）：</p>
         <div class="rule"></div>
         <p class="dim">· <b>dsh 本体</b>（已安装则直接跳过）<br>
         · <b>插件选择</b>（与界面零冲突，默认全选；已安装的会自动置灰，不会重复安装）<br>
-        · <b>官方 dsh web</b> + 桌面快捷方式（界面完全外包给 dsh，不改动任何 UI）</p>
+        · <b>自动打包桌面 GUI</b> + 名为 <b>PRTS</b> 的快捷方式，安装完成自动启动</p>
         <div class="rule"></div>
         <label class="check">
           <input type="checkbox" id="agree">
@@ -122,7 +122,7 @@
       <div class="page" id="p2">
         <h1 class="eyebrow">COMPONENTS</h1>
         <h2 class="title">选择要安装的组件</h2>
-        <p class="hint">插件会安装到官方 dsh web 的 <b>web</b> profile，打开 dsh web 即可使用；已安装的自动置灰。</p>
+        <p class="hint">插件会安装到官方 dsh web 的 <b>web</b> profile，打开 GUI 即可使用；已安装的自动置灰。</p>
         <div id="components"></div>
       </div>
 
@@ -140,8 +140,8 @@
         <h1 class="eyebrow">COMPLETE</h1>
         <h2 class="title">安装完成</h2>
         <div class="doneMark"><div class="big"></div></div>
-        <p class="dim" id="doneText">整合包已就绪：官方 <b>dsh web</b> 已配置好所选插件。<br>
-        双击桌面 <b>PRTS</b> 图标，或在终端输入 <b>prts</b>，即可打开 DeepSeek Harness 浏览器界面。</p>
+        <p class="dim" id="doneText">桌面 <b>GUI</b> 已打包完成，正在自动启动…<br>
+        之后双击桌面 <b>PRTS</b> 图标，或在终端输入 <b>prts</b>，即可打开 DeepSeek Harness 桌面 GUI。</p>
       </div>
 
       <!-- page 5: error -->
@@ -157,7 +157,7 @@
       <button class="btn" id="btnBack" type="button">‹ 上一步</button>
       <button class="btn primary" id="btnNext" type="button">下一步 ›</button>
       <button class="btn primary" id="btnStart" type="button" style="display:none">开始安装 ›</button>
-      <button class="btn ok" id="btnLaunch" type="button" style="display:none">启动 dsh web</button>
+      <button class="btn ok" id="btnLaunch" type="button" style="display:none">启动 PRTS</button>
       <button class="btn" id="btnClose" type="button" style="display:none">关闭</button>
     </div>
   </div>

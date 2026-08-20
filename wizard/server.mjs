@@ -1,24 +1,23 @@
 #!/usr/bin/env node
 /**
- * PRTS installer wizard — redesigned for the current integration pack.
- * The redesigned version ships NO bundled UI ("PRTS 界面" is gone): the
- * interface is the OFFICIAL dsh web (DeepSeek Harness browser UI), so the
- * wizard only bootstraps dsh + plugins onto the official `web` profile and
- * creates the launcher / desktop shortcut that opens it.
+ * PRTS installer wizard — the integration pack bootstrap. The interface is a
+ * DESKTOP GUI (Electron window over the official dsh web), which the wizard
+ * auto-packages at the end and runs automatically.
  *
  * Pipeline:
  *   1. environment check (node / npm / pnpm)
  *   2. dsh harness — already installed? skip : npm i -g @deepseek-ai/dsh
  *      (npmmirror fallback; live progress while downloading)
  *   3. plugin selection — installed plugins are greyed out in the page;
- *      selected ones land in the official `web` profile (`dsh web` shows them)
- *   4. launcher + desktop shortcut: the `prts` command starts `dsh web` and
- *      opens http://127.0.0.1:3080 in the default browser
+ *      selected ones land in the official `web` profile (the GUI shows them)
+ *   4. auto-package the desktop GUI (scripts/package-gui.mjs): copies the
+ *      Electron shell to ~/.local/share/prts/app, writes the `prts` launcher
+ *      and the "PRTS" desktop shortcut — then launches the GUI
  */
 
 import { createServer } from 'node:http'
 import { spawn, spawnSync } from 'node:child_process'
-import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync, copyFileSync, chmodSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync, readdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { homedir, platform as osPlatform } from 'node:os'
@@ -29,8 +28,6 @@ const HOME = process.env.HOME || process.env.USERPROFILE || homedir()
 const DSH_HOME = process.env.DSH_HOME || join(HOME, '.dsh')
 /** Plugins land in the official web profile — the profile `dsh web` boots. */
 const WEB_PROFILE_DIR = join(DSH_HOME, 'profiles', 'web')
-/** dsh web's default loopback URL (see @deepseek-ai/dsh-web-app / dsh-cmdline). */
-const DSH_WEB_URL = 'http://127.0.0.1:3080'
 
 /** The integration pack's plugin catalog — plain optional dsh plugins. The
  *  redesigned version has no bundled UI, so no plugin conflicts with anything:
@@ -46,6 +43,7 @@ const PLUGINS = [
   { id: 'dsh-paste-input', label: 'dsh-paste-input', desc: '粘贴输入增强', def: true },
   { id: 'dsh-office', label: 'dsh-office', desc: 'Office 文档处理', def: true },
   { id: 'sh-browser-panel', label: 'sh-browser-panel', desc: '浏览器面板', def: true },
+  { id: 'dsh-plugin-wallpaper-engine', label: 'dsh-plugin-wallpaper-engine', desc: '壁纸引擎：dsh web 聊天背景播放本地 Wallpaper Engine 壁纸', def: true },
 ]
 
 /* ---------- state ---------- */
@@ -271,15 +269,18 @@ async function runPipeline(selectedPlugins) {
       i++
     }
 
-    // 4. launcher + desktop shortcut → 官方 dsh web
-    bump(88, '配置 dsh web 与快捷方式')
-    const launcher = writePrtsLauncher()
-    pushLog('prts command -> ' + launcher)
-    for (const s of writeShortcuts()) pushLog('shortcut -> ' + s)
+    // 4. 自动打包为桌面 GUI（Electron 窗口包住官方 dsh web 的 web profile），
+    //    生成 `prts` 启动命令与名为 PRTS 的桌面快捷方式
+    bump(88, '打包桌面 GUI')
+    const guiPkg = join(ROOT, 'scripts', 'package-gui.mjs')
+    const guiCode = await execLog(process.execPath, [guiPkg])
+    if (guiCode !== 0) throw new Error('桌面 GUI 打包失败。')
 
     bump(100, '完成')
     state.step = 'done'
     state.finished = true
+    // 安装完成自动运行 GUI（尽力而为，不阻塞向导）
+    setTimeout(() => { try { spawnLauncher() } catch (e) { /* noop */ } }, 900)
   } catch (error) {
     state.step = 'error'
     state.error = String((error && error.message) || error)
@@ -290,142 +291,21 @@ async function runPipeline(selectedPlugins) {
   }
 }
 
-/* ---------- launcher + desktop shortcuts (官方 dsh web) ---------- */
+/* ---------- GUI 启动 ---------- */
 
 function launcherPath() {
   return join(HOME, '.local', 'bin', IS_WIN ? 'prts.cmd' : 'prts')
 }
 
-/** `prts` 启动命令：后台拉起官方 dsh web，并在默认浏览器打开其界面。 */
-function writePrtsLauncher() {
-  const dir = join(HOME, '.local', 'bin')
-  mkdirSync(dir, { recursive: true })
-  const p = launcherPath()
-  if (IS_WIN) {
-    writeFileSync(p, [
-      '@echo off',
-      'rem PRTS — 打开官方 dsh web（DeepSeek Harness 浏览器界面）',
-      'where dsh >nul 2>nul || (echo PRTS: 未检测到 dsh — 请重新运行安装程序。& exit /b 1)',
-      'curl -s -o nul --max-time 1 ' + DSH_WEB_URL + '/ >nul 2>nul',
-      'if errorlevel 1 start "" /b dsh web',
-      'start "" ' + DSH_WEB_URL + '/',
-      'exit /b 0',
-    ].join('\r\n') + '\r\n')
-  } else {
-    writeFileSync(p, [
-      '#!/bin/sh',
-      '# PRTS — 打开官方 dsh web（DeepSeek Harness 浏览器界面）',
-      'if ! command -v dsh >/dev/null 2>&1; then',
-      '  echo "PRTS: 未检测到 dsh — 请重新运行安装程序。" >&2',
-      '  exit 1',
-      'fi',
-      '# dsh web 未在运行则后台拉起；无论是否已在运行都打开浏览器',
-      'if ! (curl -s -o /dev/null --max-time 1 ' + DSH_WEB_URL + '/ 2>/dev/null); then',
-      '  nohup dsh web >/dev/null 2>&1 &',
-      'fi',
-      'sleep 1',
-      'if command -v xdg-open >/dev/null 2>&1; then',
-      '  xdg-open "' + DSH_WEB_URL + '/" >/dev/null 2>&1 &',
-      'elif command -v open >/dev/null 2>&1; then',
-      '  open "' + DSH_WEB_URL + '/" >/dev/null 2>&1 &',
-      'else',
-      '  echo "PRTS: 请手动打开 ' + DSH_WEB_URL + '/"',
-      'fi',
-      'exit 0',
-    ].join('\n') + '\n', { mode: 0o755 })
-  }
-  return p
-}
-
-function desktopDir() {
-  if (process.env.DSH_PRTS_DESKTOP) return process.env.DSH_PRTS_DESKTOP
-  if (osPlatform() === 'linux') return process.env.XDG_DESKTOP_DIR || join(HOME, 'Desktop')
-  if (osPlatform() === 'darwin') return join(HOME, 'Desktop')
-  if (IS_WIN) return join(HOME, 'Desktop')
-  return null
-}
-
-/** PRTS 图标（若包内存在）复制到稳定路径，避免版本化 pnpm 路径失效。 */
-function stableIcon() {
-  const src = join(ROOT, 'assets', 'prts.png')
-  if (!existsSync(src)) return ''
-  try {
-    const dir = join(HOME, '.local', 'share', 'icons')
-    mkdirSync(dir, { recursive: true })
-    copyFileSync(src, join(dir, 'prts.png'))
-    return join(dir, 'prts.png')
-  } catch (e) { return src }
-}
-
-function writeShortcuts() {
-  const out = []
-  const desktop = desktopDir()
-  const hasDesktop = desktop && existsSync(desktop)
-  if (osPlatform() === 'linux') {
-    const icon = stableIcon()
-    const content = [
-      '[Desktop Entry]',
-      'Type=Application',
-      'Name=PRTS',
-      'Comment=PRTS — DeepSeek Harness 整合包（官方 dsh web）',
-      'Exec=' + launcherPath(),
-      ...(icon ? ['Icon=' + icon] : []),
-      'Terminal=false',
-      'Categories=Utility;Chat;',
-      '',
-    ].join('\n')
-    // 应用菜单副本（GNOME/KDE 启动器、可固定到 Dock/任务栏）始终写入
-    try {
-      const apps = join(HOME, '.local', 'share', 'applications')
-      mkdirSync(apps, { recursive: true })
-      const menu = join(apps, 'PRTS.desktop')
-      writeFileSync(menu, content)
-      chmodSync(menu, 0o755)
-      out.push(menu)
-    } catch (e) { /* non-fatal */ }
-    // 桌面图标：Desktop 目录存在才写
-    if (hasDesktop) {
-      const target = join(desktop, 'PRTS.desktop')
-      writeFileSync(target, content)
-      chmodSync(target, 0o755)
-      out.push(target)
-    }
-  } else if (osPlatform() === 'darwin') {
-    if (hasDesktop) {
-      const target = join(desktop, 'PRTS.command')
-      writeFileSync(target, '#!/bin/bash\nexec "$HOME/.local/bin/prts"\n')
-      chmodSync(target, 0o755)
-      out.push(target)
-    }
-  } else if (IS_WIN) {
-    out.push(...windowsShortcuts())
-  }
-  return out
-}
-
-function windowsShortcuts() {
+/** 启动打包好的桌面 GUI（detached；launcher 由 scripts/package-gui.mjs 生成）。 */
+function spawnLauncher() {
   const launcher = launcherPath()
-  const targets = [
-    join(HOME, 'Desktop', 'PRTS.lnk'),
-    join(process.env.APPDATA || join(HOME, 'AppData', 'Roaming'), 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'PRTS.lnk'),
-  ]
-  const icon = join(ROOT, 'assets', 'prts.ico')
-  const list = targets.map((t) => JSON.stringify(t)).join(', ')
-  const ps =
-    '$ws = New-Object -ComObject WScript.Shell;' +
-    'foreach ($p in @(' + list + ')) { ' +
-    '$s = $ws.CreateShortcut($p);' +
-    '$s.TargetPath = "cmd.exe";' +
-    '$s.Arguments = ' + JSON.stringify('/c ""' + launcher + '""') + ';' +
-    (existsSync(icon) ? '$s.IconLocation = ' + JSON.stringify(icon + ',0') + ';' : '') +
-    '$s.WorkingDirectory = ' + JSON.stringify(HOME) + ';' +
-    '$s.Description = "PRTS";' +
-    '$s.Save();' +
-    '}'
-  try {
-    spawnSync('powershell.exe', ['-NoProfile', '-Command', ps], { encoding: 'utf8', timeout: 60000 })
-  } catch (e) { /* non-fatal */ }
-  return targets
+  if (!existsSync(launcher)) return false
+  const child = IS_WIN
+    ? spawn('cmd.exe', ['/c', launcher], { detached: true, stdio: 'ignore', windowsHide: true })
+    : spawn(launcher, [], { detached: true, stdio: 'ignore' })
+  child.unref()
+  return true
 }
 
 /* ---------- HTTP ---------- */
@@ -459,15 +339,8 @@ const server = createServer(async (req, res) => {
       return json(res, 200, { ok: true })
     }
     if (url.pathname === '/api/launch' && req.method === 'POST') {
-      const launcher = launcherPath()
-      if (existsSync(launcher)) {
-        const child = IS_WIN
-          ? spawn('cmd.exe', ['/c', launcher], { detached: true, stdio: 'ignore', windowsHide: true })
-          : spawn(launcher, [], { detached: true, stdio: 'ignore' })
-        child.unref()
-        return json(res, 200, { ok: true })
-      }
-      return json(res, 400, { ok: false, error: 'launcher not installed' })
+      if (spawnLauncher()) return json(res, 200, { ok: true })
+      return json(res, 400, { ok: false, error: 'PRTS 尚未安装' })
     }
     json(res, 404, { ok: false })
   } catch (error) {
