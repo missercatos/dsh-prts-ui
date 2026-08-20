@@ -29,19 +29,24 @@ const DSH_HOME = process.env.DSH_HOME || join(HOME, '.dsh')
 const PROFILE_DIR = join(DSH_HOME, 'profiles', 'prts')
 const WEB_PROFILE_DIR = join(DSH_HOME, 'profiles', 'web')
 
-/** The integrated pack's plugin manifest — exactly these nine. Installed
- *  plugins are greyed out in the wizard; everything lands in the PRTS
- *  profile (the official `dsh web` profile stays untouched). */
+/** The integrated pack's plugin manifest. `rec: true` marks the recommended
+ *  combination — plugins with no conflicts against the PRTS skin or against
+ *  each other (they integrate into the sidebar / input / panels instead of
+ *  replacing them). Plugins carrying a `conflict` string DO clash with the
+ *  PRTS skin (they replace the sidebar / market / theme UI), so they are
+ *  never pre-selected — advanced users may still opt in at their own risk.
+ *  Installed plugins are greyed out in the wizard; everything lands in the
+ *  PRTS profile (the official `dsh web` profile stays untouched). */
 const PLUGINS = [
-  { id: 'dsh-better-sidebar', label: 'dsh-better-sidebar', desc: '类 VSCode 侧栏（资源管理器 / 编辑器 / 终端 / Git）', def: true },
-  { id: 'dsh-sidebar-files', label: 'dsh-sidebar-files', desc: '侧栏文件管理', def: true },
-  { id: 'dshmarket', label: 'dshmarket', desc: 'dsh 插件市场：浏览、搜索、一键装卸插件', def: true },
-  { id: 'git+https://github.com/ChenRuoT/dsh-sidebar-qa.git', label: 'dsh-sidebar-qa', desc: '侧栏问答（GitHub 源码安装）', def: true },
-  { id: '@liustack/modlens@3.17.2', label: 'ModLens', desc: '视觉增强：给纯文本模型增加图片理解能力', def: true },
-  { id: 'dsh-at-file', label: 'dsh-at-file', desc: '@ 引用文件', def: true },
-  { id: 'dsh-paste-input', label: 'dsh-paste-input', desc: '粘贴输入增强', def: true },
-  { id: 'dsh-office', label: 'dsh-office', desc: 'Office 文档处理', def: true },
-  { id: 'sh-browser-panel', label: 'sh-browser-panel', desc: '浏览器面板', def: true },
+  { id: 'dsh-sidebar-files', label: 'dsh-sidebar-files', desc: '侧栏文件管理', def: true, rec: true },
+  { id: 'git+https://github.com/ChenRuoT/dsh-sidebar-qa.git', label: 'dsh-sidebar-qa', desc: '侧栏问答（GitHub 源码安装）', def: true, rec: true },
+  { id: 'dsh-at-file', label: 'dsh-at-file', desc: '@ 引用文件', def: true, rec: true },
+  { id: 'dsh-paste-input', label: 'dsh-paste-input', desc: '粘贴输入增强', def: true, rec: true },
+  { id: 'dsh-office', label: 'dsh-office', desc: 'Office 文档处理', def: true, rec: true },
+  { id: 'sh-browser-panel', label: 'sh-browser-panel', desc: '浏览器面板', def: true, rec: true },
+  { id: 'dsh-better-sidebar', label: 'dsh-better-sidebar', desc: '类 VSCode 侧栏（资源管理器 / 编辑器 / 终端 / Git）', def: false, conflict: '会替换 PRTS 侧栏 UI，与皮肤冲突' },
+  { id: 'dshmarket', label: 'dshmarket', desc: 'dsh 插件市场：浏览、搜索、一键装卸插件', def: false, conflict: '会替换 PRTS 自带插件市场 UI，与皮肤冲突' },
+  { id: '@liustack/modlens@3.17.2', label: 'ModLens', desc: '视觉增强：给纯文本模型增加图片理解能力', def: false, conflict: '会替换 PRTS 视觉主题，与皮肤冲突' },
 ]
 
 /* ---------- state ---------- */
@@ -115,14 +120,19 @@ function dshInstalled() {
 function findTgz(preferred) {
   // ALWAYS resolve to an absolute path: pnpm treats a bare tarball name as
   // an npm registry package (404) unless it is a real filesystem path.
+  // The version part must tolerate npm prerelease tags (e.g. 0.0.1-new.0) —
+  // a `[\d.]+` pattern silently misses those and reports a "missing tgz".
   if (preferred && existsSync(preferred)) return resolve(preferred)
-  const files = readdirSync(ROOT).filter((f) => /^dsh-prts-ui-[\d.]+\.tgz$/.test(f)).sort()
+  let files = []
+  try {
+    files = readdirSync(ROOT).filter((f) => /^dsh-prts-ui-[\w.+~-]+\.tgz$/.test(f)).sort()
+  } catch (e) { files = [] }
   if (!files.length) return null
   return join(ROOT, files[files.length - 1])
 }
 
 function snapshot() {
-  const plugins = PLUGINS.map((p) => ({ id: p.id, label: p.label, desc: p.desc, def: p.def, installed: !!installedVersion(p.id) }))
+  const plugins = PLUGINS.map((p) => ({ id: p.id, label: p.label, desc: p.desc, def: p.def, rec: !!p.rec, conflict: p.conflict || '', installed: !!installedVersion(p.id) }))
   // v0.0.1(new)：整合包策略 —— 自动发现本机 ~/.dsh 已安装的插件，
   // 把它们一并作为桌面整合包的一等插件（pre-selected），其余仍是可选手项。
   const discovered = discoverInstalledPlugins()
@@ -254,6 +264,8 @@ async function runPipeline(selectedPlugins) {
     // 3. selected plugins (installed ones skip automatically; git-hosted
     //    packages get their build script approved on the first attempt)
     const plugins = PLUGINS.filter((p) => selectedPlugins.indexOf(p.id) >= 0 && !installedVersion(p.id))
+    const conflictPicks = plugins.filter((p) => p.conflict)
+    if (conflictPicks.length) pushLog('注意：勾选了与 PRTS 皮肤冲突的插件（' + conflictPicks.map((p) => p.label).join('、') + '）— 可能覆盖皮肤界面。')
     let i = 0
     for (const p of plugins) {
       bump(55 + Math.round((i / Math.max(1, plugins.length)) * 20), '安装插件 ' + p.label)
@@ -387,6 +399,9 @@ async function runPipeline(selectedPlugins) {
     state.step = 'error'
     state.error = String((error && error.message) || error)
     pushLog('ERROR: ' + state.error)
+    // allow a retry from the wizard page (previously `started` stayed true
+    // and every re-attempt was rejected with 409 until the wizard restarted)
+    state.started = false
   }
 }
 

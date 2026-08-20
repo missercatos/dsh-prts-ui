@@ -63,6 +63,11 @@
   .tag { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 10px;
     font-size: 10.5px; letter-spacing: .08em; border: 1px solid var(--line2); color: var(--dim); flex: none; }
   .tag.on { color: var(--ok); border-color: var(--ok); }
+  .tag.rec { color: var(--ink); border-color: var(--ink); }
+  .tag.warn { color: var(--warn); border-color: var(--warn); }
+  .warnTxt { color: var(--warn); }
+  .hint { font-size: 11.5px; color: var(--dim); line-height: 1.7; margin: -4px 0 14px; }
+  .hint b { color: var(--ink); font-weight: 600; }
   .row.off { opacity: .45; }
   .row.off label { cursor: default; }
   label.check input:disabled { cursor: default; }
@@ -108,7 +113,7 @@
         <div class="rule"></div>
         <p class="dim">· <b>dsh 本体</b>（已安装则直接跳过）<br>
         · <b>PRTS 图形界面</b>（独立 prts profile，不改动原版 dsh web）<br>
-        · <b>可选插件</b>（已安装的会自动置灰，不会重复安装）</p>
+        · <b>推荐插件</b>（与 PRTS 皮肤无冲突的组合，默认勾选；已安装的会自动置灰，不会重复安装）</p>
         <div class="rule"></div>
         <label class="check">
           <input type="checkbox" id="agree">
@@ -120,6 +125,7 @@
       <div class="page" id="p2">
         <h1 class="eyebrow">COMPONENTS</h1>
         <h2 class="title">选择要安装的组件</h2>
+        <p class="hint"><b>推荐</b> = 与 PRTS 皮肤无冲突的组合，可放心一起装；标 <span class="warnTxt"><b>冲突</b></span> 的插件会替换侧栏 / 市场 / 主题界面，默认不勾选。</p>
         <div id="components"></div>
       </div>
 
@@ -151,6 +157,7 @@
 
     </div>
     <div class="foot">
+      <button class="btn" id="btnRec" type="button" style="display:none">恢复推荐配置</button>
       <button class="btn" id="btnBack" type="button">‹ 上一步</button>
       <button class="btn primary" id="btnNext" type="button">下一步 ›</button>
       <button class="btn primary" id="btnStart" type="button" style="display:none">开始安装 ›</button>
@@ -200,6 +207,7 @@
     for (var i = 0; i < pages.length; i++) $(pages[i]).classList.toggle('active', pages[i] === p)
     $('btnBack').style.display = (p === 'p1' || p === 'p3' || p === 'p4') ? 'none' : ''
     $('btnNext').style.display = (p === 'p1') ? '' : 'none'
+    $('btnRec').style.display = (p === 'p2') ? '' : 'none'
     $('btnStart').style.display = (p === 'p2') ? '' : 'none'
     $('btnLaunch').style.display = (p === 'p4') ? '' : 'none'
     $('btnClose').style.display = (p === 'p4' || p === 'p5') ? '' : 'none'
@@ -233,10 +241,14 @@
       chk.checked = p.installed ? false : p.def
       chk.disabled = !!p.installed
       var grow = document.createElement('div'); grow.className = 'grow'
-      grow.innerHTML = '<div class="name">' + p.label + '</div><div class="desc">' + p.desc + '</div>'
+      var flags = ''
+      if (p.rec) flags += '<span class="tag rec">推荐</span>'
+      if (p.conflict) flags += '<span class="tag warn">冲突</span>'
+      grow.innerHTML = '<div class="name">' + p.label + ' ' + flags + '</div><div class="desc">' +
+        p.desc + (p.conflict ? '<br><span class="warnTxt">⚠ ' + p.conflict + '</span>' : '') + '</div>'
       var tag = document.createElement('span')
       tag.className = 'tag' + (p.installed ? ' on' : '')
-      tag.textContent = p.installed ? '已安装' : '可选'
+      tag.textContent = p.installed ? '已安装' : (p.rec ? '推荐安装' : '可选')
       r.appendChild(chk); r.appendChild(grow); r.appendChild(tag)
       host.appendChild(r)
     }
@@ -277,6 +289,17 @@
   $('btnBack').addEventListener('click', function () {
     if (page === 'p2') show('p1')
     if (page === 'p5') show('p2')
+  })
+  // restore the recommended (conflict-free) selection
+  $('btnRec').addEventListener('click', function () {
+    var nodes = document.querySelectorAll('#components input[type=checkbox]')
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i]
+      if (n.disabled) continue
+      var hit = null
+      for (var j = 0; j < S.plugins.length; j++) { if (S.plugins[j].id === n.value) { hit = S.plugins[j]; break } }
+      n.checked = hit ? !!hit.rec : false
+    }
   })
   $('btnStart').addEventListener('click', function () {
     var picks = []
