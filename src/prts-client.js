@@ -155,6 +155,9 @@ export function apply(ctx) {
     setVar('--prts-drawer-ms', (ui.drawerMs || 380) + 'ms')
     document.documentElement.dataset.prtsDrawerOff = ui.drawer === false ? '1' : ''
     applyWallpaper(cfg)
+    // background ambient fx (动效 → 背景动效): forward to the GUI shell
+    const g = (typeof window !== 'undefined' && window.PRTS) || null
+    if (g && g.app && g.app.applyBgFx) { try { g.app.applyBgFx(ui.bgFx) } catch (e) { /* noop */ } }
   }
 
   async function applyWallpaper(cfg) {
@@ -221,6 +224,20 @@ export function apply(ctx) {
   .prtsItem { border: 1px solid var(--dsw-alias-border-l1); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; background: var(--dsw-alias-bg-layer-1); }
   .prtsItemName { font-size: 13px; color: var(--dsw-alias-label-primary); }
   .prtsItemDesc { font-size: 11px; color: var(--dsw-alias-label-secondary); line-height: 1.5; }
+  /* wallpaper library grid: 3x3 tiles, one visual language per kind */
+  .prtsWallGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+  .prtsWallTile { position: relative; aspect-ratio: 16/9; border: 1px solid var(--dsw-alias-border-l1); border-radius: 10px; overflow: hidden; cursor: pointer; background: var(--dsw-alias-bg-layer-2); display: flex; align-items: center; justify-content: center; }
+  .prtsWallTile:hover { border-color: var(--dsw-alias-border-l2); }
+  .prtsWallTile.on { box-shadow: 0 0 0 2px var(--prts-accent, var(--dsw-alias-brand-primary)); }
+  .prtsWallImg { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .prtsWallVid { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; background: linear-gradient(135deg, var(--dsw-alias-bg-layer-2), var(--dsw-alias-bg-base)); }
+  .prtsWallPlay { width: 26px; height: 26px; border-radius: 50%; background: color-mix(in srgb, var(--prts-accent, var(--dsw-alias-brand-primary)) 18%, transparent); color: var(--prts-accent, var(--dsw-alias-brand-primary)); display: inline-flex; align-items: center; justify-content: center; font-size: 10px; }
+  .prtsWallWE { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 8px; width: 100%; height: 100%; box-sizing: border-box; }
+  .prtsWallWE > span:first-child { font-size: 9px; font-weight: 700; letter-spacing: .14em; color: var(--dsw-alias-brand-primary); border: 1px solid currentColor; border-radius: 5px; padding: 1px 4px; }
+  .prtsWallTitle { font-size: 10.5px; color: var(--dsw-alias-label-secondary); line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .prtsWallCur { position: absolute; top: 6px; right: 6px; font-size: 9px; padding: 1px 6px; border-radius: 6px; background: var(--prts-accent, var(--dsw-alias-brand-primary)); color: var(--dsw-alias-bg-base); z-index: 2; }
+  .prtsWallDel { position: absolute; bottom: 6px; right: 6px; width: 18px; height: 18px; border: none; border-radius: 6px; background: color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent); color: var(--dsw-alias-label-primary); font-size: 12px; line-height: 1; cursor: pointer; z-index: 2; }
+  .prtsWallDel:hover { background: var(--dsw-alias-state-error-primary, #d93025); color: #fff; }
   .prtsBtn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 16px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 10px; background: transparent; color: var(--dsw-alias-label-primary); font-size: 12.5px; cursor: pointer; }
   .prtsBtn:hover:not(:disabled) { background: var(--dsw-alias-bg-layer-1); border-color: var(--dsw-alias-border-l2); }
   .prtsBtn.primary { background: var(--dsw-alias-brand-primary); color: var(--dsw-alias-bg-base); border-color: transparent; }
@@ -249,11 +266,12 @@ export function apply(ctx) {
   .prtsGroupBody { max-height: 0; opacity: 0; overflow: hidden; padding: 0 16px; transition: max-height .32s var(--prts-ease-out, cubic-bezier(.2,.8,.25,1)), padding .32s var(--prts-ease-out, cubic-bezier(.2,.8,.25,1)), opacity .26s ease; }
   .prtsGroup.open .prtsGroupBody { max-height: 1000px; opacity: 1; padding: 2px 16px 14px; }
   /* hover popup above the settings button: dsh-web style card — sits on top
-     of EVERYTHING (dsh-web shell, intro, settings modal) */
+     of EVERYTHING (dsh-web shell, intro, settings modal). PRTS-owned tokens
+     so the card follows the light/dark switch + presets. */
   .prtsHoverPop {
     display: flex; flex-direction: column; gap: 2px; padding: 6px;
-    background: color-mix(in srgb, var(--dsw-alias-bg-layer-1) 92%, transparent);
-    border: 1px solid var(--dsw-alias-border-l1);
+    background: color-mix(in srgb, var(--prts-surface) 92%, transparent);
+    border: 1px solid var(--prts-hairline-strong);
     border-radius: 12px;
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
     backdrop-filter: blur(12px);
@@ -265,13 +283,13 @@ export function apply(ctx) {
   }
   .prtsHoverPop button {
     height: 32px; border: none; border-radius: 7px; background: transparent;
-    color: var(--dsw-alias-label-secondary); cursor: pointer;
+    color: var(--prts-ink-dim); cursor: pointer;
     display: flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 12px;
     transition: background .14s var(--prts-ease, ease), color .14s var(--prts-ease, ease);
   }
   .prtsHoverPop button svg { flex: none; opacity: .85; }
   .prtsHoverPop button span { letter-spacing: .02em; white-space: nowrap; }
-  .prtsHoverPop button:hover { color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-layer-2); }
+  .prtsHoverPop button:hover { color: var(--prts-ink); background: var(--prts-surface-2); }
   @keyframes prtsPopUp { from { opacity: 0; transform: translateY(calc(-100% + 10px)); } to { opacity: 1; transform: translateY(-100%); } }
   `
 
@@ -352,6 +370,17 @@ export function apply(ctx) {
         ) : null,
         h('div', { className: 'prtsItemDesc', style: { marginTop: 6 } }, '侧边栏与聊天、输入框、背景不在同一图层 —— 收放像拉抽屉一样，不影响其他任何部件；将来新加入的侧栏类插件也能直接套用这套动效。'),
       ),
+      h(Group, { title: '背景动效' },
+        h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 6 } },
+          [['', '关闭'], ['star', '星光粒子'], ['shoot', '流星'], ['zodiac', '生肖浮字'], ['clouds', '云雾']].map(([id, label]) =>
+            h('button', {
+              key: id, className: 'prtsChip' + ((ui.bgFx || '') === id ? ' on' : ''),
+              onClick: () => save({ ui: { ...ui, bgFx: id } }),
+            }, label),
+          ),
+        ),
+        h('div', { className: 'prtsItemDesc', style: { marginTop: 6 } }, '低调的氛围背景：漂浮的十二生肖汉字、闪烁的星光、划过天际的流星或缓慢流动的云雾；随主题与强调色自动着色。'),
+      ),
       h(Group, { title: '律动' },
         h('div', { className: 'prtsRow' },
           h('button', {
@@ -389,6 +418,20 @@ export function apply(ctx) {
   ]
   const SIDEBAR_BUTTON_IDS = ['themeBtn', 'webBtn', 'gitBtn', 'skillBtn', 'marketBtn', 'detailsBtn']
   const SIDEBAR_BUTTON_NAMES = { themeBtn: '主题', webBtn: '网页', gitBtn: 'Git', skillBtn: 'SKILL', marketBtn: '插件市场', detailsBtn: '详情' }
+  /** Wallpaper thumbnail: fetches the file from the host and renders it.
+   *  Videos never render a preview — they get the play-tile look instead. */
+  function Thumb({ file }) {
+    const [url, setUrl] = useState('')
+    useEffect(() => {
+      let alive = true
+      api('GET', '/prts/api/wallpaper?file=' + encodeURIComponent(file)).then((d) => {
+        if (alive && d && d.dataUrl) setUrl(d.dataUrl)
+      }).catch(() => { })
+      return () => { alive = false }
+    }, [file])
+    if (!url) return h('div', { className: 'prtsWallVid' }, h('span', { className: 'prtsWallPlay' }, '…'))
+    return h('img', { className: 'prtsWallImg', src: url, alt: '', draggable: false })
+  }
   function PrtsSettings() {
     const [cfg, setCfg] = useState({ ui: {} })
     const [editors, setEditors] = useState(null)
@@ -436,18 +479,63 @@ export function apply(ctx) {
         setWeState({ busy: false, list: list.map((it) => ({ id: it.id, title: it.title || it.name || String(it.id) })) })
       } catch (e) { setWeState({ busy: false, error: String((e && e.message) || e) }) }
     }
-    const uploadWall = (file) => {
-      const reader = new FileReader()
-      reader.onload = async () => {
-        const m = /^data:([^;]+);base64,(.*)$/.exec(String(reader.result || ''))
-        if (!m) return
-        const mime = m[1]
-        const ext = mime.indexOf('video') === 0 ? 'mp4' : (mime === 'image/png' ? 'png' : 'jpg')
-        const name = 'wall-' + Date.now().toString(36) + '.' + ext
-        await api('POST', '/prts/api/wallpaper', { file: name, mime, base64: m[2] })
-        await save({ ui: { ...ui, wallpaper: { ...w, file: name, url: '', type: mime.indexOf('video') === 0 ? 'video' : 'image', mime, fit: w.fit || 'cover', opacity: w.opacity !== undefined ? w.opacity : 1 } } })
+    /* ---- wallpaper library (uploaded files on disk, 9 per page grid) ---- */
+    const [lib, setLib] = useState(null)        // { images: [], videos: [] }
+    const [tab, setTab] = useState('image')     // image | video | we
+    const [page, setPage] = useState(0)
+    const refreshLib = useCallback(async () => {
+      try {
+        const r = await api('GET', '/prts/api/wallpapers')
+        const items = (r && r.items) || []
+        setLib({
+          images: items.filter((it) => it.mime.indexOf('image') === 0),
+          videos: items.filter((it) => it.mime.indexOf('video') === 0),
+        })
+      } catch (e) { setLib({ images: [], videos: [] }) }
+    }, [])
+    useEffect(() => { refreshLib() }, [refreshLib])
+    const PAGE_SIZE = 9
+    const currentTab = tab === 'image' ? (lib ? lib.images : []) : tab === 'video' ? (lib ? lib.videos : []) : (weState && weState.list) || []
+    const pageCount = Math.max(1, Math.ceil(currentTab.length / PAGE_SIZE))
+    const paged = currentTab.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+    useEffect(() => { if (page >= pageCount) setPage(0) }, [page, pageCount])
+    const uploadWalls = (files) => {
+      if (!files || !files.length) return
+      const seq = Array.from(files)
+      let done = 0, lastName = '', lastMime = ''
+      const next = (idx) => {
+        if (idx >= seq.length) return
+        const file = seq[idx]
+        const reader = new FileReader()
+        reader.onload = async () => {
+          const m = /^data:([^;]+);base64,(.*)$/.exec(String(reader.result || ''))
+          if (m) {
+            const mime = m[1]
+            const ext = mime.indexOf('video') === 0 ? 'mp4' : mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg'
+            const name = 'wall-' + Date.now().toString(36) + '-' + idx + '.' + ext
+            try {
+              const r = await api('POST', '/prts/api/wallpaper', { file: name, mime, base64: m[2] })
+              if (!r || r.ok === false) throw new Error((r && r.error) || '上传失败')
+              done++; lastName = name; lastMime = mime
+            } catch (e) {
+              alert('壁纸上传失败：' + String((e && e.message) || e))
+            }
+          }
+          next(idx + 1)
+        }
+        reader.readAsDataURL(file)
       }
-      reader.readAsDataURL(file)
+      next(0)
+      // applied once every file has landed on disk (last one wins, like before)
+      const applied = setInterval(async () => {
+        if (done < seq.length) return
+        clearInterval(applied)
+        if (lastName) {
+          const type = lastMime.indexOf('video') === 0 ? 'video' : 'image'
+          await save({ ui: { ...ui, wallpaper: { ...w, file: lastName, url: '', type, mime: lastMime, fit: w.fit || 'cover', opacity: w.opacity !== undefined ? w.opacity : 1 } } })
+        }
+        refreshLib()
+      }, 400)
     }
 
     return h('div', { className: 'prtsBody' },
@@ -471,41 +559,79 @@ export function apply(ctx) {
       /* ================= wallpaper ================= */
       h(Group, { title: '壁纸', sub: w.file || w.url ? '已设置' : '未设置' },
         h('div', { className: 'prtsRow' },
-            h('label', { className: 'prtsBtn', style: { cursor: 'pointer' } },
-              '上传图片 / 视频',
-              h('input', { type: 'file', accept: 'image/*,video/*', style: { display: 'none' }, onChange: (e) => { const f = e.target.files && e.target.files[0]; if (f) uploadWall(f) } }),
-            ),
-            h('button', { className: 'prtsBtn', disabled: !!(weState && weState.busy), onClick: detectWe }, weState && weState.busy ? '检测中…' : '连接 Wallpaper Engine'),
-            (w.file || w.url) ? h('button', { className: 'prtsBtn', onClick: async () => { await api('DELETE', '/prts/api/wallpaper').catch(() => { }); await save({ ui: { ...ui, wallpaper: { ...w, file: '', url: '' } } }) } }, '清除') : null,
+          [['image', '图片'], ['video', '视频'], ['we', 'Wallpaper Engine']].map(([id, label]) =>
+            h('button', {
+              key: id, className: 'prtsChip' + (tab === id ? ' on' : ''),
+              onClick: () => { setTab(id); setPage(0) },
+            }, label + ' ' + (id === 'image' ? (lib ? lib.images.length : 0) : id === 'video' ? (lib ? lib.videos.length : 0) : (weState && weState.list ? weState.list.length : 0))),
           ),
-          weState && weState.error ? h('div', { className: 'prtsItemDesc', style: { marginTop: 6 } }, '未检测到 Wallpaper Engine（需在其设置中开启 HTTP API）') : null,
-          weState && weState.list && weState.list.length ? h('div', { className: 'prtsRow' },
-            h('select', {
-              className: 'prtsInput', style: { flex: 2 }, defaultValue: '', onChange: (e) => {
-                const id = e.target.value
-                if (id) save({ ui: { ...ui, wallpaper: { ...w, url: 'http://127.0.0.1:35585/v2/stream/' + encodeURIComponent(id), fit: w.fit || 'cover', type: 'video' } } })
+        ),
+        tab === 'we' && !weState ? h('div', { className: 'prtsRow', style: { marginTop: 6 } },
+          h('button', { className: 'prtsBtn', disabled: !!(weState && weState.busy), onClick: detectWe }, '连接 Wallpaper Engine'),
+        ) : null,
+        tab === 'we' && weState && weState.error ? h('div', { className: 'prtsItemDesc', style: { marginTop: 6 } }, '未检测到 Wallpaper Engine（需在其设置中开启 HTTP API）') : null,
+        tab !== 'we' ? h('div', { className: 'prtsRow', style: { marginTop: 6 } },
+          h('label', { className: 'prtsBtn', style: { cursor: 'pointer' } },
+            '上传' + (tab === 'video' ? '视频' : '图片') + '（可多选）',
+            h('input', { type: 'file', accept: tab === 'video' ? 'video/*' : 'image/*', multiple: true, style: { display: 'none' }, onChange: (e) => { const f = e.target.files && e.target.files.length ? Array.from(e.target.files) : null; if (f) uploadWalls(f); e.target.value = '' } }),
+          ),
+        ) : null,
+        /* grid: 3 x 3 thumbnails per page, one visual per kind */
+        currentTab.length ? h('div', {},
+          h('div', { className: 'prtsWallGrid' },
+            paged.map((it, i) => {
+              const file = typeof it === 'string' ? it : it.file
+              const mime = (it && it.mime) || ''
+              const isActive = file ? w.file === file : w.url === 'http://127.0.0.1:35585/v2/stream/' + encodeURIComponent(it.id)
+              const apply = async () => {
+                if (tab === 'we') await save({ ui: { ...ui, wallpaper: { ...w, url: 'http://127.0.0.1:35585/v2/stream/' + encodeURIComponent(it.id), file: '', type: 'video', fit: w.fit || 'cover', opacity: w.opacity !== undefined ? w.opacity : 1 } } })
+                else await save({ ui: { ...ui, wallpaper: { ...w, file, url: '', type: mime.indexOf('video') === 0 ? 'video' : 'image', mime, fit: w.fit || 'cover', opacity: w.opacity !== undefined ? w.opacity : 1 } } })
               }
-            },
-              h('option', { value: '' }, '选择一张 Wallpaper Engine 壁纸'),
-              weState.list.map((it) => h('option', { key: it.id, value: it.id }, it.title)),
-            ),
-          ) : null,
-          (w.file || w.url) ? h('div', {},
-            h('div', { className: 'prtsRow' }, h('span', { className: 'prtsLabel' }, '填充方式'),
-              h('select', { className: 'prtsInput', value: w.fit || 'cover', onChange: (e) => save({ ui: { ...ui, wallpaper: { ...w, fit: e.target.value } } }) },
-                h('option', { value: 'cover' }, '覆盖'), h('option', { value: 'fill' }, '填充'), h('option', { value: 'free' }, '自由'), h('option', { value: 'contain' }, '居中')),
-            ),
-            h('div', { className: 'prtsRow' }, h('span', { className: 'prtsLabel' }, '透明度'),
-              h('input', { type: 'range', min: 0, max: 1, step: 0.01, value: String(w.opacity !== undefined ? w.opacity : 1), style: { flex: 2 }, onChange: (e) => save({ ui: { ...ui, wallpaper: { ...w, opacity: Number(e.target.value) } } }) }),
-            ),
-          ) : null,
-          h('div', { className: 'prtsRow' },
-            h('span', { className: 'prtsLabel' }, '背景模糊'),
-            h('input', { type: 'checkbox', checked: ui.glass !== false, onChange: (e) => save({ ui: { ...ui, glass: e.target.checked } }) }),
+              const remove = async () => {
+                await api('DELETE', '/prts/api/wallpaper', { file }).catch(() => { })
+                if (w.file === file) await save({ ui: { ...ui, wallpaper: { ...w, file: '', url: '' } } })
+                refreshLib()
+              }
+              return h('div', {
+                key: (file || it.id) + '-' + i, className: 'prtsWallTile' + (isActive ? ' on' : ''),
+                role: 'button', tabIndex: 0,
+                onClick: apply,
+                onKeyDown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); apply() } },
+                title: tab === 'we' ? it.title : file,
+              },
+                tab === 'we' ? h('div', { className: 'prtsWallWE' }, h('span', {}, 'WE'), h('span', { className: 'prtsWallTitle' }, it.title)) :
+                  mime.indexOf('video') === 0 ? h('div', { className: 'prtsWallVid' }, h('span', { className: 'prtsWallPlay' }, '▶')) :
+                    h(Thumb, { file, mime }),
+                isActive ? h('span', { className: 'prtsWallCur' }, '当前') : null,
+                tab !== 'we' ? h('button', {
+                  className: 'prtsWallDel', type: 'button', title: '删除',
+                  onClick: (e) => { e.stopPropagation(); remove() },
+                }, '×') : null,
+              )
+            }),
           ),
-          ui.glass !== false ? h('div', { className: 'prtsRow' }, h('span', { className: 'prtsLabel' }, '模糊程度'),
-            h('input', { type: 'range', min: 0, max: 24, step: 1, value: String(ui.blur !== undefined ? ui.blur : 12), style: { flex: 2 }, onChange: (e) => save({ ui: { ...ui, blur: Number(e.target.value) } }) }),
-          ) : null,
+          h('div', { className: 'prtsRow', style: { marginTop: 8, justifyContent: 'center', gap: 12 } },
+            h('button', { className: 'prtsBtn', disabled: page <= 0, onClick: () => setPage(Math.max(0, page - 1)) }, '‹ 上一页'),
+            h('span', { className: 'prtsItemDesc' }, (page + 1) + ' / ' + pageCount),
+            h('button', { className: 'prtsBtn', disabled: page >= pageCount - 1, onClick: () => setPage(Math.min(pageCount - 1, page + 1)) }, '下一页 ›'),
+          ),
+        ) : h('div', { className: 'prtsItemDesc', style: { marginTop: 6 } }, tab === 'we' ? '未连接 Wallpaper Engine，或其中没有壁纸。' : '还没有上传' + (tab === 'video' ? '视频' : '图片') + '壁纸。'),
+        (w.file || w.url) ? h('div', { style: { marginTop: 8 } },
+          h('div', { className: 'prtsRow' }, h('span', { className: 'prtsLabel' }, '填充方式'),
+            h('select', { className: 'prtsInput', value: w.fit || 'cover', onChange: (e) => save({ ui: { ...ui, wallpaper: { ...w, fit: e.target.value } } }) },
+              h('option', { value: 'cover' }, '覆盖'), h('option', { value: 'fill' }, '填充'), h('option', { value: 'free' }, '自由'), h('option', { value: 'contain' }, '居中')),
+          ),
+          h('div', { className: 'prtsRow' }, h('span', { className: 'prtsLabel' }, '透明度'),
+            h('input', { type: 'range', min: 0, max: 1, step: 0.01, value: String(w.opacity !== undefined ? w.opacity : 1), style: { flex: 2 }, onChange: (e) => save({ ui: { ...ui, wallpaper: { ...w, opacity: Number(e.target.value) } } }) }),
+          ),
+        ) : null,
+        h('div', { className: 'prtsRow' },
+          h('span', { className: 'prtsLabel' }, '背景模糊'),
+          h('input', { type: 'checkbox', checked: ui.glass !== false, onChange: (e) => save({ ui: { ...ui, glass: e.target.checked } }) }),
+        ),
+        ui.glass !== false ? h('div', { className: 'prtsRow' }, h('span', { className: 'prtsLabel' }, '模糊程度'),
+          h('input', { type: 'range', min: 0, max: 24, step: 1, value: String(ui.blur !== undefined ? ui.blur : 12), style: { flex: 2 }, onChange: (e) => save({ ui: { ...ui, blur: Number(e.target.value) } }) }),
+        ) : null,
       ),
 
       /* ================= theme (presets only) ================= */
@@ -668,6 +794,17 @@ export function apply(ctx) {
       } catch (e) { /* manual input stays available */ }
       setLogging(false)
     }
+    // platform pages open in the SAME persistent session window as login —
+    // already logged in after the first time, no second login for 充值.
+    const openDs = async (page) => {
+      const bridge = window.prts && window.prts.bridge
+      if (bridge && typeof bridge.openDeepseek === 'function') {
+        await bridge.openDeepseek(page).catch(() => { })
+        refresh()
+        return
+      }
+      window.open(page === 'top_up' ? 'https://platform.deepseek.com/top_up' : 'https://platform.deepseek.com/api_keys', '_blank')
+    }
     return h('div', {},
       bal !== null ? h('div', { className: 'prtsItemName', style: { fontSize: 24, fontFamily: 'monospace' } }, '¥ ' + bal.toLocaleString('zh-CN', { minimumFractionDigits: 2 })) : h('div', { className: 'prtsItemDesc' }, ds.apiKey ? (err || '读取中…') : '登录 DeepSeek 开发者账号后显示人民币余额'),
       !ds.apiKey ? h('div', { className: 'prtsRow' },
@@ -686,8 +823,8 @@ export function apply(ctx) {
         }, '保存'),
       ),
       h('div', { className: 'prtsRow' },
-        h('button', { className: 'prtsBtn', onClick: () => window.open('https://platform.deepseek.com/top_up', '_blank') }, '充值'),
-        h('button', { className: 'prtsBtn', onClick: () => window.open('https://platform.deepseek.com/api_keys', '_blank') }, 'API Keys'),
+        h('button', { className: 'prtsBtn', onClick: () => openDs('top_up') }, '充值'),
+        h('button', { className: 'prtsBtn', onClick: () => openDs('api_keys') }, 'API Keys'),
         h('button', { className: 'prtsBtn', onClick: () => saveDs({ apiKey: '', loggedIn: false }) }, '登出'),
       ),
     )
@@ -1842,8 +1979,10 @@ export function apply(ctx) {
       // frame, its own toggle buttons, newButtons, titlebar, splash…).
       // The settings modal is borrowed as the shared settings panel: its
       // overlay is reparented onto <body> and excluded here so it can keep
-      // toggling its own display on open/close.
-      'html[data-prts-shell] body > :not(#prts-gui-host):not(.VOzbGW_overlay) { display: none !important; }',
+      // toggling its own display on open/close. PRTS's own body-level
+      // floaters (settings hover popup, quick menu, tree menu, wallpaper
+      // layer) must also survive.
+      'html[data-prts-shell] body > :not(#prts-gui-host):not(.VOzbGW_overlay):not(.prtsHoverPop):not(.prtsQuick):not(#prtsTreeMenu):not(#prtsWallpaperLayer) { display: none !important; }',
       // dsh-web's entry intro/splash: belt & suspenders (some may be
       // re-appended to <body> later by dsh-web).
       'html[data-prts-shell] body > .intro, html[data-prts-shell] [class*="splash"], html[data-prts-shell] [class*="onboard"], html[data-prts-shell] [class*="particle"] { display: none !important; }',
@@ -1851,18 +1990,77 @@ export function apply(ctx) {
     ].join('\n')
     document.head.appendChild(s)
   }
-  // dsh-web's settings overlay is the shared settings panel — move it onto
-  // <body> so the root display:none above never kills it. It stays a fixed
-  // full-screen overlay and toggles its own display on open/close.
-  const reparentOverlay = () => {
-    try {
-      const ov = document.querySelector('.VOzbGW_overlay')
-      if (ov && ov.parentElement !== document.body) document.body.appendChild(ov)
-    } catch (e) { /* noop */ }
+  // dsh-web's settings overlay is the shared settings panel. It natively
+  // mounts deep inside dsh-web's frame/sidebar subtree — which the shell
+  // rule above sets to display:none, and dsh-web's React events are
+  // delegated at the app root, so the overlay MUST stay inside that
+  // subtree to remain clickable. Instead of reparenting it (which severed
+  // React's delegation), we "bless" the overlay's ancestor path while the
+  // modal is open: un-hide the ancestor chain and hide every sibling so
+  // only the modal (a fixed full-screen layer) is visible.
+  let blessedChain = null
+  let overlayObsTimer = 0
+  const overlayCheck = () => {
+    overlayObsTimer = 0
+    let ov = null
+    try { ov = document.querySelector('.VOzbGW_overlay') } catch (e) { return }
+    if (!ov) return
+    const shown = getComputedStyle(ov).display !== 'none'
+    if (shown && !blessedChain) blessedChain = blessOverlayChain(ov)
+    else if (!shown && blessedChain) { restoreOverlayChain(blessedChain); blessedChain = null }
   }
-  reparentOverlay()
-  setTimeout(reparentOverlay, 2000)
-  setTimeout(reparentOverlay, 5000)
+  const blessOverlayChain = (ov) => {
+    const saved = []
+    let node = ov
+    while (node && node !== document.body) {
+      if (node.parentElement === document.body) {
+        // The top-level dsh-web container is display:none !important via the
+        // shell rule — re-enable it inline with !important to beat the rule.
+        saved.push({ el: node, prop: 'display', value: node.style.display, important: true })
+        node.style.setProperty('display', 'block', 'important')
+        break
+      }
+      const parent = node.parentElement
+      if (!parent) break
+      // Re-enable intermediate ancestors so the fixed overlay can render.
+      saved.push({ el: parent, prop: 'display', value: parent.style.display, important: false })
+      if (getComputedStyle(parent).display === 'none') {
+        parent.style.display = 'block'
+      }
+      // Hide every sibling along the path so the rest of dsh-web's UI
+      // (sidebar, foot, main) stays suppressed while the modal is open.
+      const sibs = Array.prototype.filter.call(parent.children, (c) => c !== node)
+      for (const sib of sibs) {
+        saved.push({ el: sib, prop: 'display', value: sib.style.display, important: false })
+        sib.style.display = 'none'
+      }
+      node = parent
+    }
+    // Make sure the overlay itself is not clipped by an ancestor with
+    // overflow hidden / a small size.
+    return saved
+  }
+  const restoreOverlayChain = (saved) => {
+    for (const rec of saved) {
+      try {
+        if (rec.important) {
+          if (rec.value) rec.el.style.setProperty('display', rec.value, 'important')
+          else rec.el.style.removeProperty('display')
+        } else {
+          rec.el.style.display = rec.value
+        }
+      } catch (e) { /* noop */ }
+    }
+  }
+  overlayCheck()
+  setTimeout(overlayCheck, 2000)
+  setTimeout(overlayCheck, 5000)
+  try {
+    const ovObs = new MutationObserver(() => {
+      if (!overlayObsTimer) overlayObsTimer = setTimeout(overlayCheck, 150)
+    })
+    ovObs.observe(document.body, { childList: true, attributes: true, attributeFilter: ['style', 'class'], subtree: true })
+  } catch (e) { /* noop */ }
   document.documentElement.dataset.prtsShell = '1'
   if (ctx && typeof ctx.on === 'function') {
     // Community plugins (un)installed at runtime: refresh the ports.

@@ -106,6 +106,31 @@
   border-radius: 4px; background: var(--prts-surface); color: var(--prts-ink); font-size: 13px; outline: none;
 }
 
+/* ---------- background ambient fx (动效 → 背景动效) ---------- */
+#prtsBgFx {
+  position: fixed; inset: 0; z-index: 0; overflow: hidden;
+  pointer-events: none;
+}
+#prtsBgFx .prtsFxCloud {
+  position: absolute; top: 50%;
+  border-radius: 9999px;
+  background: radial-gradient(ellipse at center,
+    color-mix(in srgb, var(--prts-accent, var(--prts-ink)) 14%, transparent) 0%,
+    color-mix(in srgb, var(--prts-accent, var(--prts-ink)) 6%, transparent) 55%,
+    transparent 75%);
+  filter: blur(28px);
+  opacity: .55;
+  animation: prtsFxCloudDrift var(--prts-drawer-ms, 300ms) linear infinite;
+  will-change: transform;
+}
+@keyframes prtsFxCloudDrift {
+  from { transform: translateX(-40vw) translateY(0) scale(1); }
+  25% { transform: translateX(10vw) translateY(-4vh) scale(1.12); }
+  50% { transform: translateX(45vw) translateY(2vh) scale(.96); }
+  75% { transform: translateX(80vw) translateY(-3vh) scale(1.08); }
+  to { transform: translateX(140vw) translateY(0) scale(1); }
+}
+
 /* ===== Chat flow ===== */
 .flowItem { min-width: 0; }
 .flowItem:empty { display: none; }
@@ -357,14 +382,10 @@
   color: var(--prts-accent);
 }
 .sbActions { display: flex; align-items: center; gap: 2px; }
-.newButtons { display: flex; gap: 6px; padding: 2px 2px 10px; }
-.sbBtn {
-  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  height: 34px; border: 1px solid var(--prts-hairline); border-radius: 6px;
-  background: transparent; color: var(--prts-ink-dim); font-size: 13px; line-height: 20px;
-  cursor: pointer; transition: border-color 0.15s var(--prts-ease), color 0.15s var(--prts-ease);
-}
-.sbBtn:hover { border-color: var(--prts-hairline-strong); color: var(--prts-ink); }
+/* Branch-end "new session / new sub-session" control: quiet ghost + that
+   tints accent on hover, mirroring the rowBtn archive control. */
+.sbItem .rowBtn.sbAddBtn { color: var(--prts-accent); }
+.sbItem .rowBtn.sbAddBtn:hover { color: var(--prts-accent); background: var(--prts-surface); }
 .sbSection { margin: 2px 0 4px; }
 .sbSectionHead { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 6px; }
 .sbSectionHead .eyebrow { flex: 1; }
@@ -377,7 +398,25 @@
   transition: background 0.12s var(--prts-ease), color 0.12s var(--prts-ease);
 }
 .sbItem:hover { background: var(--prts-surface-2); color: var(--prts-ink); }
-.sbItem.active { background: var(--prts-surface-2); color: var(--prts-ink); box-shadow: inset 2px 0 0 var(--prts-ink); }
+.sbItem.active {
+  background: var(--prts-surface-2); color: var(--prts-ink);
+  box-shadow:
+    inset 2px 0 0 var(--prts-accent, var(--prts-ink)),
+    0 0 0 1px color-mix(in srgb, var(--prts-accent, var(--prts-ink)) 22%, transparent),
+    0 0 14px color-mix(in srgb, var(--prts-accent, var(--prts-ink)) 28%, transparent);
+  animation: prtsRowGlow 2.6s var(--prts-ease) infinite;
+}
+@keyframes prtsRowGlow {
+  0%, 100% { box-shadow: inset 2px 0 0 var(--prts-accent, var(--prts-ink)), 0 0 0 1px color-mix(in srgb, var(--prts-accent, var(--prts-ink)) 22%, transparent), 0 0 10px color-mix(in srgb, var(--prts-accent, var(--prts-ink)) 22%, transparent); }
+  50% { box-shadow: inset 2px 0 0 var(--prts-accent, var(--prts-ink)), 0 0 0 1px color-mix(in srgb, var(--prts-accent, var(--prts-ink)) 34%, transparent), 0 0 20px color-mix(in srgb, var(--prts-accent, var(--prts-ink)) 42%, transparent); }
+}
+/* caption under the active session row: where you are in the tree */
+.sbItemCwd {
+  font-family: var(--prts-mono); font-size: 10.5px; line-height: 16px;
+  color: var(--prts-ink-faint); padding: 0 10px 3px; margin-top: -2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  border-left: 1px solid color-mix(in srgb, var(--prts-accent, var(--prts-ink)) 35%, transparent);
+}
 /* workspace file-tree rows: chevron toggle + animated branch (grid-rows
    0fr↔1fr, duration follows the drawer motion setting) */
 .sbWsTree .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -392,7 +431,7 @@
 .sbTreeChev:hover { color: var(--prts-ink); background: var(--prts-surface-2); }
 .sbTreeBranch {
   display: grid; grid-template-rows: 1fr;
-  transition: grid-template-rows var(--prts-drawer-ms, 350ms) cubic-bezier(.2,.8,.25,1);
+  transition: grid-template-rows var(--prts-drawer-ms, 350ms) cubic-bezier(.34, 1.2, .64, 1);
 }
 .sbTreeBranch.closed { grid-template-rows: 0fr; }
 .sbTreeInner { overflow: hidden; min-height: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -1753,20 +1792,13 @@ body[data-glass='off'] { --prts-glass: 0px; --prts-glass-strong: 0px; }
           </button>
         </div>
       </div>
-      <div class="newButtons">
-        <button class="sbBtn" id="newProjectBtn" type="button">
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.2v10.6M1.2 6.5h10.6" stroke="currentColor" stroke-width="1.2"/></svg>
-          <span data-i18n="sidebar.newWorkspace">New workspace</span>
-        </button>
-        <button class="sbBtn" id="newSessionBtn" type="button">
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.2v10.6M1.2 6.5h10.6" stroke="currentColor" stroke-width="1.2" transform="rotate(45 6.5 6.5)"/></svg>
-          <span data-i18n="sidebar.newSession">New session</span>
-        </button>
-      </div>
       <div class="sbSection">
         <div class="sbSectionInner">
           <div class="sbSectionHead">
             <span class="eyebrow" data-i18n="sidebar.workspaces">Workspaces</span>
+            <button class="headBtn" id="newProjectHeadBtn" type="button" data-i18n-title="sidebar.newWorkspace" aria-label="New workspace">
+              <svg width="12" height="12" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.2v10.6M1.2 6.5h10.6" stroke="currentColor" stroke-width="1.4"/></svg>
+            </button>
             <button class="headBtn" id="sessionSelectBtn" type="button" data-i18n-title="session.selectMode" aria-pressed="false">
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1.6" y="1.6" width="8.8" height="8.8" rx="2" stroke="currentColor" stroke-width="1.1"/><path d="M3.6 6.2 5.2 7.8 8.4 4.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
@@ -8442,6 +8474,12 @@ window.PRTS_MARKET = {
   /* ---------- theme ---------- */
   function applyTheme(theme) {
     document.documentElement.dataset.theme = theme;
+    // The fixed ink for the background marks / hero mark / rhombus must
+    // follow light/dark instantly. The client keeps an inline --prts-ink
+    // (set from the dsh-web theme snapshot at boot) that would otherwise
+    // stay stale — update it here so black↔white switches never leave
+    // white-on-white marks.
+    document.documentElement.style.setProperty('--prts-ink', theme === 'light' ? '#0A0A0B' : '#FAFAFA');
     if (A.heroEngine) A.heroEngine.refreshInk();
     if (A.introEngine) A.introEngine.refreshInk();
   }
@@ -8732,6 +8770,13 @@ window.PRTS_MARKET = {
     meta.className = 'meta';
     meta.textContent = String(w.sessionIds ? w.sessionIds.length : 0);
     row.appendChild(meta);
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'rowBtn sbAddBtn';
+    add.title = A.t('sidebar.newSession');
+    add.innerHTML = '<svg width="11" height="11" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.2v10.6M1.2 6.5h10.6" stroke="currentColor" stroke-width="1.4"/></svg>';
+    add.addEventListener('click', (e) => { e.stopPropagation(); P.dshState.currentWorkspaceId = w.workspaceId; newSession(); });
+    row.appendChild(add);
     const del = document.createElement('button');
     del.type = 'button';
     del.className = 'rowBtn';
@@ -8782,7 +8827,7 @@ window.PRTS_MARKET = {
       .sort((a, b) => b.updatedAt - a.updatedAt);
     const walk = (sessions, depth) => {
       for (const s of sessions) {
-        container.appendChild(buildTreeSessionRow(s, depth));
+        container.appendChild(buildTreeSessionRow(s, depth, container));
         const children = kids(s.sessionId);
         if (children.length) walk(children, depth + 1);
       }
@@ -8792,7 +8837,7 @@ window.PRTS_MARKET = {
 
   /** Tree session row: the flat-list row plus indentation and a sub-session
    *  marker; right-click offers 新建子会话 / 归档. */
-  function buildTreeSessionRow(s, depth) {
+  function buildTreeSessionRow(s, depth, container) {
     const row = document.createElement('div');
     row.className = 'sbItem sbTreeItem' + (s.sessionId === P.dshState.currentSessionId ? ' active' : '');
     row.dataset.session = s.sessionId;
@@ -8823,6 +8868,13 @@ window.PRTS_MARKET = {
     name.textContent = P.dshState.sessionTitle(s);
     if (s.running) name.textContent += ' …';
     row.appendChild(name);
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'rowBtn sbAddBtn';
+    add.title = A.t('tree.newSubSession');
+    add.innerHTML = '<svg width="11" height="11" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.2v10.6M1.2 6.5h10.6" stroke="currentColor" stroke-width="1.4"/></svg>';
+    add.addEventListener('click', (e) => { e.stopPropagation(); forkSessionFlow(s); });
+    row.appendChild(add);
     const del = document.createElement('button');
     del.type = 'button';
     del.className = 'rowBtn';
@@ -8844,6 +8896,14 @@ window.PRTS_MARKET = {
         { label: A.t('session.archive'), fn: () => archiveSession(s.sessionId) },
       ]);
     });
+    // where-you-are caption under the active row (the cwd of the open session)
+    if (s.sessionId === P.dshState.currentSessionId && s.cwd && container) {
+      const cap = document.createElement('div');
+      cap.className = 'sbItemCwd';
+      cap.textContent = s.cwd;
+      cap.style.marginLeft = (Math.min(10 + depth * 14, 52) + 20) + 'px';
+      container.appendChild(cap);
+    }
     return row;
   }
 
@@ -9035,9 +9095,22 @@ window.PRTS_MARKET = {
       }
     }
     for (const inner of trees) {
+      const cap = inner.querySelector('.sbItemCwd');
+      if (cap) cap.remove();
       for (const row of inner.children) {
         if (!row.dataset || !row.dataset.session) continue;
-        row.classList.toggle('active', row.dataset.session === P.dshState.currentSessionId);
+        const isActive = row.dataset.session === P.dshState.currentSessionId;
+        row.classList.toggle('active', isActive);
+        if (isActive) {
+          const s = P.dshState.sessions.find((x) => x.sessionId === P.dshState.currentSessionId);
+          if (s && s.cwd) {
+            const c = document.createElement('div');
+            c.className = 'sbItemCwd';
+            c.textContent = s.cwd;
+            c.style.marginLeft = (parseInt(row.style.paddingLeft || '10', 10) + 20) + 'px';
+            inner.insertBefore(c, row.nextSibling);
+          }
+        }
       }
     }
   }
@@ -9085,10 +9158,26 @@ window.PRTS_MARKET = {
     const hist = P.chat.loadHistory(id);
     highlightSessions();      // cheap: only the active class flips
     highlightWorkspaces();
+    revealSession(id);        // expand the branch + scroll the glowing row in
     updateMeter();
     renderStatsDock();
     updateCrumb();
     if (opts && opts.waitHistory) await hist;
+  }
+
+  /** Expand the branch holding the given session (if collapsed) and scroll
+   *  it into view so the glowing current position is always visible. */
+  function revealSession(id) {
+    const ws = P.dshState.workspaces.find((w) => (w.sessionIds || []).indexOf(id) >= 0);
+    if (!ws) return;
+    if (!A.wsExpanded.has(ws.workspaceId)) {
+      A.wsExpanded.add(ws.workspaceId);
+      renderWorkspaces();
+    }
+    requestAnimationFrame(() => {
+      const row = document.querySelector('#projectList [data-session="' + id + '"]');
+      if (row && row.scrollIntoView) row.scrollIntoView({ block: 'nearest' });
+    });
   }
 
   async function newSession() {
@@ -9101,6 +9190,7 @@ window.PRTS_MARKET = {
         P.dshState.currentSessionId = id;
         if (A.currentPreset) setModeLabel(presetLabel(A.currentPreset));
         await refreshSessions();
+        revealSession(id);
         P.dshState.permissions = P.dshState.permissionState(id);
         updatePermissionChip();
         if (A.refreshPermissionPop) A.refreshPermissionPop();
@@ -9247,6 +9337,7 @@ window.PRTS_MARKET = {
     if (P.dshState.currentWorkspaceId) A.wsExpanded.add(P.dshState.currentWorkspaceId);
     renderWorkspaces();
     renderSessions();
+    if (P.dshState.currentSessionId) revealSession(P.dshState.currentSessionId);
     updateModelChip();
     updateReasoningChip();
     updatePermissionChip();
@@ -10089,6 +10180,147 @@ window.PRTS_MARKET = {
     return n;
   }
 
+  /* ---------- background ambient fx (设置 → 动效 → 背景动效) ----------
+   * One fixed canvas layer between the wallpaper (z 0, DOM-earlier) and the
+   * frame (z 1). Kinds: star / shoot / zodiac / clouds. rAF-driven, torn
+   * down completely when switched off. */
+  const ZODIAC_GLYPHS = ['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪'];
+  const A_bgFx = { kind: '', raf: 0, layer: null, ctx: null, w: 0, h: 0, items: [], t: 0, spawn: 0 };
+  function applyBgFx(kind) {
+    const fx = A_bgFx;
+    if (fx.raf) cancelAnimationFrame(fx.raf);
+    fx.raf = 0;
+    if (fx.layer) { fx.layer.remove(); fx.layer = null; fx.ctx = null; }
+    fx.kind = kind || '';
+    if (!fx.kind) return;
+    const layer = document.createElement(fx.kind === 'clouds' ? 'div' : 'canvas');
+    layer.id = 'prtsBgFx';
+    layer.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(layer);
+    fx.layer = layer;
+    fx.items = [];
+    fx.spawn = 0;
+    const size = () => {
+      if (fx.kind === 'clouds') return;
+      fx.w = layer.width = window.innerWidth;
+      fx.h = layer.height = window.innerHeight;
+    };
+    size();
+    window.addEventListener('resize', size);
+    if (fx.kind === 'clouds') {
+      for (let i = 0; i < 5; i++) {
+        const b = document.createElement('div');
+        b.className = 'prtsFxCloud';
+        b.style.left = (Math.random() * 90 - 10) + '%';
+        b.style.width = (200 + Math.random() * 260) + 'px';
+        b.style.height = (120 + Math.random() * 160) + 'px';
+        b.style.animationDuration = (36 + Math.random() * 30) + 's';
+        b.style.animationDelay = (-Math.random() * 50) + 's';
+        layer.appendChild(b);
+      }
+      return;
+    }
+    fx.ctx = layer.getContext('2d');
+    if (fx.kind === 'zodiac') {
+      for (let i = 0; i < ZODIAC_GLYPHS.length; i++) {
+        fx.items.push({
+          g: ZODIAC_GLYPHS[i],
+          x: Math.random() * fx.w, y: Math.random() * fx.h,
+          vx: 6 + Math.random() * 10, vy: 3 + Math.random() * 7,
+          ph: Math.random() * Math.PI * 2,
+          size: 26 + Math.random() * 28,
+          alpha: 0.05 + Math.random() * 0.08,
+        });
+      }
+    } else if (fx.kind === 'star') {
+      for (let i = 0; i < 110; i++) {
+        fx.items.push({
+          x: Math.random() * fx.w, y: Math.random() * fx.h,
+          vx: 4 + Math.random() * 10, vy: 2 + Math.random() * 6,
+          ph: Math.random() * Math.PI * 2,
+          size: 0.6 + Math.random() * 1.6,
+          alpha: 0.12 + Math.random() * 0.4,
+        });
+      }
+    }
+    const step = (ts) => {
+      if (!fx.ctx) return;
+      const dt = Math.min(48, (ts - fx.t) || 16);
+      fx.t = ts;
+      const s = dt / 1000;
+      const ctx = fx.ctx;
+      ctx.clearRect(0, 0, fx.w, fx.h);
+      let accent = getComputedStyle(document.documentElement).getPropertyValue('--prts-accent').trim();
+      if (!accent) accent = '#FAFAFA';
+      if (fx.kind === 'zodiac') {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        for (const m of fx.items) {
+          m.x += (m.vx + Math.sin(fx.t / 900 + m.ph) * 6) * s;
+          m.y += (m.vy + Math.cos(fx.t / 1100 + m.ph) * 4) * s;
+          if (m.x > fx.w + 60) m.x = -60;
+          if (m.y > fx.h + 60) m.y = -60;
+          if (m.x < -60) m.x = fx.w + 60;
+          if (m.y < -60) m.y = fx.h + 60;
+          ctx.save();
+          ctx.translate(m.x, m.y);
+          ctx.rotate(Math.sin(fx.t / 1600 + m.ph) * 0.18);
+          ctx.globalAlpha = m.alpha;
+          ctx.fillStyle = accent;
+          ctx.font = '500 ' + m.size + 'px "PingFang SC","Noto Serif SC",serif';
+          ctx.fillText(m.g, 0, 0);
+          ctx.restore();
+        }
+      } else if (fx.kind === 'star') {
+        for (const m of fx.items) {
+          m.x += m.vx * s;
+          m.y += m.vy * s;
+          if (m.x > fx.w + 4) m.x = -4;
+          if (m.y > fx.h + 4) m.y = -4;
+          const tw = 0.5 + 0.5 * Math.sin(fx.t / 700 + m.ph);
+          ctx.globalAlpha = m.alpha * (0.45 + 0.55 * tw);
+          ctx.fillStyle = accent;
+          ctx.beginPath();
+          ctx.arc(m.x, m.y, m.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (fx.kind === 'shoot') {
+        fx.spawn -= dt;
+        if (fx.spawn <= 0) {
+          fx.spawn = 800 + Math.random() * 1500;
+          fx.items.push({
+            x: Math.random() * fx.w, y: -20,
+            vx: 260 + Math.random() * 260, vy: 80 + Math.random() * 90,
+            life: 0, ttl: 3.0 + Math.random() * 1.4,
+            len: 90 + Math.random() * 120,
+          });
+          if (fx.items.length > 14) fx.items.shift();
+        }
+        ctx.lineCap = 'round';
+        for (const m of fx.items) {
+          m.x += m.vx * s;
+          m.y += m.vy * s;
+          m.life += dt;
+          const k = Math.max(0, 1 - m.life / m.ttl);
+          const ang = Math.atan2(m.vy, m.vx);
+          ctx.save();
+          ctx.globalAlpha = 0.55 * k;
+          ctx.strokeStyle = accent;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(m.x - Math.cos(ang) * m.len, m.y - Math.sin(ang) * m.len);
+          ctx.lineTo(m.x, m.y);
+          ctx.stroke();
+          ctx.restore();
+        }
+        fx.items = fx.items.filter((m) => m.life < m.ttl);
+      }
+      ctx.globalAlpha = 1;
+      fx.raf = requestAnimationFrame(step);
+    };
+    fx.raf = requestAnimationFrame(step);
+  }
+
   /* ---------- particles: intro + hero ---------- */
   function runIntro() {
     const cv = $('introCanvas');
@@ -10350,6 +10582,7 @@ window.PRTS_MARKET = {
     applyWallpaper(A.config).catch(() => { /* wallpaper is decorative */ });
     applySidebarButtons(A.config);
     applyGlass(A.config);
+    applyBgFx(A.config.ui && A.config.ui.bgFx);
     applyI18n();
     A.heroVisible = true;
 
@@ -10432,8 +10665,7 @@ window.PRTS_MARKET = {
       if (P.dshState.currentSessionId) await P.dshState.archiveSession(P.dshState.currentSessionId);
       await newSession();
     });
-    $('newProjectBtn').addEventListener('click', newWorkspace);
-    $('newSessionBtn').addEventListener('click', newSession);
+    $('newProjectHeadBtn').addEventListener('click', newWorkspace);
     $('detailsBtn') && $('detailsBtn').addEventListener('click', () => {
       if (appEl().hasAttribute('data-details-collapsed')) { showDetailsDefault(); openDetails(); }
       else closeDetails();

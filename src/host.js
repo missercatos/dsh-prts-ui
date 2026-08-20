@@ -9,6 +9,7 @@
 import { join, dirname } from 'node:path'
 import { homedir, networkInterfaces } from 'node:os'
 import { readFile } from 'node:fs/promises'
+import { readdirSync, statSync, writeFileSync, readFileSync, mkdirSync, unlinkSync, rmSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 const ASSETS_DIR = dirname(fileURLToPath(import.meta.url)) + '/../assets/'
@@ -182,6 +183,20 @@ export function apply(ctx) {
   }
 
   /* ---------- wallpaper ---------- */
+  // Uploads and reads go through plain fs (never shell): a single `echo`
+  // argument is capped at 128 KB (MAX_ARG_STRLEN), so anything but tiny
+  // images used to fail silently — the "uploaded but never shows" bug.
+  const wmime = (file) => {
+    const f = String(file || '').toLowerCase()
+    if (/\.png$/.test(f)) return 'image/png'
+    if (/\.webp$/.test(f)) return 'image/webp'
+    if (/\.gif$/.test(f)) return 'image/gif'
+    if (/\.(mp4|m4v)$/.test(f)) return 'video/mp4'
+    if (/\.webm$/.test(f)) return 'video/webm'
+    if (/\.mov$/.test(f)) return 'video/quicktime'
+    if (/\.jpe?g$/.test(f)) return 'image/jpeg'
+    return 'image/jpeg'
+  }
   const wallpaperHandler = async (req, res) => {
     try {
       const dir = join(profileDir(), 'wallpaper')
@@ -192,24 +207,45 @@ export function apply(ctx) {
         const i = pair.indexOf('=')
         if (i > 0) params[decodeURIComponent(pair.slice(0, i))] = decodeURIComponent(pair.slice(i + 1))
       }
+      if (req.method === 'GET' && /\/wallpapers$/.test(url.split('?')[0])) {
+        // library listing: every uploaded file with size + mtime
+        if (!existsSync(dir)) return json(res, 200, { items: [] })
+        const items = readdirSync(dir)
+          .filter((f) => safeName(f) === f)
+          .map((f) => {
+            try {
+              const st = statSync(join(dir, f))
+              return { file: f, mime: wmime(f), size: st.size, mtime: st.mtimeMs }
+            } catch (e) { return null }
+          })
+          .filter(Boolean)
+          .sort((a, b) => b.mtime - a.mtime)
+        return json(res, 200, { items })
+      }
       if (req.method === 'GET') {
         const file = safeName(params.file)
         if (!file) return json(res, 400, { ok: false })
-        const b64 = await runShell('base64 -w0 ' + JSON.stringify(dir + '/' + file), 60000)
-        const mime = /\.png$/.test(file) ? 'image/png' : /\.mp4$/.test(file) ? 'video/mp4' : 'image/jpeg'
-        return json(res, 200, { dataUrl: 'data:' + mime + ';base64,' + b64.trim() })
+        if (!existsSync(join(dir, file))) return json(res, 404, { ok: false })
+        const b64 = readFileSync(join(dir, file)).toString('base64')
+        return json(res, 200, { dataUrl: 'data:' + wmime(file) + ';base64,' + b64 })
       }
       if (req.method === 'DELETE') {
-        await runShell('rm -f ' + JSON.stringify(dir) + '/*', 30000).catch(() => {})
+        const body = JSON.parse(await readBody(req) || '{}')
+        const file = body.file ? safeName(body.file) : ''
+        if (!file) {
+          if (existsSync(dir)) rmSync(dir, { recursive: true, force: true })
+          return json(res, 200, { ok: true })
+        }
+        if (existsSync(join(dir, file))) unlinkSync(join(dir, file))
         return json(res, 200, { ok: true })
       }
       if (req.method === 'POST') {
         const body = JSON.parse(await readBody(req) || '{}')
         const file = safeName(body.file)
         if (!file) return json(res, 400, { ok: false })
-        await runShell('mkdir -p ' + JSON.stringify(dir), 30000)
-        await runShell('echo ' + JSON.stringify(String(body.base64 || '')) + ' | base64 -d > ' + JSON.stringify(dir + '/' + file), 120000)
-        return json(res, 200, { ok: true })
+        mkdirSync(dir, { recursive: true })
+        writeFileSync(join(dir, file), Buffer.from(String(body.base64 || ''), 'base64'))
+        return json(res, 200, { ok: true, file })
       }
       json(res, 405, { ok: false })
     } catch (e) {

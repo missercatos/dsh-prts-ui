@@ -50,7 +50,6 @@ contextBridge.exposeInMainWorld('prts', {
     writeFileB64: (p, b64) => ipcRenderer.invoke('prts:writeFileB64', p, b64),
     prtsLogo: () => ipcRenderer.invoke('prts:prtsLogo'),
     loginDeepseek: () => ipcRenderer.invoke('prts:loginDeepseek'),
-    openDeepseek: (page) => ipcRenderer.invoke('prts:openDeepseek', page),
     loginGithub: () => ipcRenderer.invoke('prts:loginGithub'),
     update: () => ipcRenderer.invoke('prts:update'),
     download: (url) => ipcRenderer.invoke('prts:download', url),
@@ -88,3 +87,10 @@ ipcRenderer.on('prts:end', (_e, token, result) => {
   pending.delete(token)
   if (r.onEnd) r.onEnd(result)
 })
+
+;(function () {
+  if (!window.requestAnimationFrame) {
+    window.requestAnimationFrame = function (cb) { return setTimeout(function () { cb(performance.now()) }, 16) }
+    window.cancelAnimationFrame = function (id) { clearTimeout(id) }
+  }
+})()

@@ -39,6 +39,12 @@
   /* ---------- theme ---------- */
   function applyTheme(theme) {
     document.documentElement.dataset.theme = theme;
+    // The fixed ink for the background marks / hero mark / rhombus must
+    // follow light/dark instantly. The client keeps an inline --prts-ink
+    // (set from the dsh-web theme snapshot at boot) that would otherwise
+    // stay stale — update it here so black↔white switches never leave
+    // white-on-white marks.
+    document.documentElement.style.setProperty('--prts-ink', theme === 'light' ? '#0A0A0B' : '#FAFAFA');
     if (A.heroEngine) A.heroEngine.refreshInk();
     if (A.introEngine) A.introEngine.refreshInk();
   }
@@ -329,6 +335,13 @@
     meta.className = 'meta';
     meta.textContent = String(w.sessionIds ? w.sessionIds.length : 0);
     row.appendChild(meta);
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'rowBtn sbAddBtn';
+    add.title = A.t('sidebar.newSession');
+    add.innerHTML = '<svg width="11" height="11" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.2v10.6M1.2 6.5h10.6" stroke="currentColor" stroke-width="1.4"/></svg>';
+    add.addEventListener('click', (e) => { e.stopPropagation(); P.dshState.currentWorkspaceId = w.workspaceId; newSession(); });
+    row.appendChild(add);
     const del = document.createElement('button');
     del.type = 'button';
     del.className = 'rowBtn';
@@ -379,7 +392,7 @@
       .sort((a, b) => b.updatedAt - a.updatedAt);
     const walk = (sessions, depth) => {
       for (const s of sessions) {
-        container.appendChild(buildTreeSessionRow(s, depth));
+        container.appendChild(buildTreeSessionRow(s, depth, container));
         const children = kids(s.sessionId);
         if (children.length) walk(children, depth + 1);
       }
@@ -389,7 +402,7 @@
 
   /** Tree session row: the flat-list row plus indentation and a sub-session
    *  marker; right-click offers 新建子会话 / 归档. */
-  function buildTreeSessionRow(s, depth) {
+  function buildTreeSessionRow(s, depth, container) {
     const row = document.createElement('div');
     row.className = 'sbItem sbTreeItem' + (s.sessionId === P.dshState.currentSessionId ? ' active' : '');
     row.dataset.session = s.sessionId;
@@ -420,6 +433,13 @@
     name.textContent = P.dshState.sessionTitle(s);
     if (s.running) name.textContent += ' …';
     row.appendChild(name);
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'rowBtn sbAddBtn';
+    add.title = A.t('tree.newSubSession');
+    add.innerHTML = '<svg width="11" height="11" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.2v10.6M1.2 6.5h10.6" stroke="currentColor" stroke-width="1.4"/></svg>';
+    add.addEventListener('click', (e) => { e.stopPropagation(); forkSessionFlow(s); });
+    row.appendChild(add);
     const del = document.createElement('button');
     del.type = 'button';
     del.className = 'rowBtn';
@@ -441,6 +461,14 @@
         { label: A.t('session.archive'), fn: () => archiveSession(s.sessionId) },
       ]);
     });
+    // where-you-are caption under the active row (the cwd of the open session)
+    if (s.sessionId === P.dshState.currentSessionId && s.cwd && container) {
+      const cap = document.createElement('div');
+      cap.className = 'sbItemCwd';
+      cap.textContent = s.cwd;
+      cap.style.marginLeft = (Math.min(10 + depth * 14, 52) + 20) + 'px';
+      container.appendChild(cap);
+    }
     return row;
   }
 
@@ -632,9 +660,22 @@
       }
     }
     for (const inner of trees) {
+      const cap = inner.querySelector('.sbItemCwd');
+      if (cap) cap.remove();
       for (const row of inner.children) {
         if (!row.dataset || !row.dataset.session) continue;
-        row.classList.toggle('active', row.dataset.session === P.dshState.currentSessionId);
+        const isActive = row.dataset.session === P.dshState.currentSessionId;
+        row.classList.toggle('active', isActive);
+        if (isActive) {
+          const s = P.dshState.sessions.find((x) => x.sessionId === P.dshState.currentSessionId);
+          if (s && s.cwd) {
+            const c = document.createElement('div');
+            c.className = 'sbItemCwd';
+            c.textContent = s.cwd;
+            c.style.marginLeft = (parseInt(row.style.paddingLeft || '10', 10) + 20) + 'px';
+            inner.insertBefore(c, row.nextSibling);
+          }
+        }
       }
     }
   }
@@ -682,10 +723,26 @@
     const hist = P.chat.loadHistory(id);
     highlightSessions();      // cheap: only the active class flips
     highlightWorkspaces();
+    revealSession(id);        // expand the branch + scroll the glowing row in
     updateMeter();
     renderStatsDock();
     updateCrumb();
     if (opts && opts.waitHistory) await hist;
+  }
+
+  /** Expand the branch holding the given session (if collapsed) and scroll
+   *  it into view so the glowing current position is always visible. */
+  function revealSession(id) {
+    const ws = P.dshState.workspaces.find((w) => (w.sessionIds || []).indexOf(id) >= 0);
+    if (!ws) return;
+    if (!A.wsExpanded.has(ws.workspaceId)) {
+      A.wsExpanded.add(ws.workspaceId);
+      renderWorkspaces();
+    }
+    requestAnimationFrame(() => {
+      const row = document.querySelector('#projectList [data-session="' + id + '"]');
+      if (row && row.scrollIntoView) row.scrollIntoView({ block: 'nearest' });
+    });
   }
 
   async function newSession() {
@@ -698,6 +755,7 @@
         P.dshState.currentSessionId = id;
         if (A.currentPreset) setModeLabel(presetLabel(A.currentPreset));
         await refreshSessions();
+        revealSession(id);
         P.dshState.permissions = P.dshState.permissionState(id);
         updatePermissionChip();
         if (A.refreshPermissionPop) A.refreshPermissionPop();
@@ -844,6 +902,7 @@
     if (P.dshState.currentWorkspaceId) A.wsExpanded.add(P.dshState.currentWorkspaceId);
     renderWorkspaces();
     renderSessions();
+    if (P.dshState.currentSessionId) revealSession(P.dshState.currentSessionId);
     updateModelChip();
     updateReasoningChip();
     updatePermissionChip();
@@ -1686,6 +1745,147 @@
     return n;
   }
 
+  /* ---------- background ambient fx (设置 → 动效 → 背景动效) ----------
+   * One fixed canvas layer between the wallpaper (z 0, DOM-earlier) and the
+   * frame (z 1). Kinds: star / shoot / zodiac / clouds. rAF-driven, torn
+   * down completely when switched off. */
+  const ZODIAC_GLYPHS = ['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪'];
+  const A_bgFx = { kind: '', raf: 0, layer: null, ctx: null, w: 0, h: 0, items: [], t: 0, spawn: 0 };
+  function applyBgFx(kind) {
+    const fx = A_bgFx;
+    if (fx.raf) cancelAnimationFrame(fx.raf);
+    fx.raf = 0;
+    if (fx.layer) { fx.layer.remove(); fx.layer = null; fx.ctx = null; }
+    fx.kind = kind || '';
+    if (!fx.kind) return;
+    const layer = document.createElement(fx.kind === 'clouds' ? 'div' : 'canvas');
+    layer.id = 'prtsBgFx';
+    layer.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(layer);
+    fx.layer = layer;
+    fx.items = [];
+    fx.spawn = 0;
+    const size = () => {
+      if (fx.kind === 'clouds') return;
+      fx.w = layer.width = window.innerWidth;
+      fx.h = layer.height = window.innerHeight;
+    };
+    size();
+    window.addEventListener('resize', size);
+    if (fx.kind === 'clouds') {
+      for (let i = 0; i < 5; i++) {
+        const b = document.createElement('div');
+        b.className = 'prtsFxCloud';
+        b.style.left = (Math.random() * 90 - 10) + '%';
+        b.style.width = (200 + Math.random() * 260) + 'px';
+        b.style.height = (120 + Math.random() * 160) + 'px';
+        b.style.animationDuration = (36 + Math.random() * 30) + 's';
+        b.style.animationDelay = (-Math.random() * 50) + 's';
+        layer.appendChild(b);
+      }
+      return;
+    }
+    fx.ctx = layer.getContext('2d');
+    if (fx.kind === 'zodiac') {
+      for (let i = 0; i < ZODIAC_GLYPHS.length; i++) {
+        fx.items.push({
+          g: ZODIAC_GLYPHS[i],
+          x: Math.random() * fx.w, y: Math.random() * fx.h,
+          vx: 6 + Math.random() * 10, vy: 3 + Math.random() * 7,
+          ph: Math.random() * Math.PI * 2,
+          size: 26 + Math.random() * 28,
+          alpha: 0.05 + Math.random() * 0.08,
+        });
+      }
+    } else if (fx.kind === 'star') {
+      for (let i = 0; i < 110; i++) {
+        fx.items.push({
+          x: Math.random() * fx.w, y: Math.random() * fx.h,
+          vx: 4 + Math.random() * 10, vy: 2 + Math.random() * 6,
+          ph: Math.random() * Math.PI * 2,
+          size: 0.6 + Math.random() * 1.6,
+          alpha: 0.12 + Math.random() * 0.4,
+        });
+      }
+    }
+    const step = (ts) => {
+      if (!fx.ctx) return;
+      const dt = Math.min(48, (ts - fx.t) || 16);
+      fx.t = ts;
+      const s = dt / 1000;
+      const ctx = fx.ctx;
+      ctx.clearRect(0, 0, fx.w, fx.h);
+      let accent = getComputedStyle(document.documentElement).getPropertyValue('--prts-accent').trim();
+      if (!accent) accent = '#FAFAFA';
+      if (fx.kind === 'zodiac') {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        for (const m of fx.items) {
+          m.x += (m.vx + Math.sin(fx.t / 900 + m.ph) * 6) * s;
+          m.y += (m.vy + Math.cos(fx.t / 1100 + m.ph) * 4) * s;
+          if (m.x > fx.w + 60) m.x = -60;
+          if (m.y > fx.h + 60) m.y = -60;
+          if (m.x < -60) m.x = fx.w + 60;
+          if (m.y < -60) m.y = fx.h + 60;
+          ctx.save();
+          ctx.translate(m.x, m.y);
+          ctx.rotate(Math.sin(fx.t / 1600 + m.ph) * 0.18);
+          ctx.globalAlpha = m.alpha;
+          ctx.fillStyle = accent;
+          ctx.font = '500 ' + m.size + 'px "PingFang SC","Noto Serif SC",serif';
+          ctx.fillText(m.g, 0, 0);
+          ctx.restore();
+        }
+      } else if (fx.kind === 'star') {
+        for (const m of fx.items) {
+          m.x += m.vx * s;
+          m.y += m.vy * s;
+          if (m.x > fx.w + 4) m.x = -4;
+          if (m.y > fx.h + 4) m.y = -4;
+          const tw = 0.5 + 0.5 * Math.sin(fx.t / 700 + m.ph);
+          ctx.globalAlpha = m.alpha * (0.45 + 0.55 * tw);
+          ctx.fillStyle = accent;
+          ctx.beginPath();
+          ctx.arc(m.x, m.y, m.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (fx.kind === 'shoot') {
+        fx.spawn -= dt;
+        if (fx.spawn <= 0) {
+          fx.spawn = 800 + Math.random() * 1500;
+          fx.items.push({
+            x: Math.random() * fx.w, y: -20,
+            vx: 260 + Math.random() * 260, vy: 80 + Math.random() * 90,
+            life: 0, ttl: 3.0 + Math.random() * 1.4,
+            len: 90 + Math.random() * 120,
+          });
+          if (fx.items.length > 14) fx.items.shift();
+        }
+        ctx.lineCap = 'round';
+        for (const m of fx.items) {
+          m.x += m.vx * s;
+          m.y += m.vy * s;
+          m.life += dt;
+          const k = Math.max(0, 1 - m.life / m.ttl);
+          const ang = Math.atan2(m.vy, m.vx);
+          ctx.save();
+          ctx.globalAlpha = 0.55 * k;
+          ctx.strokeStyle = accent;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(m.x - Math.cos(ang) * m.len, m.y - Math.sin(ang) * m.len);
+          ctx.lineTo(m.x, m.y);
+          ctx.stroke();
+          ctx.restore();
+        }
+        fx.items = fx.items.filter((m) => m.life < m.ttl);
+      }
+      ctx.globalAlpha = 1;
+      fx.raf = requestAnimationFrame(step);
+    };
+    fx.raf = requestAnimationFrame(step);
+  }
+
   /* ---------- particles: intro + hero ---------- */
   function runIntro() {
     const cv = $('introCanvas');
@@ -1947,6 +2147,7 @@
     applyWallpaper(A.config).catch(() => { /* wallpaper is decorative */ });
     applySidebarButtons(A.config);
     applyGlass(A.config);
+    applyBgFx(A.config.ui && A.config.ui.bgFx);
     applyI18n();
     A.heroVisible = true;
 
@@ -2029,8 +2230,7 @@
       if (P.dshState.currentSessionId) await P.dshState.archiveSession(P.dshState.currentSessionId);
       await newSession();
     });
-    $('newProjectBtn').addEventListener('click', newWorkspace);
-    $('newSessionBtn').addEventListener('click', newSession);
+    $('newProjectHeadBtn').addEventListener('click', newWorkspace);
     $('detailsBtn') && $('detailsBtn').addEventListener('click', () => {
       if (appEl().hasAttribute('data-details-collapsed')) { showDetailsDefault(); openDetails(); }
       else closeDetails();

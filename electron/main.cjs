@@ -742,6 +742,23 @@ ipcMain.handle('prts:loginDeepseek', () => {
   )
 })
 
+// Open any DeepSeek platform page in the SAME persisted partition as the
+// login window: once logged in, 充值 / API Keys open straight into the
+// account (no second login), and the session survives restarts on disk.
+ipcMain.handle('prts:openDeepseek', (_e, page) => {
+  const partition = 'persist:prts-auth-ds'
+  const url = page === 'top_up' ? 'https://platform.deepseek.com/top_up'
+    : page === 'api_keys' ? 'https://platform.deepseek.com/api_keys'
+    : 'https://platform.deepseek.com'
+  const authWin = new BrowserWindow({
+    width: 1100, height: 760, title: 'DeepSeek 官方平台',
+    autoHideMenuBar: true,
+    webPreferences: { partition, nodeIntegration: false, contextIsolation: true, sandbox: true },
+  })
+  authWin.loadURL(url).catch(() => {})
+  return Promise.resolve({ ok: true })
+})
+
 ipcMain.handle('prts:loginGithub', () => {
   const partition = 'persist:prts-auth-gh'
   const authWin = new BrowserWindow({

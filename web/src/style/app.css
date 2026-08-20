@@ -98,3 +98,28 @@
   flex: 1; min-width: 0; height: 30px; padding: 0 10px; border: 1px solid var(--prts-hairline-strong);
   border-radius: 4px; background: var(--prts-surface); color: var(--prts-ink); font-size: 13px; outline: none;
 }
+
+/* ---------- background ambient fx (动效 → 背景动效) ---------- */
+#prtsBgFx {
+  position: fixed; inset: 0; z-index: 0; overflow: hidden;
+  pointer-events: none;
+}
+#prtsBgFx .prtsFxCloud {
+  position: absolute; top: 50%;
+  border-radius: 9999px;
+  background: radial-gradient(ellipse at center,
+    color-mix(in srgb, var(--prts-accent, var(--prts-ink)) 14%, transparent) 0%,
+    color-mix(in srgb, var(--prts-accent, var(--prts-ink)) 6%, transparent) 55%,
+    transparent 75%);
+  filter: blur(28px);
+  opacity: .55;
+  animation: prtsFxCloudDrift var(--prts-drawer-ms, 300ms) linear infinite;
+  will-change: transform;
+}
+@keyframes prtsFxCloudDrift {
+  from { transform: translateX(-40vw) translateY(0) scale(1); }
+  25% { transform: translateX(10vw) translateY(-4vh) scale(1.12); }
+  50% { transform: translateX(45vw) translateY(2vh) scale(.96); }
+  75% { transform: translateX(80vw) translateY(-3vh) scale(1.08); }
+  to { transform: translateX(140vw) translateY(0) scale(1); }
+}
